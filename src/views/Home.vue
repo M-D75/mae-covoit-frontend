@@ -29,10 +29,10 @@
                   <v-col>
                      <v-img
                         style="margin: auto;"
-                       :width="300"
-                       aspect-ratio="16/9"
-                       cover
-                       src="https://static.vecteezy.com/system/resources/previews/011/539/112/non_2x/car-cartoon-porsche-3d-render-free-png.png"
+                        :width="300"
+                        aspect-ratio="16/9"
+                        cover
+                        src="../assets/car.png"
                      ></v-img>
                   </v-col>
                </v-row>
@@ -40,14 +40,14 @@
                <v-row>
                   <v-col>
                      <v-btn
-                        class="mr-4"
+                        class="mr-4 text-none"
                         @click="submit"
                         rounded="xl" 
-                        size="large"
+                        size="x-large"
                         variant="outlined"
                         block
                      >
-                        S'inscrire/Se connecter
+                        S'inscrire - Se connecter
                      </v-btn>
                   </v-col>
                </v-row>

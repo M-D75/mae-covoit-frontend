@@ -80,7 +80,6 @@
                      type="email"
                      required
                      variant="solo"
-                     
                   ></v-text-field>
 
                   <!-- prepend-inner-icon="mdi-lock" -->
@@ -97,10 +96,10 @@
                   <v-row>
                      <v-col>
                         <v-btn
-                           class="mr-4"
+                           class="mr-4 text-none"
                            @click="submit"
                            rounded="xl" 
-                           size="large"
+                           size="x-large"
                            variant="outlined"
                            block
                         >
@@ -109,9 +108,9 @@
                      </v-col>
                   </v-row>
 
-                  <v-row>
+                  <v-row v-if="mode_login">
                      <v-col>
-                        <a href="#" v-if="mode_login">Mot de passe oublié ?</a>
+                        <a href="#" >Mot de passe oublié ?</a>
                      </v-col>
                   </v-row>
                </v-form>
@@ -125,9 +124,9 @@
                   
                <v-row>
                   <v-col style="display: flex;">
-                     <div class="line-p" style="border-top: solid 1px gray;"></div>
+                     <div class="line-p" style="border: solid 1px #bbb;"></div>
                      <p class="con-with" style="color: gray; width:700px; text-align:center;">Connectez vous avec</p>
-                     <div class="line-p" style="border-top: solid 1px gray"></div>
+                     <div class="line-p" style="border: solid 1px #bbb"></div>
                   </v-col>
                </v-row>
 

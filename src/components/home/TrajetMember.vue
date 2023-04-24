@@ -1,5 +1,5 @@
 
-<style type="text/css">
+<style type="text/css" >
 
    .mdi-navigation.mdi.v-icon.notranslate.v-theme--light.v-icon--size-default{
       color: gray;
@@ -10,12 +10,9 @@
    .part-list {
       padding: 15px;
    }
-   i.v-icon {
+   .card-trajet-member i.v-icon {
       font-size: 1.2em;
       margin-right: 10px !important;
-   }
-   .calendar .v-list-item-title{
-      font-weight: bold;
    }
    .line {
       border-left: solid 1px gray;
@@ -48,10 +45,15 @@
 
 <style lang="scss" scoped>
    .v-card {
-      margin: 25px;
+      margin: 10px;
       width: 85%;
       border-radius: 20px;
       box-shadow: 2px 2px 10px #eee;
+      .hour {
+         &.v-list-item {
+            width: 73px;
+         }
+      }
    }
    .v-btn {
       position: relative;
@@ -61,23 +63,6 @@
    .v-list-item {
       // font-size: 0.9em;
       // color: gray;
-      &.calendar {
-         // font-weight: bold;
-         width: 70%;
-         .v-list-item-title{
-            font-weight: bold;
-         }
-         i.v-icon {
-            margin-right: 10px;
-         }
-      }
-      &.day {
-         .v-list-item__prepend {
-            i.v-icon {
-               margin-right: 20px;
-            }
-         }
-      }
    }
    .empty-mask {
       display: none;
@@ -111,7 +96,7 @@
 
 <template>
    <v-card
-      class="mx-auto"
+      class="card-trajet-member mx-auto"
       max-width="500"
     >
       <div class="empty-mask"></div>
@@ -126,22 +111,24 @@
             <div>
                <div class="flex">
                   <v-list-item
-                    title="5:45"
+                     class="hour"
+                    :title="infos.hour_start"
                   ></v-list-item>
                   <v-list-item
                     prepend-icon="mdi-navigation"
-                    title="Mamoudzou"
+                    :title="infos.depart"
                   ><div class="line"></div></v-list-item>
                   
                </div>
 
                <div style="display:flex;">
                   <v-list-item
-                    title="6:30"
+                     class="hour"
+                    :title="infos.hour_end"
                   ></v-list-item>
                   <v-list-item
                     prepend-icon="mdi-navigation"
-                    title="Tsingoni"
+                    :title="infos.destination"
                   ></v-list-item>
                </div>
             </div>
@@ -155,8 +142,11 @@
                      src="https://avatars0.githubusercontent.com/u/9064066?v=4&s=460"
                   ></v-img>
                </v-avatar>
+               <!-- <v-avatar color="blue">
+                  <span class="text-h5">{{infos.name[0].toUpperCase()}}</span>
+               </v-avatar> -->
                <v-list-item
-                  title="Jonh"
+                  :title="infos.name"
                ></v-list-item>
             </div>
 
@@ -165,7 +155,7 @@
                color="blue"
                label
             >
-              4€
+              {{infos.price}}€
             </v-chip>
 
             <v-chip
@@ -173,7 +163,7 @@
                color="blue"
                label
             >
-              3/4
+              {{ infos.passenger_number }}/4
             </v-chip>
          </div>
 
@@ -186,7 +176,23 @@
 
    // Components
    export default {
-      name: 'trajet-view',
+      name: 'trajet-member-comp',
+      props: {
+         infos: {
+            type: Object,
+            default() {
+              return {
+                   "depart": "Tsingoni",
+                   "destination": "Mamoudzou",
+                   "hour_start": "4:50",
+                   "hour_end": "6:55",
+                   "price": 4,
+                   "name": "Ledou",
+                   "passenger_number": 2
+                 };
+            },
+         },
+      },
       data() {
          return {
             number_trajet: 1,

@@ -1,6 +1,10 @@
 
 
-
+<style lang="scss" model>
+  .v-btn--variant-text .v-btn__overlay {
+    background-color: white !important;
+  }
+</style>
 <style lang="scss" scoped>
   .v-btn__content {
     i {
@@ -23,23 +27,22 @@
 
   <v-bottom-navigation
     v-model="value"
-    color="teal"
     grow
     style="height: 75px;"
   >
-    <v-btn class="selected">
+    <v-btn :class="{ selected: value == 0}">
       <v-icon>mdi-magnify</v-icon>
 
       Recherche
     </v-btn>
 
-    <v-btn>
+    <v-btn :class="{ selected: value == 1}">
       <v-icon>mdi-plus-circle</v-icon>
 
       Publier
-    </v-btn>
+    </v-btn >
 
-    <v-btn>
+    <v-btn :class="{ selected: value == 2}">
       <v-icon>mdi-account-circle</v-icon>
 
       Profil
@@ -47,5 +50,65 @@
   </v-bottom-navigation>
 
 </template>
+
+<script>
+   // import $ from 'jquery'
+
+   // Components
+   export default {
+      name: 'bottom-nav',
+      data() {
+         return {
+            value: 0,
+         }
+      },
+      beforeMount (){
+        switch (this.$router.currentRoute._rawValue.path) {
+          case '/search':
+            this.value=0;
+            break;
+          case '/publish':
+            this.value=1;
+            break;            
+          default:
+            this.value=2;
+        }
+      },
+      mounted (){
+         
+      },
+      methods: {
+        keep_menu_selected(){
+          if (this.value == undefined) {
+            switch (this.$router.currentRoute._rawValue.path) {
+              case '/search':
+                this.value=0;
+                break;
+              case '/publish':
+                this.value=1;
+                break;            
+              default:
+                this.value=2;
+            }
+          }
+        }
+      },
+      watch:{
+        value(){
+          this.keep_menu_selected()
+          switch (this.value) {
+            case 0:
+              this.$router.push("/search");
+              break;
+            case 1:
+              this.$router.push("/publish");
+              break;            
+            default:
+              break;
+          }
+        }
+      },
+   };
+</script>
 
 

@@ -1,9 +1,11 @@
 
-<style lang="scss">
-   .v-list-item i.v-icon {
-      font-weight: bold;
-      color: #2e8dff;
+<!-- model -->
+<style lang="scss" model>
+   .v-list-item i.mdi-car.mdi.v-icon.notranslate.v-theme--light.v-icon--size-default {
+      color: #2e8dff !important;
    }
+
+   // car model
    .car.v-list-item .v-list-item-title {
       font-weight: bold;
    }
@@ -23,7 +25,6 @@
          height: 60px;
          .v-list-item {
             height: 100%;
-
             i.v-icon {
                font-weight: bold;
                color: #2e8dff;
@@ -45,8 +46,7 @@
          box-shadow: none;
          border-radius: none;
          .v-btn {
-            // width: 100%;
-            margin: 10px 0px;
+            margin: 15px 0px;
             margin-top: 0;
             .v-btn__prepend i.v-icon {
                font-size: 2em;
@@ -107,10 +107,11 @@
       </v-btn>
 
       <v-btn
+         v-on:click="$emit('test-notif-success')"
          class="mr-4 text-none "
          prepend-icon="mdi-credit-card"
          rounded="xl" 
-         size="large"
+         size="x-large"
          variant="outlined"
          block
       >
@@ -132,17 +133,10 @@
          }
       },
       props: {
-         message: {
-            type: String,
-            // default: () => "notification message",
-         },
       },
       mounted (){
          // const vue = this;
          $(document).ready(function() {
-            $(".cont-btn-switch").on("click", function(){
-               console.log("switch")
-            });
          });
       },
    };

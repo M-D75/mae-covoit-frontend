@@ -7,12 +7,12 @@
       opacity: 0.1;
       position: absolute;
       border-radius: 100px;
-      top: 34%;
+      top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
       
   }
-  .text-center {
+  .icon-and-back {
       position: relative;
   }
 </style>
@@ -31,7 +31,7 @@
          i.v-icon {
             margin: 0 !important;
          }
-         .text-h4 {
+         .text-notif {
             margin-top: 10px;
          }
       }
@@ -48,16 +48,17 @@
          class="mx-auto"
       >
          <div class="text-center">
-            <div class="circle-back"></div>
-            <v-icon
-               class="mr-0"
-               color="#9fcb66"
-               icon="mdi-check-circle"
-               size="110"
-               style="margin: 0;"
-            ></v-icon>
-
-            <div class="text-h4 font-weight-bold">{{ message }}</div>
+            <div class="icon-and-back">
+               <div class="circle-back"></div>
+               <v-icon
+                  class="mr-0"
+                  color="#9fcb66"
+                  icon="mdi-check-circle"
+                  size="110"
+                  style="margin: 0;"
+               ></v-icon>
+            </div>
+            <div class="text-notif text-h6 font-weight-bold">{{ message }}</div>
          </div>
       </v-card>
    </v-container>

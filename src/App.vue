@@ -2,7 +2,7 @@
 <style lang="scss">
 
    .v-application.v-theme--light.v-layout.v-layout--full-height.v-locale--is-ltr {
-      background-color: #eee;
+      background-color: #f5f5f5;
    }
 
 </style>
