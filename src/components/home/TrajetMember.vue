@@ -1,5 +1,5 @@
 
-<style type="text/css" >
+<style lang="scss" model>
 
    .mdi-navigation.mdi.v-icon.notranslate.v-theme--light.v-icon--size-default{
       color: gray;
@@ -8,45 +8,62 @@
       transform: rotate(180deg);
    }
    .part-list {
-      padding: 15px;
+      padding: 0 0 10px 16px;
    }
    .card-trajet-member i.v-icon {
       font-size: 1.2em;
       margin-right: 10px !important;
    }
    .line {
-      border-left: solid 1px gray;
-      border-right: solid 1px gray;
-      height: 50px;
+/*      border-left: solid 1px gray;*/
+/*      border-right: solid 1px gray;*/
+      background-color: gray;
+      width: 2px;
+      height: 38px;
       position: absolute;
-      left: 24.5px;
+      left: 25px;
       top: 21px;
       z-index: 0;
       opacity: var(--v-medium-emphasis-opacity);
    }
    .flex {
       display: flex;
+      &.comune {
+         height: 35px;
+      }
+      &.avatar {
+         margin-top: 12px;
+      }
    }
-   .v-chip.prix {
-      position: absolute;
-      right: 15px;
-      top: 25px;
-      font-weight: bold;
-      font-size: 1.1em;
+   .v-chip {
+      min-width: 56px;
+      min-height: 32px;
+      border-radius: 8px;
+      text-align: center;
+      display: grid;
+      
+      &.prix {
+         position: absolute;
+         right: 8px;
+         top: 8px;
+         font-weight: bold;
+         font-size: 1.1em;
+      }
+      &.rapport {
+         position: absolute;
+         right: 8px;
+         bottom: 8px;
+         font-weight: bold;
+         font-size: 1.1em;
+      }
    }
-   .v-chip.rapport {
-      position: absolute;
-      right: 15px;
-      bottom: 20px;
-      font-weight: bold;
-      font-size: 1.1em;
-   }
+
 </style>
 
 <style lang="scss" scoped>
    .v-card {
       margin: 10px;
-      width: 85%;
+      width: 87.2%;
       border-radius: 20px;
       box-shadow: 2px 2px 10px #eee;
       .hour {
@@ -59,10 +76,6 @@
       position: relative;
       bottom: -8px;
       margin-top: 16px;
-   }
-   .v-list-item {
-      // font-size: 0.9em;
-      // color: gray;
    }
    .empty-mask {
       display: none;
@@ -109,7 +122,7 @@
 
          <div class="part-list">
             <div>
-               <div class="flex">
+               <div class="comune flex">
                   <v-list-item
                      class="hour"
                     :title="infos.hour_start"
@@ -121,7 +134,7 @@
                   
                </div>
 
-               <div style="display:flex;">
+               <div class="comune flex">
                   <v-list-item
                      class="hour"
                     :title="infos.hour_end"
@@ -133,7 +146,7 @@
                </div>
             </div>
 
-            <div class="flex">
+            <div class="avatar flex">
                <v-avatar
                   size="47px"
                >

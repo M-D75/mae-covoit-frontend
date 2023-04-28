@@ -1,5 +1,3 @@
-
-
 <!-- scss -->
 <style lang="scss" scoped>
    .v-container {
@@ -8,6 +6,10 @@
          margin: 50px auto;
 
       }
+      .v-row {
+         margin-top: 40px;
+         margin-bottom: 5px;
+      }
    }
    .v-row{
       margin: 30px auto;
@@ -15,7 +17,8 @@
    .title {
       font-weight: bold;
       width: 100%;
-      padding: 0 50px 0px 50px;
+      padding: 0 39px 0px 39px;
+      margin: auto;
    }
 
 </style>
@@ -23,12 +26,13 @@
 <!--  -->
 <template>
 
-   <v-row
-      style="margin-bottom: 5px;"
+   <v-row 
+      class="mt-40 mb-0"
+      style="margin-top: 40px;"
    >
       <!-- src="https://static.vecteezy.com/system/resources/previews/011/539/112/non_2x/car-cartoon-porsche-3d-render-free-png.png" -->
       <div
-         class="title text-h4 text-center"
+         class="title text-fs26 text-center"
       >Le choix de trajets à petits prix</div>
       <v-col>
          <v-img
@@ -41,7 +45,7 @@
       </v-col>
    </v-row>
 
-   <Trajet />
+   <TrajetSearch />
    <TrajetMember />
    <BottomNav />
 </template>
@@ -53,7 +57,7 @@
    import { defineComponent } from 'vue';
 
    // Components
-   import Trajet from '@/components/home/Trajet.vue';
+   import TrajetSearch from '@/components/home/TrajetSearch.vue';
    import TrajetMember from '@/components/home/TrajetMember.vue';
    import BottomNav from '@/components/menus/BottomNav.vue';
 
@@ -61,7 +65,7 @@
       name: 'home-search',
 
       components: {
-         Trajet,
+         TrajetSearch,
          TrajetMember,
          BottomNav,
       },

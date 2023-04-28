@@ -13,7 +13,7 @@
     cursor: pointer;
     margin: auto;
     margin-top: 5px;
-    width: 15%;
+    width: 14.6%;
     border: 2px solid gray;
     border-radius: 10px;
     z-index: 999;
@@ -69,7 +69,7 @@
         <ReservePlace v-if="!notif" v-on:test-notif-success="notif = !notif"/>
       </div>
 
-      <Notification :message="'Votre trajet a été comfirmer par le chauffeur'" v-if="notif" />
+      <Notification :message="'Votre commande a été comfirmer par le chauffeur !'" v-if="notif" />
     </v-container>
 </template>
 
@@ -81,8 +81,8 @@
 
   // Components
   import TrajetMember from '@/components/home/TrajetMember.vue';
-  import Notification from '@/components/menus/bottom_menus/Notification.vue';
-  import ReservePlace from '@/components/menus/bottom_menus/ReservePlace.vue';
+  import Notification from '@/components/menus/bottom/Notification.vue';
+  import ReservePlace from '@/components/menus/bottom/ReservePlace.vue';
   import Vue3DraggableResizable from 'vue3-draggable-resizable';
 
    export default defineComponent({
@@ -125,9 +125,11 @@
       },
       mounted() {
         this.sizeScreen = parseInt($("body").css("height").replace("px", ""));
-        this.y = this.sizeScreen-this.marge_bar;
+        this.y = this.sizeScreen; //-this.marge_bar;
+        
         $(".bottom-menu").css("top", `${this.y-5}px`);
         this.subContHeigth = parseInt($(".sub-cont").css("height").replace("px", ""));
+        console.log(this.sizeScreen, this.subContHeigth)
       },
       methods: {
         onDrag(pos) {
@@ -135,24 +137,18 @@
           this.active = false;
           $(".bottom-menu").css("top", `${pos.y-5}px`);
           if (pos.y >= this.sizeScreen - this.marge_bar) {
-            // close
-            this.disabledY = true;
-            this.y = this.sizeScreen-this.marge_bar;
-            this.open_b = false;
+            this.close()
           }
         },
         onDragStop(pos) {
           if (! this.move) {
             if ( pos.y >= this.sizeScreen-this.marge_bar ) {
-              // open
               this.open();
             }
             else{
-              // close
-              this.y = this.sizeScreen-this.marge_bar;
-              this.open_b = false;
+              this.close()
               
-              // test
+              // test notif
               if (this.notif) {
                 this.notif = !this.notif;
               }
@@ -173,11 +169,20 @@
             if ( this.y >= this.sizeScreen-this.marge_bar ) {
               // open
               this.disabledY = false;
-              this.y = this.subContHeigth;
+              this.y = this.sizeScreen-(this.subContHeigth+20);
+              console.log("y", this.y)
               $(".bottom-menu").animate({"top": `${this.y-5}px`}, "fast");
               this.open_b = true;
             }
           }
+
+          return this.open_b;
+        },
+        close(){
+          this.y = this.sizeScreen; //-this.marge_bar;
+          this.open_b = false;
+          $(".bottom-menu").animate({"top": `${this.y-5}px`}, "fast");
+          this.$emit('close');
         },
       },
       watch:{

@@ -74,12 +74,13 @@
    .v-card {
       margin: 35px;
       margin-top: 10px;
-      width: 85%;
+      width: 89.6%;
+      height: 256px;
       border-radius: 20px;
       box-shadow: 2px 2px 10px #eee;
       .v-btn.search-btn {
          position: relative;
-         bottom: -8px;
+         bottom: 5px;
          margin-top: 16px;
       }
    }
@@ -116,7 +117,7 @@
 
 <template>
    <v-card
-      class="trajet-search-comp card-trajet mx-auto"
+      class="trajet-search-comp card-trajet mx-auto mt-0"
       max-width="500"
     >
       <v-list>

@@ -104,6 +104,7 @@
               this.$router.push("/publish");
               break;            
             default:
+            this.$router.push("/profil");
               break;
           }
         }

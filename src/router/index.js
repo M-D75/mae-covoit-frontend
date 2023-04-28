@@ -1,8 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Home from '@/views/Home.vue'
 import LoginSign from '@/views/LoginSign.vue'
+import Profil from '@/views/Profil.vue'
 import HomeSearch from '@/views/HomeSearch.vue'
-import Reservation from '@/views/Reservation.vue'
 import Results from '@/views/Results.vue'
 import Publish from '@/views/Publish.vue'
 
@@ -17,16 +17,16 @@ const routes = [
     component: LoginSign,
   },
   {
+    path: '/profil',
+    component: Profil,
+  },
+  {
     path: '/search',
     component: HomeSearch,
   },
   {
     path: '/results',
     component: Results,
-  },
-  {
-    path: '/reserve',
-    component: Reservation,
   },
   {
     path: '/publish',

@@ -1,8 +1,8 @@
 
 <style type="text/css">
   .circle-back {
-      width: 129px;
-      height: 129px;
+      width: 100px;
+      height: 100px;
       background-color: #9fcb66;
       opacity: 0.1;
       position: absolute;
@@ -32,7 +32,8 @@
             margin: 0 !important;
          }
          .text-notif {
-            margin-top: 10px;
+            margin-top: 90px;
+            font-size: 16px;
          }
       }
    }
@@ -54,11 +55,11 @@
                   class="mr-0"
                   color="#9fcb66"
                   icon="mdi-check-circle"
-                  size="110"
+                  size="80"
                   style="margin: 0;"
                ></v-icon>
             </div>
-            <div class="text-notif text-h6 font-weight-bold">{{ message }}</div>
+            <div class="text-notif font-weight-bold">{{ message }}</div>
          </div>
       </v-card>
    </v-container>

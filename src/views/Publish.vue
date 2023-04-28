@@ -50,7 +50,7 @@
       style="margin-bottom: 5px;"
    >
       <div
-         class="title text-h4 text-center"
+         class="title text-fs26 text-center"
       >D'où partez-vous ?</div>
       <v-col>
          <v-card

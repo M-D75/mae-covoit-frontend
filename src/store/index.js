@@ -68,33 +68,6 @@ export default createStore({
         "passenger_number": 1
       },
       {
-        "depart": "Tsingoni",
-        "destination": "Mamoudzou",
-        "hour_start": "08:30",
-        "hour_end": "10:20",
-        "price": 7,
-        "name": "Fatima",
-        "passenger_number": 2
-      },
-      {
-        "depart": "Tsingoni",
-        "destination": "Mamoudzou",
-        "hour_start": "08:30",
-        "hour_end": "10:20",
-        "price": 7,
-        "name": "Fatima",
-        "passenger_number": 2
-      },
-      {
-        "depart": "Tsingoni",
-        "destination": "Mamoudzou",
-        "hour_start": "08:30",
-        "hour_end": "10:20",
-        "price": 7,
-        "name": "Fatima",
-        "passenger_number": 2
-      },
-      {
         "depart": "Kani-Kéli",
         "destination": "Ouangani",
         "hour_start": "14:15",

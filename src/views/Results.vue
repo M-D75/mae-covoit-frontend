@@ -1,25 +1,14 @@
 
-<style lang="scss">
+<style lang="scss" model>
 
-   // 
    .label-filter.text-caption {
       width: 85%;
+      max-width: 500px;
    }
 
 </style>
 <!-- scss -->
 <style lang="scss" scoped>
-   .v-container {
-      margin: auto;
-      .bloc-part{
-         margin: 50px auto;
-
-      }
-   }
-   .v-row{
-      margin: 30px auto;
-   }
-
    .container-trajet-member {
       height: 90vh;
       overflow: scroll;
@@ -49,10 +38,12 @@
       <v-overlay 
          v-model="overlay" 
          contained
+         persistent
          style="z-index: 0;"
+         @click="callCloseBottomChild"
       ></v-overlay>
    </div>
-   <BottomMenu ref="BottomMenuRef" :infos="infos"/>
+   <BottomMenu ref="BottomMenuRef" v-on:close="overlay = false" :infos="infos"/>
 </template>
 
 
@@ -64,7 +55,7 @@
 
 
    // Components
-   import Toolbar from '@/components/menus/head_menus/Toolbar.vue'
+   import Toolbar from '@/components/menus/head/Toolbar.vue'
    import TrajetMember from '@/components/home/TrajetMember.vue';
    import BottomMenu from '@/components/menus/BottomMenu.vue';
 
@@ -107,20 +98,19 @@
             const tmp_trajets = this.$store.state.trajets.filter(trajet => trajet.depart == this.depart && trajet.destination == this.destination);
             this.infos = tmp_trajets[index];
             this.callChildMethod();
-            this.overlay = true;
          },
          callChildMethod() {
             if ( this.$refs.BottomMenuRef ) {
-               this.$refs.BottomMenuRef.open();
+               this.overlay = this.$refs.BottomMenuRef.open();
+            }
+         },
+         callCloseBottomChild() {
+            if ( this.$refs.BottomMenuRef ) {
+               this.$refs.BottomMenuRef.close();
             }
          },
       },
       watch: {
-         // overlay (val) {
-         //    val && setTimeout(() => {
-         //       this.overlay = false
-         //    }, 2000)
-         // },
       },
    });
 </script>
