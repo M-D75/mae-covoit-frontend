@@ -58,8 +58,8 @@
    import { defineComponent } from 'vue';
 
    // Components
-   import TrajetSearch from '@/components/home/TrajetSearch.vue';
-   import TrajetMember from '@/components/home/TrajetMember.vue';
+   import TrajetSearch from '@/components/search/TrajetSearch.vue';
+   import TrajetMember from '@/components/search/TrajetMember.vue';
    import BottomNav from '@/components/menus/BottomNav.vue';
 
    export default defineComponent({

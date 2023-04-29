@@ -4,6 +4,15 @@
         height: 100%;
         margin-top: 100px;
         margin-bottom: 50px;
+        div .label {
+            width: 82.7%;
+            text-transform: uppercase;
+            font-size: 12px;
+            font-weight: 450;
+            margin-top: 30px;
+            margin-bottom: 20px;
+            color: #616161;
+        }
     }
 
     .grouP {
@@ -24,11 +33,16 @@
         <PanneauInfo :infos_panneau="infos_panneau" />
 
         <!--  -->
-        <GroupCard class="grouP" :groupeParameters="groupeParameters" />
+        <GroupCard class="grouP" :groupeParameters="groupeParameters" v-if="false"/>
 
-        <!-- Credit Card -->
+        <div>
+            <div class="label mx-auto">tableau de board</div>
+            <!-- Credit Card -->
+            <CreditCard />
 
-        <!--  -->
+            <!-- Graph -->
+            <StatsTrajet />
+        </div>
     </div>
     <BottomNav />
 </template>
@@ -43,8 +57,11 @@
     import ToolbarProfil from '@/components/menus/head/ToolbarProfil.vue';
     import Avatar from '@/components/profile/Avatar.vue';
     import PanneauInfo from '@/components/profile/PanneauInfo.vue';
-    import BottomNav from '@/components/menus/BottomNav.vue';
     import GroupCard from '@/components/menus/setting/GroupCard.vue';
+    import CreditCard from '@/components/profile/CreditCard.vue';
+    import StatsTrajet from '@/components/profile/StatsTrajet.vue';
+    import BottomNav from '@/components/menus/BottomNav.vue';
+    
 
     export default defineComponent({
         name: 'profil-view',
@@ -54,6 +71,8 @@
             Avatar,
             PanneauInfo,
             GroupCard,
+            CreditCard,
+            StatsTrajet,
             BottomNav,
         },
         data() {

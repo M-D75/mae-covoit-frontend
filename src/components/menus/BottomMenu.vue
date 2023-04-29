@@ -80,7 +80,7 @@
   import $ from 'jquery';
 
   // Components
-  import TrajetMember from '@/components/home/TrajetMember.vue';
+  import TrajetMember from '@/components/search/TrajetMember.vue';
   import Notification from '@/components/menus/bottom/Notification.vue';
   import ReservePlace from '@/components/menus/bottom/ReservePlace.vue';
   import Vue3DraggableResizable from 'vue3-draggable-resizable';

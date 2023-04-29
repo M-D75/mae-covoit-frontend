@@ -249,10 +249,7 @@
          let month = date.getMonth() + 1;
          let year = date.getFullYear();
 
-         console.log(date)
-
-         let currentDate = `${day}-${month}-${year}`;
-         console.log(currentDate); // "17-6-2022"
+         this.date = new Date(`${month}/${day}/${year}`);
       },
       methods: {
          switch_commune (){
@@ -310,7 +307,7 @@
             else {
                this.dateString = `${day >= 10 ? day : "0" + day}-${month >= 10 ? month : "0" + month}-${year}`;
             }
-            // console.log(currentDate.getTime() == this.date.getTime(), currentDate.getTime(), this.date.getTime())
+            console.log("d", this.date, currentDate)
             this.accessCalendar();
          },
       },

@@ -63,7 +63,7 @@
 
    // Components
    import Toolbar from '@/components/menus/head/Toolbar.vue'
-   import TrajetMember from '@/components/home/TrajetMember.vue';
+   import TrajetMember from '@/components/search/TrajetMember.vue';
    import BottomMenu from '@/components/menus/BottomMenu.vue';
 
    export default defineComponent({

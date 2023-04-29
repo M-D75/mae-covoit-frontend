@@ -27,7 +27,6 @@
             margin-bottom: 5px;
             font-size: 14px;
             font-weight: bold;
-            // text-transform: uppercase;
             color: #616161;
         }
         .invite-card{
@@ -43,7 +42,7 @@
                 &.btn {
                     display: inline-flex;
                     align-items: center;
-                    justify-content: end;
+                    justify-content: flex-end;
                 }
             }
             div.text {
@@ -214,9 +213,7 @@
         methods: {
         },
         mounted() {
-            // if (this.$router.currentRoute._rawValue.path == "/setting") {
-                
-            // }
+            window.scrollTo(0, 0);
         }
     });
 </script>

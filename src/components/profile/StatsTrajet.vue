@@ -1,0 +1,177 @@
+
+<style lang="scss" model>
+</style>
+
+<style lang="scss" scoped>
+    .stats-trajet-profil {
+        margin-top: 20px;
+        height: 242px;
+        width: 82.7%;
+        padding: 25px;
+        border-radius: 20px;
+        box-shadow: 2px 2px 10px #eee;
+        .row-item {
+            position: relative;
+            width: 100%;
+            height: 50%;
+            &.infos {
+                height: 37%;
+                .label {
+                    text-transform: uppercase;
+                    font-size: 12px;
+                    font-weight: 450;
+                    color: #616161;
+
+                }
+                .trajet {
+                    font-size: 20px;
+                    font-weight: 500;
+                    color: #303030;
+                }
+            }
+            &.bar {
+                .bloc {
+                    display: flex;
+                    justify-content: space-between;
+                    .blc-back-bar {
+                        .back-bar {
+                            margin: auto;
+                            .in-bar {
+                                -webkit-transition: max-height 1s; 
+                                -moz-transition: max-height 1s; 
+                                -ms-transition: max-height 1s; 
+                                -o-transition: max-height 1s; 
+                                transition: max-height 1s;
+                                max-height: 0%;
+                                height: 100%;
+                            }
+                        }
+                        .sub-label{
+                            color: #616161;
+                            margin-top: 5px;
+                            text-align: left;
+                            text-transform: capitalize;
+                            font-size: 12px;
+                            font-weight: 450;
+                        }
+                    }
+                }
+            }
+        }
+    }
+</style>
+
+<template>
+    <v-card
+      class="stats-trajet-profil mx-auto"
+    >
+        <div class="row-item infos">
+            <div class="label">Trajet mensuel</div>
+            <div class="trajet">{{ numberTrajet }} {{numberTrajet > 1 ? 'trajets' : 'trajet'}}</div>
+        </div>
+
+        <div class="row-item bar">
+            <div
+                class="bar bloc"
+            >
+
+                <div 
+                    v-for="(stat, index) in stats"
+                    :key="index"
+                    class="blc-back-bar"
+                >
+                    <div class="back-bar"
+                        style="width: 16px; height: 94px; background-color: #f5f5f5; border-radius: 10px; position: relative;"
+                    >
+                        <div class="in-bar"
+                            :style="`width: 16px; max-height: ${stat.val}%; background-color: #2e8dff; border-radius: 10px; position: absolute; bottom: 0;`"
+                        ></div>
+                    </div>
+                    <div
+                        class="sub-label"
+                    >
+                        {{ stat.month }}
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </v-card>
+</template>
+
+
+<script>
+
+    // Components
+    export default {
+        name: 'stats-trajet-comp',
+        props: {
+            
+        },
+        data() {
+            return {
+                stats: [
+                    {
+                        val: Math.floor(Math.random() * 101),
+                        month: "Jan",
+                    },
+                    {
+                        val: Math.floor(Math.random() * 101),
+                        month: "Fév",
+                    },
+                    {
+                        val: Math.floor(Math.random() * 101),
+                        month: "Mar",
+                    },
+                    {
+                        val: Math.floor(Math.random() * 101),
+                        month: "Avr",
+                    },
+                    {
+                        val: Math.floor(Math.random() * 101),
+                        month: "Mai",
+                    },
+                    {
+                        val: Math.floor(Math.random() * 101),
+                        month: "Jui",
+                    },
+                    {
+                        val: Math.floor(Math.random() * 101),
+                        month: "Juil",
+                    },
+                    {
+                        val: Math.floor(Math.random() * 101),
+                        month: "Aoû",
+                    },
+                    {
+                        val: Math.floor(Math.random() * 101),
+                        month: "Sep",
+                    },
+                    {
+                        val: Math.floor(Math.random() * 101),
+                        month: "Oct",
+                    },
+                    {
+                        val: Math.floor(Math.random() * 101),
+                        month: "Nov",
+                    },
+                    {
+                        val: Math.floor(Math.random() * 101),
+                        month: "Déc",
+                    },
+                ].slice(0, 7),
+
+                numberTrajet: 40,
+            }
+        },
+        mounted() {
+            const vue = this;
+            setInterval(function () {
+                vue.stats.map(d => d.val = Math.floor(Math.random() * 101) )
+                // vue.stats[0].val = Math.floor(Math.random() * 101);
+            }, 3000);
+        },
+        methods: {
+        },
+    };
+</script>
