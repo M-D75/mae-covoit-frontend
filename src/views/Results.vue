@@ -1,6 +1,10 @@
 
 <style lang="scss" model>
 
+   .v-main, .v-application__wrap {
+      overflow: hidden;
+   }
+
    .label-filter.text-caption {
       width: 85%;
       max-width: 500px;
@@ -10,6 +14,7 @@
 <!-- scss -->
 <style lang="scss" scoped>
    .container-trajet-member {
+      margin-top: 100px;
       height: 90vh;
       overflow: scroll;
    }
@@ -23,11 +28,12 @@
    <Toolbar 
       :trajet="{depart: depart, destination: destination}"
       :nombre_trajet="trajets.filter(trajet => trajet.depart == depart && trajet.destination == destination).length"
+      :date="date.replace('-', '/')"
    />
 
    <!--  -->
    <div class="container-trajet-member">
-      <div class="label-filter text-caption text-uppercase mx-auto">Aujourd'hui</div>
+      <div class="label-filter text-caption text-uppercase mx-auto">{{ date.replace("-", "/") }}</div>
       <TrajetMember 
          v-for="(infos, index) in trajets.filter(trajet => trajet.depart == depart && trajet.destination == destination)" :key="index" 
          :infos="infos" 
@@ -50,6 +56,7 @@
 
 <!--  -->
 <script>
+   import $ from 'jquery';
    import { defineComponent } from 'vue';
    import { mapState } from 'vuex';
 
@@ -78,6 +85,10 @@
             type: String,
             default: "Mamoudzou",
          },
+         date: {
+            type: String,
+            default: "Aujourd'hui",
+         },
       },
       data() {
          return {
@@ -92,6 +103,12 @@
                  },
             overlay: false,
          }
+      },
+      mounted(){
+         const sizeMainNoToolbar = parseInt($(".v-main").css("height").replace("px", "")) - 100;
+         console.log("sizeBodu", sizeMainNoToolbar)
+         $(".container-trajet-member").css("height", `${sizeMainNoToolbar}px`);
+         console.log("params", this.$route.params)
       },
       methods: {
          reserve(event, index){

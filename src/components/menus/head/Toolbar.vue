@@ -1,6 +1,9 @@
 
-<style lang="scss">
+<style lang="scss" model>
    // toolbar
+   .v-toolbar {
+      position: fixed;
+   }
    .v-btn i.v-icon.icon-chev-left {
       margin-right: 0;
       // font-size: 2em;
@@ -12,6 +15,7 @@
 
    // toolbar
    .v-toolbar {
+      position: fixed;
       z-index: 1;
       .v-btn i.v-icon {
          margin-right: 0 !important;
@@ -19,8 +23,12 @@
             font-size: 2em;
          }
       }
-      .v-toolbar-title .text-subtitle-2 {
+      .v-toolbar-title {
+         font-size: var(--font-size-h1-toolbar);
          color: gray;
+         .text-subtitle-2 {
+            font-size: var(--font-size-subtitle-toolbar);
+         }
       }
       .label-filter.text-caption {
          width: 85%;
@@ -34,7 +42,7 @@
 
    <!-- toolbar -->
    <v-toolbar
-      class="mb-5"
+      class=""
       color=""
       dark
    >

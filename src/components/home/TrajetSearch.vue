@@ -67,6 +67,21 @@
    .v-list-item i.v-icon {
       color: gray !important;
    }
+
+   .blc.extension-calendar {
+      display: none;
+      position: absolute;
+      right: 0;
+      left: 0;
+      margin: auto;
+      top: 52%;
+      .vc-container {
+         margin: auto !important;
+         left: 0 !important;
+         right: 0 !important;
+         display: block !important;
+      }
+   }
 </style>
 
 <!-- scoped -->
@@ -119,7 +134,7 @@
    <v-card
       class="trajet-search-comp card-trajet mx-auto mt-0"
       max-width="500"
-    >
+   >
       <v-list>
          <div class="part-list">
             <v-list-item
@@ -154,13 +169,14 @@
                <v-list-item
                   class="calendar"
                   prepend-icon="mdi-calendar-month-outline"
-                  title="Aujourd'hui"
+                  :title="dateString"
+                  @click="accessCalendar()"
                ></v-list-item>
 
                <v-list-item
                   class="nb-person"
                   prepend-icon="mdi-account-plus"
-                  :title="number_trajet"
+                  :title="numberTrajet"
                >
                   <div class="cont-btn-switch">
                      <v-btn 
@@ -184,12 +200,17 @@
             size="x-large"
             variant="outlined"
             block
-            @click="testGoResult"
+            @click="testGoResult()"
          >
             Rechercher
          </v-btn>
       </v-list>
-  </v-card>
+   </v-card>
+
+   <div class="blc extension-calendar">
+      <VCalendar/>
+      <VDatePicker v-model="date" :min-date="calendar.minDate" />
+   </div>
 </template>
 
 
@@ -197,24 +218,41 @@
    import $ from 'jquery'
    import { mapState } from 'vuex';
 
+
    // Components
+   import VCalendar from 'v-calendar';
+
    export default {
       name: 'trajet-search-comp',
       computed: {
          ...mapState(['communes']),
       },
+      components: {
+         VCalendar,
+      },
       data() {
          return {
             depart: null,
             destination: null,
-            number_trajet: 1,
+            numberTrajet: 0,
+            date: null,
+            dateString: "Aujourd'hui",
+            calendar: {
+               minDate: new Date(),
+            }
          }
       },
       mounted (){
-         // const vue = this;
-         $(document).ready(function() {
-            
-         });
+         const date = new Date();
+
+         let day = date.getDate();
+         let month = date.getMonth() + 1;
+         let year = date.getFullYear();
+
+         console.log(date)
+
+         let currentDate = `${day}-${month}-${year}`;
+         console.log(currentDate); // "17-6-2022"
       },
       methods: {
          switch_commune (){
@@ -223,9 +261,58 @@
             this.destination = tmp;
          },
          testGoResult(){
-            // this.$router.replace("/results");
-            window.location.assign("/results")
+            
+            if ( this.numberTrajet > 0 ) {
+               this.$router.push(`/results/${this.depart}/${this.destination}/${this.dateString}`);
+            }
          },
-      }
+         checkTrajet(){
+            this.numberTrajet = this.$store.state.trajets.filter(trajet => trajet.depart == this.depart && trajet.destination == this.destination).length;
+            if (this.depart && this.destination) {
+               this.$emit("trajet-selected");
+            }
+         },
+         accessCalendar() {
+            if ( $(".blc.extension-calendar").css("display") == "none" ) {
+               $(".blc.extension-calendar").css("display", "inherit");
+            }
+            else {
+               $(".blc.extension-calendar").css("display", "none");
+            }
+         },
+      },
+      watch: {
+         depart(){
+            this.checkTrajet();
+         },
+         destination(){
+            this.checkTrajet();
+         },
+         date(){
+            const tmpCurrentDate = new Date();
+            var day   = tmpCurrentDate.getDate();
+            var month = tmpCurrentDate.getMonth() + 1;
+            var year  = tmpCurrentDate.getFullYear();
+
+            const currentDate = new Date(`${month}/${day}/${year}`);
+            const tomorrowsDate = new Date(`${month}/${day+1}/${year}`);
+
+            day   = this.date.getDate();
+            month = this.date.getMonth() + 1;
+            year  = this.date.getFullYear();
+
+            if (currentDate.getTime() == this.date.getTime()) {
+               this.dateString = "Aujourd'hui";
+            }
+            else if (tomorrowsDate.getTime() == this.date.getTime()) {
+               this.dateString = "Demain";
+            }
+            else {
+               this.dateString = `${day >= 10 ? day : "0" + day}-${month >= 10 ? month : "0" + month}-${year}`;
+            }
+            // console.log(currentDate.getTime() == this.date.getTime(), currentDate.getTime(), this.date.getTime())
+            this.accessCalendar();
+         },
+      },
    };
 </script>

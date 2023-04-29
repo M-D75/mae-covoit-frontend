@@ -27,6 +27,7 @@
             <div class="label text-subtitle">{{ group.label }}</div>
             <CardButton 
                 v-for="(param, indexP) in group.parameters"
+                :key="indexP"
                 :prependIconColor="param.prependIconColor" 
                 :prependIcon="param.prependIcon"
                 :text="param.text"
@@ -120,7 +121,6 @@
         $(document).ready(function () {
         });
     },
-    components: { CardButton }
 };
 </script>
 

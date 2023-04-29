@@ -15,6 +15,7 @@
       margin: 30px auto;
    }
    .title {
+      font-size: var(--font-size-h1);
       font-weight: bold;
       width: 100%;
       padding: 0 50px 0px 50px;
@@ -50,7 +51,7 @@
       style="margin-bottom: 5px;"
    >
       <div
-         class="title text-fs26 text-center"
+         class="title text-center"
       >D'où partez-vous ?</div>
       <v-col>
          <v-card

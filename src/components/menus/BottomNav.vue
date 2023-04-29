@@ -104,7 +104,9 @@
               this.$router.push("/publish");
               break;            
             default:
-            this.$router.push("/profil");
+              if ( ! this.$router.currentRoute._rawValue.path.includes("/profil") ) {
+                this.$router.push("/profil");
+              }
               break;
           }
         }

@@ -2,7 +2,7 @@ import { createStore } from 'vuex'
 
 export default createStore({
   state: {
-    communes: ['Tsingoni', 'Mamoudzou', 'Chiconi', 'Sada', 'Texas', 'Wyoming'],
+    communes: ["Acoua", "Bandraboua", "Bandrélé", "Bouéni", "Chiconi", "Chirongui", "Dembeni", "Dzaoudzi", "Kani-Kéli", "Koungou", "Mamoudzou", "Mtsamboro", "Ouangani", "Pamandzi", "Sada", "Tsingoni"],
     trajets: [
       {
         "depart": "Tsingoni",

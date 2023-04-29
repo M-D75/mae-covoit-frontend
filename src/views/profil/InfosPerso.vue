@@ -15,13 +15,13 @@
 <!--  -->
 <template>
 
-    <ToolbarProfil />
+    <ToolbarProfil :title="'Information personnelles'"/>
     <div class="main">
         <!-- Avatar -->
-        <Avatar :modeEdit="false"/>
+        <Avatar />
 
         <!-- ? -->
-        <PanneauInfo :infos_panneau="infos_panneau" />
+        <PanneauInfo :infos_panneau="infos_panneau"/>
 
         <!--  -->
         <GroupCard class="grouP" :groupeParameters="groupeParameters" />
@@ -43,11 +43,11 @@
     import ToolbarProfil from '@/components/menus/head/ToolbarProfil.vue';
     import Avatar from '@/components/profile/Avatar.vue';
     import PanneauInfo from '@/components/profile/PanneauInfo.vue';
-    import BottomNav from '@/components/menus/BottomNav.vue';
     import GroupCard from '@/components/menus/setting/GroupCard.vue';
+    import BottomNav from '@/components/menus/BottomNav.vue';
 
     export default defineComponent({
-        name: 'profil-view',
+        name: 'infos-profil-view',
 
         components: {
             ToolbarProfil,
@@ -60,19 +60,19 @@
             return {
                 infos_panneau: [
                     {
-                        btn:true,
-                        icon:"mdi-history",
-                        text:"historique",
+                        btn:false,
+                        label: "expert",
+                        text:"niveau",
                     },
                     {
                         btn:false,
-                        icon:"mdi-car",
-                        text:"chauffeur",
+                        label:"4/5",
+                        text:"avis",
                     },
                     {
-                        btn:true,
-                        icon:"mdi-lightbulb-on",
-                        text:"mode",
+                        btn:false,
+                        label:"bonne",
+                        text:"conduite",
                     },
                 ],
                 groupeParameters: [

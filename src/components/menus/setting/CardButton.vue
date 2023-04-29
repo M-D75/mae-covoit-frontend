@@ -2,6 +2,7 @@
     .card-btn {
         .v-list-item__prepend {
             .v-icon {
+                font-size: 16px;
                 margin-right: 10px !important;
                 color: v-bind(prependIconColor) !important;
             }
@@ -17,10 +18,10 @@
     .v-card {
         border-radius: 15px;
         // width: 85%;
-        margin: 10px auto 10px auto;
+        margin: 15px auto 15px auto;
         &.card-btn {
             box-shadow: 2px 2px 10px #eee;
-            height: 60px;
+            height: 56px;
             .v-list-item {
                 height: 100%;
                 i.v-icon {
@@ -29,12 +30,16 @@
                 }
 
                 .v-chip {
+                    font-size: 20px;
+                    font-weight: 450;
                     display: grid;
                     position: absolute;
-                    right: 5px;
-                    top: 7px;
+                    right: 13px;
+                    top: 0;
+                    bottom: 0;
                     min-width: 50px;
                     text-align: center;
+                    margin: auto 0 !important;
                     .v-icon {
                         height: 100%;
                         color: #2e8dff !important;
@@ -60,7 +65,7 @@
         >
             <v-chip
                 v-if="chip"
-                class="ma-2 prix text-center"
+                class="ma-2 info-plus text-center"
                 color="blue"
                 label
             >

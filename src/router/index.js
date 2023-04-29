@@ -2,6 +2,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Home from '@/views/Home.vue'
 import LoginSign from '@/views/LoginSign.vue'
 import Profil from '@/views/Profil.vue'
+import InfosPerso from '@/views/profil/InfosPerso.vue'
+import Setting from '@/views/profil/Setting.vue'
 import HomeSearch from '@/views/HomeSearch.vue'
 import Results from '@/views/Results.vue'
 import Publish from '@/views/Publish.vue'
@@ -21,12 +23,21 @@ const routes = [
     component: Profil,
   },
   {
+    path: '/profil/perso',
+    component: InfosPerso,
+  },
+  {
+    path: '/setting',
+    component: Setting,
+  },
+  {
     path: '/search',
     component: HomeSearch,
   },
   {
-    path: '/results',
+    path: '/results/:depart/:destination/:date',
     component: Results,
+    props: true,
   },
   {
     path: '/publish',

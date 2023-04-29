@@ -108,7 +108,7 @@
 
       <v-btn
          v-on:click="$emit('test-notif-success')"
-         class="mr-4 text-none "
+         class="mr-4 text-none"
          prepend-icon="mdi-credit-card"
          rounded="xl" 
          size="x-large"
@@ -126,7 +126,7 @@
 
    // Components
    export default {
-      name: 'reserve-place-menu',
+      name: 'reserve-place-menu-comp',
       data() {
          return {
             model_car: "VW-GOLF 7",

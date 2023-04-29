@@ -9,10 +9,15 @@
    .v-toolbar {
       .v-toolbar-title__placeholder {
          font-size: 16px !important;
+         font-weight: 450;
+      }
+      i.v-icon.mdi-tune {
+         color: v-bind(colorParams) !important;
       }
    }
 
 </style>
+
 <!-- scss -->
 <style lang="scss" scoped>
 
@@ -23,7 +28,8 @@
          margin-right: 0 !important;
          color: gray;
       }
-      .v-toolbar-title .text-subtitle-2 {
+      .v-toolbar-title {
+         font-size: var(--font-size-h1-toolbar);
          color: gray;
       }
       
@@ -33,7 +39,7 @@
    }
 
 </style>
-   
+
 <!--  -->
 <template>
 
@@ -42,14 +48,22 @@
       class="mb-5"
       color=""
       dark
+      permanent
    >
       <!-- <v-app-bar-nav-icon></v-app-bar-nav-icon> -->
       <v-btn 
          icon
-         @click="previous()"
       >
+         <!-- with noti -->
+         <v-badge v-if="numberNotification > 0" :content="numberNotification" color="error">
+            <v-icon
+               class="mr-0"
+            >mdi-bell</v-icon>
+         </v-badge>
+         <!-- without notif -->
          <v-icon
-            class="icon-chev-left mr-0"
+            v-else
+            class="mr-0"
          >mdi-bell</v-icon>
       </v-btn>
       <v-toolbar-title
@@ -58,7 +72,10 @@
          {{title}}
       </v-toolbar-title>
 
-      <v-btn icon>
+      <v-btn 
+         icon
+         @click="accessSetting()"
+      >
         <v-icon>mdi-tune</v-icon>
       </v-btn>
    </v-toolbar>
@@ -85,11 +102,23 @@
             default: "Aujourd'hui",
          },
       },
+      data() {
+         return {
+            numberNotification: 3,
+            colorParams: "gray",
+         }
+      },
       methods: {
-         previous(){
-            this.$router.push("/search");
-            // this.$router.back();
+         accessSetting() {
+            this.$router.currentRoute._rawValue.path == "/setting" ? this.$router.back() : this.$router.push("/setting");
          },
+      },
+      mounted() {
+         // console.log("path", this.$router.currentRoute._rawValue.path)
+         // console.log(this.$router);
+         if (this.$router.currentRoute._rawValue.path == "/setting") {
+            this.colorParams = "var(--blue-color)";
+         }
       }
    });
 </script>

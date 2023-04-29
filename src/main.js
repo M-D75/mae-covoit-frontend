@@ -6,6 +6,9 @@ import { loadFonts } from './plugins/webfontloader'
 import "vuetify/styles";
 import '@mdi/font/css/materialdesignicons.css'
 
+import VCalendar from 'v-calendar';
+import 'v-calendar/style.css';
+
 // Vuetify
 import 'vuetify/styles'
 import { createVuetify } from 'vuetify'
@@ -21,6 +24,7 @@ const vuetify = createVuetify({
 loadFonts()
 
 createApp(App)
+  .use(VCalendar)
   .use(router)
   .use(store)
   .use(vuetify)
