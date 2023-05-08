@@ -97,7 +97,7 @@
                      <v-col>
                         <v-btn
                            class="mr-4 text-none"
-                           @click="submit"
+                           @click="authService( mode_login ? 'emailSignIn' : 'emailSignUp')"
                            rounded="xl" 
                            size="x-large"
                            variant="outlined"
@@ -140,6 +140,7 @@
                      :color='icon.color'
                      rounded="xl"
                      size="large"
+                     @click="authService(icon.fn)"
                   >
                      <v-icon dark>
                        {{ icon.icn }}
@@ -170,8 +171,8 @@
 
 <!--  -->
 <script>
-   // @ is an alias to /src
    import $ from 'jquery'
+   import { getAuth, signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 
    export default {
       data() {
@@ -188,17 +189,97 @@
                emailMatch: () => (`The email and password you entered don't match`),
             },
             icons: [
-                  {icn: 'mdi-apple', color:"black"},
-                  {icn: 'mdi-google', color:"red"},
-                  {icn: 'mdi-facebook', color:"indigo"},
+                  {icn: 'mdi-apple', color:"black", fn:""},
+                  {icn: 'mdi-google', color:"red", fn:"google"},
+                  {icn: 'mdi-facebook', color:"indigo", fn:""},
                ],
+            provider: null,
          }
       },
       methods: {
+         authService(service){
+            switch (service) {
+               case "google":
+                  this.authGoogle();
+                  break;
+            
+               case "emailSignUp":
+                  this.signUp();
+                  break;
+               case "emailSignIn":
+                  this.signIn();
+                  break;
+               default:
+                  console.log("other")
+                  break;
+            }
+         },
+         authGoogle(){
 
+            const provider = new GoogleAuthProvider();
+            const auth = getAuth();
+
+            signInWithPopup(auth, provider)
+            .then((result) => {
+               // This gives you a Google Access Token. You can use it to access the Google API.
+               const credential = GoogleAuthProvider.credentialFromResult(result);
+               const token = credential.accessToken;
+               // The signed-in user info.
+               const user = result.user;
+               console.log("token", token)
+               console.log("user", user, user.email, user.accessToken)
+               console.log("credential", credential)
+               // IdP data available using getAdditionalUserInfo(result)
+               // ...
+               this.$router.push("/search")
+            }).catch((error) => {
+               // Handle Errors here.
+               const errorCode = error.code;
+               const errorMessage = error.message;
+               // The email of the user's account used.
+               const email = error.customData.email;
+               // The AuthCredential type that was used.
+               const credential = GoogleAuthProvider.credentialFromError(error);
+               console.log(errorCode, errorMessage, email, credential)
+               // ...
+            });
+         },
+         signUp(){
+            const auth = getAuth();
+            createUserWithEmailAndPassword(auth, this.email, this.password)
+            .then((userCredential) => {
+               // Signed in 
+               const user = userCredential.user;
+               console.log("user: ", user)
+               // ...
+            })
+            .catch((error) => {
+               const errorCode = error.code;
+               const errorMessage = error.message;
+               this.emailErrors = errorMessage;
+               console.log(errorCode, errorMessage)
+               // ..
+            });
+         },
+         signIn(){
+            const auth = getAuth();
+            signInWithEmailAndPassword(auth, this.email, this.password)
+            .then((userCredential) => {
+               // Signed in 
+               const user = userCredential.user;
+               console.log("userC:", user)
+               this.$router.push("/search")
+               // ...
+            })
+            .catch((error) => {
+               const errorCode = error.code;
+               const errorMessage = error.message;
+               console.log(errorCode, errorMessage);
+            });
+         },
       },
       mounted() {
-         console.log("mounted")
+         //this.provider = new GoogleAuthProvider();
          const vue = this;
          $(document).ready(function() {
             $("a").on("click", function(){

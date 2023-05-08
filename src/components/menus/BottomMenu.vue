@@ -2,6 +2,7 @@
 <style lang="scss" scoped>
   .v-container {
     position: absolute;
+    padding: 16px 0;
     bottom: 0;
     border-radius: 30px 30px 0 0;
     background-color: white;
@@ -159,9 +160,12 @@
             if ( pos.y >= this.sizeScreen-this.marge_bar ) {
               this.disabledY = false;
               this.y = this.sizeScreen-this.marge_bar;
+              
             }
+            
           }
 
+          console.log("moveY:", pos.y);
           this.move = false;
         },
         open(){
@@ -169,7 +173,7 @@
             if ( this.y >= this.sizeScreen-this.marge_bar ) {
               // open
               this.disabledY = false;
-              this.y = this.sizeScreen-(this.subContHeigth+20);
+              this.y = this.sizeScreen-(this.subContHeigth+50);
               console.log("y", this.y)
               $(".bottom-menu").animate({"top": `${this.y-5}px`}, "fast");
               this.open_b = true;

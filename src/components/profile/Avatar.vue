@@ -5,6 +5,7 @@
     .avatar-comp {
         margin-top: 30px;
         .v-avatar {
+            cursor: pointer;
             .v-icon {
                 // display: none;
                 background-color: transparent;

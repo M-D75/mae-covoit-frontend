@@ -54,15 +54,8 @@
       <v-btn 
          icon
       >
-         <!-- with noti -->
-         <v-badge v-if="numberNotification > 0" :content="numberNotification" color="error">
-            <v-icon
-               class="mr-0"
-            >mdi-bell</v-icon>
-         </v-badge>
          <!-- without notif -->
          <v-icon
-            v-else
             class="mr-0"
          >mdi-bell</v-icon>
       </v-btn>
@@ -104,7 +97,6 @@
       },
       data() {
          return {
-            numberNotification: 3,
             colorParams: "gray",
          }
       },
@@ -114,8 +106,6 @@
          },
       },
       mounted() {
-         // console.log("path", this.$router.currentRoute._rawValue.path)
-         // console.log(this.$router);
          if (this.$router.currentRoute._rawValue.path == "/setting") {
             this.colorParams = "var(--blue-color)";
          }

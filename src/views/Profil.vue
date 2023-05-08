@@ -27,7 +27,11 @@
     <ToolbarProfil />
     <div class="main">
         <!-- Avatar -->
-        <Avatar :modeEdit="false"/>
+        <Avatar 
+            :modeEdit="false" 
+            :name="'Dr. Strange'"
+            @click="goToInfoPerso()"
+            />
 
         <!-- ? -->
         <PanneauInfo :infos_panneau="infos_panneau" />
@@ -127,7 +131,7 @@
                             {
                                 prependIconColor: "var(--blue-color)",
                                 prependIcon:"mdi-forum",
-                                text:"j'aime bien discuter",
+                                text:"J'aime bien discuter",
                                 chip:false,
                                 chipIcon: null,
                                 chipText: "",
@@ -180,6 +184,9 @@
                     default:
                         console.log(`Sorry, we are out of ${name}.`);
                 }
+            },
+            goToInfoPerso(){
+                this.$router.push("/profil/perso")
             },
             test2(){
                 console.log("text2")

@@ -7,8 +7,8 @@
         height: 207px;
         width: 82.7%;
         padding: 30px;
-        border-radius: 20px;
-        box-shadow: 2px 2px 10px #eee;
+        border-radius: 12px;
+        box-shadow: var(--box-shadow-card);
         .row-item {
             position: relative;
             width: 100%;

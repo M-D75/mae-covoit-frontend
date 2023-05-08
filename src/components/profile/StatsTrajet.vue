@@ -4,12 +4,13 @@
 
 <style lang="scss" scoped>
     .stats-trajet-profil {
+        background-color: var(--white-bg-color);
         margin-top: 20px;
         height: 242px;
         width: 82.7%;
         padding: 25px;
-        border-radius: 20px;
-        box-shadow: 2px 2px 10px #eee;
+        border-radius: 24px;
+        box-shadow: var(--box-shadow-card);
         .row-item {
             position: relative;
             width: 100%;

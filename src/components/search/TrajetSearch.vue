@@ -1,144 +1,136 @@
-
 <!-- model -->
 <style lang="scss" model>
-   .blc-text.trajet-search-comp {
-      .v-input .v-input__prepend {
-         margin-right: -17px !important;
-         text-align: center;
+   .v-card.trajet-search-comp {
+      z-index: 20 !important;
+      overflow: visible;
+      border-radius: 20px !important;
+      i.v-icon {
+         font-size: 1.2em;
+         margin-right: 10px !important;
       }
-      // Surcharge TrajetMember navigation incon
-      .mdi-navigation.mdi.v-icon.notranslate.v-theme--light.v-icon--size-default{
-         top: 4px;
-      }
+      .v-list {
+         overflow: visible;
+         border-radius: 20px !important;
+         .part-list {
+            padding: 10px 0 10px 16px !important;
+            .v-list-item i.v-icon {
+               color: gray !important;
+            }
+            .container-text.trajet-search-comp {
+               .v-input .v-input__prepend {
+                  margin-right: -17px !important;
+                  text-align: center;
+               }
+               // Surcharge TrajetMember navigation incon
+               .mdi-navigation.mdi.v-icon.notranslate.v-theme--light.v-icon--size-default{
+                  top: 4px;
+               }
 
-      .v-autocomplete {
-         .v-field__append-inner {
-            i.v-icon.mdi-menu-down.mdi.v-icon.notranslate.v-theme--light.v-icon--size-default{
-               display: none;
+               .v-autocomplete {
+                  .v-field__append-inner {
+                     i.v-icon.mdi-menu-down.mdi.v-icon.notranslate.v-theme--light.v-icon--size-default{
+                        display: none;
+                     }
+                  }
+               }
+            }
+
+            .container-calendar {
+               display: flex;
+               height: 58px;
+               .calendar .v-list-item-title{
+                  font-weight: bold;
+               }
+
+               .nb-person.v-list-item i.v-icon {
+                  margin-right: 20px;
+                  color: gray !important;
+               }
+               .mdi-account-plus.mdi.v-icon.notranslate.v-theme--light.v-icon--size-default {
+                  margin-right: 15px;
+                  font-size: 1.4em;
+               }
+
+               .cont-btn-switch{
+                  position: absolute;
+                  width: 100%;
+                  top: -78px;
+                  left: 9px;
+                  // swap
+                  .v-btn {
+                     position: relative;
+                     left: 22px;
+                     .mdi-swap-horizontal.mdi.v-icon.notranslate.v-theme--light.v-icon--size-default{
+                        position: absolute;
+                        right: 0px;
+                        transform: rotate(90deg);
+                        font-size: 1.8em;
+                        color: gray;
+                     }
+                  }
+               }
             }
          }
-      }
-   }
-
-   .blc-calendar {
-      display: flex;
-      height: 58px;
-   }
-
-   .mdi-account-plus.mdi.v-icon.notranslate.v-theme--light.v-icon--size-default {
-      margin-right: 15px;
-      font-size: 1.4em;
-   }
-   .part-list {
-      padding: 10px;
-   }
-   .card-trajet i.v-icon {
-      font-size: 1.2em;
-      margin-right: 10px !important;
-   }
-   .calendar .v-list-item-title{
-      font-weight: bold;
-   }
-
-
-   .cont-btn-switch{
-      position: absolute;
-      width: 100%;
-      top: -78px;
-      left: 9px;
-      // swap
-      .v-btn {
-         position: relative;
-         left: 22px;
-         .mdi-swap-horizontal.mdi.v-icon.notranslate.v-theme--light.v-icon--size-default{
-            position: absolute;
-            right: 0px;
-            transform: rotate(90deg);
-            font-size: 1.8em;
-            color: gray;
-         }
-      }
-   }
-
-   .nb-person.v-list-item i.v-icon {
-      margin-right: 20px;
-      color: gray !important;
-   }
-   .v-list-item i.v-icon {
-      color: gray !important;
-   }
-
-   .blc.extension-calendar {
-      display: none;
-      position: absolute;
-      right: 0;
-      left: 0;
-      margin: auto;
-      top: 52%;
-      .vc-container {
-         margin: auto !important;
-         left: 0 !important;
-         right: 0 !important;
-         display: block !important;
       }
    }
 </style>
 
 <!-- scoped -->
 <style lang="scss" scoped>
-   .v-card {
+   .v-card.trajet-search-comp {
       margin: 35px;
       margin-top: 10px;
       width: 89.6%;
       height: 256px;
-      border-radius: 20px;
-      box-shadow: 2px 2px 10px #eee;
+      box-shadow: var(--box-shadow-card);
+      .v-list-item {
+         &.calendar {
+            width: 70%;
+            .v-list-item-title{
+               font-weight: bold;
+            }
+            i.v-icon {
+               margin-right: 10px;
+            }
+         }
+         &.nb-person {
+            .v-list-item__prepend {
+               .v-list-item i.v-icon {
+                  margin-right: 20px;
+                  color: gray !important;
+               }
+            }
+         }
+         &.container-text .v-autocomplete {
+            width: 85%;
+            height: 50px;
+            .v-field__append-inner {
+               i.v-icon.mdi-menu-down.mdi.v-icon.notranslate.v-theme--light.v-icon--size-default{
+                  display: none;
+               }
+            }
+         }
+      }
+      
       .v-btn.search-btn {
          position: relative;
-         bottom: 5px;
-         margin-top: 16px;
+         bottom: -10px;
       }
    }
    
-   .v-list-item {
-      &.calendar {
-         width: 70%;
-         .v-list-item-title{
-            font-weight: bold;
-         }
-         i.v-icon {
-            margin-right: 10px;
-         }
-      }
-      &.nb-person {
-         .v-list-item__prepend {
-            .v-list-item i.v-icon {
-               margin-right: 20px;
-               color: gray !important;
-            }
-         }
-      }
-      &.blc-text .v-autocomplete {
-         width: 85%;
-         height: 50px;
-         .v-field__append-inner {
-            i.v-icon.mdi-menu-down.mdi.v-icon.notranslate.v-theme--light.v-icon--size-default{
-               display: none;
-            }
-         }
-      }
-   }
+   
 </style>
 
 <template>
    <v-card
       class="trajet-search-comp card-trajet mx-auto mt-0"
       max-width="500"
+      style="border-radius: 20px !important;"
    >
       <v-list>
          <div class="part-list">
             <v-list-item
-               class="blc-text trajet-search-comp"
+               class="container-text trajet-search-comp"
             >
                <v-autocomplete
                   v-model="depart"
@@ -152,7 +144,7 @@
             </v-list-item>
             
             <v-list-item
-               class="blc-text trajet-search-comp"
+               class="container-text trajet-search-comp"
             >
                <v-autocomplete
                   v-model="destination"
@@ -165,13 +157,19 @@
                ></v-autocomplete>
             </v-list-item>
 
-            <div class="blc-calendar">
-               <v-list-item
-                  class="calendar"
-                  prepend-icon="mdi-calendar-month-outline"
-                  :title="dateString"
-                  @click="accessCalendar()"
-               ></v-list-item>
+            
+            <div class="container-calendar">
+               <VCalendar />
+               <VDatePicker v-model="date" :min-date="new Date()" show-weeknumbers="left-outside">
+                  <template #default="{ togglePopover }">
+                     <v-list-item
+                        class="calendar"
+                        prepend-icon="mdi-calendar-month-outline"
+                        :title="dateString"
+                        @click="togglePopover"
+                     ></v-list-item>
+                  </template>
+               </VDatePicker>
 
                <v-list-item
                   class="nb-person"
@@ -185,7 +183,7 @@
                      >
                         <v-icon
                            class=""
-                           @click="switch_commune()"
+                           @click="switchCommune()"
                            variant="text"
                         >mdi-swap-horizontal</v-icon>
                      </v-btn>
@@ -205,17 +203,12 @@
             Rechercher
          </v-btn>
       </v-list>
-   </v-card>
-
-   <div class="blc extension-calendar">
-      <VCalendar/>
-      <VDatePicker v-model="date" :min-date="calendar.minDate" />
-   </div>
+   </v-card>   
 </template>
 
 
 <script>
-   import $ from 'jquery'
+   // import $ from 'jquery'
    import { mapState } from 'vuex';
 
 
@@ -237,9 +230,6 @@
             numberTrajet: 0,
             date: null,
             dateString: "Aujourd'hui",
-            calendar: {
-               minDate: new Date(),
-            }
          }
       },
       mounted (){
@@ -252,7 +242,7 @@
          this.date = new Date(`${month}/${day}/${year}`);
       },
       methods: {
-         switch_commune (){
+         switchCommune (){
             var tmp = this.depart;
             this.depart = this.destination;
             this.destination = tmp;
@@ -267,14 +257,6 @@
             this.numberTrajet = this.$store.state.trajets.filter(trajet => trajet.depart == this.depart && trajet.destination == this.destination).length;
             if (this.depart && this.destination) {
                this.$emit("trajet-selected");
-            }
-         },
-         accessCalendar() {
-            if ( $(".blc.extension-calendar").css("display") == "none" ) {
-               $(".blc.extension-calendar").css("display", "inherit");
-            }
-            else {
-               $(".blc.extension-calendar").css("display", "none");
             }
          },
       },
@@ -307,8 +289,6 @@
             else {
                this.dateString = `${day >= 10 ? day : "0" + day}-${month >= 10 ? month : "0" + month}-${year}`;
             }
-            console.log("d", this.date, currentDate)
-            this.accessCalendar();
          },
       },
    };

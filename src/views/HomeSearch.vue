@@ -1,34 +1,30 @@
+
+<style lang="scss" model>
+   // calendar 
+   .trajet-search {
+      z-index: 100 !important;
+   }
+</style>
+
 <!-- scss -->
 <style lang="scss" scoped>
-   .v-container {
-      margin: auto;
-      .bloc-part{
-         margin: 50px auto;
-
-      }
-      .v-row {
-         margin-top: 40px;
-         margin-bottom: 5px;
-      }
-   }
-   .v-row{
+   .v-row.home-search-view{
       margin: 30px auto;
+      .title {
+         font-size: var(--font-size-h1);
+         font-weight: bold;
+         width: 100%;
+         padding: 0 39px 0px 39px;
+         margin: auto;
+      }
    }
-   .title {
-      font-size: var(--font-size-h1);
-      font-weight: bold;
-      width: 100%;
-      padding: 0 39px 0px 39px;
-      margin: auto;
-   }
-
 </style>
    
 <!--  -->
 <template>
 
    <v-row 
-      class="mt-40 mb-0"
+      class="home-search-view mt-40 mb-0"
       style="margin-top: 40px;"
    >
       <!-- src="https://static.vecteezy.com/system/resources/previews/011/539/112/non_2x/car-cartoon-porsche-3d-render-free-png.png" -->
@@ -46,8 +42,11 @@
       </v-col>
    </v-row>
 
-   <TrajetSearch ref="TrajetSearchRef" v-on:trajet-selected="getTrajet()" />
-   <TrajetMember v-if="infos" :infos="infos"/>
+   <TrajetSearch class="trajet-search" ref="TrajetSearchRef" v-on:trajet-selected="getTrajet()" />
+   <div class="pile-trajet">
+      <TrajetMember v-if="infos" :infos="infos"/>
+      <!-- <TrajetMember v-if="infos" :infos="infos"/> -->
+   </div>
    <BottomNav />
 </template>
 

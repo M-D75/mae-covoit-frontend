@@ -62,10 +62,11 @@
 
 <style lang="scss" scoped>
    .v-card {
-      margin: 10px;
+      background-color: var(--white-bg-color);
+      margin: 20px;
       width: 87.2%;
-      border-radius: 20px;
-      box-shadow: 2px 2px 10px #eee;
+      border-radius: 24px;
+      box-shadow: var(--box-shadow-card);
       .hour {
          &.v-list-item {
             width: 73px;
@@ -85,7 +86,7 @@
       width: 100%;
       height: 100%;
       background: #eee;
-      z-index: 999;
+      z-index: 9;
       opacity: 0.7;
    }
    .empty {

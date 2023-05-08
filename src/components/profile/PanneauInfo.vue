@@ -18,11 +18,11 @@
 
     /* ? */
     .inf-comp {
-        border-radius: 20px;
+        border-radius: 24px;
+        border: solid white 10px;
         margin-top: 30px;
         margin-bottom: 15px;
-        background-color: white;
-        padding: 10px;
+        background-color: var(--white-bg-color);
         width: 82.7%;
         height: 94px;
         .blc-btn {
