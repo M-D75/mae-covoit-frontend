@@ -1,61 +1,79 @@
 
 <style lang="scss" model>
-   .card-trajet-member {
-      .mdi-navigation.mdi.v-icon.notranslate.v-theme--light.v-icon--size-default{
-         color: gray;
-         opacity: inherit !important;
-         z-index: 99;
-         transform: rotate(180deg);
-      }
-      .part-list {
-         padding: 0 0 10px 16px;
-      }
-      .card-trajet-member i.v-icon {
-         font-size: 1.2em;
-         margin-right: 10px !important;
-      }
-      .line {
-         background-color: gray;
-         width: 2px;
-         height: 38px;
-         position: absolute;
-         left: 26.5px;
-         top: 21px;
-         z-index: 0;
-         opacity: var(--v-medium-emphasis-opacity);
-      }
-      .flex {
-         display: flex;
-         &.comune {
-            height: 35px;
-         }
-         &.avatar {
-            margin-top: 12px;
-         }
-      }
-      .v-chip {
-         min-width: 56px;
-         min-height: 32px;
-         border-radius: 8px;
-         text-align: center;
-         display: grid;
-         
-         &.prix {
+
+    .card-trajet-member-btn {
+        .mdi-navigation.mdi.v-icon.notranslate.v-theme--light.v-icon--size-default{
+            color: #eee !important;
+            opacity: inherit !important;
+            z-index: 99;
+            transform: rotate(180deg);
+        }
+        .part-list {
+            padding: 0 0 10px 16px;
+        }
+        .card-trajet-member i.v-icon {
+            font-size: 1.2em;
+            margin-right: 10px !important;
+        }
+        .line {
+            background-color: white !important;
+            width: 2px;
+            height: 38px;
             position: absolute;
-            right: 8px;
-            top: 8px;
-            font-weight: bold;
-            font-size: 1.1em;
-         }
-         &.rapport {
-            position: absolute;
-            right: 8px;
-            bottom: 8px;
-            font-weight: bold;
-            font-size: 1.1em;
-         }
-      }
-   }
+            left: 25px;
+            top: 21px;
+            z-index: 0;
+            opacity: var(--v-medium-emphasis-opacity);
+        }
+        .flex {
+            display: flex;
+            &.comune {
+                height: 35px;
+            }
+            &.avatar {
+                margin-top: 12px;
+            }
+        }
+        .v-chip {
+            min-width: 56px;
+            min-height: 32px;
+            border-radius: 8px;
+            text-align: center;
+            display: grid;
+            background-color: #eee !important;
+            color: #eee !important;
+            &.prix {
+                background-color: #eee !important;
+                color: #eee !important;
+                position: absolute;
+                right: 8px;
+                top: 8px;
+                font-weight: bold;
+                font-size: 1.1em;
+            }
+            &.rapport {
+                background-color: #eee !important;
+                color: #eee !important;
+                position: absolute;
+                right: 8px;
+                bottom: 8px;
+                font-weight: bold;
+                font-size: 1.1em;
+            }
+        }
+
+        &.v-card {
+            .v-list{
+                .v-list-item {
+                    .v-list-item__content {
+                        background-color: #eee !important;
+                        color: #eee !important;
+                    }
+                }
+            }
+        }
+    }
+
 </style>
 
 <style lang="scss" scoped>
@@ -65,6 +83,14 @@
       width: 87.2%;
       border-radius: 24px;
       box-shadow: var(--box-shadow-card);
+      .v-list{
+         .v-list-item {
+            .v-list-item__content {
+                background-color: #eee !important;
+                color: #eee !important;
+            }
+         }
+      }
       .hour {
          &.v-list-item {
             width: 73px;
@@ -77,7 +103,7 @@
       margin-top: 16px;
    }
    .empty-mask {
-      display: none;
+      //display: none;
       position: absolute;
       top: 0;
       left: 0;
@@ -88,7 +114,7 @@
       opacity: 0.7;
    }
    .empty {
-      display: none;
+      //display: none;
       position: absolute;
       top: 0;
       left: 0;
@@ -108,7 +134,7 @@
 
 <template>
    <v-card
-      class="card-trajet-member mx-auto"
+      class="card-trajet-member-btn mx-auto"
       max-width="500"
    >
       <div class="empty-mask"></div>
@@ -188,18 +214,18 @@
 
    // Components
    export default {
-      name: 'trajet-member-comp',
+      name: 'trajet-member-btn-comp',
       props: {
          infos: {
             type: Object,
             default() {
               return {
-                   "depart": "Tsingoni",
-                   "destination": "Mamoudzou",
-                   "hour_start": "4:50",
-                   "hour_end": "6:55",
+                   "depart": "XXXXXXX",
+                   "destination": "XXXXXXX",
+                   "hour_start": "X:XX",
+                   "hour_end": "X:XX",
                    "price": 4,
-                   "name": "Ledou",
+                   "name": "XXXXXXXXXXXXX",
                    "passenger_number": 2
                  };
             },

@@ -30,7 +30,7 @@
             color: #616161;
         }
         .invite-card{
-            height: 58px;
+            //height: 58px;
             border-radius: 15px;
             padding: 10px 20px 10px 0px;
             background-color: #030303;
@@ -60,8 +60,6 @@
                 height: 32px;
             }
         }
-
-        
     }
 
     
@@ -109,6 +107,7 @@
                 size="x-large"
                 variant="outlined"
                 block
+                @click="signOut()"
             >
                 Deconnexion
             </v-btn>
@@ -121,6 +120,7 @@
 <!--  -->
 <script>
     import { defineComponent } from 'vue';
+    import { getAuth, signOut } from "firebase/auth";
 
     // Components
     import ToolbarProfil from '@/components/menus/head/ToolbarProfil.vue';
@@ -211,6 +211,15 @@
             }
         },
         methods: {
+            signOut() {
+                const auth = getAuth();
+                signOut(auth).then(() => {
+                // Sign-out successful.
+                }).catch((error) => {
+                // An error happened.
+                    console.log(error)
+                });
+            },
         },
         mounted() {
             window.scrollTo(0, 0);

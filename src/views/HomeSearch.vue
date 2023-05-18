@@ -1,8 +1,13 @@
 
 <style lang="scss" model>
-   // calendar 
-   .trajet-search {
-      z-index: 100 !important;
+   .home-search-view {
+      // calendar 
+      .trajet-search {
+         z-index: 100 !important;
+      }
+      .pile-search {
+         z-index: 0 !important;
+      }
    }
 </style>
 
@@ -27,7 +32,6 @@
       class="home-search-view mt-40 mb-0"
       style="margin-top: 40px;"
    >
-      <!-- src="https://static.vecteezy.com/system/resources/previews/011/539/112/non_2x/car-cartoon-porsche-3d-render-free-png.png" -->
       <div
          class="title text-center"
       >Le choix de trajets à petits prix</div>
@@ -43,10 +47,7 @@
    </v-row>
 
    <TrajetSearch class="trajet-search" ref="TrajetSearchRef" v-on:trajet-selected="getTrajet()" />
-   <div class="pile-trajet">
-      <TrajetMember v-if="infos" :infos="infos"/>
-      <!-- <TrajetMember v-if="infos" :infos="infos"/> -->
-   </div>
+   <Pile class="pile-search"/>
    <BottomNav />
 </template>
 
@@ -54,11 +55,12 @@
 
 <!--  -->
 <script>
+   import $ from 'jquery'
    import { defineComponent } from 'vue';
 
    // Components
    import TrajetSearch from '@/components/search/TrajetSearch.vue';
-   import TrajetMember from '@/components/search/TrajetMember.vue';
+   import Pile from '@/components/search/Pile.vue'
    import BottomNav from '@/components/menus/BottomNav.vue';
 
    export default defineComponent({
@@ -66,7 +68,7 @@
 
       components: {
          TrajetSearch,
-         TrajetMember,
+         Pile,
          BottomNav,
       },
       data() {
@@ -80,7 +82,12 @@
             const destination = this.$refs.TrajetSearchRef.destination;
             this.infos = this.$store.state.trajets.filter(trajet => trajet.depart == depart && trajet.destination == destination)[0]
          },
-      }
-
+      },
+      mounted() {
+         // const vue = this;
+         $(".pile-search").on("click", function(){
+            // vue.$router.push("/results")
+         });
+      },
    });
 </script>

@@ -15,45 +15,75 @@
             position: relative;
             width: 100%;
             height: 50%;
+            display: flex;
+            
             &.infos {
-                height: 37%;
-                .label {
-                    text-transform: uppercase;
-                    font-size: 12px;
-                    font-weight: 450;
-                    color: #616161;
+                .col-item{
+                    height: 37%;
+                    width: 50%;
+                    .label {
+                        text-transform: uppercase;
+                        font-size: 12px;
+                        font-weight: 450;
+                        color: #616161;
 
-                }
-                .trajet {
-                    font-size: 20px;
-                    font-weight: 500;
-                    color: #303030;
+                    }
+                    .trajet {
+                        font-size: 20px;
+                        font-weight: 500;
+                        color: #303030;
+                    }
+                    &.mode{
+                        display: flex;
+                        justify-content: space-around;
+                        div{
+                            cursor: pointer;
+                            width: 28px;
+                            height: 28px;
+                            // border: 1px solid black;
+                            border-radius: 50px;
+                            text-align: center;
+                            background-color: #B1B1B1;
+                            font-family: unset;
+                            color: white;
+                            font-size: 1em;
+                            font-weight: bold;
+                            line-height: 1.7;
+                            &.active{
+                                background-color: #2E8DFF;
+                            }
+                        }
+                    }
                 }
             }
             &.bar {
-                .bloc {
-                    display: flex;
-                    justify-content: space-between;
-                    .blc-back-bar {
-                        .back-bar {
-                            margin: auto;
-                            .in-bar {
-                                -webkit-transition: max-height 1s; 
-                                -moz-transition: max-height 1s; 
-                                -ms-transition: max-height 1s; 
-                                -o-transition: max-height 1s; 
-                                transition: max-height 1s;
-                                max-height: 0%;
-                                height: 100%;
+                .col-item {
+                    width: 100%;
+                
+                    .bloc {
+                        display: flex;
+                        justify-content: space-between;
+                        .blc-back-bar {
+                            .back-bar {
+                                margin: auto;
+                                .in-bar {
+                                    -webkit-transition: max-height 1s; 
+                                    -moz-transition: max-height 1s; 
+                                    -ms-transition: max-height 1s; 
+                                    -o-transition: max-height 1s; 
+                                    transition: max-height 1s;
+                                    max-height: 0%;
+                                    height: 100%;
+                                }
                             }
-                        }
-                        .sub-label{
-                            color: #616161;
-                            margin-top: 5px;
-                            text-align: left;
-                            text-transform: capitalize;
-                            font-size: 12px;
-                            font-weight: 450;
+                            .sub-label{
+                                color: #616161;
+                                margin-top: 5px;
+                                text-align: left;
+                                text-transform: capitalize;
+                                font-size: 12px;
+                                font-weight: 450;
+                            }
                         }
                     }
                 }
@@ -67,34 +97,42 @@
       class="stats-trajet-profil mx-auto"
     >
         <div class="row-item infos">
-            <div class="label">Trajet mensuel</div>
-            <div class="trajet">{{ numberTrajet }} {{numberTrajet > 1 ? 'trajets' : 'trajet'}}</div>
+            <div class="col-item">
+                <div class="label">Trajet mensuel</div>
+                <div class="trajet">{{ numberTrajet }} {{numberTrajet > 1 ? 'trajets' : 'trajet'}}</div>
+            </div>
+            <div class="col-item mode">
+                <div>S</div>
+                <div class="active">M</div>
+                <div>A</div>
+            </div>
         </div>
 
         <div class="row-item bar">
-            <div
-                class="bar bloc"
-            >
-
-                <div 
-                    v-for="(stat, index) in stats"
-                    :key="index"
-                    class="blc-back-bar"
+            <div class="col-item">
+                <div
+                    class="bar bloc"
                 >
-                    <div class="back-bar"
-                        style="width: 16px; height: 94px; background-color: #f5f5f5; border-radius: 10px; position: relative;"
+                    <div 
+                        v-for="(stat, index) in stats"
+                        :key="index"
+                        class="blc-back-bar"
                     >
-                        <div class="in-bar"
-                            :style="`width: 16px; max-height: ${stat.val}%; background-color: #2e8dff; border-radius: 10px; position: absolute; bottom: 0;`"
-                        ></div>
+                        <div class="back-bar"
+                            style="width: 16px; height: 94px; background-color: #f5f5f5; border-radius: 10px; position: relative;"
+                        >
+                            <div class="in-bar"
+                                :style="`width: 16px; max-height: ${stat.val}%; background-color: #2e8dff; border-radius: 10px; position: absolute; bottom: 0;`"
+                            ></div>
+                        </div>
+                        <div
+                            class="sub-label"
+                        >
+                            {{ stat.month }}
+                        </div>
                     </div>
-                    <div
-                        class="sub-label"
-                    >
-                        {{ stat.month }}
-                    </div>
-                </div>
 
+                </div>
             </div>
         </div>
     </v-card>

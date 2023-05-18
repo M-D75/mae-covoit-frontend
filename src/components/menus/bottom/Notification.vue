@@ -34,12 +34,13 @@
          .text-notif {
             margin-top: 90px;
             font-size: 16px;
+            padding: 50px;
          }
       }
    }
    
 
-   </style>
+ </style>
 
 <template>
    <v-container

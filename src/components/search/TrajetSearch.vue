@@ -159,8 +159,8 @@
 
             
             <div class="container-calendar">
-               <VCalendar />
-               <VDatePicker v-model="date" :min-date="new Date()" show-weeknumbers="left-outside">
+               <VCalendar expanded/>
+               <VDatePicker v-model="date" :min-date="new Date()" >
                   <template #default="{ togglePopover }">
                      <v-list-item
                         class="calendar"

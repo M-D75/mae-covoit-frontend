@@ -13,6 +13,23 @@
             margin-bottom: 20px;
             color: #616161;
         }
+        .label-btn {
+            margin-top: 30px;
+            margin-bottom: 20px;
+            width: 82.7%;
+            display: flex;
+            justify-content: space-between;
+            .v-btn {
+                box-shadow: none;
+                font-size: 12px;
+                font-weight: 700;
+                background-color: #E5E5E5;
+                &.active {
+                    background-color: #1E90FF;
+                    color: white;
+                }
+            }
+        }
     }
 
     .grouP {
@@ -40,7 +57,11 @@
         <GroupCard class="grouP" :groupeParameters="groupeParameters" v-if="false"/>
 
         <div>
-            <div class="label mx-auto">tableau de board</div>
+            <!-- <div class="label mx-auto">tableau de board</div> -->
+            <div class="label-btn mx-auto">
+                <v-btn class="active" rounded="xl">tableau de board</v-btn>
+                <v-btn rounded="xl">mes trajets</v-btn>
+            </div>
             <!-- Credit Card -->
             <CreditCard />
 
