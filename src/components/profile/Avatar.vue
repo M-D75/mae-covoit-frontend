@@ -19,11 +19,12 @@
             font-size: var(--font-size-h1) !important;
             font-weight: 500;
             margin: 10px auto 5px auto;
+            color: var(--font-color-label);
         }
         .sub-title{
             font-size: 12px;
             font-weight: bold;
-            color: gray;
+            color: var(--font-color-label);
         }
     }
 

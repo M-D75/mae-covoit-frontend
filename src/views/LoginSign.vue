@@ -202,7 +202,6 @@
                case "google":
                   this.authGoogle();
                   break;
-            
                case "emailSignUp":
                   this.signUp();
                   break;

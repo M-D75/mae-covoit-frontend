@@ -111,7 +111,6 @@
             }
          }
       }
-      
       .v-btn.search-btn {
          position: relative;
          bottom: -10px;
@@ -134,12 +133,12 @@
             >
                <v-autocomplete
                   v-model="depart"
-                  :items="communes.filter(address => address != destination)"
                   label="Départ"
                   persistent-hint
                   prepend-icon="mdi-navigation"
                   variant="solo"
                   clearable
+                  @click="openDepEmit()"
                ></v-autocomplete>
             </v-list-item>
             
@@ -150,26 +149,26 @@
                   v-model="destination"
                   :items="communes.filter(address => address != depart)"
                   label="Destination"
+                  :focused="focus"
+                  :active="focus"
+                  :autofocus="focus"
                   persistent-hint
                   prepend-icon="mdi-navigation"
                   variant="solo"
                   clearable
+                  @click="openDestEmit()"
                ></v-autocomplete>
             </v-list-item>
 
             
             <div class="container-calendar">
-               <VCalendar expanded/>
-               <VDatePicker v-model="date" :min-date="new Date()" >
-                  <template #default="{ togglePopover }">
-                     <v-list-item
-                        class="calendar"
-                        prepend-icon="mdi-calendar-month-outline"
-                        :title="dateString"
-                        @click="togglePopover"
-                     ></v-list-item>
-                  </template>
-               </VDatePicker>
+
+               <v-list-item
+                  class="calendar"
+                  prepend-icon="mdi-calendar-month-outline"
+                  :title="dateString"
+                  @click="openCalendarEmit()"
+               ></v-list-item>
 
                <v-list-item
                   class="nb-person"
@@ -183,7 +182,7 @@
                      >
                         <v-icon
                            class=""
-                           @click="switchCommune()"
+                           @click="switchCommuneEmit()"
                            variant="text"
                         >mdi-swap-horizontal</v-icon>
                      </v-btn>
@@ -198,7 +197,7 @@
             size="x-large"
             variant="outlined"
             block
-            @click="testGoResult()"
+            @click="goResult()"
          >
             Rechercher
          </v-btn>
@@ -208,12 +207,7 @@
 
 
 <script>
-   // import $ from 'jquery'
    import { mapState } from 'vuex';
-
-
-   // Components
-   import VCalendar from 'v-calendar';
 
    export default {
       name: 'trajet-search-comp',
@@ -221,34 +215,36 @@
          ...mapState(['communes']),
       },
       components: {
-         VCalendar,
+      },
+      props: {
+         dateString: {
+            type: String,
+            default: "Aujourd'hui",
+         },
+         dep: {
+            type: String,
+            default: "",
+         },
+         dest: {
+            type: String,
+            default: "",
+         },
       },
       data() {
          return {
             depart: null,
             destination: null,
             numberTrajet: 0,
-            date: null,
-            dateString: "Aujourd'hui",
+            focus: false,
          }
       },
       mounted (){
-         const date = new Date();
-
-         let day = date.getDate();
-         let month = date.getMonth() + 1;
-         let year = date.getFullYear();
-
-         this.date = new Date(`${month}/${day}/${year}`);
       },
       methods: {
-         switchCommune (){
-            var tmp = this.depart;
-            this.depart = this.destination;
-            this.destination = tmp;
+         switchCommuneEmit(){
+            this.$emit("switch-commune");
          },
-         testGoResult(){
-            
+         goResult(){
             if ( this.numberTrajet > 0 ) {
                this.$router.push(`/results/${this.depart}/${this.destination}/${this.dateString}`);
             }
@@ -259,6 +255,16 @@
                this.$emit("trajet-selected");
             }
          },
+         openCalendarEmit(){
+            this.$emit("open-calendar");
+         },
+         openDepEmit(){
+            this.focus = false,
+            this.$emit("open-dep");
+         },
+         openDestEmit(){
+            this.$emit("open-dest");
+         },
       },
       watch: {
          depart(){
@@ -267,28 +273,11 @@
          destination(){
             this.checkTrajet();
          },
-         date(){
-            const tmpCurrentDate = new Date();
-            var day   = tmpCurrentDate.getDate();
-            var month = tmpCurrentDate.getMonth() + 1;
-            var year  = tmpCurrentDate.getFullYear();
-
-            const currentDate = new Date(`${month}/${day}/${year}`);
-            const tomorrowsDate = new Date(`${month}/${day+1}/${year}`);
-
-            day   = this.date.getDate();
-            month = this.date.getMonth() + 1;
-            year  = this.date.getFullYear();
-
-            if (currentDate.getTime() == this.date.getTime()) {
-               this.dateString = "Aujourd'hui";
-            }
-            else if (tomorrowsDate.getTime() == this.date.getTime()) {
-               this.dateString = "Demain";
-            }
-            else {
-               this.dateString = `${day >= 10 ? day : "0" + day}-${month >= 10 ? month : "0" + month}-${year}`;
-            }
+         dep(){
+            this.depart = this.dep;
+         },
+         dest(){
+            this.destination = this.dest;
          },
       },
    };

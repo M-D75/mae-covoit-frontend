@@ -9,6 +9,7 @@
         padding: 30px;
         border-radius: 12px;
         box-shadow: var(--box-shadow-card);
+        background-color: var(--white-bg-color);
         .row-item {
             position: relative;
             width: 100%;
@@ -16,11 +17,11 @@
             &.infos {
                 .label {
                     font-size: 12px;
-                    color: #1E1F26;
+                    color: var(--font-color-label);
                 }
                 .solde {
                     font-size: 24px;
-                    color: #1E1F26;
+                    color: var(--font-color-label);
                 }
             }
             &.btn {
@@ -35,10 +36,12 @@
                         width: 100%;
                         &.eye {
                             cursor: pointer;
+                            color: var(--font-color-label);
                         }
                         &.card i {
                             text-align: center;
                             width: 100%;
+                            color: var(--font-color-label);
                         }
                         &.circle-blc {
                             position: relative;

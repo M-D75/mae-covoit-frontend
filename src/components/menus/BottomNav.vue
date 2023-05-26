@@ -6,21 +6,28 @@
   }
 </style>
 <style lang="scss" scoped>
-  .v-btn__content {
-    i {
-      font-size: 2.7em !important;
-      margin: 0 !important;
-      margin-bottom: 5px !important;
-      color: gray;
-    }
+    .v-bottom-navigation {
+        background-color: var(--bg-app-color);
+        .v-btn {
+            color: var(--font-color-label);
+        }
+        .v-btn__content {
+            color: var(--font-color-label);
+            i {
+                font-size: 2.7em !important;
+                margin: 0 !important;
+                margin-bottom: 5px !important;
+                color: var(--font-color-label);
+            }
+        }
 
-  }
-  .selected {
-    color: #2196F3;
-    .v-icon {
-      color: #2196F3;
+        .selected {
+            color: #2196F3;
+            .v-icon {
+                color: #2196F3;
+            }
+        }
     }
-  }
 </style>
 
 <template>

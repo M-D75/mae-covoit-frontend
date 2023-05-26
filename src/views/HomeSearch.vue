@@ -46,22 +46,43 @@
       </v-col>
    </v-row>
 
-   <TrajetSearch class="trajet-search" ref="TrajetSearchRef" v-on:trajet-selected="getTrajet()" />
+   <TrajetSearch 
+      class="trajet-search" 
+      ref="TrajetSearchRef"
+      :dateString="dateString"
+      :dep="depart"
+      :dest="destination"
+      v-on:trajet-selected="getTrajet()" 
+      v-on:open-calendar="openCalendar()"
+      v-on:open-dep="openSearch('dep')"
+      v-on:open-dest="openSearch('dest')"
+      v-on:switch-commune="switchCommune()"
+   />
    <Pile class="pile-search"/>
    <BottomNav />
+   <PaneGetValue
+      ref="PaneGetValueRef"
+      :mode="modePanel" 
+      :open-p="openP"
+      v-on:dep-selected="getDepart()"
+      v-on:dest-selected="getDestination()"
+      v-on:date-selected="getDate()"
+      v-on:close-calendar="close()"
+   />
 </template>
 
 
 
 <!--  -->
 <script>
-   import $ from 'jquery'
+   // import $ from 'jquery'
    import { defineComponent } from 'vue';
 
    // Components
    import TrajetSearch from '@/components/search/TrajetSearch.vue';
    import Pile from '@/components/search/Pile.vue'
    import BottomNav from '@/components/menus/BottomNav.vue';
+   import PaneGetValue from '@/components/menus/PaneGetValue.vue';
 
    export default defineComponent({
       name: 'home-search-view',
@@ -70,11 +91,21 @@
          TrajetSearch,
          Pile,
          BottomNav,
+         PaneGetValue,
       },
       data() {
          return {
             infos: null,
+            openP: false,
+            modePanel: "date",
+            date: null,
+            depart: null,
+            destination: null,
+            dateString: "Aujourd'hui",
          };
+      },
+      mounted() {
+         this.date = this.$refs.PaneGetValueRef.getDate();
       },
       methods: {
          getTrajet() {
@@ -82,12 +113,68 @@
             const destination = this.$refs.TrajetSearchRef.destination;
             this.infos = this.$store.state.trajets.filter(trajet => trajet.depart == depart && trajet.destination == destination)[0]
          },
+         openCalendar(){
+            console.log("open-pan-calendar-search")
+            this.modePanel = "date";
+            this.openP = !this.openP;
+         },
+         openSearch(mode){
+            console.log("select-depart");
+            this.modePanel = mode == 'dep' ? "depart" : "arriver";
+            this.openP = !this.openP;
+         },
+         getDate(){
+            console.log("get-date-search");
+            this.date = this.$refs.PaneGetValueRef.date;
+            this.openP = !this.openP;
+         },
+         getDepart(){
+            this.depart = this.$refs.PaneGetValueRef.getDep();
+            this.openP = !this.openP;
+         },
+         getDestination() {
+            this.destination = this.$refs.PaneGetValueRef.getDest();
+            this.openP = !this.openP;
+         },
+         switchCommune(){
+            var tmp = this.depart;
+            this.depart = this.destination;
+            this.destination = tmp;
+         },
+         close(){
+            this.openP = false;
+         },
       },
-      mounted() {
-         // const vue = this;
-         $(".pile-search").on("click", function(){
-            // vue.$router.push("/results")
-         });
+      watch: {
+         depart(){
+            console.log("dep-:", this.depart)
+         },
+         destination(){
+            console.log("dest-:", this.destination)
+         },
+         date(){
+            const tmpCurrentDate = new Date();
+            var day   = tmpCurrentDate.getDate();
+            var month = tmpCurrentDate.getMonth() + 1;
+            var year  = tmpCurrentDate.getFullYear();
+
+            const currentDate = new Date(`${month}/${day}/${year}`);
+            const tomorrowsDate = new Date(`${month}/${day+1}/${year}`);
+
+            day   = this.date.getDate();
+            month = this.date.getMonth() + 1;
+            year  = this.date.getFullYear();
+
+            if (currentDate.getTime() == this.date.getTime()) {
+               this.dateString = "Aujourd'hui";
+            }
+            else if (tomorrowsDate.getTime() == this.date.getTime()) {
+               this.dateString = "Demain";
+            }
+            else {
+               this.dateString = `${day >= 10 ? day : "0" + day}-${month >= 10 ? month : "0" + month}-${year}`;
+            }
+         },
       },
    });
 </script>

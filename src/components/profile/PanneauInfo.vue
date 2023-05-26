@@ -1,6 +1,8 @@
 <!-- scss -->
 <!-- scss -->
 <style lang="scss" model>
+    
+
     .inf-comp {
         .blc-btn {
             div.label {
@@ -16,10 +18,19 @@
 
 <style lang="scss" scoped>
 
+    .ligth-mode * {
+        --border-color: white;
+        --bg-color: #f5f5f5;
+    }
+    .dark-mode * {
+        --border-color: #333333;
+        --bg-color: #292929;
+    }
+
     /* ? */
     .inf-comp {
         border-radius: 24px;
-        border: solid white 10px;
+        border: solid var(--border-color) 10px;
         margin-top: 30px;
         margin-bottom: 15px;
         background-color: var(--white-bg-color);
@@ -30,22 +41,32 @@
             height: 100%;
             display: flex;
             align-items: center;
-            background-color: #f5f5f5;
+            background-color: var(--bg-color);
             div {
                 
                 width: 33%;
                 text-align: center;
                 &.btn {
                     cursor: pointer;
+                    i.mdi-moon-waning-crescent {
+                        transform: rotate(-30deg);
+                    }
                 }
                 .text-subtitle{
                     margin-top: 5px;
                     text-transform: uppercase;
                     text-align: center;
                     width: 100%;
-                    color: #616161;
+                    color: var(--font-color-label);
                     font-size: 12px;
                     font-weight: bold;
+                }
+                .label {
+                    color: var(--font-color-label);
+                }
+                .v-icon {
+                    color: var(--font-color-label);
+                    
                 }
             }
         }
@@ -86,6 +107,7 @@
 <!--  -->
 <script>
     import { defineComponent } from 'vue';
+    import $ from 'jquery'
 
     // Components
     // ...
@@ -123,17 +145,16 @@
         },
         data() {
             return {
-                
             }
         },
         methods: {
             choiceFunctionBtnInfo(name){
                 switch (name.toLowerCase()) {
                     case 'mode':
-                        this.test2();
+                        this.ligthToDarkness();
                         break;
                     case 'historique':
-                        this.test3();
+                        this.history();
                         break;
                     case 'Papayas':
                         console.log('Mangoes and papayas are $2.79 a pound.');
@@ -143,11 +164,21 @@
                         console.log(`Sorry, we are out of ${name}.`);
                 }
             },
-            test2(){
+            history(){
                 console.log("text2")
+                this.$emit('history');
             },
-            test3(){
-                console.log("text3")
+            ligthToDarkness(){
+                if( $("#app .v-application").hasClass("ligth-mode") ){
+                    $("#app .v-application").removeClass("ligth-mode");
+                    $("#app .v-application").addClass("dark-mode");
+                    this.$store.state.darkMode = true;
+                }
+                else{
+                    $("#app .v-application").addClass("ligth-mode");
+                    $("#app .v-application").removeClass("dark-mode");
+                    this.$store.state.darkMode = false;
+                }
             }
         }
     });

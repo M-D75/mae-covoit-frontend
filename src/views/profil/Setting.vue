@@ -137,18 +137,44 @@
             return {
                 groupeParameters: [
                     {
-                        label: "payements",
+                        label: "coordonnes",
                         parameters: [
                             {
                                 prependIcon: null,
-                                text:"Preférence virements",
+                                text:"Mots de passe",
                                 chip:true,
                                 chipIcon: "mdi-chevron-right",
                                 chipText: "",
                             },
                             {
                                 prependIcon: null,
+                                text:"Adress Postal",
+                                chip:true,
+                                chipIcon: "mdi-chevron-right",
+                                chipText: "",
+                            },
+                            {
+                                prependIcon: null,
+                                text:"Numéro de télephone",
+                                chip:true,
+                                chipIcon: "mdi-chevron-right",
+                                chipText: "",
+                            },
+                        ],
+                    },
+                    {
+                        label: "payements",
+                        parameters: [
+                            {
+                                prependIcon: null,
                                 text:"Virements",
+                                chip:true,
+                                chipIcon: "mdi-chevron-right",
+                                chipText: "",
+                            },
+                            {
+                                prependIcon: null,
+                                text:"Remboursement",
                                 chip:true,
                                 chipIcon: "mdi-chevron-right",
                                 chipText: "",
@@ -163,33 +189,7 @@
                         ],
                     },
                     {
-                        label: "payements",
-                        parameters: [
-                            {
-                                prependIcon: null,
-                                text:"Preférence virements",
-                                chip:true,
-                                chipIcon: "mdi-chevron-right",
-                                chipText: "",
-                            },
-                            {
-                                prependIcon: null,
-                                text:"Virements",
-                                chip:true,
-                                chipIcon: "mdi-chevron-right",
-                                chipText: "",
-                            },
-                            {
-                                prependIcon: null,
-                                text:"Virements",
-                                chip:true,
-                                chipIcon: "mdi-chevron-right",
-                                chipText: "",
-                            },
-                        ],
-                    },
-                    {
-                        label: "Mention Legals",
+                        label: "Mentions Legales",
                         parameters: [
                             {
                                 prependIcon: null,
@@ -214,9 +214,9 @@
             signOut() {
                 const auth = getAuth();
                 signOut(auth).then(() => {
-                // Sign-out successful.
+                    // Sign-out successful.
                 }).catch((error) => {
-                // An error happened.
+                    // An error happened.
                     console.log(error)
                 });
             },

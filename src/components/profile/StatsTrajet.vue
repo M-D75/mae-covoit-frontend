@@ -9,6 +9,7 @@
         height: 242px;
         width: 82.7%;
         padding: 25px;
+        padding-bottom: 50px;
         border-radius: 24px;
         box-shadow: var(--box-shadow-card);
         .row-item {
@@ -25,13 +26,13 @@
                         text-transform: uppercase;
                         font-size: 12px;
                         font-weight: 450;
-                        color: #616161;
+                        color: var(--font-color-label);;
 
                     }
                     .trajet {
                         font-size: 20px;
                         font-weight: 500;
-                        color: #303030;
+                        color: var(--font-color-label);
                     }
                     &.mode{
                         display: flex;
@@ -77,7 +78,7 @@
                                 }
                             }
                             .sub-label{
-                                color: #616161;
+                                color: var(--font-color-label);
                                 margin-top: 5px;
                                 text-align: left;
                                 text-transform: capitalize;

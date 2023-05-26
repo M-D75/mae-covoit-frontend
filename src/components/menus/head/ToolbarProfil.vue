@@ -24,13 +24,14 @@
    // toolbar
    .v-toolbar {
       z-index: 1;
+      background-color: var(--bg-app-color);
       .v-btn i.v-icon {
          margin-right: 0 !important;
-         color: gray;
+         color: var(--font-color-label);
       }
       .v-toolbar-title {
          font-size: var(--font-size-h1-toolbar);
-         color: gray;
+         color: var(--font-color-label);
       }
       
       .label-filter.text-caption {
@@ -46,7 +47,6 @@
    <!-- toolbar -->
    <v-toolbar
       class="mb-5"
-      color=""
       dark
       permanent
    >

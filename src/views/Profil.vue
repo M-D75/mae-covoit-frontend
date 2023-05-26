@@ -1,5 +1,20 @@
+
+
 <!-- scss -->
+<style lang="scss" model>
+    .bottom-menu{
+        z-index: 9999 !important;
+    }
+</style>
+
 <style lang="scss" scoped>
+    .ligth-mode * {
+        --bg-color: #E5E5E5;
+    }
+    .dark-mode * {
+        --bg-color: #333333;
+    }
+
     .main {
         height: 100%;
         margin-top: 100px;
@@ -20,15 +35,29 @@
             display: flex;
             justify-content: space-between;
             .v-btn {
+                width: 138px;
+                height: 32px;
                 box-shadow: none;
                 font-size: 12px;
                 font-weight: 700;
-                background-color: #E5E5E5;
+                background-color: var(--bg-color);
+                color: var(--font-color-label);
                 &.active {
                     background-color: #1E90FF;
                     color: white;
                 }
+                &.calendar {
+                    width: 0px !important;
+                    min-width: 20px !important;
+                    .v-icon {
+                        font-size: 20px;
+                    }
+                }
             }
+        }
+
+        div {
+            
         }
     }
 
@@ -36,6 +65,14 @@
         margin-top: 50px;
     }
 
+    .bc-cal{
+        background-color: #e5e5e5;
+        width: 20px;
+        height: 20px;
+        font-size: 20px;
+        border-radius: 50px;
+    }
+    
 </style>
    
 <!--  -->
@@ -51,25 +88,41 @@
             />
 
         <!-- ? -->
-        <PanneauInfo :infos_panneau="infos_panneau" />
+        <PanneauInfo :infos_panneau="infos_panneau" v-on:history="history()" />
 
-        <!--  -->
+        <!-- Parameter like menu TODO:no activate -->
         <GroupCard class="grouP" :groupeParameters="groupeParameters" v-if="false"/>
 
         <div>
             <!-- <div class="label mx-auto">tableau de board</div> -->
             <div class="label-btn mx-auto">
-                <v-btn class="active" rounded="xl">tableau de board</v-btn>
-                <v-btn rounded="xl">mes trajets</v-btn>
+                <v-btn :class="{active: onglet=='table-bord'}" @click="onglet='table-bord'" rounded="xl">tableau de board</v-btn>
+                <v-btn :class="{active: onglet=='planning'}" class="calendar" @click="onglet='planning'" rounded="xl"><v-icon>mdi-calendar-month</v-icon></v-btn>
+                <v-btn :class="{active: onglet=='trajets'}" @click="onglet='trajets'" rounded="xl">mes trajets</v-btn>
             </div>
+
+            <!-- Tableau de bord -->
             <!-- Credit Card -->
-            <CreditCard />
+            <CreditCard v-if="onglet=='table-bord'"/>
 
             <!-- Graph -->
-            <StatsTrajet />
+            <StatsTrajet v-if="onglet=='table-bord'"/>
+
+            <!-- Trajets -->
+            <HistoryTrajets v-if="onglet=='trajets' || onglet=='planning'"/>
         </div>
     </div>
+    
     <BottomNav />
+
+    <v-overlay 
+        v-model="overlay" 
+        contained
+        persistent
+        style="z-index: 0;"
+        @click="callCloseBottomChild"
+    ></v-overlay>
+    <BottomMenu ref="BottomMenuRef" v-on:close="overlay = false"/>
 </template>
 
 
@@ -77,6 +130,7 @@
 <!--  -->
 <script>
     import { defineComponent } from 'vue';
+    import { mapState } from 'vuex';
 
     // Components
     import ToolbarProfil from '@/components/menus/head/ToolbarProfil.vue';
@@ -85,12 +139,15 @@
     import GroupCard from '@/components/menus/setting/GroupCard.vue';
     import CreditCard from '@/components/profile/CreditCard.vue';
     import StatsTrajet from '@/components/profile/StatsTrajet.vue';
+    import HistoryTrajets from '@/components/profile/HistoryTrajets.vue';
     import BottomNav from '@/components/menus/BottomNav.vue';
-    
+    import BottomMenu from '@/components/menus/BottomMenu.vue';    
 
     export default defineComponent({
         name: 'profil-view',
-
+        computed: {
+            ...mapState(["darkMode"]),
+        },
         components: {
             ToolbarProfil,
             Avatar,
@@ -98,10 +155,14 @@
             GroupCard,
             CreditCard,
             StatsTrajet,
+            HistoryTrajets,
             BottomNav,
+            BottomMenu,
         },
         data() {
             return {
+                overlay: false,
+                onglet: "table-bord",
                 infos_panneau: [
                     {
                         btn:true,
@@ -115,7 +176,7 @@
                     },
                     {
                         btn:true,
-                        icon:"mdi-lightbulb-on",
+                        icon: ! this.$store.state.darkMode ? "mdi-lightbulb-on" : "mdi-moon-waning-crescent",
                         text:"mode",
                     },
                 ],
@@ -190,30 +251,31 @@
             }
         },
         methods: {
-            choiceFunctionBtnInfo(name){
-                switch (name.toLowerCase()) {
-                    case 'mode':
-                        this.test2();
-                        break;
-                    case 'historique':
-                        this.test3();
-                        break;
-                    case 'Papayas':
-                        console.log('Mangoes and papayas are $2.79 a pound.');
-                        // Expected output: "Mangoes and papayas are $2.79 a pound."
-                        break;
-                    default:
-                        console.log(`Sorry, we are out of ${name}.`);
-                }
-            },
             goToInfoPerso(){
                 this.$router.push("/profil/perso")
             },
-            test2(){
-                console.log("text2")
+            history(){
+                console.log("history");
+
+                if ( this.$refs.BottomMenuRef ) {
+                    if( ! this.overlay ){
+                        this.overlay = this.$refs.BottomMenuRef.open();
+                    }
+                    else {
+                        this.overlay = this.$refs.BottomMenuRef.close();
+                    }
+                }
+
             },
-            test3(){
-                console.log("text3")
+            callCloseBottomChild() {
+                if ( this.$refs.BottomMenuRef ) {
+                    this.overlay = this.$refs.BottomMenuRef.close();
+                }
+            },
+        },
+        watch: {
+            darkMode(){
+                this.infos_panneau[2].icon = ! this.$store.state.darkMode ? "mdi-lightbulb-on" : "mdi-moon-waning-crescent";
             }
         }
     });
