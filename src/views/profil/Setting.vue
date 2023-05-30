@@ -1,8 +1,10 @@
 <style lang="scss" model>
     .v-btn.logout {
         font-size: 16px;
+        color: var(--font-color-label);
         .v-btn__prepend i.v-icon{
             font-size: 21px !important;
+
         }
     }
 </style>

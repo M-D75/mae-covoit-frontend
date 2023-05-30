@@ -22,6 +22,11 @@
                 .solde {
                     font-size: 24px;
                     color: var(--font-color-label);
+                    .v-icon {
+                        font-size: 24px;
+                        margin-right: 5px;
+                        margin-top: -3px;
+                    }
                 }
             }
             &.btn {
@@ -43,10 +48,17 @@
                             width: 100%;
                             color: var(--font-color-label);
                         }
+                        &.hand {
+                            text-align: center;
+                            width: 100%;
+                            color: var(--font-color-label);
+                        }
                         &.circle-blc {
                             position: relative;
+                            // min-width: 50px;
                             .in-btn {
                                 position: absolute;
+                                display: flex;
                                 right: -15px;
                                 bottom: 0;
                                 i {
@@ -79,7 +91,7 @@
     >
         <div class="row-item infos">
             <div class="label">Solde Disponible</div>
-            <div class="solde">EUR {{ solde }}</div>
+            <div class="solde"><v-icon @click="portefeuille()">mdi-credit-card</v-icon>EUR {{ solde }}</div>
         </div>
 
         <div class="row-item btn">
@@ -93,9 +105,16 @@
                     <v-icon v-if="eyeOff">mdi-eye-off</v-icon>
                     <v-icon v-else>mdi-eye</v-icon>
                 </div>
-                <div class="btn card">
+
+                <!-- <div class="btn card">
                     <v-icon>mdi-credit-card</v-icon>
+                </div> -->
+
+                <div class="btn hand">
+                    <v-icon>mdi-hand-coin-outline</v-icon>
                 </div>
+
+                <!-- Circles Card deco -->
                 <div class="btn circle-blc">
                     <div class="in-btn">
                         <v-icon class="vi-1">mdi-circle</v-icon>
@@ -118,11 +137,15 @@
         },
         data() {
             return {
-                solde: new Intl.NumberFormat('de-DE').format(60000000),
+                solde: (new Intl.NumberFormat('de-DE').format(60000000)).replaceAll(".", " "),
                 eyeOff: true,
             }
         },
         methods: {
+            portefeuille(){
+                console.log("portefeuille");
+                this.solde = (new Intl.NumberFormat('de-DE').format(Math.floor(Math.random()*600000)+600)).replaceAll(".", " ")
+            },
         },
     };
 </script>

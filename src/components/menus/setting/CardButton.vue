@@ -17,16 +17,17 @@
 <style lang="scss" scoped>
     .v-card {
         border-radius: 15px;
-        // width: 85%;
         margin: 15px auto 15px auto;
+        background-color: var(--white-bg-color);
+        color: var(--font-color-label);
         &.card-btn {
-            box-shadow: 2px 2px 10px #eee;
+            box-shadow: var(--box-shadow-card);
             height: 56px;
             .v-list-item {
                 height: 100%;
                 i.v-icon {
                     font-weight: bold;
-                    color: #2e8dff;
+                    color: var(--blue-color);
                 }
 
                 .v-chip {
@@ -42,7 +43,7 @@
                     margin: auto 0 !important;
                     .v-icon {
                         height: 100%;
-                        color: #2e8dff !important;
+                        color: var(--blue-color) !important;
                     }
                 }
             }

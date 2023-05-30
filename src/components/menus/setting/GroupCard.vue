@@ -9,7 +9,7 @@
             font-size: 12px;
             font-weight: bold;
             text-transform: uppercase;
-            color: #616161;
+            color: var(--font-color-label);
         }
     }
 
@@ -34,7 +34,7 @@
                 :chip="param.chip"
                 :chipIcon="param.chipIcon"
                 :chipText="param.chipText"
-
+                
             />
         </div>
     </div>

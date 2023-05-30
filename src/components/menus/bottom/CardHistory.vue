@@ -6,15 +6,16 @@
 
     .card-trajet-history {
         margin: 10px auto;
+        background-color: var(--bg-app-color);
         .v-card {
-            // border: 1px solid black;
             display: flex;
             justify-content: space-between;
             width: 327px;
             height: 53px;
             padding: 5px;
             border-radius: 24px;
-            
+            color: var(--font-color-label);
+            background-color: var(--white-bg-color);
             > div {
                 margin: auto;
                 &.container-avatar {
@@ -30,9 +31,6 @@
                     justify-content: space-between;
                     width: 100%;
                     padding: 0 10px;
-                    .v-icon {
-                        // margin: auto 10px auto 10px;
-                    }
                 }
             }
         }

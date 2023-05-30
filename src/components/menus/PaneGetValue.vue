@@ -6,6 +6,8 @@
             .vc-calendar-pi {
                 box-shadow: none;
                 border: none;
+                display: grid;
+                margin: 25% auto;
             }
         }
     }

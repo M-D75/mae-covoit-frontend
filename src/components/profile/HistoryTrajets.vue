@@ -11,6 +11,7 @@
             height: 100%;
             div {
                 .date {
+                    color: var(--font-color-label);
                     margin-top: 10px;
                     margin-bottom: 15px;
                     padding-left: 35px;

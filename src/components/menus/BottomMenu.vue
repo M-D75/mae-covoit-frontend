@@ -1,45 +1,132 @@
 
+
+
 <style lang="scss" scoped>
-    .v-container {
-        position: absolute;
-        padding: 16px 0;
-        bottom: 0;
-        border-radius: 30px 30px 0 0;
-        background-color: white;
-        width: 100%;
-        max-width: 100%;
+    //Animations
+    /* The animation code */
+    @keyframes warn-false {
+        from {background-color: #FF4949;}
+        to {background-color: var(--blue-color);}
     }
 
-    .bar-up {
-        cursor: pointer;
-        margin: auto;
-        margin-top: 5px;
-        width: 14.6%;
-        border: 2px solid gray;
-        border-radius: 10px;
-        z-index: 999;
+    @keyframes warn-true {
+        from {background-color: var(--blue-color);}
+        to {background-color: #FF4949;}
     }
-    .bar-up-t {
-        cursor: pointer;
-        margin: auto;
-        margin-top: 5px;
-        width: 15%;
-        height: 50px;
-        border: 2px solid transparent;
-        border-radius: 10px;
-        z-index: 999;
+
+    // global
+    .label {
+        font-size: 16px;
     }
-    .draggable{
-        position: absolute;
-        top: 600px;
-        // bottom: 0px;
-        z-index: 999;
-        width: 100%;
-        &.dragging, &.active {
-        border: none;
+
+    .sub-label-color {
+        border-radius: 20px;
+        background-color: var(--blue-color);
+        color: white;
+        text-transform: uppercase;
+        text-align: center;
+        font-weight: bold;
+        width: 80%;
+        margin: auto;
+        animation-name: warn-false;
+        animation-duration: 1s;
+        &.warning {
+            background-color: #FF4949;
+            animation-name: warn-true;
+            animation-duration: 1s;
         }
     }
 
+    // struct
+    .draggable{
+        position: absolute;
+        width: 100%;
+        &.dragging, &.active {
+            border: none;
+        }
+    }
+
+    .v-container.bottom-menu {
+        position: fixed;
+        padding: 16px 0;
+        bottom: 0;
+        border-radius: 30px 30px 0 0;
+        background-color: var(--white-bg-color);
+        color: var(--font-color-label);
+        width: 100%;
+        max-width: 100%;
+        .sub-cont {
+            .bar-up {
+                cursor: pointer;
+                margin: auto;
+                margin-top: 5px;
+                width: 14.6%;
+                border: 2px solid gray;
+                border-radius: 10px;
+                z-index: 999;
+            }
+            .bar-up-t {
+                cursor: pointer;
+                margin: auto;
+                margin-top: 5px;
+                width: 15%;
+                height: 50px;
+                border: 2px solid transparent;
+                border-radius: 10px;
+                z-index: 999;
+            }
+
+
+            .select-time, .select-number {
+                width: 85%;
+                .label {
+                    margin: 15px;
+                    margin-top: 50px;
+                }
+
+                .v-btn {
+                    margin: 30px auto;
+                }
+            }
+
+            .select-day-hour-domicile{
+                width: 85%;
+                .label {
+                    margin: 35px;
+                }
+
+                
+                .day-contain {
+                    margin: auto;
+                    display: flex;
+                    width: 100%;
+                    justify-content: space-around;
+                    .day{
+                        cursor: pointer;
+                        display: grid;
+                        align-content: center;
+                        text-align: center;
+                        width: 41px;
+                        height: 41px;
+                        background-color: gray;
+                        border-radius: 100px;
+                        text-transform: uppercase;
+                        color: white;
+                        font-weight: bold;
+                        font-size: 16px;
+                        &.selected {
+                            background-color: var(--blue-color);
+                        }
+                    }
+                }
+
+                .v-btn {
+                    margin: 30px auto;
+                    font-weight: bold;
+                }
+            }
+        }
+    }
 </style>
 
 <template>
@@ -70,7 +157,86 @@
             <div class="bar-up"></div>
             <TrajetMember v-if="!notif && reserve" :infos="infos"/>
             <ReservePlace v-if="!notif && reserve" v-on:test-notif-success="notif = !notif"/>
-            <GroupListCardsHistory v-if="!notif && !reserve"/>
+            <GroupListCardsHistory v-if="!notif && !reserve && mode=='history' "/>
+            
+            <div
+                v-if="mode=='time'"
+                class="select-time mx-auto"
+            >
+                <div class="label text-center">{{ labelSelectorN1 }}</div>
+                <TimeCard />
+                <v-btn 
+                    class="text-none"
+                    rounded="xl" 
+                    size="x-large"
+                    variant="outlined"
+                    block
+                    @click="emit('time-valided')"
+                >Valider</v-btn>
+            </div>
+
+            <div
+                v-if="mode=='nb-passenger'"
+                class="select-number mx-auto"
+            >
+                <div class="label text-center">{{ labelSelectorN1 }}</div>
+                <SelectNumber min="1" max="4" />
+                <v-btn 
+                    class="text-none"
+                    rounded="xl" 
+                    size="x-large"
+                    variant="outlined"
+                    block
+                    @click="emit('time-valided')"
+                >Valider</v-btn>
+            </div>
+
+            <!--  -->
+            <div
+                v-if="mode=='select-day-hour-domicile'"
+                class="select-day-hour-domicile mx-auto"
+            >
+                <div class="label text-center" >{{ labelSelectorN1 }}</div>
+                <div class="day-contain">
+                    <div
+                        v-for="(day, index) in daysSelected"
+                        :key="index"
+                        class="day"
+                        :class="{selected: day.selected}"
+                        @click="selectDay(index)"
+                    >{{ day.day }}</div>
+                </div>
+                <div class="label text-center">{{ labelSelectorN2 }}</div>
+                <TimeCard />
+                
+                <v-btn 
+                    class="text-none"
+                    rounded="xl" 
+                    size="x-large"
+                    variant="outlined"
+                    block
+                    @click="emit('time-valided')"
+                >Valider</v-btn>
+            </div>
+
+
+            <!-- price -->
+            <div
+                v-if="mode=='select-price'"
+                class="select-number mx-auto"
+            >
+                <div class="label text-center">{{ labelSelectorN1 }}</div>
+                <div class="sub-label-color" :class="{warning: warn}">prix recommandé : 2 à 3 €</div>
+                <SelectNumber ref="SelectNumberRef" icon="mdi-currency-eur" min="1" max="8" v-on:number-changed="selectNumber()" />
+                <v-btn 
+                    class="text-none"
+                    rounded="xl" 
+                    size="x-large"
+                    variant="outlined"
+                    block
+                    @click="emit('time-valided')"
+                >Valider</v-btn>
+            </div>
         </div>
 
         <!-- Notif -->
@@ -90,6 +256,8 @@
     import ReservePlace from '@/components/menus/bottom/ReservePlace.vue';
     import Notification from '@/components/menus/bottom/Notification.vue';
     import GroupListCardsHistory from '@/components/menus/bottom/GroupListCardsHistory.vue';
+    import TimeCard from './bottom/TimeCard.vue';
+    import SelectNumber from './bottom/SelectNumber.vue';
    
 
     export default defineComponent({
@@ -100,8 +268,22 @@
             ReservePlace,
             Notification,
             GroupListCardsHistory,
+            TimeCard,
+            SelectNumber,
         },
         props: {
+            mode: {
+                type: String,
+                default: "history",
+            },
+            labelSelectorN1: {
+                type: String,
+                default: "LABEL-SELECTOR",
+            },
+            labelSelectorN2: {
+                type: String,
+                default: "LABEL-SELECTOR-2",
+            },
             infos: {
                 type: Object,
                 default() {
@@ -130,61 +312,88 @@
                 marge_bar: 30,
                 subContHeigth: 0,
                 open_b: false,
+                daysSelected: [
+                    {day: "L", selected: true},
+                    {day: "M", selected: true},
+                    {day: "M", selected: true},
+                    {day: "J", selected: true},
+                    {day: "V", selected: true},
+                    {day: "S", selected: false},
+                    {day: "D", selected: false},
+                ],
+                warn: false,
             }
         },
         mounted() {
             this.sizeScreen = parseInt($("body").css("height").replace("px", ""));
-            this.y = this.sizeScreen; //-this.marge_bar;
+            this.y = this.sizeScreen;
             
-            $(".bottom-menu").css("top", `${this.y-5}px`);
+            $(".bottom-menu").css("top", `${this.y}px`);
             this.subContHeigth = parseInt($(".sub-cont").css("height").replace("px", ""));
-            console.log(this.sizeScreen, this.subContHeigth)
+            console.log(this.sizeScreen, this.subContHeigth);
+
+            this.openMiddle();
         },
         methods: {
             onDrag(pos) {
                 this.move = true;
                 this.active = false;
-                $(".bottom-menu").css("top", `${pos.y-5}px`);
+                $(".bottom-menu").css("top", `${pos.y}px`);
                 if (pos.y >= this.sizeScreen - this.marge_bar) {
                     this.close()
                 }
             },
             onDragStop(pos) {
-                if (! this.move) {
+                if ( ! this.move ) {
                     if ( pos.y >= this.sizeScreen-this.marge_bar ) {
-                    this.open();
+                        this.open();
                     }
                     else{
-                    this.close()
-                    
-                    // test notif
-                    if (this.notif) {
-                        this.notif = !this.notif;
+                        this.close();
+                        
+                        // test notif
+                        if (this.notif) {
+                            this.notif = !this.notif;
+                        }
                     }
-                    }
-                    $(".bottom-menu").animate({"top": `${this.y-5}px`}, "fast");
+
+                    $(".bottom-menu").animate({"top": `${this.y}px`}, "fast");
                 }
-                else if(this.move) {
-                    if ( pos.y >= this.sizeScreen-this.marge_bar ) {
-                    this.disabledY = false;
-                    this.y = this.sizeScreen-this.marge_bar;
-                    
+                else if ( this.move ) {
+                    if ( pos.y >= this.sizeScreen - this.marge_bar ) {
+                        this.disabledY = false;
+                        this.y = this.sizeScreen - this.marge_bar;
                     }
-                    
                 }
 
-                console.log("moveY:", pos.y);
+                console.log("moveY : ", pos.y);
                 this.move = false;
             },
             open(){
-                if (!this.open_b) {
-                    if ( this.y >= this.sizeScreen-this.marge_bar ) {
-                    // open
-                    this.disabledY = false;
-                    this.y = this.sizeScreen-(this.subContHeigth+50);
-                    console.log("y", this.y)
-                    $(".bottom-menu").animate({"top": `${this.y-5}px`}, "fast");
-                    this.open_b = true;
+                if ( ! this.open_b ) {
+                    if ( this.y >= this.sizeScreen - this.marge_bar ) {
+
+                        // open
+                        this.disabledY = false;
+                        this.y = this.sizeScreen - ( this.subContHeigth + 50 );
+                        console.log("y", this.y);
+                        $(".bottom-menu").animate({"top": `${this.y}px`}, "fast");
+                        this.open_b = true;
+                    }
+                }
+
+                return this.open_b;
+            },
+            openMiddle(){
+                if ( ! this.open_b ) {
+                    if ( this.y >= this.sizeScreen - this.marge_bar ) {
+
+                        // open
+                        this.disabledY = false;
+                        this.y = this.sizeScreen/2;
+                        console.log("y", this.y);
+                        $(".bottom-menu").animate({"top": `${this.y}px`}, "fast");
+                        this.open_b = true;
                     }
                 }
 
@@ -193,13 +402,34 @@
             close(){
                 this.y = this.sizeScreen; //-this.marge_bar;
                 this.open_b = false;
-                $(".bottom-menu").animate({"top": `${this.y-5}px`}, "fast");
+                $(".bottom-menu").animate({"top": `${this.y}px`}, "fast");
                 this.$emit('close');
+            },
+            selectDay(index) {
+                this.daysSelected[index]["selected"] = !this.daysSelected[index]["selected"];
+            },
+            selectNumber(){
+                console.log("number changed")
+                if( this.$refs.SelectNumberRef ){
+                    console.log("number changed 2")
+                    if( this.mode == "select-price" ){
+                        console.log("number changed 3")
+                        if ( 3 < this.$refs.SelectNumberRef.number || this.$refs.SelectNumberRef.number < 2 ) {
+                            this.warn = true;
+                        }
+                        else{
+                            this.warn = false;
+                        }
+                    }
+                }
+            },
+            emit(value){
+                this.$emit(value)
             },
         },
         watch:{
             y(){
-                $(".bottom-menu").css("top", `${this.y-5}px`)
+                $(".bottom-menu").css("top", `${this.y}px`);
             },
         }
    });

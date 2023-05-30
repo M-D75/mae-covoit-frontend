@@ -7,6 +7,7 @@ import Setting from '@/views/profil/Setting.vue'
 import HomeSearch from '@/views/HomeSearch.vue'
 import Results from '@/views/Results.vue'
 import Publish from '@/views/Publish.vue'
+import SelectCar from '@/views/publish/SelectCar.vue'
 
 
 const routes = [
@@ -42,6 +43,10 @@ const routes = [
   {
     path: '/publish',
     component: Publish,
+  },
+  {
+    path: '/publish/select-car',
+    component: SelectCar,
   },
   {
     path: '/',

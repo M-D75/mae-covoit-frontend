@@ -209,6 +209,7 @@
             setInterval(function () {
                 vue.stats.map(d => d.val = Math.floor(Math.random() * 101) )
                 // vue.stats[0].val = Math.floor(Math.random() * 101);
+                vue.numberTrajet = Math.floor(Math.random() * 401)+1;
             }, 3000);
         },
         methods: {

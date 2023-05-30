@@ -4,29 +4,29 @@
       z-index: 20 !important;
       overflow: visible;
       border-radius: 20px !important;
+      
       i.v-icon {
          font-size: 1.2em;
-         margin-right: 10px !important;
+         margin: auto 0;
       }
+
       .v-list {
          overflow: visible;
          border-radius: 20px !important;
          .part-list {
+            
             padding: 10px 0 10px 16px !important;
             .v-list-item i.v-icon {
                color: gray !important;
             }
+            
             .container-text.trajet-search-comp {
-               .v-input .v-input__prepend {
-                  margin-right: -17px !important;
-                  text-align: center;
-               }
-               // Surcharge TrajetMember navigation incon
-               .mdi-navigation.mdi.v-icon.notranslate.v-theme--light.v-icon--size-default{
-                  top: 4px;
+               .v-list-item__content {
+                  display: flex;
                }
 
                .v-autocomplete {
+                  // remove default row down
                   .v-field__append-inner {
                      i.v-icon.mdi-menu-down.mdi.v-icon.notranslate.v-theme--light.v-icon--size-default{
                         display: none;
@@ -35,11 +35,14 @@
                }
             }
 
+            //calendar
             .container-calendar {
                display: flex;
-               height: 58px;
-               .calendar .v-list-item-title{
-                  font-weight: bold;
+               //height: 58px;
+               .calendar {
+                  .v-list-item-title, .v-list-item__content{
+                     font-weight: bold;
+                  }
                }
 
                .nb-person.v-list-item i.v-icon {
@@ -51,6 +54,7 @@
                   font-size: 1.4em;
                }
 
+               //swap
                .cont-btn-switch{
                   position: absolute;
                   width: 100%;
@@ -59,7 +63,11 @@
                   // swap
                   .v-btn {
                      position: relative;
-                     left: 22px;
+                     left: 18px;
+                     .v-icon {
+                        font-size: 27px;
+                        margin: 0 !important;
+                     }
                      .mdi-swap-horizontal.mdi.v-icon.notranslate.v-theme--light.v-icon--size-default{
                         position: absolute;
                         right: 0px;
@@ -81,12 +89,12 @@
       margin: 35px;
       margin-top: 10px;
       width: 89.6%;
-      height: 256px;
+      //height: 256px;
       box-shadow: var(--box-shadow-card);
       .v-list-item {
          &.calendar {
             width: 70%;
-            .v-list-item-title{
+            .v-list-item-title, .v-list-item__content{
                font-weight: bold;
             }
             i.v-icon {
@@ -101,12 +109,19 @@
                }
             }
          }
-         &.container-text .v-autocomplete {
-            width: 85%;
-            height: 50px;
-            .v-field__append-inner {
-               i.v-icon.mdi-menu-down.mdi.v-icon.notranslate.v-theme--light.v-icon--size-default{
-                  display: none;
+
+         &.container-text {
+            .v-btn {
+               color: gray;
+               font-size: 1rem;
+            }
+            .v-autocomplete {
+               width: 85%;
+               height: 50px;
+               .v-field__append-inner {
+                  i.v-icon.mdi-menu-down.mdi.v-icon.notranslate.v-theme--light.v-icon--size-default{
+                     display: none;
+                  }
                }
             }
          }
@@ -124,18 +139,25 @@
    <v-card
       class="trajet-search-comp card-trajet mx-auto mt-0"
       max-width="500"
-      style="border-radius: 20px !important;"
    >
       <v-list>
          <div class="part-list">
             <v-list-item
                class="container-text trajet-search-comp"
             >
+               <v-icon>mdi-navigation</v-icon>
+               <v-btn
+                  v-if="(depart == null || depart == '')"
+                  variant="solo"
+                  class="text-none"
+                  @click="openDepEmit()"
+               >Départ</v-btn>
+
                <v-autocomplete
+                  v-if="!(depart == null || depart == '')"
                   v-model="depart"
                   label="Départ"
                   persistent-hint
-                  prepend-icon="mdi-navigation"
                   variant="solo"
                   clearable
                   @click="openDepEmit()"
@@ -145,7 +167,16 @@
             <v-list-item
                class="container-text trajet-search-comp"
             >
+               <v-icon>mdi-navigation</v-icon>
+               <v-btn
+                  v-if="(destination == null || destination == '')"
+                  class="text-none"
+                  variant="solo"
+                  @click="openDestEmit()"
+               >Destination</v-btn>
+
                <v-autocomplete
+                  v-if="!(destination == null || destination == '')"
                   v-model="destination"
                   :items="communes.filter(address => address != depart)"
                   label="Destination"
@@ -153,7 +184,6 @@
                   :active="focus"
                   :autofocus="focus"
                   persistent-hint
-                  prepend-icon="mdi-navigation"
                   variant="solo"
                   clearable
                   @click="openDestEmit()"
@@ -165,10 +195,8 @@
 
                <v-list-item
                   class="calendar"
-                  prepend-icon="mdi-calendar-month-outline"
-                  :title="dateString"
                   @click="openCalendarEmit()"
-               ></v-list-item>
+               ><v-icon style="margin-right: 18px;">mdi-calendar-month-outline</v-icon>{{ dateString }}</v-list-item>
 
                <v-list-item
                   class="nb-person"
@@ -184,7 +212,7 @@
                            class=""
                            @click="switchCommuneEmit()"
                            variant="text"
-                        >mdi-swap-horizontal</v-icon>
+                        >mdi-repeat-variant</v-icon>
                      </v-btn>
                   </div>
                </v-list-item>

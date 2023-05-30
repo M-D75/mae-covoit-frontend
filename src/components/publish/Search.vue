@@ -7,6 +7,40 @@
    .blc-text.publish .v-input .v-input__prepend i.v-icon.mdi-navigation.mdi.notranslate.v-theme--light.v-icon--size-default {
       transform: inherit;
    }
+
+
+   .v-card {
+        .v-input {
+            height: 78px;
+            margin-left: 8px;
+            margin-bottom: -20px;
+            .v-input__prepend {
+                //margin-right: 0;
+                text-align: center;
+                .v-icon {
+                    color: var(--gray-icon-color);
+                }
+            }
+
+            .v-input__control {
+                width: 90%;
+                margin-left: 20px;
+            }
+        }
+    }
+
+    .v-card.list {
+        > .v-list {
+            .v-list-item {
+                .v-list-item__prepend {
+                    .v-icon {
+                        font-weight: bold;
+                        color: var(--gray-icon-color);
+                    }
+                }
+            }
+        }
+    }
 </style>
 
 <!-- scss -->
@@ -33,9 +67,17 @@
         .v-card {
             width: 90%;
             box-shadow: none;
-            .v-input__prepend {
-                margin-right: 0;
-                text-align: center;
+            .v-input {
+                margin-left: 8px;
+                .v-input__prepend {
+                    //margin-right: 0;
+                    text-align: center;
+                }
+
+                .v-input__control {
+                    width: 80%;
+                    margin-left: 20px;
+                }
             }
         }
 
@@ -45,10 +87,16 @@
                 margin: auto;
                 width: 90%;
                 background-color: var(--bg-app-color);
+                .v-list-item {
+                    .v-list-item__prepend {
+                        .v-icon {
+                            color: var(--gray-icon-color);
+                        }
+                    }
+                }
             }
         }
-        
-   }
+    }
 
 </style>
    
@@ -88,9 +136,10 @@
             <v-list
             >
                 <v-list-item
-                    v-for="(item, index) in items"
+                    v-for="(item, index) in (items.length > 0 ? items : history)"
                     :key="index"
                     :value="index"
+                    :prepend-icon="history.includes(item) ? 'mdi-history' : 'mdi-magnify'"
                     @click="select(item)"
                 >{{ item }}</v-list-item>
             </v-list>
@@ -121,6 +170,10 @@
                 default: "Choisissez une commune de depart",
             },
             items: {
+                type: Array,
+                default: () => [],
+            },
+            history: {
                 type: Array,
                 default: () => [],
             },

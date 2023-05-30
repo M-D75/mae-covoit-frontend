@@ -1,5 +1,35 @@
 <style lang="scss" model>
-    
+
+    //Animate Pile
+    .s1 {
+        animation-name: roll-down-s1;
+        animation-duration: 0.8s;
+        animation-timing-function: ease-in-out;
+    }
+
+    .s2 {
+        animation-name: roll-down-s2;
+        animation-duration: 1s;
+        animation-timing-function: ease-in-out;
+    }
+
+    @keyframes roll-down-s1 {
+        0% {
+            top: 50%;
+        }
+        100% {
+            top: 55%;
+        }
+    }
+
+    @keyframes roll-down-s2 {
+        0% {
+            top: 50%;
+        }
+        100% {
+            top: 60%;
+        }
+    }
 </style>
 
 <!-- scss -->
@@ -23,8 +53,8 @@
     <div class="blc-pile">
         <TrajetMemberBtn v-if="fastSearch == false" @click="fastSearch = true" class="tj main" style="z-index: 88; position: absolute; top:50%"/>
         <TrajetMember v-if="fastSearch == true" class="tj main" style="z-index: 88; position: absolute; top:50%"/>
-        <TrajetMember class="tj sub" style="z-index: 87; position: absolute; top:55%; width: 83%;"/>
-        <TrajetMember class="tj sub" style="z-index: 86; position: absolute; top:60%; width: 77%;"/>
+        <TrajetMember class="tj sub s1" style="z-index: 87; position: absolute; top:55%; width: 83%;"/>
+        <TrajetMember class="tj sub s2" style="z-index: 86; position: absolute; top:60%; width: 77%;"/>
     </div>
 </template>
 

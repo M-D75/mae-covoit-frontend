@@ -5,7 +5,8 @@
         --bg-app-color: #f5f5f5;
         --white-bg-color: #FBFBFB;
         --gray-bg-icon-color: #b1b1b1;
-        --blue-color: #2e8dff;
+        --blue-color: #2E8DFF;
+        --gray-icon-color: #B1B1B1;
         
         // font
         --font-color-label: #1E1F26;
@@ -13,13 +14,15 @@
         --font-size-h1-toolbar: 16px;
         --font-size-subtitle-toolbar: 8px;
         --box-shadow-card: 0px 2px 24px #eee;
+        --box-shadow-card-v2: 0px 0px 16px #eee;
     }
 
     .dark-mode * {
         --bg-app-color: #1a1a1a;
         --white-bg-color: #333333;
         --gray-bg-icon-color: red;
-        --blue-color: gold;
+        --blue-color: #2E8DFF;
+        --gray-icon-color: #B1B1B1;
 
         // font
         --font-color-label: #FBFBFB;
@@ -27,6 +30,7 @@
         --font-size-h1-toolbar: 16px;
         --font-size-subtitle-toolbar: 8px;
         --box-shadow-card: 0px 2px 24px #111;
+        --box-shadow-card-v2: 0px 0px 16px #111;
     }
 
     * {

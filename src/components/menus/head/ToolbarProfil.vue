@@ -27,7 +27,7 @@
       background-color: var(--bg-app-color);
       .v-btn i.v-icon {
          margin-right: 0 !important;
-         color: var(--font-color-label);
+         color: var(--gray-icon-color);
       }
       .v-toolbar-title {
          font-size: var(--font-size-h1-toolbar);
@@ -97,7 +97,7 @@
       },
       data() {
          return {
-            colorParams: "gray",
+            colorParams: "var(--gray-icon-color)",
          }
       },
       methods: {

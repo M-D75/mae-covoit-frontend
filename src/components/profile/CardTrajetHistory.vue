@@ -12,31 +12,37 @@
         margin-top: 20px;
         width: 280px;
         overflow: visible;
+        color: var(--font-color-label);
         .v-card {
             width: 280px;
             padding: 10px 25px;
             border-radius: 24px;
             overflow: visible;
             box-shadow: var(--box-shadow-card);
+            background-color: var(--white-bg-color);
+            color: var(--font-color-label);
             .header {
                 width: 60%;
                 padding: 5px;
                 position: absolute;
                 top: -20px;
                 z-index: 50;
-                background-color: white;
+                background-color: var(--white-bg-color);
                 display: flex;
                 border-radius: 50px;
-                box-shadow: 0px 0px 10px gray;
+                box-shadow: var(--box-shadow-card-v2);
                 .v-avatar {
                     margin-right: 10px;
                 }
                 .name {
+                    color: var(--font-color-label);
                     margin: auto;
                     text-align: center;
                 }
             }
             .v-list {
+                background-color: var(--white-bg-color);
+                color: var(--font-color-label);
                 > div {
                     margin-top: 10px;
                     margin-bottom: 10px;

@@ -55,10 +55,6 @@
                 }
             }
         }
-
-        div {
-            
-        }
     }
 
     .grouP {
@@ -84,8 +80,8 @@
         <Avatar 
             :modeEdit="false" 
             :name="'Dr. Strange'"
-            @click="goToInfoPerso()"
-            />
+            v-on:avatar-touched="goToInfoPerso()"
+        />
 
         <!-- ? -->
         <PanneauInfo :infos_panneau="infos_panneau" v-on:history="history()" />
@@ -161,6 +157,7 @@
         },
         data() {
             return {
+                modeEdit: false,
                 overlay: false,
                 onglet: "table-bord",
                 infos_panneau: [

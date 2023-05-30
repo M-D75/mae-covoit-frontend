@@ -31,10 +31,9 @@
             :key="year"
             class="group-year"
         >
-
-            <div class="year">{{ year }}</div>
+            <div class="year">{{ Object.keys(infoYear)[0] }}</div>
             <div 
-                v-for="(monthInfo, month) in infoYear"
+                v-for="(monthInfo, month) in infoYear[Object.keys(infoYear)[0]]"
                 :key="month"
                 class="group-month"
             >
@@ -69,54 +68,54 @@
         },
         props: {
             infos: {
-                type: Object,
+                type: Array,
                 default() {
-                    return {
-    "2023": {
-        "Mai": [
-            {"depart": "Tsingoni", "destination": "Mamoudzou", "price": 4},
-            {"depart": "Tsingoni", "destination": "Acoua", "price": 5}
-        ],
-        "Juin": [
-            {"depart": "Tsingoni", "destination": "Mamoudzou", "price": 4},
-            {"depart": "Tsingoni", "destination": "Acoua", "price": 5}
-        ]
-    },
-    "2022": {
-        "Avril": [
-            {"depart": "Koungou", "destination": "Dzaoudzi", "price": 8},
-            {"depart": "Koungou", "destination": "Bandraboua", "price": 3},
-            {"depart": "Koungou", "destination": "Mamoudzou", "price": 10}
-        ],
-        "Mai": [
-            {"depart": "Mamoudzou", "destination": "Koungou", "price": 6},
-            {"depart": "Mamoudzou", "destination": "Dzaoudzi", "price": 7},
-            {"depart": "Mamoudzou", "destination": "Acoua", "price": 9}
-        ],
-        "Juin": [
-            {"depart": "Bandraboua", "destination": "Koungou", "price": 5},
-            {"depart": "Bandraboua", "destination": "Dzaoudzi", "price": 7},
-            {"depart": "Bandraboua", "destination": "Acoua", "price": 6}
-        ]
-    },
-    "2021": {
-        "Février": [
-            {"depart": "Acoua", "destination": "Mamoudzou", "price": 5},
-            {"depart": "Acoua", "destination": "Koungou", "price": 4},
-            {"depart": "Acoua", "destination": "Sada", "price": 6}
-        ],
-        "Mars": [
-            {"depart": "Dzaoudzi", "destination": "Bandraboua", "price": 7},
-            {"depart": "Dzaoudzi", "destination": "Acoua", "price": 9},
-            {"depart": "Dzaoudzi", "destination": "Koungou", "price": 6}
-        ],
-        "Avril": [
-            {"depart": "Mamoudzou", "destination": "Tsingoni", "price": 3},
-            {"depart": "Mamoudzou", "destination": "Dzaoudzi", "price": 7},
-            {"depart": "Mamoudzou", "destination": "Acoua", "price": 9}
-        ]
-    }
-};
+                    return [
+                        {"2023": {
+                            "Mai": [
+                                {"depart": "Tsingoni", "destination": "Mamoudzou", "price": 4},
+                                {"depart": "Tsingoni", "destination": "Acoua", "price": 5}
+                            ],
+                            "Juin": [
+                                {"depart": "Tsingoni", "destination": "Mamoudzou", "price": 4},
+                                {"depart": "Tsingoni", "destination": "Acoua", "price": 5}
+                            ]
+                        }},
+                        {"2022": {
+                            "Avril": [
+                                {"depart": "Koungou", "destination": "Dzaoudzi", "price": 8},
+                                {"depart": "Koungou", "destination": "Bandraboua", "price": 3},
+                                {"depart": "Koungou", "destination": "Mamoudzou", "price": 10}
+                            ],
+                            "Mai": [
+                                {"depart": "Mamoudzou", "destination": "Koungou", "price": 6},
+                                {"depart": "Mamoudzou", "destination": "Dzaoudzi", "price": 7},
+                                {"depart": "Mamoudzou", "destination": "Acoua", "price": 9}
+                            ],
+                            "Juin": [
+                                {"depart": "Bandraboua", "destination": "Koungou", "price": 5},
+                                {"depart": "Bandraboua", "destination": "Dzaoudzi", "price": 7},
+                                {"depart": "Bandraboua", "destination": "Acoua", "price": 6}
+                            ]
+                        }},
+                        {"2021": {
+                            "Février": [
+                                {"depart": "Acoua", "destination": "Mamoudzou", "price": 5},
+                                {"depart": "Acoua", "destination": "Koungou", "price": 4},
+                                {"depart": "Acoua", "destination": "Sada", "price": 6}
+                            ],
+                            "Mars": [
+                                {"depart": "Dzaoudzi", "destination": "Bandraboua", "price": 7},
+                                {"depart": "Dzaoudzi", "destination": "Acoua", "price": 9},
+                                {"depart": "Dzaoudzi", "destination": "Koungou", "price": 6}
+                            ],
+                            "Avril": [
+                                {"depart": "Mamoudzou", "destination": "Tsingoni", "price": 3},
+                                {"depart": "Mamoudzou", "destination": "Dzaoudzi", "price": 7},
+                                {"depart": "Mamoudzou", "destination": "Acoua", "price": 9}
+                            ]
+                        }}
+                    ];
                 },
             },
         },

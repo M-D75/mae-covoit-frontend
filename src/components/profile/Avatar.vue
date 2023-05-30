@@ -36,7 +36,10 @@
     <div
         class="avatar-comp text-center"
     >
-        <v-avatar size="108">
+        <v-avatar 
+            size="108"
+            @click="avatarTouchedEmit()"
+            >
             <v-img
                 alt="Avatar"
                 src="https://avatars0.githubusercontent.com/u/9064066?v=4&s=460"
@@ -97,7 +100,9 @@
             }
         },
         methods: {
-           
+            avatarTouchedEmit(){
+                this.$emit("avatar-touched");
+            },
         }
     });
 </script>
