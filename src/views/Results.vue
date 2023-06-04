@@ -17,6 +17,9 @@
       margin-top: 100px;
       height: 90vh;
       overflow: scroll;
+      .label-filter {
+         color: var(--font-color-label);
+      }
    }
 
 </style>
@@ -49,7 +52,7 @@
          @click="callCloseBottomChild"
       ></v-overlay>
    </div>
-   <BottomMenu ref="BottomMenuRef" v-on:close="overlay = false" :infos="infos"/>
+   <BottomMenu class-name="results" ref="BottomMenuRef" mode="reserve" v-on:close="overlay = false" :infos="infos"/>
 </template>
 
 
@@ -106,7 +109,7 @@
       },
       mounted(){
          const sizeMainNoToolbar = parseInt($(".v-main").css("height").replace("px", "")) - 100;
-         console.log("sizeBodu", sizeMainNoToolbar)
+         console.log("results-sizeMain", sizeMainNoToolbar)
          $(".container-trajet-member").css("height", `${sizeMainNoToolbar}px`);
          console.log("params", this.$route.params)
       },

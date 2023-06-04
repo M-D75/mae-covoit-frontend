@@ -168,9 +168,7 @@
                 lastOffset = e.target.scrollTop;
 
                 const currentIndexMinutes = (Math.ceil(Math.abs(_this.scrollTop())/100));
-                const val = (currentIndexMinutes*100);
 
-                console.log("FASTmin:", val, currentIndexMinutes)
                 if( middleIndexMinutes > currentIndexMinutes ){
                     vue.minutes = vue.shiftRightMulti(vue.minutes, Math.abs(middleIndexMinutes-currentIndexMinutes));
                 }
@@ -183,26 +181,6 @@
                 }
                 
                 if( ! slow && 0.01 <= Math.abs(speedInpxPerMs) && Math.abs(speedInpxPerMs) <= 0.05 && vue.minutes.length > 1 ){
-                    //const currentIndexMinutes = (Math.ceil(Math.abs(_this.scrollTop())/100));
-                    //const val = (currentIndexMinutes*100);
-                    console.log("slow");
-                    //_this.css("overflow-y", "hidden")
-                    // _this.animate({scrollTop: val}, 180, function(){
-                    //     console.log("currentIndexMinutes", middleIndexMinutes, currentIndexMinutes)
-                    //     if( middleIndexMinutes > currentIndexMinutes ){
-                    //         console.log("rigth", middleIndexMinutes-currentIndexMinutes)
-                    //         vue.minutes = vue.shiftRightMulti(vue.minutes, Math.abs(middleIndexMinutes-currentIndexMinutes));
-                    //     }
-                    //     else{
-                    //         console.log("left", middleIndexMinutes-currentIndexMinutes)
-                    //         vue.minutes = vue.shiftLeftMulti(vue.minutes, Math.abs(middleIndexMinutes-currentIndexMinutes));
-                    //     }
-                    //     console.log("minute:", vue.minutes[middleIndexMinutes]);
-                    // });
-                    
-                    // setInterval(function(){
-                    //     _this.css("overflow-y", "scroll")
-                    // }, 50);
                     slow = true;
                 }
 
@@ -212,15 +190,15 @@
                     const currentIndexMinutes = (Math.ceil(Math.abs(_this.scrollTop())/100));
                     const val = (currentIndexMinutes*100);
                     
-                    console.log("Haven't scrolled in 250ms!", val, currentIndexMinutes);
+                    //console.log("Haven't scrolled in 250ms!", val, currentIndexMinutes);
                     _this.animate({scrollTop: val}, 180, function(){
-                        console.log("currentIndexMinutes", middleIndexMinutes, currentIndexMinutes)
+                        //console.log("currentIndexMinutes", middleIndexMinutes, currentIndexMinutes)
                         if( middleIndexMinutes > currentIndexMinutes ){
-                            console.log("rigth", middleIndexMinutes-currentIndexMinutes)
+                            //console.log("rigth", middleIndexMinutes-currentIndexMinutes)
                             vue.minutes = vue.shiftRightMulti(vue.minutes, Math.abs(middleIndexMinutes-currentIndexMinutes));
                         }
                         else{
-                            console.log("left", middleIndexMinutes-currentIndexMinutes)
+                            //console.log("left", middleIndexMinutes-currentIndexMinutes)
                             vue.minutes = vue.shiftLeftMulti(vue.minutes, Math.abs(middleIndexMinutes-currentIndexMinutes));
                         }
                         console.log("minute:", vue.minutes[middleIndexMinutes]);
@@ -269,7 +247,7 @@
                 }
                 
                 if( ! slow && 0.01 <= Math.abs(speedInpxPerMs) && Math.abs(speedInpxPerMs) <= 0.05 && vue.heures.length > 1 ){
-                    console.log("slow");                   
+                    //console.log("slow");                   
                     slow = true;
                 }
 
@@ -279,9 +257,9 @@
                     const currentIndexHours = (Math.ceil(Math.abs(_this.scrollTop())/100));
                     const val = (currentIndexHours*100);
                     
-                    console.log("Haven't scrolled in 250ms!", val, currentIndexHours);
+                    //console.log("Haven't scrolled in 250ms!", val, currentIndexHours);
                     _this.animate({scrollTop: val}, 180, function(){
-                        console.log("currentIndexHours", middleIndexHours, currentIndexHours)
+                        //console.log("currentIndexHours", middleIndexHours, currentIndexHours)
                         if( middleIndexHours > currentIndexHours ){
                             //console.log("rigth", middleIndexHours-currentIndexHours)
                             vue.heures = vue.shiftRightMulti(vue.heures, Math.abs(middleIndexHours-currentIndexHours));
@@ -290,7 +268,7 @@
                             //console.log("left", middleIndexHours-currentIndexHours)
                             vue.heures = vue.shiftLeftMulti(vue.heures, Math.abs(middleIndexHours-currentIndexHours));
                         }
-                        console.log("hour:", vue.heures[middleIndexHours]);
+                        //console.log("hour:", vue.heures[middleIndexHours]);
                     });
                 }, 190));
             });

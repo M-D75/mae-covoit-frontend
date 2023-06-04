@@ -5,6 +5,10 @@
     .bottom-menu{
         z-index: 9999 !important;
     }
+
+    .invisible {
+        visibility: hidden;
+    }
 </style>
 
 <style lang="scss" scoped>
@@ -99,7 +103,7 @@
 
             <!-- Tableau de bord -->
             <!-- Credit Card -->
-            <CreditCard v-if="onglet=='table-bord'"/>
+            <CreditCard v-if="onglet=='table-bord'" v-on:add-credit="addCredit()"/>
 
             <!-- Graph -->
             <StatsTrajet v-if="onglet=='table-bord'"/>
@@ -118,7 +122,22 @@
         style="z-index: 0;"
         @click="callCloseBottomChild"
     ></v-overlay>
-    <BottomMenu ref="BottomMenuRef" v-on:close="overlay = false"/>
+    <BottomMenu 
+        :class-name="modeBottomMenu=='history' ? {'history': true} : {'none': true}" 
+        mode="history" 
+        ref="BottomMenuRef" 
+        v-on:close="overlay = false"
+        />
+
+    <BottomMenu
+        :class-name="{'add-credit': true}"
+        :mode="modeBottomMenu"
+        labelSelectorN1="Quel montant souhaitez-vous créditer sur votre compte ?"
+        ref="BottomMenuRefPortefeuilNotif" 
+        v-on:close="overlay = false"
+        v-on:add-credit-notif="addCredit()"
+        v-on:recharger="recharger()"
+        />
 </template>
 
 
@@ -157,6 +176,7 @@
         },
         data() {
             return {
+                modeBottomMenu: "history",
                 modeEdit: false,
                 overlay: false,
                 onglet: "table-bord",
@@ -252,8 +272,8 @@
                 this.$router.push("/profil/perso")
             },
             history(){
-                console.log("history");
-
+                console.log("history", this.modeBottomMenu);
+                this.modeBottomMenu = "history"
                 if ( this.$refs.BottomMenuRef ) {
                     if( ! this.overlay ){
                         this.overlay = this.$refs.BottomMenuRef.open();
@@ -262,18 +282,53 @@
                         this.overlay = this.$refs.BottomMenuRef.close();
                     }
                 }
-
             },
             callCloseBottomChild() {
                 if ( this.$refs.BottomMenuRef ) {
                     this.overlay = this.$refs.BottomMenuRef.close();
                 }
             },
+            addCredit(){
+                console.log("addCredit")
+                if( this.modeBottomMenu != "add-credit-notif" ){
+                    this.modeBottomMenu = "add-credit-notif";
+                    if ( this.$refs.BottomMenuRefPortefeuilNotif ) {
+                        console.log("add-credit-2")
+                        this.overlay = this.$refs.BottomMenuRefPortefeuilNotif.open();
+                    }
+                }
+                else if( this.modeBottomMenu == "add-credit-notif" ){
+                    this.modeBottomMenu = "add-credit";
+                    if ( this.$refs.BottomMenuRefPortefeuilNotif ) {
+                        console.log("add-credit-3")
+                        this.overlay = this.$refs.BottomMenuRefPortefeuilNotif.open();
+                    }
+                }
+            },
+            recharger(){
+                console.log("recharger");
+                this.modeBottomMenu = "recharge-valided";
+                // if ( this.$refs.BottomMenuRefPortefeuilNotif ) {
+                //     console.log("add-credit-5")
+                //     this.overlay = this.$refs.BottomMenuRefPortefeuilNotif.close();
+                // }
+            },
         },
         watch: {
             darkMode(){
                 this.infos_panneau[2].icon = ! this.$store.state.darkMode ? "mdi-lightbulb-on" : "mdi-moon-waning-crescent";
-            }
+            },
+            overlay(){
+                if(!this.overlay){
+                    if ( this.$refs.BottomMenuRef ) {
+                        this.overlay = this.$refs.BottomMenuRef.close();
+                    }
+
+                    if ( this.$refs.BottomMenuRefPortefeuilNotif ) {
+                        this.overlay = this.$refs.BottomMenuRefPortefeuilNotif.close();
+                    }
+                }
+            },
         }
     });
 </script>

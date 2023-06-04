@@ -6,7 +6,7 @@
 
     .card-trajet-history {
         margin: 10px auto;
-        background-color: var(--bg-app-color);
+        //background-color: var(--bg-app-color);
         .v-card {
             display: flex;
             justify-content: space-between;

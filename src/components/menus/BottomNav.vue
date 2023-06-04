@@ -1,8 +1,18 @@
 
 
 <style lang="scss" model>
-    .v-btn--variant-text .v-btn__overlay {
-        background-color: white !important;
+    
+
+    .v-bottom-navigation {
+        .selected {
+            .v-btn__content {
+                color: var(--blue-color);
+            }
+        }
+
+        .v-btn--variant-text .v-btn__overlay {
+            background-color: white !important;
+        }
     }
 </style>
 
@@ -24,6 +34,9 @@
 
         .selected {
             color: var(--blue-color);
+            .v-btn__content {
+                color: var(--blue-color);
+            }
             .v-icon {
                 color: var(--blue-color);
             }

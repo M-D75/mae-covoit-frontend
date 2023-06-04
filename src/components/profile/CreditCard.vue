@@ -144,7 +144,8 @@
         methods: {
             portefeuille(){
                 console.log("portefeuille");
-                this.solde = (new Intl.NumberFormat('de-DE').format(Math.floor(Math.random()*600000)+600)).replaceAll(".", " ")
+                this.solde = (new Intl.NumberFormat('de-DE').format(Math.floor(Math.random()*600000)+600)).replaceAll(".", " ");
+                this.$emit("add-credit");
             },
         },
     };

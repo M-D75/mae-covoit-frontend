@@ -17,6 +17,7 @@
       margin: 30px auto;
       .title {
          font-size: var(--font-size-h1);
+         color: var(--font-color-label);
          font-weight: bold;
          width: 100%;
          padding: 0 39px 0px 39px;
@@ -105,36 +106,46 @@
          };
       },
       mounted() {
-         this.date = this.$refs.PaneGetValueRef.getDate();
+         if(this.$refs.PaneGetValueRef){
+            this.date = this.$refs.PaneGetValueRef.getDate();
+         }
       },
       methods: {
          getTrajet() {
-            const depart = this.$refs.TrajetSearchRef.depart;
-            const destination = this.$refs.TrajetSearchRef.destination;
-            this.infos = this.$store.state.trajets.filter(trajet => trajet.depart == depart && trajet.destination == destination)[0]
+            if(this.$refs.PaneGetValueRef){
+               const depart = this.$refs.TrajetSearchRef.depart;
+               const destination = this.$refs.TrajetSearchRef.destination;
+               this.infos = this.$store.state.trajets.filter(trajet => trajet.depart == depart && trajet.destination == destination)[0];
+            }
          },
          openCalendar(){
             console.log("open-pan-calendar-search")
             this.modePanel = "date";
-            this.openP = !this.openP;
+            this.openP = true;
          },
          openSearch(mode){
-            console.log("select-depart");
+            console.log("select-", mode);
             this.modePanel = mode == 'dep' ? "depart" : "arriver";
-            this.openP = !this.openP;
+            this.openP = true;
          },
          getDate(){
             console.log("get-date-search");
-            this.date = this.$refs.PaneGetValueRef.date;
-            this.openP = !this.openP;
+            if(this.$refs.PaneGetValueRef){
+               this.date = this.$refs.PaneGetValueRef.date;
+               this.openP = !this.openP;
+            }
          },
          getDepart(){
-            this.depart = this.$refs.PaneGetValueRef.getDep();
-            this.openP = !this.openP;
+            if(this.$refs.PaneGetValueRef){
+               this.depart = this.$refs.PaneGetValueRef.getDep();
+               this.openP = !this.openP;
+            }
          },
          getDestination() {
-            this.destination = this.$refs.PaneGetValueRef.getDest();
-            this.openP = !this.openP;
+            if(this.$refs.PaneGetValueRef){
+               this.destination = this.$refs.PaneGetValueRef.getDest();
+               this.openP = !this.openP;
+            }
          },
          switchCommune(){
             var tmp = this.depart;

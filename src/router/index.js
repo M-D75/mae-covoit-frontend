@@ -8,7 +8,9 @@ import HomeSearch from '@/views/HomeSearch.vue'
 import Results from '@/views/Results.vue'
 import Publish from '@/views/Publish.vue'
 import SelectCar from '@/views/publish/SelectCar.vue'
-
+import HourDepOther from '@/components/publish/HourDepOther.vue'
+import HourProgram from '@/components/publish/HourProgram.vue'
+import Itineraire from '@/components/publish/Itineraire.vue'
 
 const routes = [
   {
@@ -47,6 +49,18 @@ const routes = [
   {
     path: '/publish/select-car',
     component: SelectCar,
+  },
+  {
+    path: '/hourdep',
+    component: HourDepOther,
+  },
+  {
+    path: '/hourpogram',
+    component: HourProgram,
+  },
+  {
+    path: '/itineraire',
+    component: Itineraire,
   },
   {
     path: '/',

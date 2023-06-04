@@ -64,6 +64,7 @@
                 label="Saisissez une commune"
                 :focus="true"
                 :items="items"
+                :history="communesHistory"
                 @selected="getSelected()" 
                 @saisi="getSaisi()"
             />
@@ -75,6 +76,7 @@
                 label="Saisissez une commune"
                 :focus="true"
                 :items="items"
+                :history="communesHistory"
                 @selected="getSelected()" 
                 @saisi="getSaisi()"
             />
@@ -98,7 +100,7 @@
     export default defineComponent({
         name: 'pan-get-value-comp',
         computed: {
-            ...mapState(['communes']),
+            ...mapState(['communes', 'communesHistory']),
         },
         components: {
             Search,
@@ -149,10 +151,14 @@
             let year = date.getFullYear();
 
             this.date = new Date(`${month}/${day}/${year}`);
+
+            this.items = this.communesHistory.filter((commune) => (commune != this.startTrajet && commune != this.endTrajet))
             console.log("end-mouted")
         },
         methods: {
             open(){
+                this.saisi = "";
+                this.items = this.communesHistory.filter((commune) => (commune != this.startTrajet && commune != this.endTrajet))
                 console.log("pane-open:")
                 $(".pan-get-value").animate({top: "0px"}, 'fast')
                 $(".pan-get-value").css("top", `0px`)
@@ -178,14 +184,18 @@
                 return this.date;
             },
             getSaisi(){
-                console.log("getSaisi:", this.$refs.SearchRef.getSaisi())
-                this.saisi = this.$refs.SearchRef.getSaisi();
-                if( this.saisi == "" ) {
-                    this.items = this.communes;
+                console.log("Pane--getSaisi")
+                if(this.$refs.SearchRef){
+                    console.log("getSaisi:", this.$refs.SearchRef.getSaisi())
+                    this.saisi = this.$refs.SearchRef.getSaisi();
+                }
+
+                if( this.saisi == "" || this.saisi == null ) {
+                    this.items = this.communesHistory.filter((commune) => (commune != this.startTrajet && commune != this.endTrajet))
                     return;
                 }
 
-                this.items = this.communes.filter((commune) => this.saisi != commune && commune.toLowerCase().includes(this.saisi.toLocaleLowerCase()));
+                this.items = this.communes.filter((commune) => this.saisi != commune && commune.toLowerCase().includes(this.saisi.toLocaleLowerCase()) && commune != this.startTrajet && commune != this.endTrajet);
             },
             getSelected(){
                 console.log("child-selected", this.startTrajet, this.endTrajet, this.mode)

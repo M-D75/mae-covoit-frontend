@@ -42,12 +42,18 @@
                .calendar {
                   .v-list-item-title, .v-list-item__content{
                      font-weight: bold;
+                     color: var(--font-color-label);
                   }
                }
 
-               .nb-person.v-list-item i.v-icon {
-                  margin-right: 20px;
-                  color: gray !important;
+               .nb-person.v-list-item {
+                  .v-list-item__content{
+                     color: var(--font-color-label);
+                  }
+                  i.v-icon {
+                     margin-right: 20px;
+                     color: gray !important;
+                  }
                }
                .mdi-account-plus.mdi.v-icon.notranslate.v-theme--light.v-icon--size-default {
                   margin-right: 15px;
@@ -81,6 +87,23 @@
          }
       }
    }
+
+   .cont-btn {
+      width: 70%;
+      cursor: pointer;
+      z-index: 1;
+   }
+
+   .head-search-selected {
+      color: gray;
+      font-size: 0.8em;
+      position: absolute;
+      top: -2px;
+      padding: 0 17.5px;
+   }
+   .v-btn.selected {
+      color: var(--font-color-label) !important;
+   }
 </style>
 
 <!-- scoped -->
@@ -89,7 +112,7 @@
       margin: 35px;
       margin-top: 10px;
       width: 89.6%;
-      //height: 256px;
+      background-color: var(--white-bg-color);
       box-shadow: var(--box-shadow-card);
       .v-list-item {
          &.calendar {
@@ -129,6 +152,7 @@
       .v-btn.search-btn {
          position: relative;
          bottom: -10px;
+         color: var(--font-color-label);
       }
    }
    
@@ -142,52 +166,70 @@
    >
       <v-list>
          <div class="part-list">
+
+            <!-- Depart -->
             <v-list-item
                class="container-text trajet-search-comp"
             >
                <v-icon>mdi-navigation</v-icon>
-               <v-btn
+               <div 
                   v-if="(depart == null || depart == '')"
-                  variant="solo"
-                  class="text-none"
-                  @click="openDepEmit()"
-               >Départ</v-btn>
+                  class="cont-btn" @click="openDepEmit()"
+               >
+                  <v-btn
+                     variant="solo"
+                     class="text-none"
+                     @click="openDepEmit()"                  
+                  >Départ</v-btn>
+               </div>
 
-               <v-autocomplete
+               <div 
                   v-if="!(depart == null || depart == '')"
-                  v-model="depart"
-                  label="Départ"
-                  persistent-hint
-                  variant="solo"
-                  clearable
+                  class="cont-btn" 
                   @click="openDepEmit()"
-               ></v-autocomplete>
+                  >
+                  <div 
+                     class="head-search-selected"
+                  >Depart</div>
+                  <v-btn
+                     variant="solo"
+                     class="text-none selected"
+                     @click="openDepEmit()"
+                  >{{ depart }}</v-btn>
+               </div>
             </v-list-item>
             
+            <!-- Destination -->
             <v-list-item
                class="container-text trajet-search-comp"
             >
                <v-icon>mdi-navigation</v-icon>
-               <v-btn
+               <div 
                   v-if="(destination == null || destination == '')"
-                  class="text-none"
-                  variant="solo"
+                  class="cont-btn" 
                   @click="openDestEmit()"
-               >Destination</v-btn>
+                  >
+                  <v-btn
+                     class="text-none"
+                     variant="solo"
+                     @click="openDestEmit()"
+                  >Destination</v-btn>
+               </div>
 
-               <v-autocomplete
+               <div 
                   v-if="!(destination == null || destination == '')"
-                  v-model="destination"
-                  :items="communes.filter(address => address != depart)"
-                  label="Destination"
-                  :focused="focus"
-                  :active="focus"
-                  :autofocus="focus"
-                  persistent-hint
-                  variant="solo"
-                  clearable
+                  class="cont-btn" 
                   @click="openDestEmit()"
-               ></v-autocomplete>
+               >
+                  <div 
+                     class="head-search-selected"
+                  >Destination</div>
+                  <v-btn
+                     variant="solo"
+                     class="text-none selected"
+                     @click="openDestEmit()"
+                  >{{ destination }}</v-btn>
+               </div>
             </v-list-item>
 
             
@@ -207,10 +249,10 @@
                      <v-btn 
                         icon
                         variant="text"
+                        @click="switchCommuneEmit()"
                      >
                         <v-icon
                            class=""
-                           @click="switchCommuneEmit()"
                            variant="text"
                         >mdi-repeat-variant</v-icon>
                      </v-btn>
@@ -235,6 +277,7 @@
 
 
 <script>
+   import $ from 'jquery'
    import { mapState } from 'vuex';
 
    export default {
@@ -263,13 +306,40 @@
             depart: null,
             destination: null,
             numberTrajet: 0,
-            focus: false,
+            switch: false,
          }
       },
       mounted (){
       },
       methods: {
          switchCommuneEmit(){
+            //Animation
+            if( ! this.switch ){
+               $('.cont-btn-switch .v-btn .v-icon').animate(
+                  { deg: 180 },
+                  {
+                     duration: 400,
+                     step: function(now) {
+                        $(this).css({ transform: 'rotate(' + now + 'deg)' });
+                     }
+                  }
+               );
+               this.switch = true;
+            }
+            else {
+               $('.cont-btn-switch .v-btn .v-icon').animate(
+                  { deg: 0 },
+                  {
+                     duration: 400,
+                     step: function(now) {
+                        $(this).css({ transform: 'rotate(' + now + 'deg)' });
+                     }
+                  }
+               );
+               this.switch = false;
+            }
+
+            //action
             this.$emit("switch-commune");
          },
          goResult(){
@@ -287,7 +357,6 @@
             this.$emit("open-calendar");
          },
          openDepEmit(){
-            this.focus = false,
             this.$emit("open-dep");
          },
          openDestEmit(){

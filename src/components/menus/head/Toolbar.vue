@@ -17,15 +17,17 @@
    .v-toolbar {
       position: fixed;
       z-index: 1;
+      background-color: var(--bg-app-color);
       .v-btn i.v-icon {
          margin-right: 0 !important;
+         color: var(--gray-icon-color);
          &.mdi-chevron-left {
             font-size: 2em;
          }
       }
       .v-toolbar-title {
          font-size: var(--font-size-h1-toolbar);
-         color: gray;
+         color: var(--font-color-label);
          .text-subtitle-2 {
             font-size: var(--font-size-subtitle-toolbar);
          }

@@ -10,6 +10,13 @@
 
 
    .v-card {
+        > .v-list {
+            background-color: var(--white-bg-color);
+            .v-field__field {
+                background-color: var(--white-bg-color);
+                color: var(--font-color-label);
+            }
+        }
         .v-input {
             height: 78px;
             margin-left: 8px;
@@ -32,6 +39,9 @@
     .v-card.list {
         > .v-list {
             .v-list-item {
+                .v-list-item__content {
+                    color: var(--font-color-label);
+                }
                 .v-list-item__prepend {
                     .v-icon {
                         font-weight: bold;
@@ -59,6 +69,7 @@
             font-weight: bold;
             width: 100%;
             margin: 25px auto;
+            color: var(--font-color-label);
         }
         
         .blc-text {
@@ -67,6 +78,13 @@
         .v-card {
             width: 90%;
             box-shadow: none;
+            background-color: var(--white-bg-color);
+            > .v-list {
+                background-color: var(--white-bg-color);
+                .v-field__field {
+                    background-color: var(--white-bg-color);
+                }
+            }
             .v-input {
                 margin-left: 8px;
                 .v-input__prepend {
@@ -136,12 +154,28 @@
             <v-list
             >
                 <v-list-item
+                    v-for="(item, index) in (items.filter( (commune) => history.includes(commune) ))"
+                    :key="index"
+                    :value="index"
+                    :prepend-icon="'mdi-history'"
+                    @click="select(item)"
+                >{{ item }}</v-list-item>
+
+                <v-list-item
+                    v-for="(item, index) in (items.filter( (commune) => ! history.includes(commune) ))"
+                    :key="index"
+                    :value="index"
+                    :prepend-icon="'mdi-magnify'"
+                    @click="select(item)"
+                >{{ item }}</v-list-item>
+
+                <!-- <v-list-item
                     v-for="(item, index) in (items.length > 0 ? items : history)"
                     :key="index"
                     :value="index"
                     :prepend-icon="history.includes(item) ? 'mdi-history' : 'mdi-magnify'"
                     @click="select(item)"
-                >{{ item }}</v-list-item>
+                >{{ item }}</v-list-item> -->
             </v-list>
         </v-card>
     </div>
