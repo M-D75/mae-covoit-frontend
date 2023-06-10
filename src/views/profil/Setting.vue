@@ -150,14 +150,7 @@
                             },
                             {
                                 prependIcon: null,
-                                text:"Adress Postal",
-                                chip:true,
-                                chipIcon: "mdi-chevron-right",
-                                chipText: "",
-                            },
-                            {
-                                prependIcon: null,
-                                text:"Numéro de télephone",
+                                text:"Informations personelles",
                                 chip:true,
                                 chipIcon: "mdi-chevron-right",
                                 chipText: "",

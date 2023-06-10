@@ -34,7 +34,7 @@
                 :chip="param.chip"
                 :chipIcon="param.chipIcon"
                 :chipText="param.chipText"
-                
+                :fun="group.fun"
             />
         </div>
     </div>

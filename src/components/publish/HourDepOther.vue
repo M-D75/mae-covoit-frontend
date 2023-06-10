@@ -110,7 +110,7 @@
                 >
                     <div class="dom">
                         <div class="type">Domicile</div>
-                        <div class="hour">08:00</div>
+                        <div class="hour">{{ hour.domicile }}</div>
                         <div class="btn">
                             <v-switch
                                 hide-details
@@ -123,7 +123,7 @@
 
                     <div class="work">
                         <div class="type">Travail</div>
-                        <div class="hour">17:00</div>
+                        <div class="hour">{{ hour.work }}</div>
                         <div class="btn">
                             <v-switch
                                 hide-details
@@ -144,6 +144,7 @@
                 size="x-large"
                 variant="outlined"
                 block
+                @click="emit('hour-dep-other-valided')"
             >Continuer</v-btn>
         </div>
     </div>
@@ -169,7 +170,15 @@
         components: {
         },
         props: {
-            
+            hour: {
+                type: Object,
+                default: () => (
+                    {
+                        "domicile":"08:00",
+                        "work":"17:00",
+                    }
+                ),
+            }
         },
         data() {
             return {
@@ -180,7 +189,9 @@
             
         },
         methods: {
-            
+            emit(value){
+                this.$emit(value);
+            },
         },
         watch: {
 

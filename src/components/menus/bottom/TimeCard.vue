@@ -1,19 +1,17 @@
 
 <style lang="scss" model>
-//    .rolling {
-//         animation-name: roll-up;
-//         animation-duration: 1s;
-//         animation-timing-function: ease-in-out;
-//     }
+    @import url('https://fonts.cdnfonts.com/css/modern-lcd-7');
+    @import url('https://fonts.cdnfonts.com/css/digital-dismay');
+    @import url('https://fonts.cdnfonts.com/css/ww-digital');
+    @import url('https://fonts.cdnfonts.com/css/7segments');
+    
+    .ligth-mode * {
+        --bg-mask: rgba(255, 255, 255, 0.77);
+    }
 
-//     @keyframes roll-up {
-//         0% {
-//             transform: translateY(0);
-//         }
-//         100% {
-//             transform: translateY(-100%);
-//         }
-//     }
+    .dark-mode * {
+        --bg-mask: rgba(53, 53, 53, 0.77);
+    }
 
     .scrollable-container {
         cursor: pointer;
@@ -22,7 +20,6 @@
         scrollbar-color: transparent transparent;
     }
 
-    /* Pour Chrome, Edge et Safari */
     .scrollable-container::-webkit-scrollbar {
         width: 6px;
     }
@@ -41,7 +38,7 @@
     .v-card {
         background-color: var(--white-bg-color);
         color: var(--font-color-label);
-        border-radius: 5px;
+        border-radius: 10px !important;
         margin-top: 20px;
         width: 70%;
         box-shadow: var(--box-shadow-card);
@@ -49,16 +46,31 @@
             position: relative;
             display: flex;
             overflow: hidden;
-            height: 100px;
+            height: 300px;
             font-size: 4.5em;
             font-weight: 700;
             user-select: none;
+
+            .mask-top, .mask-bottom {
+                height: 100px;
+                width: 100%;
+                background-color: var(--bg-mask);
+                z-index: 50;
+                pointer-events: none;
+            }
+
+            .mask-top {
+                position: absolute;
+                top: 0;
+                left: 0;
+            }
 
             div.hour-list {
                 width: 100%;
                 overflow-y: scroll;
                 div {
-                    height: 100%;
+                    font-family: 'WW Digital', 'Digital Dismay', 'Helvetica', sans-serif;
+                    height: 100px;
                     position: relative;
                     text-align: right;
                 }
@@ -68,16 +80,35 @@
                 text-align: center;
                 line-height: 1.37;
                 width: 30%;
+                z-index: 51;
+                .sub {
+                    position: relative;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    height: 90%;
+                    margin: auto;
+                    .v-divider {
+                        position: absolute;
+                        height: 100%;
+                    }
+                }
             }
 
             div.minute-list {
                 overflow-y: scroll;
                 width: 100%;
                 div {
-                    height: 100%;
+                    font-family: 'WW Digital', 'Digital Dismay', 'Helvetica', sans-serif;
+                    height: 100px;
                     position: relative;
                     text-align: left;
                 }
+            }
+
+            .mask-bottom {
+                position: absolute;
+                bottom: 0;
+                left: 0;
             }
         }
     }
@@ -93,27 +124,31 @@
         <div
             class="time" 
         >
-
+            <div class="mask-top"></div>
             <div class="hour-list mx-auto scrollable-container">
                 <div 
                     v-for="heure in heures" 
                     :key="heure"
                     :id="'h-'+heure"
-                    :class="'h-'+heure"
+                    :class="'h-'+heure+' hour'"
                 >{{ heure }}</div>
             </div>
 
-            <div class="sep-time mx-auto">:</div>
+            <div class="sep-time mx-auto">
+                <div class="sub">
+                    <v-divider :thickness="2" color="black" vertical></v-divider>
+                </div>
+            </div>
 
             <div class="minute-list mx-auto scrollable-container">
                 <div 
                     v-for="minute in minutes" 
                     :key="minute"
                     :id="'m-'+minute"
-                    :class="{ 'rolling': rollingMinutes.includes(minute) }"
+                    :class="'minutes'"
                 >{{ minute }}</div>
             </div>
-            
+            <div class="mask-bottom"></div>
         </div>
     </v-card>
 </template>
@@ -144,10 +179,10 @@
         },
         mounted(){
             
-            const middleIndexMinutes = this.minutes.length/2;
+            const middleIndexMinutes = (this.minutes.length/2);
             this.minutes = this.shiftRightMulti(this.minutes, middleIndexMinutes);
             setTimeout(function(){
-                $(".scrollable-container.minute-list").scrollTop(100*middleIndexMinutes);
+                $(".scrollable-container.minute-list").scrollTop(100*(middleIndexMinutes-1));
             }, 50);
 
             var lastOffset = $(".scrollable-container").scrollTop();
@@ -171,9 +206,11 @@
 
                 if( middleIndexMinutes > currentIndexMinutes ){
                     vue.minutes = vue.shiftRightMulti(vue.minutes, Math.abs(middleIndexMinutes-currentIndexMinutes));
+                    vue.$emit("time-changed");
                 }
-                else{
+                else if( middleIndexMinutes < currentIndexMinutes ){
                     vue.minutes = vue.shiftLeftMulti(vue.minutes, Math.abs(middleIndexMinutes-currentIndexMinutes));
+                    vue.$emit("time-changed");
                 }
                 
                 if ( slow && Math.abs(speedInpxPerMs) >= 0.50 ) {
@@ -213,7 +250,7 @@
             const middleIndexHours = this.heures.length/2;
             this.heures = this.shiftRightMulti(this.heures, middleIndexHours);
             setTimeout(function(){
-                $(".scrollable-container.hour-list").scrollTop(100*middleIndexHours);
+                $(".scrollable-container.hour-list").scrollTop(100*(middleIndexHours-1));
             }, 50);
             
             var lastOffsetH = $(".scrollable-container").scrollTop();
@@ -230,16 +267,18 @@
                 lastOffsetH = e.target.scrollTop;
 
                 const currentIndexHours = (Math.ceil(Math.abs(_this.scrollTop())/100));
-                const val = (currentIndexHours*100);
+                //const val = (currentIndexHours*100);
                 
-                console.log("FAST", val, currentIndexHours);
+                //console.log("FAST", val, currentIndexHours);
                 if( middleIndexHours > currentIndexHours ){
                     //console.log("rigth", middleIndexHours-currentIndexHours)
                     vue.heures = vue.shiftRightMulti(vue.heures, Math.abs(middleIndexHours-currentIndexHours));
+                    vue.$emit("time-changed");
                 }
-                else{
+                else if( middleIndexHours < currentIndexHours ){
                     //console.log("left", middleIndexHours-currentIndexHours)
                     vue.heures = vue.shiftLeftMulti(vue.heures, Math.abs(middleIndexHours-currentIndexHours));
+                    vue.$emit("time-changed");
                 }
                 
                 if ( slow && Math.abs(speedInpxPerMs) >= 0.50 ) {
@@ -301,6 +340,13 @@
                     arr = this.shiftLeft(arr);
                 }
                 return arr;
+            },
+            getTime(){
+                const middleIndexHours = (this.heures.length/2)+1;
+                const middleIndexMinutes = (this.minutes.length/2)+1;
+                // const currentIndexMinutes = (Math.ceil(Math.abs($(".scrollable-container.minute-list").scrollTop())/100));
+                // const currentIndexHours = (Math.ceil(Math.abs($(".scrollable-container.hour-list").scrollTop())/100));
+                return this.heures[middleIndexHours] + ":" + this.minutes[middleIndexMinutes];
             },
         },
         watch: {

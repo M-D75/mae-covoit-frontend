@@ -91,7 +91,11 @@
     >
         <div class="row-item infos">
             <div class="label">Solde Disponible</div>
-            <div class="solde"><v-icon @click="portefeuille()">mdi-credit-card</v-icon>EUR {{ solde }}</div>
+            <div class="solde">
+                <v-icon 
+                    @click="emit('up-money')"
+                    >mdi-credit-card</v-icon>EUR {{ solde }}
+            </div>
         </div>
 
         <div class="row-item btn">
@@ -100,7 +104,7 @@
             >
                 <div 
                     class="btn eye"
-                    @click="eyeOff = !eyeOff"
+                    @click="emit('add-card')"
                 >
                     <v-icon v-if="eyeOff">mdi-eye-off</v-icon>
                     <v-icon v-else>mdi-eye</v-icon>
@@ -110,7 +114,10 @@
                     <v-icon>mdi-credit-card</v-icon>
                 </div> -->
 
-                <div class="btn hand">
+                <div 
+                    class="btn hand"
+                    @click="emit('drop-money')"
+                    >
                     <v-icon>mdi-hand-coin-outline</v-icon>
                 </div>
 
@@ -146,6 +153,9 @@
                 console.log("portefeuille");
                 this.solde = (new Intl.NumberFormat('de-DE').format(Math.floor(Math.random()*600000)+600)).replaceAll(".", " ");
                 this.$emit("add-credit");
+            },
+            emit(value){
+                this.$emit(value);
             },
         },
     };

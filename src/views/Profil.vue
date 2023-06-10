@@ -88,7 +88,7 @@
         />
 
         <!-- ? -->
-        <PanneauInfo :infos_panneau="infos_panneau" v-on:history="history()" />
+        <PanneauInfo :infos_panneau="infos_panneau" v-on:history="onHistory()" />
 
         <!-- Parameter like menu TODO:no activate -->
         <GroupCard class="grouP" :groupeParameters="groupeParameters" v-if="false"/>
@@ -103,7 +103,12 @@
 
             <!-- Tableau de bord -->
             <!-- Credit Card -->
-            <CreditCard v-if="onglet=='table-bord'" v-on:add-credit="addCredit()"/>
+            <CreditCard 
+                v-if="onglet=='table-bord'" 
+                v-on:up-money="onUpMoney()"
+                v-on:add-card="onAddCard()"
+                v-on:drop-money="onDropMoney()"
+            />
 
             <!-- Graph -->
             <StatsTrajet v-if="onglet=='table-bord'"/>
@@ -116,28 +121,41 @@
     <BottomNav />
 
     <v-overlay 
-        v-model="overlay" 
+        v-model="overlay"
         contained
         persistent
         style="z-index: 0;"
-        @click="callCloseBottomChild"
+        @click="overlay = false"
     ></v-overlay>
-    <BottomMenu 
-        :class-name="modeBottomMenu=='history' ? {'history': true} : {'none': true}" 
-        mode="history" 
-        ref="BottomMenuRef" 
+
+    <!-- history -->
+    <BottomMenu
+        :class-name="modeBottomMenu=='history' ? ['history'] : ['none']" 
+        mode="history"
+        ref="BottomMenuRefHistory" 
         v-on:close="overlay = false"
         />
 
+    <!-- register credit card -->
     <BottomMenu
-        :class-name="{'add-credit': true}"
+        ref="BottomMenuRefAddCard"
+        :class-name="['register-credit-card']"
+        mode="register-credit-card"
+        v-on:close="overlay = false"
+        />
+
+    <!-- money -->
+    <BottomMenu
+        :class-name="['money']"
         :mode="modeBottomMenu"
         labelSelectorN1="Quel montant souhaitez-vous créditer sur votre compte ?"
-        ref="BottomMenuRefPortefeuilNotif" 
+        ref="BottomMenuRefMoney" 
         v-on:close="overlay = false"
-        v-on:add-credit-notif="addCredit()"
-        v-on:recharger="recharger()"
+        v-on:drop-money="onDropMoney()"
+        v-on:up-money="onUpMoney()"
         />
+
+    
 </template>
 
 
@@ -265,21 +283,32 @@
                         ],
                     },
                 ],
+                indexModeNavigation: 0,
+                modePathNavigation: '',
+                pathNavigation: {
+                    'drop-money': [
+                            {mode:'drop-money'}, 
+                            {mode:'confirme-drop-money'},
+                        ],
+                    'up-money': [
+                            {mode:'up-money'}, 
+                            {mode:'confirme-up-money'},
+                        ],
+                }
             }
         },
         methods: {
             goToInfoPerso(){
                 this.$router.push("/profil/perso")
             },
-            history(){
-                console.log("history", this.modeBottomMenu);
+            onHistory(){
                 this.modeBottomMenu = "history"
-                if ( this.$refs.BottomMenuRef ) {
+                if ( this.$refs.BottomMenuRefHistory ) {
                     if( ! this.overlay ){
-                        this.overlay = this.$refs.BottomMenuRef.open();
+                        this.overlay = this.$refs.BottomMenuRefHistory.open();
                     }
                     else {
-                        this.overlay = this.$refs.BottomMenuRef.close();
+                        this.overlay = this.$refs.BottomMenuRefHistory.close();
                     }
                 }
             },
@@ -292,25 +321,73 @@
                 console.log("addCredit")
                 if( this.modeBottomMenu != "add-credit-notif" ){
                     this.modeBottomMenu = "add-credit-notif";
-                    if ( this.$refs.BottomMenuRefPortefeuilNotif ) {
+                    if ( this.$refs.BottomMenuRefMoney ) {
                         console.log("add-credit-2")
-                        this.overlay = this.$refs.BottomMenuRefPortefeuilNotif.open();
+                        this.overlay = this.$refs.BottomMenuRefMoney.open();
                     }
                 }
                 else if( this.modeBottomMenu == "add-credit-notif" ){
                     this.modeBottomMenu = "add-credit";
-                    if ( this.$refs.BottomMenuRefPortefeuilNotif ) {
+                    if ( this.$refs.BottomMenuRefMoney ) {
                         console.log("add-credit-3")
-                        this.overlay = this.$refs.BottomMenuRefPortefeuilNotif.open();
+                        this.overlay = this.$refs.BottomMenuRefMoney.open();
                     }
                 }
+            },
+            onAddCard(){
+                if( this.modeBottomMenu != "register-credit-card" ){
+                    this.modeBottomMenu = "register-credit-card";
+                }
+
+                if ( this.$refs.BottomMenuRefAddCard ) {
+                    this.overlay = this.$refs.BottomMenuRefAddCard.open();
+                }
+            },
+            onDropMoney(){
+                if( this.modePathNavigation != "drop-money" ){
+                    
+                    this.modePathNavigation = "drop-money";
+                    this.indexModeNavigation = -1;
+                    this.pathNavigationNext();
+
+                    setTimeout(function(){
+                        if ( this.$refs.BottomMenuRefMoney ) {
+                            this.overlay = this.$refs.BottomMenuRefMoney.open();
+                        }
+                    }.bind(this), 500);
+                }
+                else {
+                    this.pathNavigationNext();
+                }
+            },
+            onUpMoney(){
+                if( this.modePathNavigation != "up-money" ){
+                    
+                    this.modePathNavigation = "up-money";
+                    this.indexModeNavigation = -1;
+                    this.pathNavigationNext();
+                    
+                    setTimeout(function(){
+                        if ( this.$refs.BottomMenuRefMoney ) {
+                            this.overlay = this.$refs.BottomMenuRefMoney.open();
+                        }
+                    }.bind(this), 500);
+                }
+                else {
+                    this.pathNavigationNext();
+                }
+            },
+            pathNavigationNext(){
+                this.indexModeNavigation = (this.indexModeNavigation + 1) % this.pathNavigation[this.modePathNavigation].length;
+                this.modeBottomMenu = this.pathNavigation[this.modePathNavigation][this.indexModeNavigation].mode;
+                console.log("pathNavNext:", this.modeBottomMenu, this.indexModeNavigation, this.modePathNavigation)
             },
             recharger(){
                 console.log("recharger");
                 this.modeBottomMenu = "recharge-valided";
-                // if ( this.$refs.BottomMenuRefPortefeuilNotif ) {
+                // if ( this.$refs.BottomMenuRefMoney ) {
                 //     console.log("add-credit-5")
-                //     this.overlay = this.$refs.BottomMenuRefPortefeuilNotif.close();
+                //     this.overlay = this.$refs.BottomMenuRefMoney.close();
                 // }
             },
         },
@@ -319,14 +396,20 @@
                 this.infos_panneau[2].icon = ! this.$store.state.darkMode ? "mdi-lightbulb-on" : "mdi-moon-waning-crescent";
             },
             overlay(){
-                if(!this.overlay){
-                    if ( this.$refs.BottomMenuRef ) {
-                        this.overlay = this.$refs.BottomMenuRef.close();
+                if( ! this.overlay ){
+                    if ( this.$refs.BottomMenuRefHistory ) {
+                        this.$refs.BottomMenuRefHistory.close();
                     }
 
-                    if ( this.$refs.BottomMenuRefPortefeuilNotif ) {
-                        this.overlay = this.$refs.BottomMenuRefPortefeuilNotif.close();
+                    if ( this.$refs.BottomMenuRefMoney ) {
+                        this.$refs.BottomMenuRefMoney.close();
                     }
+
+                    if ( this.$refs.BottomMenuRefAddCard ) {
+                        this.$refs.BottomMenuRefAddCard.close();
+                    }
+                    this.indexModeNavigation = -1;
+                    this.modePathNavigation = "";
                 }
             },
         }

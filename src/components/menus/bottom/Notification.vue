@@ -135,11 +135,9 @@
       },
       methods: {
          action(){
-            console.log("action")
-            if( this.mode=="add-credit-notif" ){
-               console.log("mode--", this.mode)
-               this.$emit("add-credit-confirmed")
-            }
+            console.log("action:");
+            console.log("mode--", this.mode);
+            this.$emit(this.mode);
          },
       },
    };

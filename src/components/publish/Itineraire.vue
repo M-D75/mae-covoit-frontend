@@ -39,7 +39,7 @@
             left: 0;
             width: 100%;
             margin: auto;
-            height: 1065px;
+            height: 990px;
             .over {
                 display: none;
                 position: absolute;
@@ -88,7 +88,7 @@
                 @click="itineraireValided()"
                 src="https://www.google.com/maps/embed?pb=!1m28!1m12!1m3!1d62247.9645979931!2d45.12841160868707!3d-12.811077447246229!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!4m13!3e6!4m5!1s0x220a139b9d42adeb%3A0x5fe36e6ae771dfb2!2sMamoudzou%2C%20Mayotte!3m2!1d-12.78064!2d45.232696399999995!4m5!1s0x220a0e804fac5abb%3A0x98b3aa548324265a!2sTsingoni%2C%20Mayotte!3m2!1d-12.790541099999999!2d45.1047941!5e0!3m2!1sfr!2sfr!4v1685893487317!5m2!1sfr!2sfr&z=0" 
                 width="375"
-                height="1065"
+                height="990"
                 style="border:0;"
                 allowfullscreen="" 
                 loading="lazy" 
@@ -151,6 +151,7 @@
             },
             itineraireValided(){
                 console.log("itineraireValided")
+                this.$emit("itineraire-valided")
             },
         },
         watch: {

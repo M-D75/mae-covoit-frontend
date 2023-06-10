@@ -1,5 +1,83 @@
 
+<style lang="scss" model>
+    .credit-card.card-contain {
 
+        .bloc-saisi {
+            background-color: var(--white-bg-color);
+            border-radius: 10px;
+            height: 56px;
+            margin: 30px auto;
+            box-shadow: var(--box-shadow-card);
+            .v-text-field {
+                .v-input__control {
+                    .v-field {
+                        .v-field__field{
+                            background-color: var(--white-bg-color);
+                            border-radius: 10px;
+                            .v-field__input{
+                                color: var(--font-color-label);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        .num-credit-card {
+            > div {
+                .v-text-field {
+                    .v-input__control {
+                        .v-field {
+                            .v-field__field{
+                                .v-field__input{
+                                    letter-spacing: 3px;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        .date-cvc {
+            > div {
+                &.date {
+                    .month, .year {
+                        .v-text-field {
+                            .v-input__control {
+                                .v-field {
+                                    .v-field__field{
+                                        .v-field__input{
+                                            letter-spacing: 3px;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .slash {
+                        margin: auto 0;
+                    }
+                }
+                &.cvc {
+                    .v-text-field {
+                        .v-input__control {
+                            .v-field {
+                                .v-field__field{
+                                    .v-field__input{
+                                        text-align: center;
+                                        letter-spacing: 5px;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+        }
+    }
+</style>
 
 <style lang="scss" scoped>
     //Animations
@@ -140,6 +218,104 @@
                     font-weight: bold;
                 }
             }
+
+
+            //car
+            div.card-contain{
+                margin: auto;
+                height: 85%;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                //margin-top: 20px;
+                .v-card.car {
+                    margin: 10px auto;
+                    padding: 5px 20px;
+                    width: 90%;
+                    border-radius: 16px;
+                    background-color: var(--white-bg-color);
+                    box-shadow: var(--box-shadow-card);
+                    .v-list {
+                        overflow: visible;
+                        height: 56px;
+                        display: flex;
+                        justify-content: space-between;
+                        .icon-container {
+                            margin: auto 0;
+                            .v-icon {
+                                display: grid;
+                                margin: auto;
+                                font-size: 2em;
+                            }
+                        }
+                        .model {
+                            max-width: 170px;
+                            margin: auto 15px !important;
+                            width: 65%;
+                            overflow-x: auto;
+                            .text{
+                                width: fit-content;
+                                text-transform: uppercase;
+                                font-weight: bold;
+                                font-size: 16px;
+                                white-space: nowrap;
+                                color: var(--font-color-label);
+                            }
+                        }
+                        .v-btn {
+                            margin: auto 0;
+                            box-shadow: none;
+                            font-size: 1.2em;
+                            color: var(--gray-icon-color);
+                            &.active {
+                                color: var(--blue-color);
+                            }
+                        }
+                    }
+                }
+            }
+
+            //credit-card
+            .credit-card.card-contain {
+                width: 90%;
+                .bloc-saisi {
+                    &.name{
+                        width: 100%;
+                    }
+                }
+                .num-credit-card {
+                    width: 100%;
+                    margin: auto;
+                    display: flex;
+                    justify-content: space-between;
+                    > div {
+                        width: 26%;
+                    }
+                }
+
+                .date-cvc {
+                    width: 100%;
+                    margin: auto;
+                    display: flex;
+                    justify-content: space-between;
+                    > div {
+                        width: 40%;
+                        margin: 30px 0;
+                        &.date {
+                            display: flex;
+                            justify-content: center;
+                            .month, .year {
+                                width: 49%;
+                            }
+                            .slash {
+                                margin: auto 0;
+                                color: gray;
+                            }
+                        }
+                    }
+                    
+                }
+            }
         }
     }
 </style>
@@ -167,9 +343,9 @@
     <!--  -->
     <v-container
         class="bottom-menu"
-        :class="Object.keys(className).join(' ')"
+        :class="className.join(' ')"
     >
-        <div class="sub-cont" :class="Object.keys(className).join(' ')" ref="subCont">
+        <div class="sub-cont" :class="className.join(' ')" ref="subCont">
 
             <div class="bar-up"></div>
 
@@ -185,12 +361,13 @@
             <!-- ** Publish **
                 **************
             -->
+            <!-- time -->
             <div
                 v-if="mode=='time'"
                 class="select-time mx-auto"
             >
                 <div class="label text-center">{{ labelSelectorN1 }}</div>
-                <TimeCard />
+                <TimeCard ref="TimeCardRef" v-on:time-changed="emit('time-changed')"/>
                 <v-btn 
                     class="text-none"
                     rounded="xl" 
@@ -207,7 +384,7 @@
                 class="select-number mx-auto"
             >
                 <div class="label text-center">{{ labelSelectorN1 }}</div>
-                <SelectNumber min="1" max="8" />
+                <SelectNumber min="1" max="8" ref="SelectNumberRef" v-on:number-changed="selectNumber()" />
                 <v-btn 
                     class="text-none"
                     rounded="xl" 
@@ -234,7 +411,7 @@
                     >{{ day.day }}</div>
                 </div>
                 <div class="label text-center">{{ labelSelectorN2 }}</div>
-                <TimeCard />
+                <TimeCard ref="TimeCardRef"/>
                 
                 <v-btn 
                     class="text-none"
@@ -275,18 +452,26 @@
             -->
             <GroupListCardsHistory v-if="!notif && mode=='history'"/>
 
-            <!-- Select credit to add -->
+            <!-- Drop Money -->
             <Notification 
-                v-if="mode=='add-credit-notif'"
+                v-if="mode=='drop-money'"
                 :mode="mode"
                 label-head="Souhaitez-vous déposer l'argent dans votre compte ?" 
                 label-btn="Confirmer"
                 icon="mdi-shield-alert"
                 color="#ff9c00"
-                v-on:add-credit-confirmed="emit('add-credit-notif')"
+                v-on:drop-money="emit('drop-money')"
                 />
+
+            <Notification 
+                v-if="mode=='confirme-drop-money'"
+                :mode="mode"
+                message="Votre dépôt a été effectué sur votre compte. Il sera disponible dans les 48 à 72 heures." 
+                />
+            
+            <!-- Up Money -->
             <div
-                v-if="mode=='add-credit'"
+                v-if="mode=='up-money'"
                 class="select-number mx-auto"
             >
                 <div class="label text-center">{{ labelSelectorN1 }}</div>
@@ -301,12 +486,137 @@
                 >Recharger</v-btn>
             </div>
             <Notification 
-                v-if="mode=='recharge-valided'"
+                v-if="mode=='confirme-up-money'"
                 :mode="mode"
                 message="Nous avons effectué la recharge sur votre compte. Elle sera disponible dans quelques instants." 
                 />
 
-            
+            <!-- Select model car -->
+            <div
+                v-if="mode=='select-model-car'" 
+                class="car card-contain"
+            >
+                <v-card
+                    v-for="(info, index) in infos_model_car.slice(0, 6)"
+                    :key="index"
+                    class="car mx-auto"
+                >
+                    <v-list>
+                        <div v-if="info.color=='white'" class="icon-container" style="text-shadow: 1px 1px 2px #555;"><v-icon :style="'color: ' + info.color">{{ info.icon }}</v-icon></div>
+                        <div v-else class="icon-container" ><v-icon :style="`color: ${info.color}; text-shadow: 1px 1px 2px black;`">{{ info.icon }}</v-icon></div>
+                        <div class="model scrollable-container" ><div class="text">{{ info.model }}</div></div>
+                        <v-btn density="compact" icon="mdi-chevron-right-circle"></v-btn>
+                    </v-list>
+                </v-card>
+            </div>
+
+            <!-- Add Card -->
+            <div
+                v-if="mode=='register-credit-card'" 
+                class="credit-card card-contain"
+            >
+                <!-- name card -->
+                <div class="bloc-saisi name">
+                    <v-text-field placeholder="Eddine Omar" variant="solo"></v-text-field>
+                </div>
+                
+                <!-- num card -->
+                <div class="bloc-saisi num-credit-card">
+                    <div>
+                        <v-text-field
+                            v-model="numericValues[0]"
+                            placeholder="1234"
+                            maxLength="4"
+                            @input="checkNumericalValue($event, 'input2')"
+                            single-line
+                            variant="solo"
+                            ></v-text-field>
+                    </div>
+                    <div>
+                        <v-text-field
+                            v-model="numericValues[1]"
+                            placeholder="1234"
+                            maxLength="4"
+                            @input="checkNumericalValue($event, 'input3')"
+                            ref="input2"
+                            single-line
+                            variant="solo"
+                            ></v-text-field>
+                    </div>
+                    <div>
+                        <v-text-field
+                            v-model="numericValues[2]"
+                            placeholder="1234"
+                            maxLength="4"
+                            @input="checkNumericalValue($event, 'input4')"
+                            ref="input3"
+                            single-line
+                            variant="solo"
+                            ></v-text-field>
+                    </div>
+                    <div>
+                        <v-text-field
+                            v-model="numericValues[3]"
+                            placeholder="1234"
+                            maxLength="4"
+                            @input="checkNumericalValue($event, 'input5')"
+                            ref="input4"
+                            single-line
+                            variant="solo"
+                            ></v-text-field>
+                    </div>
+                </div>
+                
+                <!-- date/cvc -->
+                <div class="date-cvc">
+                    <!-- date -->
+                    <div class="bloc-saisi date">
+                        <div class="month">
+                            <v-text-field
+                                v-model="numericValues[4]"
+                                @input="checkNumericalValue($event, 'input6')" 
+                                ref="input5" 
+                                placeholder="MM" 
+                                maxLength="2" 
+                                variant="solo"
+                            ></v-text-field>
+                        </div>
+                        <div class="slash">/</div>
+                        <div class="year">
+                            <v-text-field
+                                v-model="numericValues[5]"
+                                @input="checkNumericalValue($event, 'input7')" 
+                                ref="input6" 
+                                placeholder="YY" 
+                                maxLength="2" 
+                                variant="solo"
+                            ></v-text-field>
+                        </div>
+                    </div>
+                    
+                    <!-- cvc -->
+                    <div class="bloc-saisi cvc">
+                        <v-text-field
+                            v-model="numericValues[6]"
+                            @input="checkNumericalValue($event, '')"
+                            ref="input7"
+                            placeholder="123" 
+                            variant="solo"
+                            maxLength="3"
+                        ></v-text-field>
+                    </div>
+                </div>
+
+
+                <v-btn 
+                    class="text-none"
+                    rounded="xl" 
+                    size="x-large"
+                    variant="outlined"
+                    block
+                    @click="recharger()"
+                >Enregistrer</v-btn>
+            </div>
 
             <!-- End Pofile -->
         </div>
@@ -342,6 +652,14 @@
             TimeCard,
             SelectNumber,
         },
+        computed: {
+            numericRule() {
+                return (value) => /^\d*$/.test(value) || 'Veuillez entrer uniquement des chiffres';
+            },
+            numericMask() {
+                return { regex: /^[0-9]*$/ };
+            },
+        },
         props: {
             mode: {
                 type: String,
@@ -370,12 +688,13 @@
                 },
             },
             className: {
-                type: String,
-                default: "",
+                type: Array,
+                default: () => ([]),
             },
         },
         data() {
             return {
+                numericValues: ['', '', '', '', '', '', ''],
                 x: 0,
                 y: 0,
                 notif: false,
@@ -400,6 +719,15 @@
                     {day: "D", selected: false},
                 ],
                 warn: 'low',
+                numberSelected: 0,
+                time: "",
+                infos_model_car: [
+                    {model: "MOTO", color: "silver", icon:"mdi-car"},
+                    {model: "COMPACT", color: "white", icon:"mdi-car"},
+                    {model: "BERLINE", color: "gray", icon:"mdi-car-estate"},
+                    {model: "SUV", color: "red", icon:"mdi-car-pickup"},
+                    {model: "MONO SPACE", color: "navy", icon:"mdi-car"},
+                ],
             }
         },
         mounted() {
@@ -407,10 +735,10 @@
             this.sizeScreen = $(window).innerHeight();
             this.y = this.sizeScreen;
             
-            const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${Object.keys(this.className).join(".")}` : ".bottom-menu";
+            const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
             $(classBottomMenuNameJquery).css("top", `${this.y}px`);
             //this.subContHeigth = parseInt($(".sub-cont").css("height").replace("px", ""));
-            const classSubContNameJquery = this.className != "" && this.className != null ? `.sub-cont.${Object.keys(this.className).join(".")}` : ".sub-cont";
+            const classSubContNameJquery = this.className != "" && this.className != null ? `.sub-cont.${this.className.join(".")}` : ".sub-cont";
             this.subContHeigth = $(classSubContNameJquery).outerHeight(true);
 
             console.log("1:sub-cont-size by css px:", parseInt($(classSubContNameJquery).css("height").replace("px", "")));
@@ -429,6 +757,13 @@
             $("div.sub-label-color").addClass("warn-good-to-low")
         },
         methods: {
+            checkNumericalValue(event, nextInputRef){
+                this.numericValues = this.numericValues.map(nums => nums.replace(/\D/g, ''));
+                event.target.value = event.target.value.replace(/\D/g, '')
+                if ( event.target.value.length == event.target.maxLength && nextInputRef != "") {
+                    this.$refs[nextInputRef].focus();
+                }
+            },
             onDrag(pos) {
                 this.move = true;
                 this.active = false;
@@ -445,15 +780,11 @@
                         this.open();
                     }
                     else{
+                        console.log("onDragStop")
                         this.close();
-                        
-                        // test notif
-                        if (this.notif) {
-                            this.notif = !this.notif;
-                        }
                     }
                     
-                    const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${Object.keys(this.className).join(".")}` : ".bottom-menu";
+                    const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
                     
                     $(classBottomMenuNameJquery).animate({"top": `${this.y}px`}, "fast");
                 }
@@ -464,12 +795,10 @@
                     }
                 }
 
-                console.log("moveY : ", pos.y);
                 this.move = false;
             },
             open(){
-                const classSubContNameJquery = this.className != "" && this.className != null ? `.sub-cont.${Object.keys(this.className).join(".")}` : ".sub-cont";
-                console.log("classSubContNameJquery", classSubContNameJquery, Object.keys(this.className).join("."))
+                const classSubContNameJquery = this.className != "" && this.className != null ? `.sub-cont.${this.className.join(".")}` : ".sub-cont";
                 this.subContHeigth = this.$refs.subCont.clientHeight;
                 console.log("open-subContHeiht", this.subContHeigth, $(classSubContNameJquery), $(classSubContNameJquery).clientHeight)
                 if ( ! this.open_b ) {
@@ -479,11 +808,10 @@
                         this.disabledY = false;
                         this.y = this.sizeScreen - ( this.subContHeigth + 50 );
                         const _this = this;
-                        const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${Object.keys(this.className).join(".")}` : ".bottom-menu";
+                        const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
                         $(classBottomMenuNameJquery).animate({"top": `${_this.y}px`}, "fast", function(){
                             $(this).animate({"top": "auto"}, 1000);
                             _this.y = parseInt($(this).css("top").replace("px", ""));
-                            console.log("open == y", _this.y, _this.sizeScreen, _this.subContHeigth, ( _this.subContHeigth + 50 ));
                         });
 
                         this.open_b = true;
@@ -498,7 +826,7 @@
                         // open
                         this.disabledY = false;
                         this.y = this.sizeScreen/2;
-                        const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${Object.keys(this.className).join(".")}` : ".bottom-menu";
+                        const classBottomMenuNameJquery =  this.className != null && this.className.length != 0 ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
                         $(classBottomMenuNameJquery).animate({"top": `${this.y}px`}, "fast");
                         this.open_b = true;
                     }
@@ -510,15 +838,17 @@
                 // console.log("close")
                 this.y = this.sizeScreen; //-this.marge_bar;
                 this.open_b = false;
-                const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${Object.keys(this.className).join(".")}` : ".bottom-menu";
+                const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
                 $(classBottomMenuNameJquery).animate({"top": `${this.y}px`}, "fast");
                 this.$emit('close');
+                return false;
             },
             selectDay(index) {
                 this.daysSelected[index]["selected"] = !this.daysSelected[index]["selected"];
             },
             selectNumber(){
                 if( this.$refs.SelectNumberRef ){
+                    this.numberSelected = this.$refs.SelectNumberRef.number;
                     if( this.mode == "select-price" ){
                         if( this.$refs.SelectNumberRef.number < this.priceRecomended.min ){
                             $("div.sub-label-color").removeClass("warn-bad-to-good");
@@ -555,15 +885,27 @@
             },
             recharger(){
                 // TODO : get value
-                this.$emit("recharger")
+                this.$emit("up-money");
             },
             emit(value){
+                if( value == "time-valided" ){
+                    if(this.$refs.TimeCardRef){
+                        this.time = this.$refs.TimeCardRef.getTime();
+                    }
+                }
+                else if( value == "time-changed" ){
+                    this.time = this.$refs.TimeCardRef.getTime();
+                    console.log("emit-time-changed", this.time)
+                }
+                else if( value == "select-price" ){
+                    this.numberSelected = this.$refs.SelectNumberRef.number;
+                }
                 this.$emit(value)
             },
         },
         watch:{
             y(){
-                const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${Object.keys(this.className).join(".")}` : ".bottom-menu";
+                const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
                 $(classBottomMenuNameJquery).css("top", `${this.y}px`);
             },
         }

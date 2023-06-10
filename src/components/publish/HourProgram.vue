@@ -118,7 +118,7 @@
                         @click="selectHour('dom')"
                     >
                         <div class="sub-btn">
-                            08:00
+                            {{ hour.domicile }}
                         </div>
                     </div>
                 </div>
@@ -131,7 +131,7 @@
                         @click="selectHour('work')" 
                     >
                         <div class="sub-btn">
-                            17:00
+                            {{ hour.work }}
                         </div>
                     </div>
                 </div>
@@ -152,6 +152,7 @@
                 size="x-large"
                 variant="outlined"
                 block
+                @click="emit('hour-valided')"
             >Continuer</v-btn>
         </div>
 
@@ -161,6 +162,7 @@
             ref="BottomMenuRef" 
 
             v-on:close="overlay = false"
+            v-on:time-changed="getTimeChanged()"
             v-on:time-valided="getSelectedRef()"
         />
     </div>
@@ -194,6 +196,11 @@
             return {
                 overlay: false,
                 labelSelectorTime: "",
+                modeHour: "dom",
+                hour: {
+                    "domicile":"08:00",
+                    "work":"17:00",
+                },
             }
         },
         mounted(){
@@ -205,6 +212,7 @@
             },
             selectHour(type) {
                 console.log(type);
+                this.modeHour = type;
                 if( ! this.overlay ){
                     if( type == "dom" ){
                         $(".dom .btn .sub-btn").css("z-index", 15);
@@ -217,8 +225,32 @@
                     this.overlay = this.$refs.BottomMenuRef.openMiddle();
                 }
             },
+            getTimeChanged(){
+                if( this.$refs.BottomMenuRef ){
+                    if( this.modeHour == 'dom' ){
+                        this.hour.domicile = this.$refs.BottomMenuRef.time;
+                    }
+                    else {
+                        this.hour.work = this.$refs.BottomMenuRef.time;
+                    }
+                }
+            },
             getSelectedRef(){
-                console.log("time-getting")
+                if( this.$refs.BottomMenuRef ){
+                    console.log("time-getting", this.$refs.BottomMenuRef.time);
+                    
+                    if( this.modeHour == 'dom' ){
+                        this.hour.domicile = this.$refs.BottomMenuRef.time;
+                    }
+                    else {
+                        this.hour.work = this.$refs.BottomMenuRef.time;
+                    }
+
+                    this.overlay = this.$refs.BottomMenuRef.close();
+                }
+            },
+            emit(value){
+                this.$emit(value);
             },
         },
         watch: {

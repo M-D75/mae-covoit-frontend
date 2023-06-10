@@ -57,7 +57,8 @@
 <template>
 
     <v-card
-      class="card-btn mx-auto "
+        class="card-btn mx-auto "
+        @click="invokFun()"
     >
         <v-list-item
             class="card-btn"
@@ -119,12 +120,21 @@
             prependIconColor: {
                 type: String,
                 default: "gray",
+            },
+            fun: {
+                type: Function,
+                default: () => (null),
             }
         },
         mounted (){
             // const vue = this;
             $(document).ready(function() {
             });
+        },
+        methods: {
+            invokFun(){
+                this.fun();
+            },
         },
     };
 </script>

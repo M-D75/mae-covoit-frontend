@@ -10,10 +10,18 @@
         margin-top: 50px;
     }
 
+
 </style>
    
 <!--  -->
 <template>
+    <v-overlay 
+        v-model="overlay" 
+        contained
+        persistent
+        style="z-index: 10;"
+        @click="overlay = false"
+    ></v-overlay>
 
     <ToolbarProfil :title="'Information personnelles'"/>
     <div class="main">
@@ -31,6 +39,15 @@
         <!--  -->
     </div>
     <BottomNav />
+
+    <!-- Car model -->
+    <BottomMenu
+        v-if="modeBottomMenu=='select-model-car'"
+        ref="BottomMenuRef"
+        :class-name="['notification']"
+        :mode="modeBottomMenu"
+        v-on:close="overlay = false"
+    />
 </template>
 
 
@@ -45,6 +62,7 @@
     import PanneauInfo from '@/components/profile/PanneauInfo.vue';
     import GroupCard from '@/components/menus/setting/GroupCard.vue';
     import BottomNav from '@/components/menus/BottomNav.vue';
+    import BottomMenu from '@/components/menus/BottomMenu.vue';
 
     export default defineComponent({
         name: 'infos-profil-view',
@@ -55,9 +73,12 @@
             PanneauInfo,
             GroupCard,
             BottomNav,
+            BottomMenu,
         },
         data() {
             return {
+                overlay: false,
+                modeBottomMenu: "select-model-car",
                 infos_panneau: [
                     {
                         btn:false,
@@ -101,6 +122,7 @@
                                 chipText: "",
                             },
                         ],
+                        fun: this.selectModel,
                     },
                     {
                         label: "préferences de voyage",
@@ -167,7 +189,21 @@
             },
             test3(){
                 console.log("text3")
-            }
+            },
+            selectModel(){
+                if( this.$refs.BottomMenuRef ){
+                    this.overlay = this.$refs.BottomMenuRef.open();
+                }
+            },
+        },
+        watch: {
+            overlay(){
+                if( ! this.overlay ){
+                    if ( this.$refs.BottomMenuRef ) {
+                        this.$refs.BottomMenuRef.close();
+                    }
+                }
+            },
         }
     });
 </script>

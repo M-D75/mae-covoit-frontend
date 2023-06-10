@@ -25,6 +25,7 @@
    .v-toolbar {
       z-index: 1;
       background-color: var(--bg-app-color);
+      box-shadow: var(--box-shadow-card);
       .v-btn i.v-icon {
          margin-right: 0 !important;
          color: var(--gray-icon-color);

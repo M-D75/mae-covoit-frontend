@@ -42,7 +42,7 @@
             :width="200"
             aspect-ratio="16/9"
             cover
-            src="@/assets/car.png"
+            src="@/assets/car-removebg-preview.png"
          ></v-img>
       </v-col>
    </v-row>

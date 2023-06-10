@@ -20,8 +20,10 @@
 <style lang="scss" scoped>
    .v-card {
       width: 85%;
+      background-color: var(--white-bg-color);
+      color: var(--font-color-label);
       &.car {
-         box-shadow: 2px 2px 10px #eee;
+         box-shadow: var(--box-shadow-card);
          height: 60px;
          .v-list-item {
             height: 100%;

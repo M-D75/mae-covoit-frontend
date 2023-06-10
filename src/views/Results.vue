@@ -31,12 +31,12 @@
    <Toolbar 
       :trajet="{depart: depart, destination: destination}"
       :nombre_trajet="trajets.filter(trajet => trajet.depart == depart && trajet.destination == destination).length"
-      :date="date.replace('-', '/')"
+      :date="date.replaceAll('-', '/')"
    />
 
    <!--  -->
    <div class="container-trajet-member">
-      <div class="label-filter text-caption text-uppercase mx-auto">{{ date.replace("-", "/") }}</div>
+      <div class="label-filter text-caption text-uppercase mx-auto">{{ date.replaceAll("-", "/") }}</div>
       <TrajetMember 
          v-for="(infos, index) in trajets.filter(trajet => trajet.depart == depart && trajet.destination == destination)" :key="index" 
          :infos="infos" 
@@ -52,7 +52,7 @@
          @click="callCloseBottomChild"
       ></v-overlay>
    </div>
-   <BottomMenu class-name="results" ref="BottomMenuRef" mode="reserve" v-on:close="overlay = false" :infos="infos"/>
+   <BottomMenu :class-name="['results']" ref="BottomMenuRef" mode="reserve" v-on:close="overlay = false" :infos="infos"/>
 </template>
 
 
