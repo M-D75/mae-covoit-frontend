@@ -77,7 +77,7 @@
       v-if="mode=='time' || mode=='depart'"
       ref="BottomMenuRef" 
       :class-name="['time']"
-      :mode="mode"
+      mode="time"
       labelSelectorN1="A quelle heure souhaitez-vous partir ?"
 
       v-on:close="overlay = false"
@@ -127,7 +127,7 @@
       v-if="mode=='notification'"
       ref="BottomMenuRef"
       :class-name="['notification']"
-      :mode="mode"
+      mode="notification"
       v-on:close="overlay = false; nextStepMode()"
       v-on:time-valided="getSelected()"
    />
@@ -155,7 +155,7 @@
       v-if="mode=='select-day-hour-domicile'"
       ref="BottomMenuRef"
       :class-name="['select_day_hour_domicile']"
-      :mode="mode"
+      mode="select-day-hour-domicile"
       labelSelectorN1="Repeter quelle jour ?"
       labelSelectorN2="Heur de depart du domicile"
       v-on:close="overlay = false"
@@ -167,7 +167,7 @@
       v-if="mode=='register-credit-card'"
       ref="BottomMenuRef"
       :class-name="['notification']"
-      :mode="mode"
+      mode="register-credit-card"
       v-on:close="overlay = false"
       v-on:time-valided="getSelected()"
    />
@@ -345,7 +345,7 @@
                   
                   //open
                   if (this.$refs.BottomMenuRef && !this.overlay && !this.modeWork) {
-                     this.overlay = this.$refs.BottomMenuRef.openMiddle();
+                     this.overlay = this.$refs.BottomMenuRef.open();
                   }
                   break;
 

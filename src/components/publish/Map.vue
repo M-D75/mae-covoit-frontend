@@ -10,29 +10,16 @@
           <l-popup>{{ itineraire.origin.infos.village }}, ({{ itineraire.origin.infos.commune }})</l-popup>
         </l-marker>
 
-        <!-- point -->
-        <l-marker 
-            :lat-lng="itineraire.destination.location.latLng.latLngTab" 
-            :icon="customIcon"
-        >
-            <!-- <l-popup>{{ itineraire.destination.infos.village }}, ({{ itineraire.destination.infos.commune }})</l-popup> -->
-            <l-tooltip :options="{ permanent: true, interactive: false, direction: 'right', offset: [10, 0] }">
-                <span style="font-weight: bold;"> {{ itineraire.destination.infos.village }} </span>, ({{ itineraire.destination.infos.commune }})
-                <br>
-                <span style="font-weight: bold; color:green;">{{ itin.duration }} min</span> 
-                <br> 
-                <span style="font-weight: bold; color: chocolate;"> {{ itin.distance }}</span> km
-            </l-tooltip>
-        </l-marker>
+        
 
         <!-- route -->
-        <div v-if="routeAvail">
+        <div v-if="routeAvail ">
             <l-polyline 
                 v-for="(route, index) in routes.reverse()"
                 :key="index"
                 :lat-lngs="route.polylineDecoded" 
                 :color="index == routes.length - 1 ? '#1b79cc' : '#838383'" 
-                weight="10"
+                weight="8"
                 @click="trajetSelected(index)"
             ></l-polyline>
 
@@ -41,10 +28,49 @@
                 :key="index"
                 :lat-lngs="route.polylineDecoded" 
                 :color="index == routes.length - 1 ? '#01a9e8' : '#bcbcbc'" 
-                weight="7"
+                weight="4"
                 @click="trajetSelected(index)"
             ></l-polyline>
+
+            <!-- point -->
+            <l-circle-marker 
+                :lat-lng="itineraire.destination.location.latLng.latLngTab"
+                :radius="5"
+                :weight="2"
+                :color="'black'"
+                :fillColor="'white'" 
+                :fillOpacity="1"
+            >
+                <!-- <l-popup>{{ itineraire.destination.infos.village }}, ({{ itineraire.destination.infos.commune }})</l-popup> -->
+                <l-tooltip :options="{ permanent: true, interactive: false, direction: 'right', offset: [10, 0] }">
+                    <span style="font-weight: bold;"> {{ itineraire.destination.infos.village }} </span>, ({{ itineraire.destination.infos.commune }})
+                    <br>
+                    <span style="font-weight: bold; color:green;">{{ itin.duration }}</span> 
+                    <br> 
+                    <span style="font-weight: bold; color: chocolate;"> {{ itin.distance }}</span> km
+                </l-tooltip>
+            </l-circle-marker>
         </div>
+
+        <!-- point -->
+        <l-circle-marker 
+            :lat-lng="itineraire.destination.location.latLng.latLngTab"
+            :radius="5"
+            :weight="2"
+            :color="'black'"
+            :fillColor="'white'" 
+            :fillOpacity="1"
+            style="z-index: 999;"
+        >
+            <!-- <l-popup>{{ itineraire.destination.infos.village }}, ({{ itineraire.destination.infos.commune }})</l-popup> -->
+            <l-tooltip :options="{ permanent: true, interactive: false, direction: 'right', offset: [10, 0] }">
+                <span style="font-weight: bold;"> {{ itineraire.destination.infos.village }} </span>, ({{ itineraire.destination.infos.commune }})
+                <br>
+                <span style="font-weight: bold; color:green;">{{ itin.duration }}</span> 
+                <br> 
+                <span style="font-weight: bold; color: chocolate;"> {{ itin.distance }}</span> km
+            </l-tooltip>
+        </l-circle-marker>
 
       </l-map>
     </div>
@@ -57,7 +83,7 @@
     import L from "leaflet";
     
     import "leaflet/dist/leaflet.css";
-    import { LMap, LTileLayer, LMarker, LPopup, LPolyline, LTooltip } from "@vue-leaflet/vue-leaflet";
+    import { LMap, LTileLayer, LMarker, LPopup, LPolyline, LTooltip, LCircleMarker } from "@vue-leaflet/vue-leaflet";
     import $ from 'jquery';
 
     export default defineComponent({
@@ -80,6 +106,7 @@
             LPopup,
             LPolyline,
             LTooltip,
+            LCircleMarker,
         },
         props: {
             itineraire: {
@@ -214,7 +241,7 @@
                     this.routes = [];
                     for(const route in data.routes){
                         const decoded = polyline.decode(data.routes[route].polyline.encodedPolyline);
-                        const duration = (parseInt(data.routes[route].duration.replaceAll("s", ""))/60).toFixed(0).toString();
+                        const duration = (this.convertSecondsToHoursAndMinutes(parseInt(data.routes[route].duration.replaceAll("s", "")))).toString();
                         const distance = (data.routes[route].distanceMeters/1000).toFixed(2).toString();
 
                         this.routes.push({polylineDecoded: decoded, infosGoogle:data.routes[route], duration: duration, distance: distance});
@@ -257,6 +284,17 @@
                         _this.getRouteInfos();                        
                     });
                 });
+            },
+            convertSecondsToHoursAndMinutes(seconds) {
+                const hours = Math.floor(seconds / 3600);
+                const minutes = Math.floor((seconds % 3600) / 60);
+                //const minutes = (seconds / 3600).toFixed(2).split(".")[1];
+                if(hours > 0){
+                    return `${hours} h ${minutes}`;
+                }
+                else {
+                    return `${minutes} min`;
+                }
             }
         },
         watch: {
