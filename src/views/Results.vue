@@ -31,6 +31,7 @@
    <Toolbar 
       :trajet="{depart: depart, destination: destination}"
       :nombre_trajet="trajets.filter(trajet => trajet.depart == depart && trajet.destination == destination).length"
+      :nbPassager="nbPassager"
       :date="date.replaceAll('-', '/')"
    />
 
@@ -59,7 +60,7 @@
 
 <!--  -->
 <script>
-   import $ from 'jquery';
+   //import $ from 'jquery';
    import { defineComponent } from 'vue';
    import { mapState } from 'vuex';
 
@@ -92,6 +93,10 @@
             type: String,
             default: "Aujourd'hui",
          },
+         nbPassager: {
+            type: Number,
+            default: 0,
+         }
       },
       data() {
          return {
@@ -108,10 +113,7 @@
          }
       },
       mounted(){
-         const sizeMainNoToolbar = parseInt($(".v-main").css("height").replace("px", "")) - 100;
-         console.log("results-sizeMain", sizeMainNoToolbar)
-         $(".container-trajet-member").css("height", `${sizeMainNoToolbar}px`);
-         console.log("params", this.$route.params)
+         console.log("params", this.$route.params);
       },
       methods: {
          reserve(event, index){

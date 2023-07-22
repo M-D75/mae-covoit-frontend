@@ -51,19 +51,28 @@
         grow
         style="height: 75px;"
     >
-        <v-btn :class="{ selected: value == 0}">
+        <v-btn
+            :active="false" 
+            :ripple="false"
+            :class="{ selected: value == 0}">
             <v-icon>mdi-magnify</v-icon>
 
             Recherche
         </v-btn>
 
-        <v-btn :class="{ selected: value == 1}">
+        <v-btn 
+            :active="false"
+            :ripple="false"
+            :class="{ selected: value == 1}">
             <v-icon>mdi-plus-circle</v-icon>
 
             Publier
         </v-btn >
 
-        <v-btn :class="{ selected: value == 2}">
+        <v-btn 
+            :active="false"
+            :ripple="false"
+            :class="{ selected: value == 2}">
             <v-icon>mdi-account-circle</v-icon>
 
             Profil

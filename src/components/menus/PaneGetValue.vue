@@ -25,6 +25,9 @@
         z-index: 9999;
         .sub-cont {
             height: 100%;
+            &.scrolling {
+                overflow: scroll;
+            }
             .title {
                 font-size: var(--font-size-h1);
                 font-weight: bold;
@@ -42,7 +45,7 @@
     <v-container
         class="pan-get-value"
     >
-        <div class="sub-cont">
+        <div class="sub-cont" :class="mode=='date' ? 'scrolling' : 'not-scroll'">
             <div
                 v-if="mode=='date'"
                 class="title text-center"
@@ -53,7 +56,7 @@
                 v-model="date" 
                 :columns="columns"  
                 :expanded="expanded" 
-                :rows="3"
+                :rows="12"
                 :min-date="new Date()"
             />
 
@@ -100,7 +103,7 @@
     export default defineComponent({
         name: 'pan-get-value-comp',
         computed: {
-            ...mapState(['communes', 'communesHistory']),
+            ...mapState(['villages', 'communesHistory']),
         },
         components: {
             Search,
@@ -195,7 +198,7 @@
                     return;
                 }
 
-                this.items = this.communes.filter((commune) => this.saisi != commune && commune.toLowerCase().includes(this.saisi.toLocaleLowerCase()) && commune != this.startTrajet && commune != this.endTrajet);
+                this.items = this.villages.filter((dataVillage) => this.saisi != dataVillage.village && dataVillage.village.toLowerCase().includes(this.saisi.toLocaleLowerCase()) && dataVillage.village != this.startTrajet && dataVillage.village != this.endTrajet).map((dataVillage) => dataVillage.village);
             },
             getSelected(){
                 console.log("child-selected", this.startTrajet, this.endTrajet, this.mode)

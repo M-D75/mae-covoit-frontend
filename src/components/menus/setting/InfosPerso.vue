@@ -34,7 +34,7 @@
                 :chip="param.chip"
                 :chipIcon="param.chipIcon"
                 :chipText="param.chipText"
-                :fun="param.fun"
+                :fun="group.fun"
             />
         </div>
     </div>
@@ -115,8 +115,6 @@
         return {
             
         };
-    },
-    methods: {
     },
     mounted() {
         // const vue = this;

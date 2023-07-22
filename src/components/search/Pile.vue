@@ -52,7 +52,14 @@
 <template>
     <div class="blc-pile">
         <TrajetMemberBtn v-if="fastSearch == false" @click="fastSearch = true" class="tj main" style="z-index: 88; position: absolute; top:50%"/>
-        <TrajetMember v-if="fastSearch == true" class="tj main" style="z-index: 88; position: absolute; top:50%"/>
+        <TrajetMember
+            @click="reserve()"
+            v-if="fastSearch == true" 
+            class="tj main" 
+            style="z-index: 88; 
+            position: absolute; 
+            top:50%"
+        />
         <TrajetMember class="tj sub s1" style="z-index: 87; position: absolute; top:55%; width: 83%;"/>
         <TrajetMember class="tj sub s2" style="z-index: 86; position: absolute; top:60%; width: 77%;"/>
     </div>
@@ -75,12 +82,31 @@
             TrajetMemberBtn,
             TrajetMember,
         },
+        props: {
+            infos: {
+                type: Object,
+                default() {
+                return {
+                        "depart": "Tsingoni",
+                        "destination": "Mamoudzou",
+                        "hour_start": "4:50",
+                        "hour_end": "6:55",
+                        "price": 4,
+                        "name": "Ledou",
+                        "passenger_number": 2
+                    };
+                },
+            },
+        },
         data() {
             return {
                 fastSearch: false,
             }
         },
         methods: {
+            reserve(){
+                this.$emit("reserve");
+            },
         },
         mounted() {
         }

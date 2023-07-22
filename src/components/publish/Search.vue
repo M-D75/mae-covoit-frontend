@@ -55,8 +55,6 @@
 
 <!-- scss -->
 <style lang="scss" scoped>
-   
-
    .bloc {
         position: absolute;
         background-color: var(--bg-app-color);
@@ -101,10 +99,13 @@
 
         .v-card.list {
             background-color: var(--bg-app-color);
+            height: 80%;
+            overflow: scroll;
             > .v-list {
                 margin: auto;
                 width: 90%;
                 background-color: var(--bg-app-color);
+                
                 .v-list-item {
                     .v-list-item__prepend {
                         .v-icon {
@@ -159,6 +160,8 @@
                     :value="index"
                     :prepend-icon="'mdi-history'"
                     @click="select(item)"
+                    :ripple="false"
+                    :active="false"
                 >{{ item }}</v-list-item>
 
                 <v-list-item
@@ -167,6 +170,8 @@
                     :value="index"
                     :prepend-icon="'mdi-magnify'"
                     @click="select(item)"
+                    :ripple="false"
+                    :active="false"
                 >{{ item }}</v-list-item>
 
                 <!-- <v-list-item

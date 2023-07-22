@@ -73,8 +73,7 @@
                         }
                     }
                 }
-            }
-            
+            }   
         }
     }
 </style>
@@ -384,7 +383,7 @@
                 class="select-number mx-auto"
             >
                 <div class="label text-center">{{ labelSelectorN1 }}</div>
-                <SelectNumber min="1" max="8" ref="SelectNumberRef" v-on:number-changed="selectNumber()" />
+                <SelectNumber :min="paramsNumber.min" :max="paramsNumber.max" ref="SelectNumberRef" v-on:number-changed="selectNumber()" />
                 <v-btn 
                     class="text-none"
                     rounded="xl" 
@@ -497,7 +496,7 @@
                 class="car card-contain"
             >
                 <v-card
-                    v-for="(info, index) in infos_model_car.slice(0, 6)"
+                    v-for="(info, index) in infosModelCar.slice(0, 6)"
                     :key="index"
                     class="car mx-auto"
                 >
@@ -618,6 +617,48 @@
                 >Enregistrer</v-btn>
             </div>
 
+            <!-- Password -->
+            <div v-if="mode=='password'">
+                <div class="label text-center">Réinitialiser votre mots de passe.</div>
+
+                <div>
+                    <v-text-field
+                        v-model="password"
+                        placeholder="Nouveau mot passe"
+                        single-line
+                        :rules="[rules.required, rules.min]"
+                        type="password"
+                        variant="solo"
+                        hint="At least 8 characters"
+                        align="center"
+                        counter
+                        ></v-text-field>
+                </div>
+
+                <div>
+                    <v-text-field
+                        v-model="password_comfirmed"
+                        placeholder="Confirmation du mot passe"
+                        :rules="[rules.required, rules.min]"
+                        type="password"
+                        single-line
+                        variant="solo"
+                        hint="At least 8 characters"
+                        align="center"
+                        counter
+                        ></v-text-field>
+                </div>
+
+                <v-btn 
+                    class="text-none"
+                    rounded="xl" 
+                    size="x-large"
+                    variant="outlined"
+                    block
+                    @click="recharger()"
+                >Continuer</v-btn>
+            </div>
+
             <!-- End Pofile -->
         </div>
 
@@ -687,6 +728,15 @@
                         };
                 },
             },
+            paramsNumber: {
+                type: Object,
+                default() {
+                    return {
+                            min: 1,
+                            max: 8,
+                        };
+                },
+            },
             className: {
                 type: Array,
                 default: () => ([]),
@@ -721,13 +771,18 @@
                 warn: 'low',
                 numberSelected: 0,
                 time: "",
-                infos_model_car: [
+                infosModelCar: [
                     {model: "MOTO", color: "silver", icon:"mdi-car"},
                     {model: "COMPACT", color: "white", icon:"mdi-car"},
                     {model: "BERLINE", color: "gray", icon:"mdi-car-estate"},
                     {model: "SUV", color: "red", icon:"mdi-car-pickup"},
                     {model: "MONO SPACE", color: "navy", icon:"mdi-car"},
                 ],
+                rules: {
+                    required: value => !!value || 'Required.',
+                    min: v => v.length >= 8 || 'Min 8 characters',
+                    emailMatch: () => (`The email and password you entered don't match`),
+                },
             }
         },
         mounted() {
@@ -750,7 +805,7 @@
             console.log("class-bot:", classBottomMenuNameJquery, classSubContNameJquery)
             //this.subContHeigth = this.$refs.subCont.clientHeight;
             console.log("screen", this.sizeScreen, this.subContHeigth);
-            if( this.mode=="select-day-hour-domicile" || this.mode=="select-price" || this.mode=="notification" ){
+            if( this.mode=="select-day-hour-domicile" || this.mode=="notification" ){
                 this.open();
             }
             

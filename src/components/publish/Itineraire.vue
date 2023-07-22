@@ -20,7 +20,7 @@
         .title {
             cursor: pointer;
             position: relative;
-            z-index: 20;
+            z-index: 990;
             font-size: var(--font-size-h1);
             color: var(--font-color-label);
             font-weight: bold;
@@ -73,27 +73,15 @@
     <div class="itineraire">
         <div
             class="title text-center"
-            @click="itineraireValided()"
         >Quelle est votre route ?</div>
 
         <div 
             class="cont" 
-            @click="itineraireValided()"
         >
             <div 
                 class="over"
-                @click="itineraireValided()"
             ></div>
-            <iframe 
-                @click="itineraireValided()"
-                src="https://www.google.com/maps/embed?pb=!1m28!1m12!1m3!1d62247.9645979931!2d45.12841160868707!3d-12.811077447246229!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!4m13!3e6!4m5!1s0x220a139b9d42adeb%3A0x5fe36e6ae771dfb2!2sMamoudzou%2C%20Mayotte!3m2!1d-12.78064!2d45.232696399999995!4m5!1s0x220a0e804fac5abb%3A0x98b3aa548324265a!2sTsingoni%2C%20Mayotte!3m2!1d-12.790541099999999!2d45.1047941!5e0!3m2!1sfr!2sfr!4v1685893487317!5m2!1sfr!2sfr&z=0" 
-                width="375"
-                height="990"
-                style="border:0;"
-                allowfullscreen="" 
-                loading="lazy" 
-                referrerpolicy="no-referrer-when-downgrade">
-            </iframe>
+            <Map :itineraire="itineraire" v-on:trajet-selected="itineraireValided()"></Map>
         </div>
     </div>
 </template>
@@ -108,6 +96,7 @@
 
 
     // Components
+    import Map from "@/components/publish/Map.vue"
 
     export default defineComponent({
         name: 'itineraire-comp',
@@ -115,9 +104,42 @@
             ...mapState(["trajets"]),
         },
         components: {
+            Map,
         },
         props: {
-            
+            itineraire: {
+                type: Object,
+                default: () => {
+                    return {
+                        origin: {
+                            location: {
+                                latLng: {
+                                    latitude: -12.7243245,
+                                    longitude: 45.0589372,
+                                    latLngTab: [-12.7243245, 45.0589372]
+                                }
+                            },
+                            infos: {
+                                village: "Acoua",
+                                commune: "Acoua",
+                            }
+                        },
+                        destination: {
+                            location: {
+                                latLng: {
+                                    latitude: -12.9292776,
+                                    longitude: 45.1763906,
+                                    latLngTab: [-12.9292776, 45.1763906]
+                                }
+                            },
+                            infos: {
+                                village: "Bambo-Est",
+                                commune: "Bandrélé",
+                            }
+                        },
+                    }
+                }
+            },
         },
         data() {
             return {

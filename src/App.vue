@@ -20,7 +20,7 @@
     .dark-mode * {
         --bg-app-color: #1a1a1a;
         --white-bg-color: #333333;
-        --gray-bg-icon-color: red;
+        --gray-bg-icon-color:  #b1b1b1;
         --blue-color: #2E8DFF;
         --gray-icon-color: #B1B1B1;
 
@@ -56,7 +56,7 @@
 
 <template>
     <v-app class="ligth-mode">
-        <v-main>
+        <v-main v-if="isMobileOrSmallScreen">
             <router-view/>
         </v-main>
     </v-app>
@@ -68,15 +68,36 @@
 
     export default {
         name: 'App',
-
+        computed: {
+            isMobileOrSmallScreen() {
+                return this.isMobile || this.isSmallScreen;
+            }
+        },
         data: () => ({
-            //
+            isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+            isSmallScreen: window.innerWidth <= 600,
         }),
         mounted(){
             if( this.$store.state.darkMode ){
                 $("#app .v-application").removeClass("ligth-mode");
                 $("#app .v-application").addClass("dark-mode");
             }
+            window.addEventListener('resize', this.updateIsSmallScreen); 
+            //$("link[rel*='icon']").attr("href", "/favicon-old.ico");
+
+            // let link = document.querySelector("link[rel*='icon']") || document.createElement('link');
+            //         link.type = 'image/x-icon';
+            //         link.rel = 'shortcut icon';
+            //         link.href = '/favicon-old.ico';
+            //         document.getElementsByTagName('head')[0].appendChild(link);
         },
+        methods: {
+            updateIsSmallScreen() {
+                this.isSmallScreen = window.innerWidth <= 600;
+            }
+        },
+        beforeUnmount() {
+            window.removeEventListener('resize', this.updateIsSmallScreen);
+        }
     }
 </script>

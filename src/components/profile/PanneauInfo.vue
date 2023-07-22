@@ -172,6 +172,7 @@
                 if( $("#app .v-application").hasClass("ligth-mode") ){
                     $("#app .v-application").removeClass("ligth-mode");
                     $("#app .v-application").addClass("dark-mode");
+                    $(".conti.mask").addClass("display")
                     this.$store.state.darkMode = true;
                 }
                 else{
@@ -179,6 +180,21 @@
                     $("#app .v-application").removeClass("dark-mode");
                     this.$store.state.darkMode = false;
                 }
+
+                // if(  ! $(".conti.mask").hasClass("display") ){
+                //     // $("#app .v-application").removeClass("ligth-mode");
+                //     // $("#app .v-application").addClass("dark-mode");
+                //     $(".conti.mask").addClass("display")
+                //     this.$store.state.darkMode = true;
+                // }
+                // else{
+                //     // $("#app .v-application").addClass("ligth-mode");
+                //     // $("#app .v-application").removeClass("dark-mode");
+                //     $(".conti.mask").removeClass("display");
+                //     $(".conti.mask").removeClass("mask");
+                //     $(".conti.dark-mode").addClass("mask");
+                //     this.$store.state.darkMode = false;
+                // }
             }
         }
     });

@@ -97,7 +97,10 @@
             class="title text-center"
         >Quelle voiture comptez-vous prendre ?</div>
 
-        <div class="card-contain">
+        <div 
+            class="card-contain"
+            @click="selectCar(index, info)"
+        >
             <v-card
                 v-for="(info, index) in infos.slice(0, 6)"
                 :key="index"

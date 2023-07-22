@@ -6,13 +6,13 @@
 <!-- scss -->
 <style lang="scss" scoped>
     .v-card.select-number {
-        background-color: var(--bg-app-color);
+        background-color: var(--white-bg-color);
         color: var(--font-color-label);
         border-radius: 10px;
         margin-top: 20px;
-        width: 85%;
-        box-shadow: var(--box-shadow-card);
+        width: 85%;        
         height: 142px;
+        overflow: visible;
         .card-contain {
             display: flex;
             height: 100%;
@@ -21,7 +21,7 @@
                 margin: auto;
                 .v-btn {
                     height: 100%;
-                    background-color: var(--bg-app-color);
+                    background-color: var(--white-bg-color);
                     box-shadow: none;
                     .v-icon {
                         font-size: 1.8em;
@@ -36,6 +36,8 @@
             }
 
             div.select-number {
+                overflow: hidden;
+                border-radius: 20px;
                 background-color: var(--white-bg-color);
                 position: relative;
                 display: flex;
@@ -45,6 +47,7 @@
                 width: 100%;
                 height: 100%;
                 box-shadow: var(--box-shadow-card);
+                z-index: 10;
                 .v-icon {
                     position: absolute;
                     top: 5px;
@@ -81,10 +84,19 @@
     <v-card
         class="mx-auto rounded select-number"
         max-width="500"
+        elevation="0"
     >
         <div class="card-contain">
             <!-- (+) -->
-            <div class="minus" @click="moin()"><v-btn class=""><v-icon>mdi-minus-circle</v-icon></v-btn></div>
+            <div class="minus" @click="moin()">
+                <v-btn
+                    elevation="0"
+                    :active="false" 
+                    :ripple="false"
+                    class=""
+                ><v-icon>mdi-minus-circle</v-icon>
+                </v-btn>
+            </div>
 
             <div
                 class="select-number" 
@@ -101,7 +113,16 @@
                 </div>
             </div>
             <!-- (-) -->
-            <div class="plus" @click="plus()"><v-btn class="active"><v-icon>mdi-plus-circle</v-icon></v-btn></div>
+            <div class="plus" @click="plus()">
+                    <v-btn 
+                        elevation="0"
+                        :active="false" 
+                        :ripple="false"
+                        class="active"
+                    >
+                    <v-icon>mdi-plus-circle</v-icon>
+                </v-btn>
+            </div>
         </div>
     </v-card>
 </template>
@@ -185,6 +206,7 @@
                 if( this.number <= this.numbers[0] ){
                     $(".minus .v-btn").removeClass("active");
                 }
+                
                 if( this.number < this.numbers[this.numbers.length-1] && ! $(".plus .v-btn").hasClass("active")){
                     $(".plus .v-btn").addClass("active")
                 }

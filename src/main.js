@@ -5,6 +5,14 @@ import store from './store'
 import { loadFonts } from './plugins/webfontloader'
 import "vuetify/styles";
 import '@mdi/font/css/materialdesignicons.css'
+import { aliases, mdi } from 'vuetify/iconsets/mdi'
+
+import { fa } from 'vuetify/iconsets/fa-svg'
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { fas } from '@fortawesome/free-solid-svg-icons'
+import { fab } from '@fortawesome/free-brands-svg-icons'
+
 
 import VCalendar from 'v-calendar';
 import 'v-calendar/style.css';
@@ -19,6 +27,14 @@ const vuetify = createVuetify({
   components,
   directives,
   iconfont: 'mdi',
+  icons: {
+    defaultSet: 'mdi',
+    aliases,
+    sets: {
+      mdi,
+      fa,
+    },
+  },
 })
 
 loadFonts();
@@ -54,8 +70,11 @@ const messaging = getMessaging(app);
 // BBEiuUATk4TZQhdrgnsabFGavEhHkS_hbOCRxJJAWo-2pHXsUA459Jz6GazeGF5gwNt9jJx6lIKUxIABnFS3mCQ
 getToken(messaging, {vapidKey: "BBEiuUATk4TZQhdrgnsabFGavEhHkS_hbOCRxJJAWo-2pHXsUA459Jz6GazeGF5gwNt9jJx6lIKUxIABnFS3mCQ"});
 
+library.add(fas) // Include needed icons
+library.add(fab)
 
 createApp(App)
+  .component('font-awesome-icon', FontAwesomeIcon)
   .use(messaging)
   .use(analytics)
   .use(VCalendar)
@@ -63,3 +82,4 @@ createApp(App)
   .use(store)
   .use(vuetify)
   .mount('#app')
+

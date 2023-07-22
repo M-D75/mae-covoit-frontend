@@ -123,10 +123,11 @@
       z-index: 9999;
       text-align: center;
       .v-icon {
-         font-size: 3.3em;
+         font-size: 5em;
          min-height: 100%;
          align-items: center;
          display: inline-flex;
+         color: #484848;
       }
    }
 
@@ -139,9 +140,7 @@
    >
       <div class="empty-mask"></div>
       <div class="empty">
-         <v-icon>
-            mdi-search-web
-         </v-icon>
+         <v-icon icon="fa:fa-brands fa-searchengin" />
       </div>
       <v-list>
 

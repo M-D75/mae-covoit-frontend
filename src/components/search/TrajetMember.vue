@@ -226,13 +226,13 @@
                 type: Object,
                 default() {
                 return {
-                    "depart": "Tsingoni",
-                    "destination": "Mamoudzou",
-                    "hour_start": "4:50",
-                    "hour_end": "6:55",
-                    "price": 4,
-                    "name": "Ledou",
-                    "passenger_number": 2
+                        "depart": "Tsingoni",
+                        "destination": "Mamoudzou",
+                        "hour_start": "4:50",
+                        "hour_end": "6:55",
+                        "price": 4,
+                        "name": "Ledou",
+                        "passenger_number": 2
                     };
                 },
             },

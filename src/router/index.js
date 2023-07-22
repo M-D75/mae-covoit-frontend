@@ -11,6 +11,7 @@ import SelectCar from '@/views/publish/SelectCar.vue'
 import HourDepOther from '@/components/publish/HourDepOther.vue'
 import HourProgram from '@/components/publish/HourProgram.vue'
 import Itineraire from '@/components/publish/Itineraire.vue'
+import TestMap from '@/views/TestMap.vue'
 
 const routes = [
   {
@@ -38,7 +39,7 @@ const routes = [
     component: HomeSearch,
   },
   {
-    path: '/results/:depart/:destination/:date',
+    path: '/results/:depart/:destination/:date/:nbPassager',
     component: Results,
     props: true,
   },
@@ -66,6 +67,11 @@ const routes = [
     path: '/',
     name: 'home',
     component: Home
+  },
+  {
+    path: '/map',
+    name: 'map',
+    component: TestMap
   },
 ]
 

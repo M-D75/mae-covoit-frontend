@@ -74,45 +74,51 @@
     <ToolbarProfil :title="'Parametres'"/>
     <div class="main">
         <!--  -->
-        <GroupCard class="grouP" :groupeParameters="groupeParameters" />
-        <div class="ctn sub-part">
-            <div class="label text-subtitle">Invite Link</div>
-            <v-card
-                class="invite-card mx-auto flex"
-                dark
-            >
-                <v-row>
-                    <v-col class="text">
-                        <div 
-                            class="text"
-                        >Invite people</div>
-                    </v-col>
-                    <v-col class="btn">
-                        <v-btn
-                            class="text-none"
-                            rounded="xl" 
-                            size="large"
-                            color="blue"
-                        >
-                            Invite
-                        </v-btn>
-                    </v-col>
-                </v-row>
-                
-            </v-card>
+        <div v-if="mode=='setting'">
+            <GroupCard class="grouP" :groupeParameters="groupeParameters" />
+            <div class="ctn sub-part">
+                <div class="label text-subtitle">Invite Link</div>
+                <v-card
+                    class="invite-card mx-auto flex"
+                    dark
+                >
+                    <v-row>
+                        <v-col class="text">
+                            <div 
+                                class="text"
+                            >Invite people</div>
+                        </v-col>
+                        <v-col class="btn">
+                            <v-btn
+                                class="text-none"
+                                rounded="xl" 
+                                size="large"
+                                color="blue"
+                            >
+                                Invite
+                            </v-btn>
+                        </v-col>
+                    </v-row>
+                    
+                </v-card>
+            </div>
+            <div class="ctn logout">
+                <v-btn
+                    class="logout mt-5 mx-auto text-none"
+                    prepend-icon="mdi-logout"
+                    rounded="xl" 
+                    size="x-large"
+                    variant="outlined"
+                    block
+                    @click="signOut()"
+                >
+                    Deconnexion
+                </v-btn>
+            </div>
         </div>
-        <div class="ctn logout">
-            <v-btn
-                class="logout mt-5 mx-auto text-none"
-                prepend-icon="mdi-logout"
-                rounded="xl" 
-                size="x-large"
-                variant="outlined"
-                block
-                @click="signOut()"
-            >
-                Deconnexion
-            </v-btn>
+
+        <div v-if="mode=='infos'">
+            <GroupInput :group-input="groupInput"/>
         </div>
     </div>
 </template>
@@ -127,6 +133,8 @@
     // Components
     import ToolbarProfil from '@/components/menus/head/ToolbarProfil.vue';
     import GroupCard from '@/components/menus/setting/GroupCard.vue';
+    import GroupInput from '@/components/menus/setting/GroupInput.vue';
+    import { mapState } from 'vuex';
 
     export default defineComponent({
         name: 'setting-view',
@@ -134,9 +142,14 @@
         components: {
             ToolbarProfil,
             GroupCard,
+            GroupInput,
+        },
+        computed: {
+            ...mapState(['profil']),
         },
         data() {
             return {
+                mode: "setting",
                 groupeParameters: [
                     {
                         label: "coordonnes",
@@ -154,6 +167,7 @@
                                 chip:true,
                                 chipIcon: "mdi-chevron-right",
                                 chipText: "",
+                                fun: this.goToInfo,
                             },
                         ],
                     },
@@ -203,6 +217,7 @@
                         ],
                     },
                 ],
+                groupInput: [],
             }
         },
         methods: {
@@ -215,9 +230,52 @@
                     console.log(error)
                 });
             },
+            goToInfo(){
+                console.log("goToINfo");
+                this.mode="infos";
+            },
         },
         mounted() {
             window.scrollTo(0, 0);
+
+            this.groupInput = [
+                    {
+                        label: "Civilite",
+                        value: this.profil.infos_perso.civilite,
+                    },
+                    {
+                        label: "Nom",
+                        value: this.profil.infos_perso.nom,
+                    },
+                    {
+                        label: "prénom",
+                        value: this.profil.infos_perso.prenom,
+                    },
+                    {
+                        label: "email",
+                        value: this.profil.infos_perso.email,
+                    },
+                    {
+                        label: "Téléphone",
+                        value: this.profil.infos_perso.tel,
+                    },
+                    {
+                        label: "Adresse",
+                        value: this.profil.infos_perso.adress.principal,
+                    },
+                    {
+                        label: "Complement",
+                        value: this.profil.infos_perso.adress.complement,
+                    },
+                    {
+                        label: "Code Postal",
+                        value: this.profil.infos_perso.adress.code_postal,
+                    },
+                    {
+                        label: "Commune",
+                        value: this.profil.infos_perso.adress.commune,
+                    },
+                ];
         }
     });
 </script>

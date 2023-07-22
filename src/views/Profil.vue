@@ -2,6 +2,7 @@
 
 <!-- scss -->
 <style lang="scss" model>
+
     .bottom-menu{
         z-index: 9999 !important;
     }
@@ -9,6 +10,7 @@
     .invisible {
         visibility: hidden;
     }
+
 </style>
 
 <style lang="scss" scoped>
@@ -17,7 +19,7 @@
     }
     .dark-mode * {
         --bg-color: #333333;
-    }
+     }
 
     .main {
         height: 100%;
@@ -47,7 +49,7 @@
                 background-color: var(--bg-color);
                 color: var(--font-color-label);
                 &.active {
-                    background-color: #1E90FF;
+                    background-color: var(--blue-color);
                     color: white;
                 }
                 &.calendar {
@@ -155,7 +157,15 @@
         v-on:up-money="onUpMoney()"
         />
 
-    
+    <!-- passord -->
+    <BottomMenu
+        :class-name="['password']"
+        :mode="modeBottomMenu"
+        labelSelectorN1="Quel montant souhaitez-vous créditer sur votre compte ?"
+        ref="BottomMenuRefMoney" 
+        v-on:close="overlay = false"
+        />
+
 </template>
 
 
@@ -194,7 +204,7 @@
         },
         data() {
             return {
-                modeBottomMenu: "history",
+                modeBottomMenu: "password",
                 modeEdit: false,
                 overlay: false,
                 onglet: "table-bord",
