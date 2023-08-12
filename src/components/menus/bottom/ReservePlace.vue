@@ -129,6 +129,7 @@
    // Components
    export default {
       name: 'reserve-place-menu-comp',
+      emits: ["test-notif-success"],
       data() {
          return {
             model_car: "VW-GOLF 7",

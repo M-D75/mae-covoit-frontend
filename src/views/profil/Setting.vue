@@ -63,9 +63,6 @@
             }
         }
     }
-
-    
-
 </style>
    
 <!--  -->
@@ -94,6 +91,7 @@
                                 rounded="xl" 
                                 size="large"
                                 color="blue"
+                                @click="inviteUserSupabase()"
                             >
                                 Invite
                             </v-btn>
@@ -110,7 +108,7 @@
                     size="x-large"
                     variant="outlined"
                     block
-                    @click="signOut()"
+                    @click="signOutSupabase()"
                 >
                     Deconnexion
                 </v-btn>
@@ -128,13 +126,13 @@
 <!--  -->
 <script>
     import { defineComponent } from 'vue';
-    import { getAuth, signOut } from "firebase/auth";
+    import { inject } from 'vue';
 
     // Components
     import ToolbarProfil from '@/components/menus/head/ToolbarProfil.vue';
     import GroupCard from '@/components/menus/setting/GroupCard.vue';
     import GroupInput from '@/components/menus/setting/GroupInput.vue';
-    import { mapState } from 'vuex';
+    import { mapActions, mapMutations, mapState } from 'vuex';
 
     export default defineComponent({
         name: 'setting-view',
@@ -145,10 +143,13 @@
             GroupInput,
         },
         computed: {
-            ...mapState(['profil']),
+            ...mapState("profil", ['profil']),
+            ...mapMutations("auth", ["CLEAR_TOKEN"]),
+            ...mapActions("auth", ["logout"]),
         },
         data() {
             return {
+                supabase: inject('supabase'),
                 mode: "setting",
                 groupeParameters: [
                     {
@@ -221,14 +222,18 @@
             }
         },
         methods: {
-            signOut() {
-                const auth = getAuth();
-                signOut(auth).then(() => {
-                    // Sign-out successful.
-                }).catch((error) => {
-                    // An error happened.
-                    console.log(error)
-                });
+            async signOutSupabase(){
+                this.logout;
+            },
+            async inviteUserSupabase(){
+                let { data, error } = await this.supabase.auth.api.inviteUserByEmail('someone@email.com');
+
+                if (error) {
+                    console.error('Erreur lors de la deconnexion:', error.message);
+                    return;
+                }
+
+                console.log("Invitation réussi", data);
             },
             goToInfo(){
                 console.log("goToINfo");
@@ -239,43 +244,43 @@
             window.scrollTo(0, 0);
 
             this.groupInput = [
-                    {
-                        label: "Civilite",
-                        value: this.profil.infos_perso.civilite,
-                    },
-                    {
-                        label: "Nom",
-                        value: this.profil.infos_perso.nom,
-                    },
-                    {
-                        label: "prénom",
-                        value: this.profil.infos_perso.prenom,
-                    },
-                    {
-                        label: "email",
-                        value: this.profil.infos_perso.email,
-                    },
-                    {
-                        label: "Téléphone",
-                        value: this.profil.infos_perso.tel,
-                    },
-                    {
-                        label: "Adresse",
-                        value: this.profil.infos_perso.adress.principal,
-                    },
-                    {
-                        label: "Complement",
-                        value: this.profil.infos_perso.adress.complement,
-                    },
-                    {
-                        label: "Code Postal",
-                        value: this.profil.infos_perso.adress.code_postal,
-                    },
-                    {
-                        label: "Commune",
-                        value: this.profil.infos_perso.adress.commune,
-                    },
-                ];
+                {
+                    label: "Civilite",
+                    value: this.profil.infos_perso.civilite,
+                },
+                {
+                    label: "Nom",
+                    value: this.profil.infos_perso.nom,
+                },
+                {
+                    label: "prénom",
+                    value: this.profil.infos_perso.prenom,
+                },
+                {
+                    label: "email",
+                    value: this.profil.infos_perso.email,
+                },
+                {
+                    label: "Téléphone",
+                    value: this.profil.infos_perso.tel,
+                },
+                {
+                    label: "Adresse",
+                    value: this.profil.infos_perso.adress.principal,
+                },
+                {
+                    label: "Complement",
+                    value: this.profil.infos_perso.adress.complement,
+                },
+                {
+                    label: "Code Postal",
+                    value: this.profil.infos_perso.adress.code_postal,
+                },
+                {
+                    label: "Commune",
+                    value: this.profil.infos_perso.adress.commune,
+                },
+            ];
         }
     });
 </script>

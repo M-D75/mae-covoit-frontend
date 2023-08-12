@@ -1,8 +1,6 @@
 
 
 <style lang="scss" model>
-    
-
     .v-bottom-navigation {
         .selected {
             .v-btn__content {
@@ -21,6 +19,7 @@
         background-color: var(--bg-app-color);
         .v-btn {
             color: var(--gray-icon-color);
+            font-weight: bold;
         }
         .v-btn__content {
             color: var(--gray-icon-color);

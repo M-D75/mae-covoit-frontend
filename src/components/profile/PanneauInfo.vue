@@ -108,13 +108,14 @@
 <script>
     import { defineComponent } from 'vue';
     import $ from 'jquery'
+import { mapMutations } from 'vuex';
 
     // Components
     // ...
 
     export default defineComponent({
         name: 'info-comp',
-
+        emits: ["history"],
         components: {
         },
         props: {
@@ -148,6 +149,7 @@
             }
         },
         methods: {
+            ...mapMutations("profil", ["SET_DARKMODE"]),
             choiceFunctionBtnInfo(name){
                 switch (name.toLowerCase()) {
                     case 'mode':
@@ -158,7 +160,6 @@
                         break;
                     case 'Papayas':
                         console.log('Mangoes and papayas are $2.79 a pound.');
-                        // Expected output: "Mangoes and papayas are $2.79 a pound."
                         break;
                     default:
                         console.log(`Sorry, we are out of ${name}.`);
@@ -173,12 +174,14 @@
                     $("#app .v-application").removeClass("ligth-mode");
                     $("#app .v-application").addClass("dark-mode");
                     $(".conti.mask").addClass("display")
-                    this.$store.state.darkMode = true;
+                    this.SET_DARKMODE(true);
+                    localStorage.setItem("mae-covoit-darkMode", true);
                 }
                 else{
                     $("#app .v-application").addClass("ligth-mode");
                     $("#app .v-application").removeClass("dark-mode");
-                    this.$store.state.darkMode = false;
+                    this.SET_DARKMODE(false);
+                    localStorage.setItem("mae-covoit-darkMode", false);
                 }
 
                 // if(  ! $(".conti.mask").hasClass("display") ){

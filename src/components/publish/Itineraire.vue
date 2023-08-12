@@ -71,9 +71,9 @@
     ></v-overlay>
 
     <div class="itineraire">
-        <div
+        <!-- <div
             class="title text-center"
-        >Quelle est votre route ?</div>
+        >Quelle est votre route ?</div> -->
 
         <div 
             class="cont" 
@@ -100,6 +100,7 @@
 
     export default defineComponent({
         name: 'itineraire-comp',
+        emits: ["itineraire-valided"],
         computed: {
             ...mapState(["trajets"]),
         },

@@ -66,7 +66,7 @@
                 title="D'ou partez vous ?"
                 label="Saisissez une commune"
                 :focus="true"
-                :items="items"
+                :items="villagesSortedFiltered"
                 :history="communesHistory"
                 @selected="getSelected()" 
                 @saisi="getSaisi()"
@@ -78,7 +78,7 @@
                 title="Où allez vous ?"
                 label="Saisissez une commune"
                 :focus="true"
-                :items="items"
+                :items="villagesSortedFiltered"
                 :history="communesHistory"
                 @selected="getSelected()" 
                 @saisi="getSaisi()"
@@ -92,7 +92,7 @@
 <!-- vuejs -->
 <script>
     import { defineComponent } from 'vue';
-    import { mapState } from 'vuex';
+    import { mapMutations, mapState } from 'vuex';
     import $ from 'jquery';
 
     import { useScreens } from 'vue-screen-utils';
@@ -102,8 +102,27 @@
     
     export default defineComponent({
         name: 'pan-get-value-comp',
+        emits: ["close", "date-selected"],
         computed: {
-            ...mapState(['villages', 'communesHistory']),
+            ...mapState("search", ['villages', 'communesHistory', 'depart', 'destination']),
+            ...mapMutations("search", ["SET_DEPART"]),
+            villagesSortedFiltered(){
+                if( this.saisi == "" || this.saisi == null ){
+                    return this.communesHistory.filter((commune) => (commune != this.depart && commune != this.destination));
+                }
+                else {
+                    return this.villages.filter(
+                            (dataVillage) => this.saisi != dataVillage.village 
+                            && dataVillage.village.toLowerCase().replaceAll("'", "").includes(this.saisi.toLocaleLowerCase().replaceAll("'", "")) 
+                            && dataVillage.village != this.depart 
+                            && dataVillage.village != this.destination
+                        )
+                        .map((dataVillage) => dataVillage.village)
+                        .sort((a, b) => {
+                            return this.matchValue(b.replaceAll("'", ""), this.saisi) - this.matchValue(a.replaceAll("'", ""), this.saisi);
+                        });
+                }
+            },
         },
         components: {
             Search,
@@ -121,20 +140,15 @@
         data() {
             return {
                 sizeScreen: 0,
-                startTrajet: "",
-                endTrajet: "",
                 saisi: "",
                 date: null,
                 columns: null,
                 expanded: false,
-                items: [],
                 opened: false,
             }
         },
         mounted() {
-            this.sizeScreen = parseInt($("body").css("height").replace("px", ""));
-            
-            console.log("sizeScreen:", this.sizeScreen);
+            this.sizeScreen = $(window).innerHeight();            
             $(".pan-get-value").css("top", `${this.sizeScreen}px`)
 
             //Init calendar
@@ -154,18 +168,35 @@
             let year = date.getFullYear();
 
             this.date = new Date(`${month}/${day}/${year}`);
-
-            this.items = this.communesHistory.filter((commune) => (commune != this.startTrajet && commune != this.endTrajet))
-            console.log("end-mouted")
         },
         methods: {
             open(){
+                switch (this.mode) {
+                    case "depart":
+                        this.$store.commit("search/SET_DEPART", "");                     
+                        break;
+                    case "arriver":
+                        this.$store.commit("search/SET_DESTINATION", "");
+                        break;
+                    default:
+                        break;
+                }
+
+                if(this.$refs.SearchRef){
+                    this.$refs.SearchRef.saisi = "";
+                }
                 this.saisi = "";
-                this.items = this.communesHistory.filter((commune) => (commune != this.startTrajet && commune != this.endTrajet))
-                console.log("pane-open:")
                 $(".pan-get-value").animate({top: "0px"}, 'fast')
-                $(".pan-get-value").css("top", `0px`)
-                console.log(this.date)
+                $(".pan-get-value").css("top", `0px`);
+                
+                this.opened = true;
+            },
+            close(){
+                $(".pan-get-value").animate({top: `${this.sizeScreen}px`}, "fast");
+                $(".pan-get-value").css("top", `${this.sizeScreen}px`);
+
+                this.opened = false;
+
                 if( this.date == null ){
                     const date = new Date();
 
@@ -175,56 +206,35 @@
 
                     this.date = new Date(`${month}/${day}/${year}`);
                 }
-                this.opened = true;
-            },
-            close(){
-                console.log("pane-close")
-                $(".pan-get-value").animate({top: `${this.sizeScreen}px`}, "fast");
-                $(".pan-get-value").css("top", `${this.sizeScreen}px`);
-                this.opened = false;
             },
             getDate(){
                 return this.date;
             },
             getSaisi(){
-                console.log("Pane--getSaisi")
                 if(this.$refs.SearchRef){
-                    console.log("getSaisi:", this.$refs.SearchRef.getSaisi())
                     this.saisi = this.$refs.SearchRef.getSaisi();
                 }
-
-                if( this.saisi == "" || this.saisi == null ) {
-                    this.items = this.communesHistory.filter((commune) => (commune != this.startTrajet && commune != this.endTrajet))
-                    return;
-                }
-
-                this.items = this.villages.filter((dataVillage) => this.saisi != dataVillage.village && dataVillage.village.toLowerCase().includes(this.saisi.toLocaleLowerCase()) && dataVillage.village != this.startTrajet && dataVillage.village != this.endTrajet).map((dataVillage) => dataVillage.village);
             },
             getSelected(){
-                console.log("child-selected", this.startTrajet, this.endTrajet, this.mode)
-                console.log("t:", this.$refs.SearchRef.getSaisi());
-                
                 if ( this.mode == "depart" ) {
-                    this.startTrajet = this.$refs.SearchRef.getSaisi();
-                    this.items = [];
+                    this.$store.commit("search/SET_DEPART", this.$refs.SearchRef.getSaisi());
                     this.saisi = "";
-                    this.$emit("dep-selected");
+                    this.$emit("close");
                 }
                 else if(this.mode == "arriver") {
-                    this.endTrajet = this.$refs.SearchRef.getSaisi();
-                    this.$emit("dest-selected");
+                    this.$store.commit("search/SET_DESTINATION", this.$refs.SearchRef.getSaisi());
+                    this.$emit("close");
                 }
             },
-            getDep(){
-                return this.startTrajet;
-            },
-            getDest(){
-                return this.endTrajet;
+            matchValue(str, query) {
+                const index = str.indexOf(query);
+                if (index === -1) return Infinity;
+                return index;
             },
         },
         watch: {
             openP(){
-                console.log("open--", this.openP)
+                console.log("openP:", this.openP)
                 if(this.openP){
                     this.open();
                 }
@@ -246,10 +256,11 @@
                         // let year = date.getFullYear();
 
                         // this.date = new Date(`${month}/${day}/${year}`);
-                        this.$emit("close-calendar");
+                        this.$emit("close");
                     }
                 }
             },
+            
         }
    });
 </script>

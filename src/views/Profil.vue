@@ -85,7 +85,7 @@
         <!-- Avatar -->
         <Avatar 
             :modeEdit="false" 
-            :name="'Dr. Strange'"
+            :name="userName"
             v-on:avatar-touched="goToInfoPerso()"
         />
 
@@ -151,18 +151,18 @@
         :class-name="['money']"
         :mode="modeBottomMenu"
         labelSelectorN1="Quel montant souhaitez-vous créditer sur votre compte ?"
-        ref="BottomMenuRefMoney" 
+        ref="BottomMenuRefMoney"
         v-on:close="overlay = false"
         v-on:drop-money="onDropMoney()"
         v-on:up-money="onUpMoney()"
         />
 
-    <!-- passord -->
+    <!-- password -->
     <BottomMenu
         :class-name="['password']"
-        :mode="modeBottomMenu"
+        :mode="'password'"
         labelSelectorN1="Quel montant souhaitez-vous créditer sur votre compte ?"
-        ref="BottomMenuRefMoney" 
+        ref="BottomMenuRef" 
         v-on:close="overlay = false"
         />
 
@@ -189,7 +189,7 @@
     export default defineComponent({
         name: 'profil-view',
         computed: {
-            ...mapState(["darkMode"]),
+            ...mapState("profil", ["darkMode", "userName"]),
         },
         components: {
             ToolbarProfil,
@@ -221,7 +221,7 @@
                     },
                     {
                         btn:true,
-                        icon: ! this.$store.state.darkMode ? "mdi-lightbulb-on" : "mdi-moon-waning-crescent",
+                        icon: ! this.$store.state.profil.darkMode ? "mdi-lightbulb-on" : "mdi-moon-waning-crescent",
                         text:"mode",
                     },
                 ],
@@ -307,6 +307,9 @@
                 }
             }
         },
+        mounted(){
+            // this.$refs.BottomMenuRef.open()
+        },
         methods: {
             goToInfoPerso(){
                 this.$router.push("/profil/perso")
@@ -372,7 +375,6 @@
             },
             onUpMoney(){
                 if( this.modePathNavigation != "up-money" ){
-                    
                     this.modePathNavigation = "up-money";
                     this.indexModeNavigation = -1;
                     this.pathNavigationNext();
@@ -395,15 +397,11 @@
             recharger(){
                 console.log("recharger");
                 this.modeBottomMenu = "recharge-valided";
-                // if ( this.$refs.BottomMenuRefMoney ) {
-                //     console.log("add-credit-5")
-                //     this.overlay = this.$refs.BottomMenuRefMoney.close();
-                // }
             },
         },
         watch: {
             darkMode(){
-                this.infos_panneau[2].icon = ! this.$store.state.darkMode ? "mdi-lightbulb-on" : "mdi-moon-waning-crescent";
+                this.infos_panneau[2].icon = ! this.darkMode ? "mdi-lightbulb-on" : "mdi-moon-waning-crescent";
             },
             overlay(){
                 if( ! this.overlay ){

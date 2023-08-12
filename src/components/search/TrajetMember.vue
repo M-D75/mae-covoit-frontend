@@ -36,12 +36,13 @@
             margin-right: 10px !important;
         }
         .line {
-            background-color: gray;
+            // background-color: gray;
+            border: dotted 2px gray;
             width: 2px;
             height: 38px;
             position: absolute;
             left: 26.5px;
-            top: 21px;
+            top: 22px;
             z-index: 0;
             opacity: var(--v-medium-emphasis-opacity);
         }

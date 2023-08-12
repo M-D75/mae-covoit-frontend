@@ -1,7 +1,7 @@
 
 <style lang="scss" model>
    .home-search-view {
-      // calendar 
+      // calendar
       .trajet-search {
          z-index: 100 !important;
       }
@@ -9,6 +9,7 @@
          z-index: 0 !important;
       }
    }
+   
 </style>
 
 <!-- scss -->
@@ -64,15 +65,11 @@
       class="trajet-search" 
       ref="TrajetSearchRef"
       :dateString="dateString"
-      :dep="depart"
-      :dest="destination"
-      :nb-passager="nbPassager"
       v-on:trajet-selected="getTrajet()" 
       v-on:open-calendar="openCalendar()"
       v-on:open-dep="openSearch('dep')"
       v-on:open-dest="openSearch('dest')"
       v-on:open-nb-passenger="openSelectNumber()"
-      v-on:switch-commune="switchCommune()"
    />
 
    <!-- Find Fast Trajet -->
@@ -90,10 +87,8 @@
       ref="PaneGetValueRef"
       :mode="modePanel" 
       :open-p="openP"
-      v-on:dep-selected="getDepart()"
-      v-on:dest-selected="getDestination()"
+      v-on:close="close()"
       v-on:date-selected="getDate()"
-      v-on:close-calendar="close()"
    />
 
    <!-- number : nb-pessenger -->
@@ -124,6 +119,7 @@
 <script>
    // import $ from 'jquery'
    import { defineComponent } from 'vue';
+   import { mapMutations, mapState } from 'vuex';
 
    // Components
    import TrajetSearch from '@/components/search/TrajetSearch.vue';
@@ -134,7 +130,9 @@
 
    export default defineComponent({
       name: 'home-search-view',
-
+      computed: {
+         ...mapState("search", ['depart', "destination"]),
+      },
       components: {
          TrajetSearch,
          Pile,
@@ -148,8 +146,6 @@
             openP: false,
             modePanel: "date",
             date: null,
-            depart: null,
-            destination: null,
             dateString: "Aujourd'hui",
             nbPassager: 1,
             infos: {
@@ -169,61 +165,50 @@
          }
       },
       methods: {
+         ...mapMutations("search", ["SET_NB_PASSAGER"]),
+         // TODO : inutile mode prod
          getTrajet() {
-            if(this.$refs.PaneGetValueRef){
+            if(this.$refs.TrajetSearchRef){
                const depart = this.$refs.TrajetSearchRef.depart;
                const destination = this.$refs.TrajetSearchRef.destination;
-               this.infos = this.$store.state.trajets.filter(trajet => trajet.depart == depart && trajet.destination == destination)[0];
+               this.infos = this.$store.state.search.trajets.filter(trajet => trajet.depart == depart && trajet.destination == destination)[0];
             }
          },
          openCalendar(){
             console.log("open-pan-calendar-search")
-            this.modePanel = "date";
-            this.openP = true;
+            if( ! this.openP ){
+               this.modePanel = "date";
+               this.openP = true;
+            }
          },
          openSearch(mode){
-            console.log("select-", mode);
-            this.modePanel = mode == 'dep' ? "depart" : "arriver";
-            this.openP = true;
+            console.log("openSearch-mode:", mode);
+            if( ! this.openP ){
+               this.modePanel = mode == 'dep' ? "depart" : "arriver";
+               this.openP = true;
+            }
          },
          getDate(){
-            console.log("get-date-search");
-            if(this.$refs.PaneGetValueRef){
+            if( this.$refs.PaneGetValueRef ){
                this.date = this.$refs.PaneGetValueRef.date;
-               this.openP = !this.openP;
+               this.openP = false;
             }
-         },
-         getDepart(){
-            if(this.$refs.PaneGetValueRef){
-               this.depart = this.$refs.PaneGetValueRef.getDep();
-               this.openP = !this.openP;
-            }
-         },
-         getDestination() {
-            if(this.$refs.PaneGetValueRef){
-               this.destination = this.$refs.PaneGetValueRef.getDest();
-               this.openP = !this.openP;
-            }
-         },
-         switchCommune(){
-            var tmp = this.depart;
-            this.depart = this.destination;
-            this.destination = tmp;
          },
          close(){
             this.openP = false;
-            if ( this.$refs.BottomMenuRef && this.overlay ) {
+            if ( this.$refs.BottomMenuRef && this.overlay && ! this.$refs.BottomMenuRef.move ) {
                this.overlay = this.$refs.BottomMenuRef.close();
             }
          },
          openSelectNumber(){
-            if (this.$refs.BottomMenuRef) {
+            console.log("open-selected-number")
+            if ( this.$refs.BottomMenuRef && ! this.overlay ) {
                this.overlay = this.$refs.BottomMenuRef.open();
             }
          },
          getSelected(){
             if (this.$refs.BottomMenuRef) {
-               this.nbPassager = this.$refs.BottomMenuRef.numberSelected;
+               this.SET_NB_PASSAGER(this.$refs.BottomMenuRef.numberSelected)
                if(this.nbPassager){
                   this.close();
                }
@@ -235,10 +220,10 @@
       },
       watch: {
          depart(){
-            console.log("dep-:", this.depart);
+            console.log("dep-watch:", this.depart);
          },
          destination(){
-            console.log("dest-:", this.destination);
+            console.log("dest-watch:", this.destination);
          },
          date(){
             const tmpCurrentDate = new Date();
@@ -247,7 +232,8 @@
             var year  = tmpCurrentDate.getFullYear();
 
             const currentDate = new Date(`${month}/${day}/${year}`);
-            const tomorrowsDate = new Date(`${month}/${day+1}/${year}`);
+            const tomorrowsDate = new Date(currentDate);
+            tomorrowsDate.setDate(currentDate.getDate() + 1);
 
             day   = this.date.getDate();
             month = this.date.getMonth() + 1;
@@ -261,6 +247,17 @@
             }
             else {
                this.dateString = `${day >= 10 ? day : "0" + day}-${month >= 10 ? month : "0" + month}-${year}`;
+            }
+         },
+         overlay(){
+            if( ! this.overlay ){
+               if(this.$refs.BottomMenuRef && ! this.$refs.BottomMenuRef.move){
+                  this.$refs.BottomMenuRef.close();
+               }
+               
+               if(this.$refs.BottomMenuRefResults && ! this.$refs.BottomMenuRefResults.move){
+                  this.$refs.BottomMenuRefResults.close();
+               }
             }
          },
       },

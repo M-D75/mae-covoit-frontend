@@ -75,7 +75,31 @@
                 }
             }   
         }
+
+        
     }
+
+    .password {
+        .contain-input{
+            .v-text-field {
+                .v-input__control {
+                    box-shadow: var(--box-shadow-card);
+                    .v-field.v-field--variant-solo{
+                        border-radius: 20px !important;
+                        overflow: hidden;
+                    }
+                    .v-field__field {
+                        background-color: white;
+                        .v-field__input {
+                            text-align: center;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
 </style>
 
 <style lang="scss" scoped>
@@ -182,7 +206,7 @@
                 }
             }
 
-            .select-day-hour-domicile{
+            .select-day-hour-domicile, .select-day{
                 width: 85%;
                 .label {
                     margin: 35px;
@@ -280,11 +304,13 @@
                 .bloc-saisi {
                     &.name{
                         width: 100%;
+                        margin-top: 0;
                     }
                 }
                 .num-credit-card {
                     width: 100%;
                     margin: auto;
+                    margin-top: 30px;
                     display: flex;
                     justify-content: space-between;
                     > div {
@@ -313,6 +339,49 @@
                         }
                     }
                     
+                }
+            }
+
+            //password
+            .password {
+                padding: 0 40px;
+                .label {
+                    margin: 30px auto;
+                    font-weight: bold;
+                }
+                .contain-input{
+                    margin: 5px;
+                    .label {
+                        margin: 3px auto;
+                        color: gray;
+                        text-align: left;
+                        font-size: 14px;
+                    }
+                    .v-text-field {
+                        .v-input__control {
+                            .v-field__field {
+                                background-color: white;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // map
+            .map {
+                width: 90%;
+                margin: 10px auto;
+                margin-bottom: 5px;
+                .infos-route {
+                    font-size: 25px;
+                    font-weight: bold;
+                    span.time {
+                        color: rgb(0, 204, 0);
+                    }
+                }
+                .infos-sup {
+                    font-size: 13px;
+                    color: gray;
                 }
             }
         }
@@ -354,7 +423,7 @@
             <TrajetMember v-if="!notif && mode=='reserve'" :infos="infos"/>
             <ReservePlace v-if="!notif && mode=='reserve'" v-on:test-notif-success="notif = !notif"/>
 
-            <Notification :message="'Votre commande a été comfirmé par le chauffeur !'" v-if="notif" />
+            <Notification v-if="notif && mode=='reserve'" :message="'Votre commande a été comfirmé par le chauffeur !'" />
             <!-- End Results -->
 
             <!-- ** Publish **
@@ -366,7 +435,7 @@
                 class="select-time mx-auto"
             >
                 <div class="label text-center">{{ labelSelectorN1 }}</div>
-                <TimeCard ref="TimeCardRef" v-on:time-changed="emit('time-changed')"/>
+                <TimeCard ref="TimeCardRef" :class-name="className" :hour-init="timeInit.hourInit" :minute-init="timeInit.minuteInit" v-on:time-changed="emit('time-changed')"/>
                 <v-btn 
                     class="text-none"
                     rounded="xl" 
@@ -410,7 +479,7 @@
                     >{{ day.day }}</div>
                 </div>
                 <div class="label text-center">{{ labelSelectorN2 }}</div>
-                <TimeCard ref="TimeCardRef"/>
+               <TimeCard ref="TimeCardRef"/>
                 
                 <v-btn 
                     class="text-none"
@@ -419,6 +488,32 @@
                     variant="outlined"
                     block
                     @click="emit('time-valided')"
+                >Valider</v-btn>
+            </div>
+
+            <!-- select day -->
+            <div
+                v-if="mode=='select-day'"
+                class="select-day mx-auto"
+            >
+                <div class="label text-center" >{{ labelSelectorN1 }}</div>
+                <div class="day-contain">
+                    <div
+                        v-for="(day, index) in daysSelected"
+                        :key="index"
+                        class="day"
+                        :class="{selected: day.selected}"
+                        @click="selectDay(index)"
+                    >{{ day.day }}</div>
+                </div>
+                
+                <v-btn 
+                    class="text-none"
+                    rounded="xl" 
+                    size="x-large"
+                    variant="outlined"
+                    block
+                    @click="emit('day-valided')"
                 >Valider</v-btn>
             </div>
 
@@ -431,7 +526,7 @@
                 <div class="label text-center">{{ labelSelectorN1 }}</div>
                 <!-- <div class="sub-label-color" :class="{warning_yellow: warn=='low', warning_red: warn=='bad'}">prix recommandé : 2 à 3 €</div> -->
                 <div class="sub-label-color">prix recommandé : 2 à 3 €</div>
-                <SelectNumber ref="SelectNumberRef" icon="mdi-currency-eur" min="1" max="8" v-on:number-changed="selectNumber()" />
+                <SelectNumber ref="SelectNumberRef" icon="mdi-currency-eur" :min="1" :max="8" v-on:number-changed="selectNumber()" />
                 <v-btn 
                     class="text-none"
                     rounded="xl" 
@@ -474,7 +569,7 @@
                 class="select-number mx-auto"
             >
                 <div class="label text-center">{{ labelSelectorN1 }}</div>
-                <SelectNumber min="1" max="200" icon="mdi-currency-eur" />
+                <SelectNumber :min="1" :max="200" icon="mdi-currency-eur" />
                 <v-btn 
                     class="text-none"
                     rounded="xl" 
@@ -514,10 +609,7 @@
                 v-if="mode=='register-credit-card'" 
                 class="credit-card card-contain"
             >
-                <!-- name card -->
-                <div class="bloc-saisi name">
-                    <v-text-field placeholder="Eddine Omar" variant="solo"></v-text-field>
-                </div>
+                
                 
                 <!-- num card -->
                 <div class="bloc-saisi num-credit-card">
@@ -597,7 +689,7 @@
                     <div class="bloc-saisi cvc">
                         <v-text-field
                             v-model="numericValues[6]"
-                            @input="checkNumericalValue($event, '')"
+                            @input="checkNumericalValue($event, 'input8')"
                             ref="input7"
                             placeholder="123" 
                             variant="solo"
@@ -606,6 +698,10 @@
                     </div>
                 </div>
 
+                <!-- name card -->
+                <div class="bloc-saisi name">
+                    <v-text-field ref="input8" placeholder="Eddine Omar" variant="solo"></v-text-field>
+                </div>
 
                 <v-btn 
                     class="text-none"
@@ -618,35 +714,38 @@
             </div>
 
             <!-- Password -->
-            <div v-if="mode=='password'">
+            <div 
+                v-if="mode=='password'"
+                class="password"
+            >
                 <div class="label text-center">Réinitialiser votre mots de passe.</div>
 
-                <div>
+                <div class="contain-input">
+                    <div class="label">Nouveau mot de passe.</div>
                     <v-text-field
-                        v-model="password"
-                        placeholder="Nouveau mot passe"
+                        v-model="passwordChange.password"
+                        placeholder=""
                         single-line
                         :rules="[rules.required, rules.min]"
                         type="password"
                         variant="solo"
-                        hint="At least 8 characters"
-                        align="center"
+                        hint="Au moins 8 characters"
                         counter
-                        ></v-text-field>
+                    ></v-text-field>
                 </div>
 
-                <div>
+                <div class="contain-input">
+                    <div class="label">Confirmation du mot passe</div>
                     <v-text-field
-                        v-model="password_comfirmed"
-                        placeholder="Confirmation du mot passe"
+                        v-model="passwordChange.passwordComfirmed"
+                        placeholder=""
                         :rules="[rules.required, rules.min]"
                         type="password"
                         single-line
                         variant="solo"
-                        hint="At least 8 characters"
-                        align="center"
+                        hint="Au moins 8 characters"
                         counter
-                        ></v-text-field>
+                    ></v-text-field>
                 </div>
 
                 <v-btn 
@@ -660,9 +759,23 @@
             </div>
 
             <!-- End Pofile -->
+
+
+            <!-- Map -->
+            
+            <div 
+                v-if="mode=='map'"
+                class="map"
+            >
+                <div class="infos-route">
+                    <span class="time">{{ mapInfos.time }}</span> <span class="distance"> ({{ mapInfos.distance }})</span>
+                </div>
+                <div class="infos-sup">Le plus rapide selon l'etat actuel de la circulation</div>
+            </div>
+
+            <!-- End Map -->
         </div>
 
-        
     </v-container>
 </template>
 
@@ -684,6 +797,7 @@
 
     export default defineComponent({
         name: 'bottom-menu',
+        emits: ["close", "time-valided", "time-changed", "day-valided", "opened", "close", "select-price", "drop-money", "up-money"], // <--- add this line
         components: {
             Vue3DraggableResizable,
             TrajetMember,
@@ -741,6 +855,24 @@
                 type: Array,
                 default: () => ([]),
             },
+            timeInit: {
+                type: Object,
+                default() {
+                    return {
+                            hourInit: 1,
+                            minuteInit: 8,
+                        };
+                },
+            },
+            mapInfos: {
+                type: Object,
+                default() {
+                    return {
+                        time: "",
+                        distance: "",
+                    };
+                },
+            },
         },
         data() {
             return {
@@ -779,9 +911,13 @@
                     {model: "MONO SPACE", color: "navy", icon:"mdi-car"},
                 ],
                 rules: {
-                    required: value => !!value || 'Required.',
-                    min: v => v.length >= 8 || 'Min 8 characters',
+                    required: value => !!value || 'Requis.',
+                    min: v => v.length >= 8 || '8 characters minimum',
                     emailMatch: () => (`The email and password you entered don't match`),
+                },
+                passwordChange: {
+                    password: "",
+                    passwordComfirmed: "",
                 },
             }
         },
@@ -792,19 +928,10 @@
             
             const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
             $(classBottomMenuNameJquery).css("top", `${this.y}px`);
-            //this.subContHeigth = parseInt($(".sub-cont").css("height").replace("px", ""));
             const classSubContNameJquery = this.className != "" && this.className != null ? `.sub-cont.${this.className.join(".")}` : ".sub-cont";
             this.subContHeigth = $(classSubContNameJquery).outerHeight(true);
 
-            console.log("1:sub-cont-size by css px:", parseInt($(classSubContNameJquery).css("height").replace("px", "")));
-            console.log("2:sub-cont-size outerHeight:", this.subContHeigth);
-            if( this.$refs.subCont ){
-                console.log("3:sub-cont-size refs.clientHeight:", this.$refs.subCont.clientHeight);
-            }
-
-            console.log("class-bot:", classBottomMenuNameJquery, classSubContNameJquery)
-            //this.subContHeigth = this.$refs.subCont.clientHeight;
-            console.log("screen", this.sizeScreen, this.subContHeigth);
+            console.log("classe-name", this.className, "screen-height", this.sizeScreen, "subContHeigth", this.subContHeigth, "object", $(classSubContNameJquery));
             if( this.mode=="select-day-hour-domicile" || this.mode=="notification" ){
                 this.open();
             }
@@ -826,7 +953,7 @@
                 const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${Object.keys(this.className).join(".")}` : ".bottom-menu";
                 $(classBottomMenuNameJquery).css("top", `${pos.y}px`);
                 if (pos.y >= this.sizeScreen - this.marge_bar) {
-                    this.close()
+                    this.close();
                 }
             },
             onDragStop(pos) {
@@ -853,23 +980,30 @@
                 this.move = false;
             },
             open(){
-                const classSubContNameJquery = this.className != "" && this.className != null ? `.sub-cont.${this.className.join(".")}` : ".sub-cont";
                 this.subContHeigth = this.$refs.subCont.clientHeight;
-                console.log("open-subContHeiht", this.subContHeigth, $(classSubContNameJquery), $(classSubContNameJquery).clientHeight)
+                
                 if ( ! this.open_b ) {
                     if ( this.y >= this.sizeScreen - this.marge_bar ) {
+                        if( ! this.move ){
+                            console.log("will-open")
+                            // open
+                            this.move = true;
+                            this.disabledY = false;
+                            this.y = this.sizeScreen - ( this.subContHeigth + 50 );
+                            const _this = this;
+                            const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
+                           
+                            $(classBottomMenuNameJquery).animate({"top": `${_this.y}px`}, "fast", function(){
+                                $(this).animate({"top": "auto"}, 1000);
+                                _this.y = parseInt($(this).css("top").replace("px", ""));
+                                _this.move = false;
+                            });
 
-                        // open
-                        this.disabledY = false;
-                        this.y = this.sizeScreen - ( this.subContHeigth + 50 );
-                        const _this = this;
-                        const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
-                        $(classBottomMenuNameJquery).animate({"top": `${_this.y}px`}, "fast", function(){
-                            $(this).animate({"top": "auto"}, 1000);
-                            _this.y = parseInt($(this).css("top").replace("px", ""));
-                        });
-
-                        this.open_b = true;
+                            this.open_b = true;
+                        }
+                        else{
+                            this.open_b = false;
+                        }
                     }
                 }
 
@@ -878,25 +1012,47 @@
             openMiddle(){
                 if ( ! this.open_b ) {
                     if ( this.y >= this.sizeScreen - this.marge_bar ) {
-                        // open
-                        this.disabledY = false;
-                        this.y = this.sizeScreen/2;
-                        const classBottomMenuNameJquery =  this.className != null && this.className.length != 0 ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
-                        $(classBottomMenuNameJquery).animate({"top": `${this.y}px`}, "fast");
-                        this.open_b = true;
+                        if( ! this.move ){
+                            this.move = true;
+                            // open
+                            const _this = this;
+                            this.disabledY = false;
+                            this.y = this.sizeScreen/2;
+                            const classBottomMenuNameJquery =  this.className != null && this.className.length != 0 ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
+                            
+                            $(classBottomMenuNameJquery).animate({"top": `${this.y}px`}, "fast", function(){
+                                _this.open_b = true;
+                                _this.move = false;
+                                _this.$emit("opened");
+                            });
+                        }
                     }
                 }
 
                 return this.open_b;
             },
             close(){
-                // console.log("close")
-                this.y = this.sizeScreen; //-this.marge_bar;
-                this.open_b = false;
-                const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
-                $(classBottomMenuNameJquery).animate({"top": `${this.y}px`}, "fast");
-                this.$emit('close');
-                return false;
+                
+                if( ! this.move && this.open_b ){
+                    this.move = true;
+
+                    this.y = this.sizeScreen;
+                    
+                    const _this = this;
+                    const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
+                    
+                    $(classBottomMenuNameJquery).animate({"top": `${this.y}px`}, "fast", function(){
+                        _this.move = false;
+                        _this.$emit('close');
+                    });
+
+                    this.open_b = false;
+                }
+                else{
+                    this.open_b = true;
+                }
+
+                return this.open_b;
             },
             selectDay(index) {
                 this.daysSelected[index]["selected"] = !this.daysSelected[index]["selected"];

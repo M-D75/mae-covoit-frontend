@@ -152,15 +152,28 @@
                 size="x-large"
                 variant="outlined"
                 block
-                @click="emit('hour-valided')"
+                @click="$emit('hour-valided')"
             >Continuer</v-btn>
         </div>
 
+        <!-- time -->
         <BottomMenu
             mode="time"
-            :labelSelectorN1="labelSelectorTime"        
-            ref="BottomMenuRef" 
+            :class-name="['time-dom']"
+            :labelSelectorN1="labelSelectorTime"
+            :time-init="timeDomInit"       
+            ref="BottomMenuRefDom"
+            v-on:close="overlay = false"
+            v-on:time-changed="getTimeChanged()"
+            v-on:time-valided="getSelectedRef()"
+        />
 
+        <BottomMenu
+            mode="time"
+            :class-name="['time-work']"
+            :labelSelectorN1="labelSelectorTime"
+            :time-init="timeWorkInit"       
+            ref="BottomMenuRefWork"
             v-on:close="overlay = false"
             v-on:time-changed="getTimeChanged()"
             v-on:time-valided="getSelectedRef()"
@@ -183,6 +196,7 @@
 
     export default defineComponent({
         name: 'hour-program-comp',
+        emits: ['hour-valided'],
         computed: {
             ...mapState(["trajets"]),
         },
@@ -195,16 +209,23 @@
         data() {
             return {
                 overlay: false,
-                labelSelectorTime: "",
+                labelSelectorTime: "Heure",
                 modeHour: "dom",
                 hour: {
                     "domicile":"08:00",
                     "work":"17:00",
                 },
+                timeDomInit: {
+                    hourInit: 7,
+                    minuteInit: 0,
+                },
+                timeWorkInit: {
+                    hourInit: 17,
+                    minuteInit: 0,
+                },
             }
         },
         mounted(){
-            
         },
         methods: {
             hourEdit(){
@@ -217,46 +238,48 @@
                     if( type == "dom" ){
                         $(".dom .btn .sub-btn").css("z-index", 15);
                         this.labelSelectorTime = "Heure de départ du domicile";
+                        this.overlay = this.$refs.BottomMenuRefDom.open();
                     }
                     else{
                         $(".work .btn .sub-btn").css("z-index", 15);
                         this.labelSelectorTime = "Heure de départ du travail";
+                        this.overlay = this.$refs.BottomMenuRefWork.open();
                     }
-                    this.overlay = this.$refs.BottomMenuRef.openMiddle();
+                    
                 }
             },
             getTimeChanged(){
                 if( this.$refs.BottomMenuRef ){
                     if( this.modeHour == 'dom' ){
-                        this.hour.domicile = this.$refs.BottomMenuRef.time;
+                        this.hour.domicile = this.$refs.BottomMenuRefDom.time;
                     }
                     else {
-                        this.hour.work = this.$refs.BottomMenuRef.time;
+                        this.hour.work = this.$refs.BottomMenuRefWork.time;
                     }
                 }
             },
             getSelectedRef(){
-                if( this.$refs.BottomMenuRef ){
-                    console.log("time-getting", this.$refs.BottomMenuRef.time);
-                    
-                    if( this.modeHour == 'dom' ){
-                        this.hour.domicile = this.$refs.BottomMenuRef.time;
+                if( this.modeHour == 'dom' ){
+                    if( this.$refs.BottomMenuRefDom ){
+                        console.log("time-getting-dom", this.$refs.BottomMenuRefDom.time);
+                        this.hour.domicile = this.$refs.BottomMenuRefDom.time;
+                        this.overlay = this.$refs.BottomMenuRefDom.close();
                     }
-                    else {
-                        this.hour.work = this.$refs.BottomMenuRef.time;
-                    }
-
-                    this.overlay = this.$refs.BottomMenuRef.close();
                 }
-            },
-            emit(value){
-                this.$emit(value);
+                else{
+                    if( this.$refs.BottomMenuRefWork ){
+                        console.log("time-getting-work", this.$refs.BottomMenuRefWork.time);
+                        this.hour.work = this.$refs.BottomMenuRefWork.time;
+                        this.overlay = this.$refs.BottomMenuRefWork.close();
+                    }
+                }
             },
         },
         watch: {
             overlay(){
                 if( ! this.overlay ){
-                    this.$refs.BottomMenuRef.close();
+                    this.$refs.BottomMenuRefDom.close();
+                    this.$refs.BottomMenuRefWork.close();
                     $(".dom .btn .sub-btn").css("z-index", 1);
                     $(".work .btn .sub-btn").css("z-index", 1);
                 }

@@ -94,7 +94,7 @@
             <div class="solde">
                 <v-icon 
                     @click="emit('up-money')"
-                    >mdi-credit-card</v-icon>EUR {{ solde }}
+                    >mdi-credit-card</v-icon>EUR {{ soldes }}
             </div>
         </div>
 
@@ -135,10 +135,15 @@
 
 
 <script>
+import { mapState } from 'vuex';
+
 
     // Components
     export default {
         name: 'credit-card-comp',
+        computed: {
+            ...mapState("profil", ["soldes"]),
+        },
         props: {
             
         },

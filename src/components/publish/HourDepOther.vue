@@ -144,7 +144,7 @@
                 size="x-large"
                 variant="outlined"
                 block
-                @click="emit('hour-dep-other-valided')"
+                @click="$emit('hour-dep-other-valided')"
             >Continuer</v-btn>
         </div>
     </div>
@@ -164,6 +164,7 @@
 
     export default defineComponent({
         name: 'hour-dep-other-view',
+        emits: ['hour-dep-other-valided'],
         computed: {
             ...mapState(["trajets"]),
         },
@@ -189,9 +190,6 @@
             
         },
         methods: {
-            emit(value){
-                this.$emit(value);
-            },
         },
         watch: {
 

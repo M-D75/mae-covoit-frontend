@@ -42,7 +42,7 @@
         margin-top: 20px;
         width: 70%;
         box-shadow: var(--box-shadow-card);
-        div.time {
+        > div.time {
             position: relative;
             display: flex;
             overflow: hidden;
@@ -122,10 +122,11 @@
         max-width="500"
     >
         <div
-            class="time" 
+            class="time"
+            :class="className.join(' ')"
         >
             <div class="mask-top"></div>
-            <div class="hour-list mx-auto scrollable-container">
+            <div class="hour-list mx-auto scrollable-container" :class="className.join(' ')">
                 <div 
                     v-for="heure in heures" 
                     :key="heure"
@@ -140,7 +141,7 @@
                 </div>
             </div>
 
-            <div class="minute-list mx-auto scrollable-container">
+            <div class="minute-list mx-auto scrollable-container" :class="className.join(' ')">
                 <div 
                     v-for="minute in minutes" 
                     :key="minute"
@@ -165,14 +166,31 @@
 
     export default defineComponent({
         name: 'time-card-comp',
+        emits: ["time-changed"],
         computed: {
         },
         props: {
+            hourInit: {
+                type: Number,
+                default: 0,
+            },
+            minuteInit: {
+                type: Number,
+                default: 0,
+            },
+            nbPasMinutes:{
+                type: Number,
+                default: 5,
+            },
+            className: {
+                type: Array,
+                default: () => ([]),
+            },
         },
         data() {
             return {
                 heures: Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}`),
-                minutes: Array.from({ length: 60/5 }, (_, i) => `${(i*5).toString().padStart(2, '0')}`),
+                minutes: Array.from({ length: 60/this.nbPasMinutes }, (_, i) => `${(i*this.nbPasMinutes).toString().padStart(2, '0')}`),
                 rollingMinutes: [],
                 active: false,
             }
@@ -180,20 +198,24 @@
         mounted(){
             
             const middleIndexMinutes = (this.minutes.length/2);
-            this.minutes = this.shiftRightMulti(this.minutes, middleIndexMinutes);
-            setTimeout(function(){
-                $(".scrollable-container.minute-list").scrollTop(100*(middleIndexMinutes-1));
-            }, 50);
 
-            var lastOffset = $(".scrollable-container").scrollTop();
+            if(this.minuteInit < 0){
+                this.minites = this.shiftLeftMulti(this.minites, ((60-this.minuteInit)/this.nbPasMinutes)-1);
+            }
+            else{
+                this.minutes = this.shiftRightMulti(this.minutes, ((60-this.minuteInit)/this.nbPasMinutes)+1);
+            }
+                
+            var lastOffset = $(`.scrollable-container${this.className.length != 0 ? "." + this.className.join(".") : ""}`).scrollTop();
             var lastDate = new Date().getTime();
 
             var vue = this;
             console.log("lastOffset:", lastOffset)
 
             var slow = true;
-            $(".scrollable-container.minute-list").on("scroll", function(e){
+            $(`.scrollable-container.minute-list${this.className.length != 0 ? "." + this.className.join(".") : ""}`).on("scroll", function(e){
                 const _this = $(this);
+                console.log("change----")
 
                 var delayInMs = e.timeStamp - lastDate;
                 var offset = e.target.scrollTop - lastOffset;
@@ -229,7 +251,7 @@
                     
                     //console.log("Haven't scrolled in 250ms!", val, currentIndexMinutes);
                     _this.animate({scrollTop: val}, 180, function(){
-                        //console.log("currentIndexMinutes", middleIndexMinutes, currentIndexMinutes)
+                        // console.log("currentIndexMinutes", middleIndexMinutes, currentIndexMinutes)
                         if( middleIndexMinutes > currentIndexMinutes ){
                             //console.log("rigth", middleIndexMinutes-currentIndexMinutes)
                             vue.minutes = vue.shiftRightMulti(vue.minutes, Math.abs(middleIndexMinutes-currentIndexMinutes));
@@ -247,16 +269,21 @@
 
 
             //Hour
-            const middleIndexHours = this.heures.length/2;
-            this.heures = this.shiftRightMulti(this.heures, middleIndexHours);
-            setTimeout(function(){
-                $(".scrollable-container.hour-list").scrollTop(100*(middleIndexHours-1));
-            }, 50);
+            const middleIndexHours = (this.heures.length/2);
+            if(this.hourInit > 0){
+                this.heures = this.shiftLeftMulti(this.heures, this.hourInit-1);
+            }
+            else{
+                this.heures = this.shiftRightMulti(this.heures, this.hourInit+1);
+            }
+            // setTimeout(function(){
+            //     $(".scrollable-container.hour-list").scrollTop(100*(middleIndexHours-1));
+            // }, 50);
             
-            var lastOffsetH = $(".scrollable-container").scrollTop();
+            var lastOffsetH = $(`.scrollable-container${this.className.length != 0 ? "." + this.className.join(".") : ""}`).scrollTop();
             var lastDateH = new Date().getTime();
 
-            $(".scrollable-container.hour-list").on("scroll", function(e){
+            $(`.scrollable-container.hour-list${this.className.length != 0 ? "." + this.className.join(".") : ""}`).on("scroll", function(e){
                 const _this = $(this);
 
                 var delayInMs = e.timeStamp - lastDateH;
@@ -307,7 +334,7 @@
                             //console.log("left", middleIndexHours-currentIndexHours)
                             vue.heures = vue.shiftLeftMulti(vue.heures, Math.abs(middleIndexHours-currentIndexHours));
                         }
-                        //console.log("hour:", vue.heures[middleIndexHours]);
+                        console.log("hour:", vue.heures[middleIndexHours+1]);
                     });
                 }, 190));
             });

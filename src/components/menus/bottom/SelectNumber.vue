@@ -139,6 +139,7 @@
 
     export default defineComponent({
         name: 'select-number-comp',
+        emits: ["number-changed"],
         computed: {
         },
         props: {

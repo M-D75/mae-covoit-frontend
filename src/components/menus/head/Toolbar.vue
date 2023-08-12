@@ -98,8 +98,8 @@
             default: 0,
          },
          nbPassager: {
-            type: Number,
-            default: 0,
+            type: String,
+            default: "0",
          }
       },
       methods: {

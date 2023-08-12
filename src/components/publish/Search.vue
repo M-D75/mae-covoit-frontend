@@ -234,9 +234,6 @@
                 this.$emit("selected");
                 return this.saisi;
             },
-            getSaisi(){
-                return this.saisi;
-            },
         },
         watch: {
             saisi(){

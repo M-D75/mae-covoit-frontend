@@ -162,20 +162,20 @@
                 >
                     <v-icon>mdi-navigation</v-icon>
                     <div 
-                        class="cont-btn" @click="emit('open-dep')"
+                        class="cont-btn" @click="$emit('open-dep')"
                     >
                         <div 
-                            v-if="(dep != null && dep != '')"
+                            v-if="(depart != null && depart != '')"
                             class="head-search-selected"
                         >Départ</div>
                         <v-btn
-                            variant="solo"
+                            variant="text"
                             class="text-none"
-                            :class="{selected : (dep != null && dep != '')}"
+                            :class="{selected : (depart != null && depart != '')}"
                             :ripple="false"
                             :active="false"
-                            @click="emit('open-dep')"                  
-                        >{{ (dep == null || dep == '') ? 'Départ' : dep }}</v-btn>
+                            @click="$emit('open-dep')"                  
+                        >{{ (depart == null || depart == '') ? 'Départ' : depart }}</v-btn>
                     </div>
                 </v-list-item>
                 
@@ -186,20 +186,20 @@
                     <v-icon>mdi-navigation</v-icon>
                     <div 
                         class="cont-btn" 
-                        @click="emit('open-dest')"
+                        @click="$emit('open-dest')"
                     >
                         <div 
-                            v-if="(dest != null && dest != '')"
+                            v-if="(destination != null && destination != '')"
                             class="head-search-selected"
                         >Destination</div>
                         <v-btn
-                            variant="solo"
+                            variant="text"
                             class="text-none"
-                            :class="{selected : (dest != null && dest != '')}"
+                            :class="{selected : (destination != null && destination != '')}"
                             :ripple="false"
                             :active="false"
-                            @click="emit('open-dest')"
-                        >{{ (dest == null || dest == '') ? 'Destination' : dest }}</v-btn>
+                            @click="$emit('open-dest')"
+                        >{{ (destination == null || destination == '') ? 'Destination' : destination }}</v-btn>
                     </div>
                 </v-list-item>
 
@@ -209,7 +209,7 @@
                     <!-- Calendar -->
                     <v-list-item
                         class="calendar"
-                        @click="emit('open-calendar')"
+                        @click="$emit('open-calendar')"
                         :ripple="false"
                         :active="false"
                     >
@@ -241,7 +241,7 @@
                         :title="nbPassager"
                         :active="false"
                         :ripple="false"
-                        @click="emit('open-nb-passenger')"
+                        @click="$emit('open-nb-passenger')"
                     ></v-list-item>
 
                 </div>
@@ -265,13 +265,14 @@
 
 <script>
     import $ from 'jquery'
-    import { mapState, mapActions } from 'vuex';
+    import { mapState, mapActions, mapMutations } from 'vuex';
 
     export default {
         name: 'trajet-search-comp',
+        emits: ["switch-commune", "trajet-selected", "open-dep", "open-dest", "open-calendar", "open-nb-passenger"],
         computed: {
-            ...mapState(['communes']),
-            ...mapActions(['getVillages']),
+            ...mapState("search", ['villages', 'depart', 'destination', 'nbPassager']),
+            ...mapActions("search", ['getVillages']),
         },
         components: {
         },
@@ -280,18 +281,6 @@
                 type: String,
                 default: "Aujourd'hui",
             },
-            dep: {
-                type: String,
-                default: "",
-            },
-            dest: {
-                type: String,
-                default: "",
-            },
-            nbPassager: {
-                type: Number,
-                default: 0,
-            },
         },
         data() {
             return {
@@ -299,11 +288,19 @@
                 switch: false,
             }
         },
+        created() {
+            if( this.villages == undefined || this.villages == null || this.villages.length == 0 ){
+                this.getVillages;
+            }
+        },
+        beforeMount() {
+            
+        },
         mounted (){
-            this.getVillages;
-            console.log("iniiiiiii", this.communes);
+            
         },
         methods: {
+            ...mapMutations("search", ["SET_DEPART", "SET_DESTINATION"]),
             switchCommuneEmit(){
                 //Animation
                 if( ! this.switch ){
@@ -331,31 +328,26 @@
                     this.switch = false;
                 }
 
-                //action
-                this.$emit("switch-commune");
+                // update values
+                var tmp = this.depart;
+                this.SET_DEPART(this.destination);
+                this.SET_DESTINATION(tmp);
             },
             goResult(){
-                if ( this.numberTrajet > 0 ) {
-                    this.$router.push(`/results/${this.dep}/${this.dest}/${this.dateString}/${this.nbPassager}`);
+                this.checkTrajet();
+                console.log("go to :", `/results/${this.depart}/${this.destination}/${this.dateString}/${this.nbPassager}`, this.numberTrajet)
+                if ( this.depart && this.destination ) {
+                    this.$router.push(`/results/${this.depart}/${this.destination}/${this.dateString}/${this.nbPassager}`);
                 }
             },
             checkTrajet(){
-                this.numberTrajet = this.$store.state.trajets.filter(trajet => trajet.depart == this.dep && trajet.destination == this.dest).length;
-                if (this.dep && this.dest) {
+                this.numberTrajet = this.$store.state.search.trajets.filter(trajet => trajet.depart == this.depart && trajet.destination == this.destination).length;
+                if (this.depart && this.destination) {
                     this.$emit("trajet-selected");
                 }
             },
-            emit(value){
-                this.$emit(value);
-            },
         },
         watch: {
-            dep(){
-                this.checkTrajet();
-            },
-            dest(){
-                this.checkTrajet();
-            },
         },
     };
 </script>

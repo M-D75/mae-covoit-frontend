@@ -1,168 +1,214 @@
 
-<style type="text/css">
-   /*.v-input .v-input__control .v-text-field .v-field--prepended.v-field--variant-solo.v-theme--light {
-      box-shadow: none !important;
-      background-color: white !important;
-   }*/
+<style lang="scss" model>
+    /*.v-input .v-input__control .v-text-field .v-field--prepended.v-field--variant-solo.v-theme--light {
+        box-shadow: none !important;
+        background-color: white !important;
+    }*/
 
-   .v-field--variant-solo {
-      box-shadow: none !important;
-      background-color: white !important;
-      border-radius: 50px;
-   }
+    .ligth-mode * {
+        --bg-app-color: #f5f5f5;
+        --white-bg-color: #FBFBFB;
+        --gray-bg-icon-color: #b1b1b1;
+        --blue-color: #2E8DFF;
+        --gray-icon-color: #B1B1B1;
+        
+        // font
+        --font-color-label: #1E1F26;
+        --font-size-h1: 24px;
+        --font-size-h1-toolbar: 16px;
+        --font-size-subtitle-toolbar: 8px;
+        --box-shadow-card: 0px 2px 24px rgba(17,17,17,0.04);
+        --box-shadow-card-v2: 0px 0px 16px rgba(17,17,17,0.16);
+    }
+
+    .v-field--variant-solo {
+        box-shadow: none !important;
+        background-color: white !important;
+        border-radius: 50px;
+    }
 </style>
 
 
 <!-- scss -->
 <style lang="scss" scoped>
 
-   .v-application.v-theme--light.v-layout.v-layout--full-height.v-locale--is-ltr {
-      background-color: #eee;
-   }
-   .v-container {
-      margin: auto;
-      .bloc-part{
-         margin: 50px auto;
-      }
-      
-   }
+    .v-application {
+        background-color: #eee;
+    }
+    .v-container {
+        margin: auto;
+        .bloc-part{
+            margin: 50px auto;
+        }
+        
+    }
 
-   .v-field--variant-solo {
-      box-shadow: none !important;
-      background-color: white !important;
-   }
+    .v-field--variant-solo {
+        box-shadow: none !important;
+        // background-color: white !important;
+    }
 
 
-   a {
-      text-decoration: none;
-      color: gray;
-      text-align:center; 
-      display: block; 
-      width:100%;
-   }
+    a, span {
+        text-decoration: none;
+        color: gray;
+        text-align:center; 
+        display: block; 
+        width:100%;
+        cursor: pointer;
+    }
 
-   .foot-part {
-      height: 100px;
-      position: absolute;
-      bottom: 0px;
-      width: 100%;
-   }
+    .foot-part {
+        height: 100px;
+        position: absolute;
+        bottom: 0px;
+        width: 100%;
+    }
 
-   .line-p {
-      width: 100%;
-      height: 0px;
-      margin: auto;
-   }
+    .line-p {
+        width: 100%;
+        height: 0px;
+        margin: auto;
+    }
 
-   .bloc-btn-social-media {
-      margin-top: 20px;
-      margin-bottom: 20px;
-      width: 100%;
-   }
+    .bloc-btn-social-media {
+        margin-top: 20px;
+        margin-bottom: 20px;
+        width: 100%;
+    }
+
+    .v-btn{
+        color: var(--font-color-label);
+    }
 </style>
 
-   
+    
 <!--  -->
 <template>
-  
-   <v-app >
-      <v-container >
+    <v-app class="ligth-mode">
+        <v-container >
 
-         <!-- From Sign/Connexion -->
-         <v-row class="bloc-part">
+            <!-- From Sign/Connexion -->
+            <v-row class="bloc-part">
+                <v-col>
+                    <v-form>
+                        <v-text-field
+                            v-model="email"
+                            :error-messages="emailErrors"
+                            label="E-mail"
+                            type="email"
+                            required
+                            variant="solo"
+                        ></v-text-field>
+
+                        <v-text-field
+                            v-if="!passwordForgetMode"
+                            variant="solo"
+                            v-model="password"
+                            type="password"
+                            :error-messages="passwordErrors"
+                            :rules="[rules.required, rules.min]"
+                            label="Mot de passe"
+                            required
+                        ></v-text-field>
+
+                        <v-row>
+                            <v-col>
+                                <v-btn
+                                    v-if="!passwordForgetMode"
+                                    class="mr-4 text-none"
+                                    @click="authService( modeLogin ? 'emailSignIn' : 'emailSignUp')"
+                                    rounded="xl" 
+                                    size="x-large"
+                                    variant="outlined"
+                                    block
+                                >
+                                    {{ modeLogin ? "Connexion" : "S'inscrire" }}
+                                </v-btn>
+
+                                <!-- btn-recovery-password -->
+                                <v-btn 
+                                    v-else
+                                    class="mr-4 text-none"
+                                    @click="recoveryPasswordSupabase()"
+                                    rounded="xl" 
+                                    size="x-large"
+                                    variant="outlined"
+                                    block
+                                >
+                                    Envoyer
+                                </v-btn>
+                            </v-col>
+                        </v-row>
+
+                        <v-row v-if="modeLogin && !passwordForgetMode">
+                            <v-col>
+                                <span @click="passwordForgetMode=true" >Mot de passe oublié ?</span>
+                            </v-col>
+                        </v-row>
+                    </v-form>
+                </v-col>
+            </v-row>
+
+
+            <!-- Connectez vous avec -->
+            <v-row 
+                v-if="!passwordForgetMode"
+                class="bloc-part"
+            >
+                <v-col>
+                    
+                <v-row>
+                    <v-col style="display: flex;">
+                        <div class="line-p" style="border: solid 1px #bbb;"></div>
+                        <p class="con-with" style="color: gray; width:700px; text-align:center;">Connectez vous avec</p>
+                        <div class="line-p" style="border: solid 1px #bbb"></div>
+                    </v-col>
+                </v-row>
+
+                <!-- btn-co-via-service -->
+                <div class="bloc-btn-social-media text-center">
+
+                    <v-btn
+                        v-for="(icon, index) in icons" v-bind:key="index"
+                        class="mx-2"
+                        fab
+                        :color='icon.color'
+                        rounded="xl"
+                        size="large"
+                        @click="authServiceSupabse(icon.fn)"
+                    >
+                        <v-icon dark>
+                            {{ icon.icn }}
+                        </v-icon>
+                    </v-btn>
+
+                </div>
+
+                </v-col>
+            </v-row>
+
+        </v-container>
+
+        <div class="foot-part">
             <v-col>
-               <v-form>
-                  <!-- prepend-inner-icon="mdi-mail" -->
-                  <v-text-field
-                     v-model="email"
-                     :error-messages="emailErrors"
-                     label="E-mail"
-                     type="email"
-                     required
-                     variant="solo"
-                  ></v-text-field>
-
-                  <!-- prepend-inner-icon="mdi-lock" -->
-                  <v-text-field
-                     variant="solo"
-                     v-model="password"
-                     type="password"
-                     :error-messages="passwordErrors"
-                     :rules="[rules.required, rules.min]"
-                     label="Mot de passe"
-                     required
-                  ></v-text-field>
-
-                  <v-row>
-                     <v-col>
-                        <v-btn
-                           class="mr-4 text-none"
-                           @click="authService( mode_login ? 'emailSignIn' : 'emailSignUp')"
-                           rounded="xl" 
-                           size="x-large"
-                           variant="outlined"
-                           block
-                        >
-                           {{ mode_login ? "Connexion" : "S'inscrire" }}
-                        </v-btn>
-                     </v-col>
-                  </v-row>
-
-                  <v-row v-if="mode_login">
-                     <v-col>
-                        <a href="#" >Mot de passe oublié ?</a>
-                     </v-col>
-                  </v-row>
-               </v-form>
+                <span id="create-or-login" @click="createOrLoginSwitchMode()">{{ labelModeCreateOrLogin }}</span>
             </v-col>
-         </v-row>
+        </div>
 
+    </v-app>
 
-         <!-- Connectez vous avec -->
-         <v-row class="bloc-part">
-            <v-col>
-                  
-               <v-row>
-                  <v-col style="display: flex;">
-                     <div class="line-p" style="border: solid 1px #bbb;"></div>
-                     <p class="con-with" style="color: gray; width:700px; text-align:center;">Connectez vous avec</p>
-                     <div class="line-p" style="border: solid 1px #bbb"></div>
-                  </v-col>
-               </v-row>
-
-               <!-- btn-co-via-service -->
-               <div class="bloc-btn-social-media text-center">
-
-                  <v-btn
-                     v-for="(icon, index) in icons" v-bind:key="index"
-                     class="mx-2"
-                     fab
-                     :color='icon.color'
-                     rounded="xl"
-                     size="large"
-                     @click="authService(icon.fn)"
-                  >
-                     <v-icon dark>
-                       {{ icon.icn }}
-                     </v-icon>
-                  </v-btn>
-
-               </div>
-
-            </v-col>
-        </v-row>
-
-      </v-container>
-
-      <div class="foot-part">
-         <v-col>
-            <a href="#" >{{ text_link }}</a>
-            <!-- <a href="#" link="/sign" >Pas encore de compte ?</a> -->
-            <!-- <a href="#" link="/login" v-else>Vous avez déjà un compte ?</a> -->
-         </v-col>
-      </div>
-
-   </v-app>
+    <!-- Load -->
+    <v-overlay
+        :model-value="overlayLoad"
+        class="align-center justify-center"
+    >
+        <v-progress-circular
+            color="black"
+            indeterminate
+            size="64"
+        ></v-progress-circular>
+    </v-overlay>
 
 </template>
 
@@ -171,125 +217,126 @@
 
 <!--  -->
 <script>
-   import $ from 'jquery'
-   import { getAuth, signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+    // import $ from 'jquery'
+    import { inject } from 'vue';
+    import { mapActions } from "vuex";
 
-   export default {
-      data() {
-         return {
-            mode_login: this.$route.path == '/login' ? true : false,
-            text_link: "Pas encore de compte ?",
-            email: "",
-            emailErrors: "",
-            password: "",
-            passwordErrors: "",
-            rules: {
-               required: value => !!value || 'Required.',
-               min: v => v.length >= 8 || 'Min 8 characters',
-               emailMatch: () => (`The email and password you entered don't match`),
-            },
-            icons: [
-                  {icn: 'mdi-apple', color:"black", fn:""},
-                  {icn: 'mdi-google', color:"red", fn:"google"},
-                  {icn: 'mdi-facebook', color:"indigo", fn:""},
-               ],
-            provider: null,
-         }
-      },
-      methods: {
-         authService(service){
-            switch (service) {
-               case "google":
-                  this.authGoogle();
-                  break;
-               case "emailSignUp":
-                  this.signUp();
-                  break;
-               case "emailSignIn":
-                  this.signIn();
-                  break;
-               default:
-                  console.log("other")
-                  break;
+    export default {
+        setup() {
+
+        },
+        computed: {
+            ...mapActions("auth", ["refreshToken", "checkSession"]),
+        },
+        data() {
+            return {
+                overlayLoad: true,
+                supabase: inject('supabase'),
+                modeLogin: this.$route.path == '/login' ? true : false,
+                labelModeCreateOrLogin: "Pas encore de compte ?",
+                email: "",
+                emailErrors: "",
+                password: "",
+                passwordErrors: "",
+                passwordForgetMode: false,
+                data: null,
+                error: null,
+                rules: {
+                    required: value => !!value || 'Required.',
+                    min: v => v.length >= 8 || 'Min 8 characters',
+                    emailMatch: () => (`The email and password you entered don't match`),
+                },
+                icons: [
+                    {icn: 'mdi-apple', color:"black", fn:""},
+                    {icn: 'mdi-google', color:"red", fn:"google"},
+                    {icn: 'mdi-facebook', color:"indigo", fn:""},
+                ],
+                provider: null,
             }
-         },
-         authGoogle(){
+        },
+        created(){
+            this.checkSessionIn();
+        },
+        mounted() {
+            // force ligth-mode
+            // $("#app .v-application").addClass("ligth-mode");
+            // $("#app .v-application").removeClass("dark-mode");
+        },
+        methods: {
+            async signInEmailSupabase(){
+                let { data, session, error } = await this.supabase.auth.signInWithPassword({
+                    email: this.email,
+                    password: this.password
+                });
 
-            const provider = new GoogleAuthProvider();
-            const auth = getAuth();
+                if (error) {
+                    console.error('Erreur lors de la connexion:', error.message);
+                    return;
+                }
 
-            signInWithPopup(auth, provider)
-            .then((result) => {
-               // This gives you a Google Access Token. You can use it to access the Google API.
-               const credential = GoogleAuthProvider.credentialFromResult(result);
-               const token = credential.accessToken;
-               // The signed-in user info.
-               const user = result.user;
-               console.log("token", token)
-               console.log("user", user, user.email, user.accessToken)
-               console.log("credential", credential)
-               // IdP data available using getAdditionalUserInfo(result)
-               // ...
-               this.$router.push("/search")
-            }).catch((error) => {
-               // Handle Errors here.
-               const errorCode = error.code;
-               const errorMessage = error.message;
-               // The email of the user's account used.
-               const email = error.customData.email;
-               // The AuthCredential type that was used.
-               const credential = GoogleAuthProvider.credentialFromError(error);
-               console.log(errorCode, errorMessage, email, credential)
-               // ...
-            });
-         },
-         signUp(){
-            const auth = getAuth();
-            createUserWithEmailAndPassword(auth, this.email, this.password)
-            .then((userCredential) => {
-               // Signed in 
-               const user = userCredential.user;
-               console.log("user: ", user)
-               // ...
-            })
-            .catch((error) => {
-               const errorCode = error.code;
-               const errorMessage = error.message;
-               this.emailErrors = errorMessage;
-               console.log(errorCode, errorMessage)
-               // ..
-            });
-         },
-         signIn(){
-            const auth = getAuth();
-            signInWithEmailAndPassword(auth, this.email, this.password)
-            .then((userCredential) => {
-               // Signed in 
-               const user = userCredential.user;
-               console.log("userC:", user)
-               this.$router.push("/search")
-               // ...
-            })
-            .catch((error) => {
-               const errorCode = error.code;
-               const errorMessage = error.message;
-               console.log(errorCode, errorMessage);
-            });
-         },
-      },
-      mounted() {
-         //this.provider = new GoogleAuthProvider();
-         const vue = this;
-         $(document).ready(function() {
-            $("a").on("click", function(){
-               const link = vue.$route.path == '/login' ? "/sign" : "/login";
-               vue.text_link = link == '/login' ? "Pas encore de compte ?" : "Vous avez déjà un compte ?";
-               vue.$router.push({ path: link });
-               vue.mode_login = link == '/login' ? true : false;
-            })
-         });
-      },
-      watch: {
-      },
-   }
+                console.log('Connexion réussie:', data, session);
+            },
+            async signUpEmailSupabase(){
+                let { data, session, error } = await this.supabase.auth.signUp({
+                    email: this.email,
+                    password: this.password
+                });
+
+                if (error) {
+                    console.error('Erreur lors de l\'inscription:', error.message);
+                    return;
+                }
+
+                console.log('Inscription réussie:', data, session);
+            },
+            async recoveryPasswordSupabase(){
+                let { data, session, error } = await this.supabase.auth.resetPasswordForEmail(this.email);
+
+                if (error) {
+                    console.error('Erreur lors de la restauration du mot de passe:', error.message);
+                    return;
+                }
+
+                console.log('Mail envoyé:', data, session);
+            },
+            async authServiceSupabse(service){
+                let { data, session, error } = await this.supabase.auth.signInWithOAuth({
+                    provider: service,
+                    options: {
+                        queryParams: {
+                            access_type: 'offline',
+                            prompt: 'consent',
+                        },
+                    },
+                });
+
+                if (error) {
+                    console.error("Erreur lors de l'authenfication:", error.message);
+                    return;
+                }
+
+                console.log('Auhtenfication via', service, 'envoyé:', data, session);
+            },
+            async getUser(){
+                const { data: { user } } = await this.supabase.auth.getUser();
+                console.log('Login -- User already conneced:', user);
+                return user;
+            },
+            //Other
+            createOrLoginSwitchMode(){
+                const link = this.$route.path == '/login' ? "/sign" : "/login";
+                this.labelModeCreateOrLogin = link == '/login' ? "Pas encore de compte ?" : "Vous avez déjà un compte ?";
+                this.$router.push({ path: link });
+                this.modeLogin = link == '/login' ? true : false;
+                this.passwordForgetMode = false;
+            },
+            async checkSessionIn(){
+                await this.checkSession;
+                this.overlayLoad = false;
+            },
+        },
+        
+        watch: {
+        },
+    }
 </script>

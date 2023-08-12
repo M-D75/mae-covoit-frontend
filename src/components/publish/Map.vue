@@ -1,45 +1,113 @@
+
+<style lang="scss" model>
+    .cont-map {
+        .menu {
+            display: flex;
+            flex-direction: column;
+            position: absolute;
+            top: 9px;
+            right: 15px;
+            z-index: 999;
+
+            .v-btn {
+                margin: 7px 0;
+                background-color: var(--white-bg-color);
+                color: var(--font-color-label);
+            }
+        }
+
+        .leaflet-control-zoom {
+            display: none;
+        }
+
+        .overlay-load {
+            z-index: 9999;
+        }
+    }
+</style>
+
+
 <template>
-    <div style="height: 100vh; width: 100%">
-      <l-map id="map-id" @ready="isLoaded()" :zoom="zoom" :center="center" ref="mapRef">
-        <l-tile-layer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"></l-tile-layer>
+    <div class="cont-map" style="height: 100vh; width: 100%">
 
-        <!-- origin -->
-        <l-marker 
-          :lat-lng="itineraire.origin.location.latLng.latLngTab"
+        <div class="menu">
+            <v-btn
+                v-if="routes.length > 1"
+                icon="mdi-map-marker-path"
+                :disabled="routes.length <= 1"
+                @click="swapRoute()"  
+            ></v-btn>
+            <v-btn 
+                icon="mdi-check-bold"
+                @click="$emit('trajet-selected')"
+            ></v-btn>
+        </div>
+
+        <l-map 
+            id="map-id" 
+            :zoom="zoom" 
+            :center="center" 
+            @ready="isLoaded()" 
+            ref="mapRef"
         >
-          <l-popup>{{ itineraire.origin.infos.village }}, ({{ itineraire.origin.infos.commune }})</l-popup>
-        </l-marker>
+            <l-tile-layer url="https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png"></l-tile-layer>
 
-        
+            <!-- origin -->
+            <l-marker 
+                :lat-lng="itineraire.origin.location.latLng.latLngTab"
+            >
+                <l-popup>{{ itineraire.origin.infos.village }}, ({{ itineraire.origin.infos.commune }})</l-popup>
+            </l-marker>
 
-        <!-- route -->
-        <div v-if="routeAvail ">
-            <l-polyline 
-                v-for="(route, index) in routes.reverse()"
-                :key="index"
-                :lat-lngs="route.polylineDecoded" 
-                :color="index == routes.length - 1 ? '#1b79cc' : '#838383'" 
-                weight="8"
-                @click="trajetSelected(index)"
-            ></l-polyline>
+            <!-- route -->
+            <div v-if="routeAvail">
+                <l-polyline 
+                    v-for="(route, index) in routes.reverse()"
+                    :key="index"
+                    :lat-lngs="route.polylineDecoded" 
+                    :color="index == routes.length - 1 ? '#1b79cc' : '#838383'" 
+                    :weight="8"
+                ></l-polyline>
 
-            <l-polyline 
-                v-for="(route, index) in routes"
-                :key="index"
-                :lat-lngs="route.polylineDecoded" 
-                :color="index == routes.length - 1 ? '#01a9e8' : '#bcbcbc'" 
-                weight="4"
-                @click="trajetSelected(index)"
-            ></l-polyline>
+                <l-polyline 
+                    v-for="(route, index) in routes"
+                    :key="index"
+                    :lat-lngs="route.polylineDecoded" 
+                    :color="index == routes.length - 1 ? '#01a9e8' : '#bcbcbc'" 
+                    :weight="4"
+                    @click="trajetSelected(index)"
+                ></l-polyline>
 
-            <!-- point -->
+                <!-- point -->
+                <l-circle-marker 
+                    :lat-lng="itineraire.destination.location.latLng.latLngTab"
+                    :radius="5"
+                    :weight="2"
+                    :color="'black'"
+                    :fillColor="'white'" 
+                    :fillOpacity="1"
+                >
+                    <!-- <l-popup>{{ itineraire.destination.infos.village }}, ({{ itineraire.destination.infos.commune }})</l-popup> -->
+                    <l-tooltip :options="{ permanent: true, interactive: false, direction: 'right', offset: [10, 0] }">
+                        <span style="font-weight: bold;"> {{ itineraire.destination.infos.village }} </span>, ({{ itineraire.destination.infos.commune }})
+                        <br>
+                        <span style="font-weight: bold; color:green;">{{ itin.duration }}</span> 
+                        <br> 
+                        <span style="font-weight: bold; color: chocolate;"> {{ itin.distance }}</span> km
+                    </l-tooltip>
+                </l-circle-marker>
+            </div>
+
+            <!-- point-dest -->
             <l-circle-marker 
+                v-if="!routeAvail"
                 :lat-lng="itineraire.destination.location.latLng.latLngTab"
                 :radius="5"
                 :weight="2"
                 :color="'black'"
                 :fillColor="'white'" 
                 :fillOpacity="1"
+                style="z-index: 999;"
             >
                 <!-- <l-popup>{{ itineraire.destination.infos.village }}, ({{ itineraire.destination.infos.commune }})</l-popup> -->
                 <l-tooltip :options="{ permanent: true, interactive: false, direction: 'right', offset: [10, 0] }">
@@ -50,30 +118,30 @@
                     <span style="font-weight: bold; color: chocolate;"> {{ itin.distance }}</span> km
                 </l-tooltip>
             </l-circle-marker>
-        </div>
-
-        <!-- point -->
-        <l-circle-marker 
-            :lat-lng="itineraire.destination.location.latLng.latLngTab"
-            :radius="5"
-            :weight="2"
-            :color="'black'"
-            :fillColor="'white'" 
-            :fillOpacity="1"
-            style="z-index: 999;"
-        >
-            <!-- <l-popup>{{ itineraire.destination.infos.village }}, ({{ itineraire.destination.infos.commune }})</l-popup> -->
-            <l-tooltip :options="{ permanent: true, interactive: false, direction: 'right', offset: [10, 0] }">
-                <span style="font-weight: bold;"> {{ itineraire.destination.infos.village }} </span>, ({{ itineraire.destination.infos.commune }})
-                <br>
-                <span style="font-weight: bold; color:green;">{{ itin.duration }}</span> 
-                <br> 
-                <span style="font-weight: bold; color: chocolate;"> {{ itin.distance }}</span> km
-            </l-tooltip>
-        </l-circle-marker>
-
-      </l-map>
+        </l-map>
     </div>
+
+    <BottomMenu
+        mode="map"
+        :class-name="['map']"
+        :map-infos="{time: itin.duration, distance: `${itin.distance} km`}"
+        ref="BottomMenuRef" 
+    >
+    </BottomMenu>
+
+    <!-- Load -->
+    <v-overlay
+        :model-value="overlayLoad"
+        class="overlay-load align-center justify-center"
+    >
+        <v-progress-circular
+            color="black"
+            indeterminate
+            size="64"
+        ></v-progress-circular>
+    </v-overlay>
+
+
 </template>
 
 <script>
@@ -84,10 +152,14 @@
     
     import "leaflet/dist/leaflet.css";
     import { LMap, LTileLayer, LMarker, LPopup, LPolyline, LTooltip, LCircleMarker } from "@vue-leaflet/vue-leaflet";
-    import $ from 'jquery';
+    import BottomMenu from '../menus/BottomMenu.vue';
+    // import $ from 'jquery';
+
+    //componants
 
     export default defineComponent({
         name: 'results-view',
+        emits: ["trajet-selected"],
         computed: {
             center() {
                 const latitudes =  [this.itineraire.origin.location.latLng.latitude, this.itineraire.destination.location.latLng.latitude];
@@ -107,6 +179,7 @@
             LPolyline,
             LTooltip,
             LCircleMarker,
+            BottomMenu,
         },
         props: {
             itineraire: {
@@ -145,12 +218,13 @@
         },
         data() {
             return {
+                overlayLoad: false,
                 zoom: 10,
                 routes: [],
                 customIcon: L.icon({
-                    iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Map-circle-black.svg/2048px-Map-circle-black.svg.png', // Remplacez cela par le chemin d'accès ou l'URL de votre image
-                    iconSize: [12, 12], // Taille de l'icône. Cette valeur dépend de la taille de votre image.
-                    iconAnchor: [6, 6], // Point de l'icône qui correspondra géographiquement au point de coordonnées. Cette valeur dépend de la taille de votre image.
+                    iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Map-circle-black.svg/2048px-Map-circle-black.svg.png', // Remplacez cela par le chemin d'accès ou l'URL de l'image
+                    iconSize: [12, 12], // Taille de l'icône. Cette valeur dépend de la taille de  l'image.
+                    iconAnchor: [6, 6], // Point de l'icône qui correspondra géographiquement au point de coordonnées. Cette valeur dépend de la taille de l'image.
                     popupAnchor: [-3, -3] // Point à partir duquel le popup devrait s'ouvrir, relativement à l'iconAnchor.
                 }),
                 itin: {
@@ -162,27 +236,7 @@
             }
         },
         mounted(){
-            // const _this = this;
-            // $(document).ready(function() {
-            //     _this.$nextTick(() => {
-            //         setTimeout(function(){
-            //             const bounds = [_this.itineraire.origin.location.latLng.latLngTab, _this.itineraire.destination.location.latLng.latLngTab]
-            //             _this.$refs.mapRef.leafletObject.fitBounds(bounds, {
-            //                 padding: [18, 18] // padding en pixels autour des limites.
-            //             });
-
-            //             console.log(_this.$refs.mapRef)
-
-            //             _this.getRouteInfos();                        
-            //         }, 2000)
-            //     });
-
-            //     $("#map-id").on("load", function(){
-            //         console.log("MAP-ID------------------")
-            //     })
-            // });
-
-
+            this.$refs.BottomMenuRef.open();
         },
         methods: {
             trajetSelected(index){
@@ -191,12 +245,31 @@
                     this.$emit("trajet-selected");
                 }
                 else{
+                    this.overlayLoad = true;
+
+                    setTimeout(function(){
+                        this.routeAvail = false;
+                        this.routes = this.swapWithLast(this.routes.reverse(), index);
+                        this.itin.duration = this.routes[0].duration;
+                        this.itin.distance = this.routes[0].distance;
+                        this.routeAvail = true;
+
+                        this.overlayLoad = false;
+                    }.bind(this), 500)
+                }
+            },
+            swapRoute() {
+                this.overlayLoad = true;
+
+                setTimeout(function(){
                     this.routeAvail = false;
-                    this.routes = this.swapWithLast(this.routes.reverse(), index);
+                    this.routes = this.swapWithLast(this.routes.reverse(), 0);
                     this.itin.duration = this.routes[0].duration;
                     this.itin.distance = this.routes[0].distance;
                     this.routeAvail = true;
-                }
+
+                    this.overlayLoad = false;
+                }.bind(this), 500); 
             },
             getRouteInfos(){
                 fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
@@ -240,7 +313,7 @@
 
                     this.routes = [];
                     for(const route in data.routes){
-                        const decoded = polyline.decode(data.routes[route].polyline.encodedPolyline);
+                        const decoded  = polyline.decode(data.routes[route].polyline.encodedPolyline);
                         const duration = (this.convertSecondsToHoursAndMinutes(parseInt(data.routes[route].duration.replaceAll("s", "")))).toString();
                         const distance = (data.routes[route].distanceMeters/1000).toFixed(2).toString();
 
@@ -263,39 +336,32 @@
                     throw new Error('Index hors limites')
                 }
 
-                let temp = arr[index];
-                arr[index] = arr[arr.length - 1];
+                let temp            = arr[index];
+                arr[index]          = arr[arr.length - 1];
                 arr[arr.length - 1] = temp;
 
                 return arr;
             },
             isLoaded(){
-                console.log("Map isLoaded")
-                const _this = this;
-                $(document).ready(function() {
-                    _this.$nextTick(() => {
-                        const bounds = [_this.itineraire.origin.location.latLng.latLngTab, _this.itineraire.destination.location.latLng.latLngTab]
-                        _this.$refs.mapRef.leafletObject.fitBounds(bounds, {
-                            padding: [18, 18] // padding en pixels autour des limites.
-                        });
-
-                        console.log(_this.$refs.mapRef)
-
-                        _this.getRouteInfos();                        
+                const bounds = [this.itineraire.origin.location.latLng.latLngTab, this.itineraire.destination.location.latLng.latLngTab]
+                if(this.$refs.mapRef){
+                    this.$refs.mapRef.leafletObject.fitBounds(bounds, {
+                        padding: [18, 18] // padding en pixels autour des limites.
                     });
-                });
+                }
+                
+                this.getRouteInfos();
             },
             convertSecondsToHoursAndMinutes(seconds) {
-                const hours = Math.floor(seconds / 3600);
+                const hours   = Math.floor(seconds / 3600);
                 const minutes = Math.floor((seconds % 3600) / 60);
-                //const minutes = (seconds / 3600).toFixed(2).split(".")[1];
                 if(hours > 0){
-                    return `${hours} h ${minutes}`;
+                    return `${hours} h ${minutes < 10 ? '0' + minutes : minutes}`;
                 }
                 else {
-                    return `${minutes} min`;
+                    return `${minutes < 10 ? '0' + minutes : minutes} min`;
                 }
-            }
+            },
         },
         watch: {
         },

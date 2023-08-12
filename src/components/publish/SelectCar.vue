@@ -99,7 +99,6 @@
 
         <div 
             class="card-contain"
-            @click="selectCar(index, info)"
         >
             <v-card
                 v-for="(info, index) in infos.slice(0, 6)"
