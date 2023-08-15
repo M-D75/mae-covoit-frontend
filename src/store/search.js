@@ -1,6 +1,8 @@
 // import { createStore } from 'vuex'
 import axios from 'axios'
 
+import store from '../store'; 
+
 export default {
     namespaced: true,
     state: {
@@ -148,7 +150,7 @@ export default {
         async getVillages({ commit }) {
             axios.get(`${process.env.VUE_APP_API_MBABUF_URL}/villages`, {
                     params:{
-                        jwt: localStorage.getItem("mae-covoit-supabase-jwt"),
+                        jwt: store.state.auth.token,
                     }
                 })
                 .then(response => {
@@ -159,50 +161,54 @@ export default {
                 });
         },
         async getTrajets({ commit, state, dispatch }) {
-            dispatch("getAccounts").then(() => {
-                axios.get(`${process.env.VUE_APP_API_MBABUF_URL}/trips`, {
-                        params:{
-                            jwt: localStorage.getItem("mae-covoit-supabase-jwt"),
-                        }
-                    })
-                    .then(response => {
-                        const trips = response.data.result;
-                        var _trips = [];
-                
-                        for(const i_trip in trips){
-                            let isoDate = trips[i_trip].departure_time;
-                            let date = new Date(isoDate);
-                            let hours = date.getUTCHours().toString().padStart(2, '0');
-                            let minutes = date.getUTCMinutes().toString().padStart(2, '0');
-                            let departure_time = `${hours}:${minutes}`;
-                            //TODO GET arrival
-                            let arrival_time = `${hours}:${minutes}`;
+            await dispatch("getAccounts");
 
-                            const username = state.accounts.filter((acount) => (acount.user_id == trips[i_trip].driver_id))[0].firstname;
+            await axios.get(`${process.env.VUE_APP_API_MBABUF_URL}/trips`, {
+                    params:{
+                        jwt: store.state.auth.token,
+                    }
+                })
+                .then(response => {
+                    const trips = response.data.result;
+                    var _trips = [];
+            
+                    for(const i_trip in trips){
+                        let isoDate = trips[i_trip].departure_time;
+                        let date = new Date(isoDate);
+                        let hours = date.getUTCHours().toString().padStart(2, '0');
+                        let minutes = date.getUTCMinutes().toString().padStart(2, '0');
+                        let departure_time = `${hours}:${minutes}`;
+                        //TODO GET arrival
+                        let arrival_time = `${hours}:${minutes}`;
 
-                            const _trip  = {
-                                id: trips[i_trip].id,
-                                depart: trips[i_trip].village_departure.village,
-                                destination: trips[i_trip].village_arrival.village,
-                                hour_start: departure_time,
-                                hour_end: arrival_time,
-                                price: (Math.ceil(Math.random()*4)+1),
-                                name: username,
-                                passenger_number: trips[i_trip].bookings.length,
-                                max_seat: trips[i_trip].max_seats,
-                            };
-                            _trips.push(_trip);
-                        }
-                        
-                        commit('SET_TRAJETS', _trips);
-                    })
-                    .catch(error => {
-                        console.error(error);
-                    });
+                        const username = state.accounts.filter((acount) => (acount.user_id == trips[i_trip].driver_id))[0].firstname;
+
+                        const _trip  = {
+                            id: trips[i_trip].id,
+                            depart: trips[i_trip].village_departure.village,
+                            destination: trips[i_trip].village_arrival.village,
+                            hour_start: departure_time,
+                            hour_end: arrival_time,
+                            price: (Math.ceil(Math.random()*4)+1),
+                            name: username,
+                            passenger_number: trips[i_trip].bookings.length,
+                            max_seat: trips[i_trip].max_seats,
+                        };
+                        _trips.push(_trip);
+                    }
+
+                    console.log(_trips)
+                    
+                    commit('SET_TRAJETS', _trips);
+                })
+                .catch(error => {
+                    console.error(error);
                 });
+
+            return true
         },
-        getAccounts({commit}){
-            axios.get(`${process.env.VUE_APP_API_MBABUF_URL}/accounts`, {
+        async getAccounts({commit}){
+            await axios.get(`${process.env.VUE_APP_API_MBABUF_URL}/accounts`, {
                     params:{
                         jwt: localStorage.getItem("mae-covoit-supabase-jwt"),
                     }
@@ -211,6 +217,7 @@ export default {
                     const accounts = response.data.result;
                     commit('SET_ACCOUNTS', accounts);
                     console.log("accounts finished", accounts)
+                    return true;
                 })
                 .catch(error => {
                     console.error(error);

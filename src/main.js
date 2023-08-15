@@ -48,12 +48,19 @@ library.add(fab)
 // supabase
 import supabase from '@/utils/supabaseClient.js';
 
+import VueGoogleMaps from '@fawmi/vue-google-maps'
+
 createApp(App)
-  .component('font-awesome-icon', FontAwesomeIcon)
-  .provide('supabase', supabase)
-  .use(VCalendar)
-  .use(router)
-  .use(store)
-  .use(vuetify)
-  .mount('#app')
+    .component('font-awesome-icon', FontAwesomeIcon)
+    .provide('supabase', supabase)
+    .use(VCalendar)
+    .use(router)
+    .use(store)
+    .use(vuetify)
+    .use(VueGoogleMaps, {
+            load: {
+                key: process.env.VUE_APP_API_VUE_GOOGLE_MAP,
+            },
+        })
+    .mount('#app')
   

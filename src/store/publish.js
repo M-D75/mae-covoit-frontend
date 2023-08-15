@@ -13,8 +13,8 @@ export default {
 
     },
     actions: {
-        async newTrip(playload){
-            console.log("playload", playload)
+        async newTrip({state}, playload){
+            console.log("playload", playload, state)
             // const url = `${process.env.VUE_APP_API_MBABUF_URL}/trip`;
 
             // const headers = {

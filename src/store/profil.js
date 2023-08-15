@@ -11,7 +11,7 @@ export default {
         userId: null,
         userUid: "",
         userName: "Pseudo",
-        avatarUrl: null,
+        avatarUrl: 'https://avatars0.githubusercontent.com/u/9064066?v=4&s=460',
         soldes: 0,
         profil: {
             infos_perso: {

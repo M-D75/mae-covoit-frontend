@@ -15,6 +15,6 @@ export default createStore({
         search,
     },
     plugins: [createPersistedState({
-        paths: ['auth', 'profil', 'search.villages']
+        paths: ['auth', 'profil', 'search.villages', 'search.accounts']
     })],
 });

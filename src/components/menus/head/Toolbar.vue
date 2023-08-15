@@ -104,8 +104,7 @@
       },
       methods: {
          previous(){
-            this.$router.push("/search");
-            // this.$router.back();
+            this.$router.go(-1);
          },
       }
    });

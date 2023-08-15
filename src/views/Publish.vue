@@ -230,7 +230,7 @@
                         return this.villages.filter(
                                 (dataVillage) => this.saisi != dataVillage.village 
                                 && dataVillage.village != this.infosPublish[typePath].depart 
-                                && dataVillage.village.toLowerCase().includes(this.saisi.toLocaleLowerCase()))
+                                && dataVillage.village.toLowerCase().replaceAll("'", "").includes(this.saisi.toLocaleLowerCase().replaceAll("'", "")))
                             .map((dataVillage) => dataVillage.village)
                             .sort((a, b) => {
                                 return this.matchValue(b.replaceAll("'", ""), this.saisi) - this.matchValue(a.replaceAll("'", ""), this.saisi);
@@ -239,7 +239,7 @@
                     else if( this.mode == "depart" ) {
                         return this.villages.filter(
                                 (dataVillage) => this.saisi != dataVillage.village 
-                                && dataVillage.village.toLowerCase().includes(this.saisi.toLocaleLowerCase())
+                                && dataVillage.village.toLowerCase().replaceAll("'", "").includes(this.saisi.toLocaleLowerCase().replaceAll("'", ""))
                             )
                             .map((dataVillage) => dataVillage.village)
                             .sort((a, b) => {
@@ -417,6 +417,8 @@
                             timeDep: new Date(), 
                             maxSeats: this.infosPublish.default.nbPassager,
                         };
+
+                        console.log("infos", infos);
 
                         this.$store.dispatch('publish/newTrip', infos);
 

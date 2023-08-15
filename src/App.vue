@@ -68,6 +68,8 @@
     import $ from 'jquery';
     import { inject } from 'vue';
 
+    // import axios from 'axios'
+
     //Component
     import MobileOnly from './views/MobileOnly.vue';
     import { mapMutations, mapState } from 'vuex';
@@ -100,6 +102,28 @@
             console.log("theme-mode:", $("#app .v-application").hasClass("dark-mode") ? "dark" : "ligth");
             
             window.addEventListener('resize', this.updateIsSmallScreen); 
+
+            // const url = `${process.env.VUE_APP_API_MBABUF_URL}/credit`;
+
+            // const headers = {
+            //     'accept': 'application/json',
+            //     'Content-Type': 'application/json'
+            // };
+
+            // var data =  {
+            //     amount: 5,
+            //     id: 1,
+            // };
+
+            // console.log("data-to-send:", data)
+
+            // axios.post(url, data, { headers: headers })
+            //     .then(response => {
+            //         console.log(response.data);
+            //     })
+            //     .catch(error => {
+            //         console.error("There was an error!", error);
+            //     });
             
             //$("link[rel*='icon']").attr("href", "/favicon-old.ico");
         },

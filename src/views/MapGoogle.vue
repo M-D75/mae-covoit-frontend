@@ -1,4 +1,3 @@
-
 <style lang="scss" model>
     .cont-map {
         .menu {
@@ -21,10 +20,6 @@
             }
         }
 
-        .leaflet-control-zoom {
-            display: none;
-        }
-
         .overlay-load {
             z-index: 9999;
         }
@@ -33,6 +28,7 @@
 
 
 <template>
+
     <div class="cont-map" style="height: 100vh; width: 100%">
 
         <!-- Menu -->
@@ -57,95 +53,75 @@
             ></v-btn>
         </div>
 
-        <!-- L-map -->
-        <l-map 
-            id="map-id" 
-            :zoom="zoom" 
-            :center="center" 
-            @ready="isLoaded()" 
-            ref="mapRef"
-        >
-            <!-- <l-tile-layer url="https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png"></l-tile-layer> -->
+        <!-- Map -->
+        <GMapMap
+            :center="center"
+            :zoom="11"
+            :options="mapOptions"
             
-            <l-tile-layer url="https://api.maptiler.com/maps/winter-v2/{z}/{x}/{y}.png?key=faY6afh2tnFprZqdoyZP"></l-tile-layer>
-
-
+            style="width: 100vw; height: 100vh"
+            @tilesloaded="isLoaded()"
+        >
             <!-- origin -->
-            <l-marker 
-                :lat-lng="itineraire.origin.location.latLng.latLngTab"
+            <GMapMarker
+                :position="itineraire.origin.location.latLng.latLngTab"
+                :clickable="true"
             >
-                <l-popup>{{ itineraire.origin.infos.village }}, ({{ itineraire.origin.infos.commune }})</l-popup>
-            </l-marker>
+                <GMapInfoWindow>
+                    {{ itineraire.origin.infos.village }}, ({{ itineraire.origin.infos.commune }})
+                </GMapInfoWindow>
+            </GMapMarker>
 
-            <!-- route -->
             <div v-if="routeAvail">
-                <l-polyline 
+
+                <GMapPolyline 
                     v-for="(route, index) in routes.reverse()"
                     :key="route.id"
-                    :lat-lngs="route.polylineDecoded" 
-                    :color="index == routes.length - 1 ? '#1b79cc' : '#838383'" 
-                    :weight="8"
+                    :path="route.polylineDecoded"
+                    :clickable="true"
+                    :options="{
+                        strokeColor: index == routes.length - 1 ? '#1b79cc' : '#838383',
+                        strokeOpacity: 0.9,
+                        strokeWeight: 8,
+                    }"
                 >
-                    <l-tooltip
-                        v-if="route.current"
-                        :options="{ permanent: true, interactive: false, direction: 'right', offset: [10, 0] }"
-                    >
+                    <GMapInfoWindow>
                         <span :style="{'font-weight': 800, color: 'red' }"> {{ route.duration }} </span>
-                    </l-tooltip>  
-                </l-polyline>
+                    </GMapInfoWindow>
+                </GMapPolyline>
 
-                <l-polyline 
+                <GMapPolyline 
                     v-for="(route, index) in routes"
                     :key="index"
-                    :lat-lngs="route.polylineDecoded" 
-                    :color="index == routes.length - 1 ? '#01a9e8' : '#bcbcbc'" 
-                    :weight="4"
-                    @click="trajetSelected(index)"
-                >
-                </l-polyline>
+                    :path="route.polylineDecoded"
+                    :options="{
+                        strokeColor: index == routes.length - 1 ? '#01a9e8' : '#bcbcbc',
+                        strokeOpacity: 0.9,
+                        strokeWeight: 4,
+                    }"
+                />
 
-                <!-- point -->
-                <l-circle-marker 
-                    :lat-lng="itineraire.destination.location.latLng.latLngTab"
-                    :radius="5"
-                    :weight="2"
-                    :color="'black'"
-                    :fillColor="'white'" 
-                    :fillOpacity="1"
+                <!-- point-destination -->
+                <GMapMarker
+                    :position="itineraire.destination.location.latLng.latLngTab"
+                    :clickable="true"
+                    :anchorPoint="{x: -10, y: 100}"
+                    :icon= '{
+                        url: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Map-circle-black.svg/2048px-Map-circle-black.svg.png",
+                        scaledSize: {width: 10, height: 10},
+                        labelOrigin: {x: -5, y: -5},
+                    }'
                 >
-                    <!-- <l-popup>{{ itineraire.destination.infos.village }}, ({{ itineraire.destination.infos.commune }})</l-popup> -->
-                    <l-tooltip :options="{ permanent: true, interactive: false, direction: 'right', offset: [10, 0] }">
+                    <GMapInfoWindow>
                         <span style="font-weight: bold;"> {{ itineraire.destination.infos.village }} </span>, ({{ itineraire.destination.infos.commune }})
-                        <!-- <br>
-                        <span style="font-weight: bold; color:green;">{{ itin.duration }}</span> 
-                        <br> 
-                        <span style="font-weight: bold; color: chocolate;"> {{ itin.distance }}</span> km -->
-                    </l-tooltip>
-                </l-circle-marker>
+                    </GMapInfoWindow>
+                </GMapMarker>
             </div>
 
-            <!-- point-dest -->
-            <l-circle-marker 
-                v-if="!routeAvail"
-                :lat-lng="itineraire.destination.location.latLng.latLngTab"
-                :radius="5"
-                :weight="2"
-                :color="'black'"
-                :fillColor="'white'" 
-                :fillOpacity="1"
-                style="z-index: 999;"
-            >
-                <!-- <l-popup>{{ itineraire.destination.infos.village }}, ({{ itineraire.destination.infos.commune }})</l-popup> -->
-                <l-tooltip :options="{ permanent: true, interactive: false, direction: 'right', offset: [10, 0] }">
-                    <span style="font-weight: bold;"> {{ itineraire.destination.infos.village }} </span>, ({{ itineraire.destination.infos.commune }})
-                    <!-- <br>
-                    <span style="font-weight: bold; color:green;">{{ itin.duration }}</span> 
-                    <br> 
-                    <span style="font-weight: bold; color: chocolate;"> {{ itin.distance }}</span> km -->
-                </l-tooltip>
-            </l-circle-marker>
-        </l-map>
+        </GMapMap>
+
     </div>
+
 
     <BottomMenu
         mode="map"
@@ -175,24 +151,16 @@
         ></v-progress-circular>
     </v-overlay>
 
-
 </template>
 
 <script>
-    import { defineComponent } from 'vue';
     import polyline from '@mapbox/polyline';
-
-    import L from "leaflet";
     
-    import "leaflet/dist/leaflet.css";
-    import { LMap, LTileLayer, LMarker, LPopup, LPolyline, LTooltip, LCircleMarker } from "@vue-leaflet/vue-leaflet";
-    import BottomMenu from '../menus/BottomMenu.vue';
-    // import $ from 'jquery';
-    
-    //componants
+    // Components
+    import BottomMenu from '@/components/menus/BottomMenu.vue';
 
-    export default defineComponent({
-        name: 'results-view',
+    export default {
+        name: 'App',
         emits: ["trajet-selected"],
         computed: {
             center() {
@@ -202,20 +170,13 @@
                 const maxLat = Math.max(...latitudes);
                 const minLon = Math.min(...longitudes);
                 const maxLon = Math.max(...longitudes);
-                return [(minLat + maxLat) / 2, (minLon + maxLon) / 2];
+                return this.convertArrayToObject([(minLat + maxLat) / 2, (minLon + maxLon) / 2]);
             },
             faster(){
                 return this.routes.length > 0 && this.routes[0].faster;
             },
         },
         components: {
-            LMap,
-            LTileLayer,
-            LMarker,
-            LPopup,
-            LPolyline,
-            LTooltip,
-            LCircleMarker,
             BottomMenu,
         },
         props: {
@@ -228,7 +189,7 @@
                                 latLng: {
                                     latitude: -12.7243245,
                                     longitude: 45.0589372,
-                                    latLngTab: [-12.7243245, 45.0589372]
+                                    latLngTab: {lat:-12.7243245, lng:45.0589372}
                                 }
                             },
                             infos: {
@@ -241,7 +202,7 @@
                                 latLng: {
                                     latitude: -12.9292776,
                                     longitude: 45.1763906,
-                                    latLngTab: [-12.9292776, 45.1763906]
+                                    latLngTab: {lat:-12.9292776, lng:45.1763906}
                                 }
                             },
                             infos: {
@@ -255,16 +216,19 @@
         },
         data() {
             return {
+                mapOptions: {
+                    mapId:'b52fd250ff4720fe',
+                    zoomControl: false,
+                    mapTypeControl: false,
+                    scaleControl: false,
+                    streetViewControl: false,
+                    rotateControl: false,
+                    fullscreenControl: false,
+                },
                 open_b: true, //open bottom menu
                 overlayLoad: false,
                 zoom: 10,
                 routes: [],
-                customIcon: L.icon({
-                    iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Map-circle-black.svg/2048px-Map-circle-black.svg.png', // Remplacez cela par le chemin d'accès ou l'URL de l'image
-                    iconSize: [12, 12], // Taille de l'icône. Cette valeur dépend de la taille de  l'image.
-                    iconAnchor: [6, 6], // Point de l'icône qui correspondra géographiquement au point de coordonnées. Cette valeur dépend de la taille de l'image.
-                    popupAnchor: [-3, -3] // Point à partir duquel le popup devrait s'ouvrir, relativement à l'iconAnchor.
-                }),
                 itin: {
                     duration: "33",
                     distance: "100",
@@ -362,7 +326,7 @@
 
                         this.routes.push({
                             id: route, 
-                            polylineDecoded: decoded, 
+                            polylineDecoded: decoded.map(arr => this.convertArrayToObject(arr)), 
                             infosGoogle:data.routes[route], 
                             duration: duration, 
                             distance: distance, 
@@ -371,6 +335,7 @@
                         });
                         
                         if(route == 0){
+                            console.log("decoded", decoded, decoded.map(arr => this.convertArrayToObject(arr)));
                             this.itin.duration = duration;
                             this.itin.distance = distance;
                         }
@@ -404,6 +369,13 @@
                 arr.push(firstElement);          
                 return arr;
             },
+            convertArrayToObject(arr) {
+                if (arr.length === 2) {
+                    return { lat: arr[0], lng: arr[1] };
+                } else {
+                    return null;
+                }
+            },
             isLoaded(){
                 const bounds = [this.itineraire.origin.location.latLng.latLngTab, this.itineraire.destination.location.latLng.latLngTab]
                 if(this.$refs.mapRef){
@@ -431,5 +403,6 @@
         },
         watch: {
         },
-    });
+    }
 </script>
+  

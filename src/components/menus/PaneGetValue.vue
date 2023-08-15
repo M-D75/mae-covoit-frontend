@@ -212,17 +212,17 @@
             },
             getSaisi(){
                 if(this.$refs.SearchRef){
-                    this.saisi = this.$refs.SearchRef.getSaisi();
+                    this.saisi = this.$refs.SearchRef.saisi;
                 }
             },
             getSelected(){
                 if ( this.mode == "depart" ) {
-                    this.$store.commit("search/SET_DEPART", this.$refs.SearchRef.getSaisi());
+                    this.$store.commit("search/SET_DEPART", this.$refs.SearchRef.saisi);
                     this.saisi = "";
                     this.$emit("close");
                 }
                 else if(this.mode == "arriver") {
-                    this.$store.commit("search/SET_DESTINATION", this.$refs.SearchRef.getSaisi());
+                    this.$store.commit("search/SET_DESTINATION", this.$refs.SearchRef.saisi);
                     this.$emit("close");
                 }
             },

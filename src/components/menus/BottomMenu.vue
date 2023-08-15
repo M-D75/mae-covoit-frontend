@@ -378,10 +378,27 @@
                     span.time {
                         color: rgb(0, 204, 0);
                     }
+                    span.distance {
+                        color: gray;
+                        font-size: 17px;
+                        font-weight: normal;
+                    }
                 }
                 .infos-sup {
                     font-size: 13px;
                     color: gray;
+                }
+            }
+        }
+
+        .sub-cont-sup {
+            //map
+            .map {
+                width: 90%;
+                margin: 10px auto;
+                margin-bottom: 5px;
+                .v-card {
+                    border-radius: 20px;
                 }
             }
         }
@@ -770,13 +787,57 @@
                 <div class="infos-route">
                     <span class="time">{{ mapInfos.time }}</span> <span class="distance"> ({{ mapInfos.distance }})</span>
                 </div>
-                <div class="infos-sup">Le plus rapide selon l'etat actuel de la circulation</div>
+                <div class="infos-sup" v-if="mapInfos.infosSup != ''">Le plus rapide selon l'etat actuel de la circulation</div>
             </div>
 
             <!-- End Map -->
         </div>
 
+        <!-- sub-cont-sup -->
+        <div class="sub-cont-sup">
+            <!-- Map -->
+            <div
+                v-if="mode=='map'"
+                class="map"
+            >
+                <v-card
+                    class="mx-auto"
+                >
+                    <v-list density="compact">
+                        <v-list-subheader>ITINERAIRE</v-list-subheader>
+                        <!-- <v-divider></v-divider> -->
+
+                        <!-- dep -->
+                        <v-list-item
+                            color="primary"
+                        >
+                            <template v-slot:prepend>
+                                <v-icon icon="mdi-google-maps"></v-icon>
+                            </template>
+
+                            <v-list-item-title v-text="mapInfos.depart"></v-list-item-title>
+                        </v-list-item>
+
+                        <v-divider></v-divider>
+
+                        <!-- destination -->
+                        <v-list-item
+                            color="primary"
+                        >
+                            <template v-slot:prepend>
+                                <v-icon icon="mdi-crosshairs-gps"></v-icon>
+                            </template>
+
+                            <v-list-item-title v-text="mapInfos.destination"></v-list-item-title>
+                        </v-list-item>
+                    </v-list>
+                </v-card>
+            </div>
+        </div>
+
     </v-container>
+
+
 </template>
 
 
@@ -870,6 +931,9 @@
                     return {
                         time: "",
                         distance: "",
+                        infosSup: "Le plus rapide selon l'etat actuel de la circulation",
+                        depart: "Tsingoni",
+                        destination: "Mamoudzou"
                     };
                 },
             },
@@ -997,6 +1061,7 @@
                                 $(this).animate({"top": "auto"}, 1000);
                                 _this.y = parseInt($(this).css("top").replace("px", ""));
                                 _this.move = false;
+                                _this.$emit('opened');
                             });
 
                             this.open_b = true;

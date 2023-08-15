@@ -263,6 +263,22 @@
             // $("#app .v-application").removeClass("dark-mode");
         },
         methods: {
+            authService(service){
+                switch (service) {
+                    case "google":
+                        this.authServiceSupabse(service);
+                        break;
+                    case "emailSignUp":
+                        this.signUpEmailSupabase();
+                        break;
+                    case "emailSignIn":
+                        this.signInEmailSupabase();
+                        break;
+                    default:
+                        console.log("other")
+                        break;
+                }
+            },
             async signInEmailSupabase(){
                 let { data, session, error } = await this.supabase.auth.signInWithPassword({
                     email: this.email,
@@ -275,6 +291,7 @@
                 }
 
                 console.log('Connexion réussie:', data, session);
+                this.$router.replace("/search");
             },
             async signUpEmailSupabase(){
                 let { data, session, error } = await this.supabase.auth.signUp({
@@ -302,12 +319,6 @@
             async authServiceSupabse(service){
                 let { data, session, error } = await this.supabase.auth.signInWithOAuth({
                     provider: service,
-                    options: {
-                        queryParams: {
-                            access_type: 'offline',
-                            prompt: 'consent',
-                        },
-                    },
                 });
 
                 if (error) {

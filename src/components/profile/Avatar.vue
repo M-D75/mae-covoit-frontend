@@ -42,7 +42,7 @@
             >
             <v-img
                 alt="Avatar"
-                src="https://avatars0.githubusercontent.com/u/9064066?v=4&s=460"
+                :src="avatarUrl"
             ></v-img>
             <v-icon v-if="modeEdit">
                 mdi-camera-plus
@@ -67,13 +67,16 @@
 <!--  -->
 <script>
     import { defineComponent } from 'vue';
+    import { mapState } from 'vuex';
 
     // Components
     // ...
 
     export default defineComponent({
         name: 'avatar-profil-comp',
-
+        computed: {
+            ...mapState('profil', ['avatarUrl']),
+        },
         components: {
         },
         props: {
