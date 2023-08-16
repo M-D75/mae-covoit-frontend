@@ -12,9 +12,10 @@
 <!-- scss -->
 <style lang="scss" scoped>
     .main {
-        height: 100%;
+        height: 100vh;
         margin-top: 100px;
-        margin-bottom: 50px;
+        padding-bottom: 115px;
+        overflow: auto;
     }
 
     .grouP {

@@ -1069,7 +1069,7 @@
                             
                            
                             $(classBottomMenuNameJquery).animate({"top": `${_this.y}px`}, "fast", function(){
-                                $(this).animate({"top": "auto"}, 1000);
+                                // $(this).animate({"top": "auto"}, 1000);
                                 _this.y = parseInt($(this).css("top").replace("px", ""));
                                 _this.move = false;
                                 _this.$emit('opened');
@@ -1124,9 +1124,6 @@
                     });
 
                     this.open_b = false;
-                }
-                else{
-                    this.open_b = true;
                 }
 
                 return this.open_b;

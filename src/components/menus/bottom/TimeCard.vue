@@ -4,6 +4,7 @@
     @import url('https://fonts.cdnfonts.com/css/digital-dismay');
     @import url('https://fonts.cdnfonts.com/css/ww-digital');
     @import url('https://fonts.cdnfonts.com/css/7segments');
+    @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400&display=swap');
     
     .ligth-mode * {
         --bg-mask: rgba(255, 255, 255, 0.77);
@@ -69,7 +70,7 @@
                 width: 100%;
                 overflow-y: scroll;
                 div {
-                    font-family: 'WW Digital', 'Digital Dismay', 'Helvetica', sans-serif;
+                    font-family: 'Roboto Mono', 'WW Digital', 'Digital Dismay', 'Helvetica', sans-serif;
                     height: 100px;
                     position: relative;
                     text-align: right;
@@ -98,7 +99,7 @@
                 overflow-y: scroll;
                 width: 100%;
                 div {
-                    font-family: 'WW Digital', 'Digital Dismay', 'Helvetica', sans-serif;
+                    font-family: 'Roboto Mono', 'WW Digital', 'Digital Dismay', 'Helvetica', sans-serif;
                     height: 100px;
                     position: relative;
                     text-align: left;
@@ -132,7 +133,7 @@
                     :key="heure"
                     :id="'h-'+heure"
                     :class="'h-'+heure+' hour'"
-                >{{ heure }}</div>
+                >{{ heure.replaceAll("0", "O") }}</div>
             </div>
 
             <div class="sep-time mx-auto">
@@ -147,7 +148,7 @@
                     :key="minute"
                     :id="'m-'+minute"
                     :class="'minutes'"
-                >{{ minute }}</div>
+                >{{ minute.replaceAll("0", "O") }}</div>
             </div>
             <div class="mask-bottom"></div>
         </div>
@@ -229,10 +230,12 @@
                 if( middleIndexMinutes > currentIndexMinutes ){
                     vue.minutes = vue.shiftRightMulti(vue.minutes, Math.abs(middleIndexMinutes-currentIndexMinutes));
                     vue.$emit("time-changed");
+                    vue.vibratePhone();
                 }
                 else if( middleIndexMinutes < currentIndexMinutes ){
                     vue.minutes = vue.shiftLeftMulti(vue.minutes, Math.abs(middleIndexMinutes-currentIndexMinutes));
                     vue.$emit("time-changed");
+                    vue.vibratePhone();
                 }
                 
                 if ( slow && Math.abs(speedInpxPerMs) >= 0.50 ) {
@@ -285,6 +288,8 @@
 
             $(`.scrollable-container.hour-list${this.className.length != 0 ? "." + this.className.join(".") : ""}`).on("scroll", function(e){
                 const _this = $(this);
+                
+                
 
                 var delayInMs = e.timeStamp - lastDateH;
                 var offset = e.target.scrollTop - lastOffsetH;
@@ -294,6 +299,9 @@
                 lastOffsetH = e.target.scrollTop;
 
                 const currentIndexHours = (Math.ceil(Math.abs(_this.scrollTop())/100));
+                // let val = (currentIndexHours*100);
+
+                // console.log("h07: ", val, _this.scrollTop(), currentIndexHours, Math.abs(middleIndexHours-currentIndexHours));
                 //const val = (currentIndexHours*100);
                 
                 //console.log("FAST", val, currentIndexHours);
@@ -301,11 +309,13 @@
                     //console.log("rigth", middleIndexHours-currentIndexHours)
                     vue.heures = vue.shiftRightMulti(vue.heures, Math.abs(middleIndexHours-currentIndexHours));
                     vue.$emit("time-changed");
+                    vue.vibratePhone();
                 }
                 else if( middleIndexHours < currentIndexHours ){
                     //console.log("left", middleIndexHours-currentIndexHours)
                     vue.heures = vue.shiftLeftMulti(vue.heures, Math.abs(middleIndexHours-currentIndexHours));
                     vue.$emit("time-changed");
+                    vue.vibratePhone();
                 }
                 
                 if ( slow && Math.abs(speedInpxPerMs) >= 0.50 ) {
@@ -374,6 +384,19 @@
                 // const currentIndexMinutes = (Math.ceil(Math.abs($(".scrollable-container.minute-list").scrollTop())/100));
                 // const currentIndexHours = (Math.ceil(Math.abs($(".scrollable-container.hour-list").scrollTop())/100));
                 return this.heures[middleIndexHours] + ":" + this.minutes[middleIndexMinutes];
+            },
+            vibratePhone() {
+                // Vérifiez si l'API de vibration est prise en charge
+                if (navigator.vibrate) {
+                    // Faites vibrer le téléphone pendant 200 ms
+                    navigator.vibrate(100);
+                    
+                    // Ou, pour un motif de vibration plus complexe :
+                    // navigator.vibrate([200, 100, 200, 100, 200]); 
+                    // (vibrer 200ms, pause 100ms, vibrer 200ms, etc.)
+                } else {
+                    console.log("L'API Vibration n'est pas prise en charge sur cet appareil.");
+                }
             },
         },
         watch: {

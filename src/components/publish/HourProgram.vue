@@ -17,6 +17,9 @@
 <!-- scss -->
 <style lang="scss" scoped>
     .hour-program-comp {
+        overflow: auto;
+        height: 100vh;
+        padding-bottom: 110px;
         .title {
             font-size: var(--font-size-h1);
             color: var(--font-color-label);
@@ -156,29 +159,31 @@
             >Continuer</v-btn>
         </div>
 
-        <!-- time -->
-        <BottomMenu
-            mode="time"
-            :class-name="['time-dom']"
-            :labelSelectorN1="labelSelectorTime"
-            :time-init="timeDomInit"       
-            ref="BottomMenuRefDom"
-            v-on:close="overlay = false"
-            v-on:time-changed="getTimeChanged()"
-            v-on:time-valided="getSelectedRef()"
-        />
-
-        <BottomMenu
-            mode="time"
-            :class-name="['time-work']"
-            :labelSelectorN1="labelSelectorTime"
-            :time-init="timeWorkInit"       
-            ref="BottomMenuRefWork"
-            v-on:close="overlay = false"
-            v-on:time-changed="getTimeChanged()"
-            v-on:time-valided="getSelectedRef()"
-        />
+        
     </div>
+
+    <!-- time -->
+    <BottomMenu
+        mode="time"
+        :class-name="['time-dom']"
+        :labelSelectorN1="labelSelectorTime"
+        :time-init="timeDomInit"       
+        ref="BottomMenuRefDom"
+        v-on:close="overlay = false"
+        v-on:time-changed="getTimeChanged()"
+        v-on:time-valided="getSelectedRef()"
+    />
+
+    <BottomMenu
+        mode="time"
+        :class-name="['time-work']"
+        :labelSelectorN1="labelSelectorTime"
+        :time-init="timeWorkInit"       
+        ref="BottomMenuRefWork"
+        v-on:close="overlay = false"
+        v-on:time-changed="getTimeChanged()"
+        v-on:time-valided="getSelectedRef()"
+    />
    
 </template>
 

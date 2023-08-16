@@ -17,6 +17,9 @@
 <!-- scss -->
 <style lang="scss" scoped>
     .hour-dep-other {
+        overflow: scroll;
+        padding-bottom: 110px;
+        height: 100vh;
         .title {
             font-size: var(--font-size-h1);
             color: var(--font-color-label);
