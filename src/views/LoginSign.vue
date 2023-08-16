@@ -219,7 +219,7 @@
 <script>
     // import $ from 'jquery'
     import { inject } from 'vue';
-    import { mapActions } from "vuex";
+    import { mapActions, mapMutations } from "vuex";
 
     export default {
         setup() {
@@ -227,6 +227,7 @@
         },
         computed: {
             ...mapActions("auth", ["refreshToken", "checkSession"]),
+            ...mapMutations("auth", ["SET_TOKEN"]),
         },
         data() {
             return {
@@ -291,6 +292,7 @@
                 }
 
                 console.log('Connexion réussie:', data, session);
+                this.SET_TOKEN({token: session.access_token, expiry: session.expires_at*1000})
                 this.$router.replace("/search");
             },
             async signUpEmailSupabase(){

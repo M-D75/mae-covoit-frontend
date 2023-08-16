@@ -22,9 +22,12 @@
      }
 
     .main {
+        overflow: scroll;
         height: 100%;
-        margin-top: 100px;
-        margin-bottom: 50px;
+        margin-top: 50px;
+        padding-top: 50px;
+        padding-bottom: 150px;
+
         div .label {
             width: 82.7%;
             text-transform: uppercase;

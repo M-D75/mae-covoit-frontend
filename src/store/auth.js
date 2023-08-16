@@ -54,15 +54,28 @@ export default {
                     console.log('4:User already conneced:', user);
                     store.state.profil.userUid = user.id;
                     
-                    store.state.profil.avatarUrl = user.user_metadata.avatar_url;
+                    if(user.user_metadata.avatar_url)
+                        store.state.profil.avatarUrl = user.user_metadata.avatar_url;
 
                     await store.dispatch("search/getAccounts");
 
-                    const current_account = store.state.search.accounts.filter((account) => (account.user_id == user.id))[0];
-                    store.state.profil.soldes = current_account.credit;
+                    if( store.state.search.accounts && store.state.search.accounts.length >= 1 ){
+                        const current_account = store.state.search.accounts.filter((account) => (account.user_id == user.id))[0];
+                        if(current_account){
+                            store.state.profil.soldes = current_account.credit;
 
-                    store.state.profil.userName = ! user.user_metadata.full_name ? current_account.username : user.user_metadata.full_name;
-                    console.log("store", store.state.profil, store.state.search.accounts, current_account)
+                            store.state.profil.userName = ! user.user_metadata.full_name ? current_account.username : user.user_metadata.full_name;
+                            console.log("store", store.state.profil, store.state.search.accounts, current_account)
+                        }
+                        else {
+                            store.state.profil.soldes = 0;
+                            store.state.profil.userName = `Anonyme-${user.id.substring(0, 3)}`;
+                        }
+                    }
+                    else{
+                        store.state.profil.soldes = 0;
+                        store.state.profil.userName = `Anonyme-${user.id.substring(0, 3)}`;
+                    }
                 }
 
                 router.replace("/search");

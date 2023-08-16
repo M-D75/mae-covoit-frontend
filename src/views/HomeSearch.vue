@@ -1,30 +1,34 @@
 
 <style lang="scss" model>
-   .home-search-view {
-      // calendar
-      .trajet-search {
-         z-index: 100 !important;
-      }
-      .pile-search {
-         z-index: 0 !important;
-      }
-   }
-   
+    .home-search-view {
+        // calendar
+        .trajet-search {
+            z-index: 100 !important;
+        }
+        .pile-search {
+            z-index: 0 !important;
+        }
+    }
 </style>
 
 <!-- scss -->
 <style lang="scss" scoped>
-   .v-row.home-search-view{
-      margin: 30px auto;
-      .title {
-         font-size: var(--font-size-h1);
-         color: var(--font-color-label);
-         font-weight: bold;
-         width: 100%;
-         padding: 0 39px 0px 39px;
-         margin: auto;
-      }
-   }
+    .cont-main{
+        overflow: scroll;
+        height: 100vh;
+        padding-bottom: 150px;
+        .v-row.home-search-view{
+            margin: 30px auto;
+            .title {
+                font-size: var(--font-size-h1);
+                color: var(--font-color-label);
+                font-weight: bold;
+                width: 100%;
+                padding: 0 39px 0px 39px;
+                margin: auto;
+            }
+        }
+    }
 </style>
    
 <!--  -->
@@ -39,45 +43,48 @@
       @click="close()"
    ></v-overlay>
 
-   <v-row 
-      class="home-search-view mt-40 mb-0"
-      style="margin-top: 40px;"
-   >
-      <!-- Title -->
-      <div
-         class="title text-center"
-      >Le choix de trajets à petits prix</div>
+   <div class="cont-main">
+      <v-row 
+         class="home-search-view mt-40 mb-0"
+         style="margin-top: 40px;"
+      >
+         <!-- Title -->
+         <div
+            class="title text-center"
+         >Le choix de trajets à petits prix</div>
 
-      <!-- image -->
-      <v-col>
-         <v-img
-            style="margin: auto;"
-            :width="200"
-            aspect-ratio="16/9"
-            cover
-            src="@/assets/car-removebg-preview.png"
-         ></v-img>
-      </v-col>
-   </v-row>
+         <!-- image -->
+         <v-col>
+            <v-img
+               style="margin: auto;"
+               :width="200"
+               aspect-ratio="16/9"
+               cover
+               src="@/assets/car-removebg-preview.png"
+            ></v-img>
+         </v-col>
+      </v-row>
 
-   <!-- Find Trajet -->
-   <TrajetSearch 
-      class="trajet-search" 
-      ref="TrajetSearchRef"
-      :dateString="dateString"
-      v-on:trajet-selected="getTrajet()" 
-      v-on:open-calendar="openCalendar()"
-      v-on:open-dep="openSearch('dep')"
-      v-on:open-dest="openSearch('dest')"
-      v-on:open-nb-passenger="openSelectNumber()"
-   />
+      <!-- Find Trajet -->
+      <TrajetSearch 
+         class="trajet-search" 
+         ref="TrajetSearchRef"
+         :dateString="dateString"
+         v-on:trajet-selected="getTrajet()" 
+         v-on:open-calendar="openCalendar()"
+         v-on:open-dep="openSearch('dep')"
+         v-on:open-dest="openSearch('dest')"
+         v-on:open-nb-passenger="openSelectNumber()"
+      />
 
-   <!-- Find Fast Trajet -->
-   <Pile 
-      class="pile-search"
-      :infos="infos"
-      v-on:reserve="reserve()"
-   />
+      <!-- Find Fast Trajet -->
+      <Pile 
+         class="pile-search"
+         :infos="infos"
+         v-on:reserve="reserve()"
+      />
+
+   </div>
 
    <!-- Menu -->
    <BottomNav />

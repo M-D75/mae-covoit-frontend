@@ -36,7 +36,13 @@
         }
     }
 
+    .v-card.list::-webkit-scrollbar {
+        width: 0;  /* Masquer la barre de défilement verticale */
+        height: 0; /* Masquer la barre de défilement horizontale */
+    }
+
     .v-card.list {
+        -ms-overflow-style: none;
         > .v-list {
             .v-list-item {
                 .v-list-item__content {
@@ -62,6 +68,7 @@
         left: 0;
         width: 100%;
         height: 100%;
+        padding-bottom: 110px;
         .title {
             font-size: var(--font-size-h1);
             font-weight: bold;
@@ -96,11 +103,15 @@
                 }
             }
         }
-
+        .v-card.list::-webkit-scrollbar {
+            width: 0;  /* Masquer la barre de défilement verticale */
+            height: 0; /* Masquer la barre de défilement horizontale */
+        }
         .v-card.list {
             background-color: var(--bg-app-color);
             height: 80%;
             overflow: scroll;
+
             > .v-list {
                 margin: auto;
                 width: 90%;

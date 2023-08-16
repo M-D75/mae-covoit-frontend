@@ -52,6 +52,12 @@
         font-size: 26px !important;
     }
 
+    .v-main {
+        position: absolute;
+        top: 0;
+        height: 100vh;
+    }
+
 </style>
 
 <template>
@@ -184,7 +190,7 @@
         },
         beforeUnmount() {
             console.log("-----beforeUnmount")
-            window.removeEventListener('resize', this.updateIsSmallScreen);
+            // window.removeEventListener('resize', this.updateIsSmallScreen);
         }
     }
 </script>

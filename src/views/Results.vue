@@ -168,38 +168,38 @@
             },
             callChildMethod() {
                 if ( this.$refs.BottomMenuRef ) {
-                this.overlay = this.$refs.BottomMenuRef.open();
+                    this.overlay = this.$refs.BottomMenuRef.open();
                 }
             },
             callCloseBottomChild() {
                 if ( this.$refs.BottomMenuRef ) {
-                this.$refs.BottomMenuRef.close();
-                setTimeout(function(){
-                    this.overlay = false;
-                }.bind(this), 1000)
+                    this.$refs.BottomMenuRef.close();
+                    setTimeout(function(){
+                        this.overlay = false;
+                    }.bind(this), 1000)
                 }
             },
             async waitInit(){
                 this.overlayLoad = true;
                 try{
-                await this.getTrajets;
-                const _tmp_trajets = this.trajets.filter(trajet => trajet.depart == this.depart && trajet.destination == this.destination)
-                console.log("nb-trajets", _tmp_trajets.length, _tmp_trajets)
-                if(_tmp_trajets.length == 0)
-                    this.nothing = true;
-                } 
+                    await this.getTrajets;
+                    const _tmp_trajets = this.trajets.filter(trajet => trajet.depart == this.depart && trajet.destination == this.destination)
+                    console.log("nb-trajets", _tmp_trajets.length, _tmp_trajets)
+                    if(_tmp_trajets.length == 0)
+                        this.nothing = true;
+                    } 
                 catch (error) {
-                console.log("Error:", error)
-                this.nothing = true;
+                    console.log("Error:", error)
+                    this.nothing = true;
                 }
             },
         },
         watch: {
             overlay(){
                 if( ! this.overlay ){
-                if(this.$refs.BottomMenuRef && this.$refs.BottomMenuRef.notif){
-                    this.$router.replace("/search")
-                }
+                    if(this.$refs.BottomMenuRef && this.$refs.BottomMenuRef.notif){
+                        this.$router.replace("/search")
+                    }
                 }
             },
             trajets(){

@@ -130,6 +130,10 @@
         font-size: 16px;
     }
 
+    .closed {
+        visibility: collapse;
+    }
+
     .sub-label-color {
         border-radius: 20px;
         background-color: var(--blue-color);
@@ -999,6 +1003,9 @@
             if( this.mode=="select-day-hour-domicile" || this.mode=="notification" ){
                 this.open();
             }
+            else {
+                $(classBottomMenuNameJquery).addClass("closed")
+            }
             
             $("div.sub-label-color").addClass("warn-good-to-low")
         },
@@ -1044,18 +1051,22 @@
                 this.move = false;
             },
             open(){
+                
                 this.subContHeigth = this.$refs.subCont.clientHeight;
                 
                 if ( ! this.open_b ) {
                     if ( this.y >= this.sizeScreen - this.marge_bar ) {
                         if( ! this.move ){
                             console.log("will-open")
+                            const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
+                            $(classBottomMenuNameJquery).removeClass("closed");
+
                             // open
                             this.move = true;
                             this.disabledY = false;
                             this.y = this.sizeScreen - ( this.subContHeigth + 50 );
                             const _this = this;
-                            const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
+                            
                            
                             $(classBottomMenuNameJquery).animate({"top": `${_this.y}px`}, "fast", function(){
                                 $(this).animate({"top": "auto"}, 1000);
@@ -1107,6 +1118,7 @@
                     const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
                     
                     $(classBottomMenuNameJquery).animate({"top": `${this.y}px`}, "fast", function(){
+                        $(this).addClass("closed");
                         _this.move = false;
                         _this.$emit('close');
                     });

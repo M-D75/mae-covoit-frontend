@@ -15,6 +15,10 @@
 
 
 <style lang="scss" scoped>
+    .closed {
+        visibility: collapse;
+    }
+
     .v-container {
         position: absolute;
         padding: 0;
@@ -149,7 +153,8 @@
         },
         mounted() {
             this.sizeScreen = $(window).innerHeight();            
-            $(".pan-get-value").css("top", `${this.sizeScreen}px`)
+            $(".pan-get-value").css("top", `${this.sizeScreen}px`);
+            $(".pan-get-value").addClass("closed");
 
             //Init calendar
             const { mapCurrent } = useScreens({
@@ -171,6 +176,8 @@
         },
         methods: {
             open(){
+                $(".pan-get-value").removeClass("closed");
+
                 switch (this.mode) {
                     case "depart":
                         this.$store.commit("search/SET_DEPART", "");                     
@@ -192,7 +199,10 @@
                 this.opened = true;
             },
             close(){
-                $(".pan-get-value").animate({top: `${this.sizeScreen}px`}, "fast");
+                $(".pan-get-value").animate({top: `${this.sizeScreen}px`}, "fast", function(){
+                    $(this).addClass("closed");
+                });
+
                 $(".pan-get-value").css("top", `${this.sizeScreen}px`);
 
                 this.opened = false;
