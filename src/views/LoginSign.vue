@@ -26,19 +26,48 @@
         background-color: white !important;
         border-radius: 50px;
     }
+
+    .v-main {
+        width: 100%;
+    }
+
+    .v-snackbar {
+        .v-snackbar__content{
+            display: flex;
+            i {
+                margin-right: 5px;
+            }
+            span {
+                text-align: left;
+                color: white;
+            }
+        }
+    }
 </style>
 
 
 <!-- scss -->
 <style lang="scss" scoped>
-
     .v-application {
         background-color: #eee;
+        overflow: visible;
+        
     }
+
     .v-container {
         margin: auto;
+        width: 100%;
         .bloc-part{
             margin: 50px auto;
+        }
+
+        .v-snackbar {
+            .v-snackbar__content{
+                display: flex;
+                span {
+                    color: white;
+                }
+            }
         }
         
     }
@@ -196,6 +225,23 @@
             </v-col>
         </div>
 
+        <!-- message -->
+        <v-snackbar
+            v-model="showSnackbar"
+            :timeout="4000"
+        >
+            <v-icon icon="$success"></v-icon> <span>{{ messageSnackbar }}</span>
+        </v-snackbar>
+
+        <!-- message error -->
+        <v-snackbar
+            v-model="showSnackbarError"
+            :timeout="4000"
+            color="error"
+        >
+            <v-icon icon="mdi-alert-circle"></v-icon> <span>{{ messageSnackbarError }}</span>
+        </v-snackbar>
+
     </v-app>
 
     <!-- Load -->
@@ -231,10 +277,14 @@
         },
         data() {
             return {
+                showSnackbar: false,
+                messageSnackbar: "Success",
+                showSnackbarError: false,
+                messageSnackbarError: "Error",
                 overlayLoad: true,
                 supabase: inject('supabase'),
                 modeLogin: this.$route.path == '/login' ? true : false,
-                labelModeCreateOrLogin: "Pas encore de compte ?",
+                labelModeCreateOrLogin: this.$route.path == '/login' ? "Pas encore de compte ?" : "Vous avez déjà un compte ?",
                 email: "",
                 emailErrors: "",
                 password: "",
@@ -242,6 +292,11 @@
                 passwordForgetMode: false,
                 data: null,
                 error: null,
+                translateMessageAuth: {
+                    "Signup requires a valid password": "Mot de passe non valide",
+                    "To signup, please provide your email": "Mail non valide",
+                    "Unable to validate email address: invalid format": "Impossible de valider l'adresse électronique : format non valide",
+                },
                 rules: {
                     required: value => !!value || 'Required.',
                     min: v => v.length >= 8 || 'Min 8 characters',
@@ -259,9 +314,6 @@
             this.checkSessionIn();
         },
         mounted() {
-            // force ligth-mode
-            // $("#app .v-application").addClass("ligth-mode");
-            // $("#app .v-application").removeClass("dark-mode");
         },
         methods: {
             authService(service){
@@ -296,44 +348,62 @@
                 this.$router.replace("/search");
             },
             async signUpEmailSupabase(){
-                let { data, session, error } = await this.supabase.auth.signUp({
+                let { error } = await this.supabase.auth.signUp({
                     email: this.email,
                     password: this.password
                 });
 
-                if (error) {
+                if ( error ) {
                     console.error('Erreur lors de l\'inscription:', error.message);
+
+                    const translate = this.translateMessageAuth[error.message] ? this.translateMessageAuth[error.message] : "Une erreur s'est produite";
+                    
+                    this.messageSnackbarError = `Erreur : ${translate}`;
+                    this.showSnackbarError = true;
+                    
                     return;
                 }
 
-                console.log('Inscription réussie:', data, session);
+                this.email = "";
+                this.password = "";
+
+                this.messageSnackbar = "Inscription réussie! Vérifiez votre e-mail pour confirmer votre compte.";
+                this.showSnackbar = true;
             },
             async recoveryPasswordSupabase(){
-                let { data, session, error } = await this.supabase.auth.resetPasswordForEmail(this.email);
+                let { error } = await this.supabase.auth.resetPasswordForEmail(this.email);
 
                 if (error) {
                     console.error('Erreur lors de la restauration du mot de passe:', error.message);
+                    const translate = this.translateMessageAuth[error.message] ? this.translateMessageAuth[error.message] : "Une erreur s'est produite";
+                    
+                    this.messageSnackbarError = `Erreur : ${translate}`;
+                    this.showSnackbarError = true;
                     return;
                 }
 
-                console.log('Mail envoyé:', data, session);
+                this.email = "";
+
+                this.messageSnackbar = "Demande reçue. Vérifiez votre e-mail pour réinitialiser le mot de passe.";
+                this.showSnackbar = true;                
             },
             async authServiceSupabse(service){
-                let { data, session, error } = await this.supabase.auth.signInWithOAuth({
+                let { error } = await this.supabase.auth.signInWithOAuth({
                     provider: service,
                 });
 
-                if (error) {
+                if ( error ) {
                     console.error("Erreur lors de l'authenfication:", error.message);
+
+                    const translate = this.translateMessageAuth[error.message] ? this.translateMessageAuth[error.message] : "Une erreur s'est produite";
+                    
+                    this.messageSnackbarError = `Erreur : ${translate}`;
+                    this.showSnackbarError = true;
+
                     return;
                 }
 
-                console.log('Auhtenfication via', service, 'envoyé:', data, session);
-            },
-            async getUser(){
-                const { data: { user } } = await this.supabase.auth.getUser();
-                console.log('Login -- User already conneced:', user);
-                return user;
+                // console.log('Auhtenfication via', service, 'envoyé:', data, session);
             },
             //Other
             createOrLoginSwitchMode(){

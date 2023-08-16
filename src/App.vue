@@ -55,7 +55,6 @@
     .v-main {
         position: absolute;
         top: 0;
-        height: 100vh;
     }
 
 </style>

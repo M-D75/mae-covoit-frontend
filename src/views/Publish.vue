@@ -15,12 +15,6 @@
             }
         }
     }
-
-    .v-main {
-        height: 100vh;
-        width: 100vw;
-        padding-bottom: 75px;
-    }
 </style>
 
 <!-- scss -->
