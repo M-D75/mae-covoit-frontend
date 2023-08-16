@@ -389,7 +389,7 @@
                 // Vérifiez si l'API de vibration est prise en charge
                 if (navigator.vibrate) {
                     // Faites vibrer le téléphone pendant 200 ms
-                    navigator.vibrate(100);
+                    navigator.vibrate(50);
                     
                     // Ou, pour un motif de vibration plus complexe :
                     // navigator.vibrate([200, 100, 200, 100, 200]); 

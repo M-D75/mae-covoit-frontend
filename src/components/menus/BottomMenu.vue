@@ -1028,16 +1028,18 @@
                 }
             },
             onDragStop(pos) {
+
+
                 if ( ! this.move ) {
-                    if ( pos.y >= this.sizeScreen-this.marge_bar ) {
+                    const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
+
+                    if ( pos.y >= this.sizeScreen-this.marge_bar && !$(classBottomMenuNameJquery).hasClass("closed") ) {
                         this.open();
                     }
-                    else{
+                    else if( ! $(classBottomMenuNameJquery).hasClass("closed") ){
                         console.log("onDragStop")
                         this.close();
                     }
-                    
-                    const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
                     
                     $(classBottomMenuNameJquery).animate({"top": `${this.y}px`}, "fast");
                 }

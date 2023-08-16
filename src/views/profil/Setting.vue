@@ -14,7 +14,7 @@
     .main {
         height: 100vh;
         margin-top: 100px;
-        padding-bottom: 115px;
+        padding-bottom: 150px;
         overflow: auto;
     }
 
