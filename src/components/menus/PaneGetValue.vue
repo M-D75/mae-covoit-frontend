@@ -17,6 +17,8 @@
 <style lang="scss" scoped>
     .closed {
         visibility: collapse;
+        z-index: 0;
+        pointer-events: none;
     }
 
     .v-container {

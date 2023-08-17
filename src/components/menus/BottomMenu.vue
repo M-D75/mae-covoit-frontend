@@ -132,6 +132,8 @@
 
     .closed {
         visibility: collapse;
+        z-index: 0;
+        pointer-events: none;
     }
 
     .sub-label-color {

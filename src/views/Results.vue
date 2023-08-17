@@ -34,7 +34,6 @@
                     font-size: 17px;
                     text-transform: uppercase;
                     display: block;
-                    vertical-align: middle;
                 }
             }
         }
