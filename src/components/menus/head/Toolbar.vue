@@ -1,111 +1,116 @@
-
+<!-- model -->
 <style lang="scss" model>
-   // toolbar
-   .v-toolbar {
-      position: fixed;
-   }
-   .v-btn i.v-icon.icon-chev-left {
-      margin-right: 0;
-      // font-size: 2em;
-   }
-
+    .v-app-bar {
+            box-shadow: var(--box-shadow-card) !important;
+        // toolbar
+        .v-toolbar {
+            position: fixed;
+        }
+        .v-btn i.v-icon.icon-chev-left {
+            margin-right: 0;
+            // font-size: 2em;
+        }
+    }
 </style>
-<!-- scss -->
+
+<!-- scoped -->
 <style lang="scss" scoped>
 
-   // toolbar
-   .v-toolbar {
-      position: fixed;
-      z-index: 1;
-      background-color: var(--bg-app-color);
-      box-shadow: var(--box-shadow-card);
-      .v-btn i.v-icon {
-         margin-right: 0 !important;
-         color: var(--gray-icon-color);
-         &.mdi-chevron-left {
-            font-size: 2em;
-         }
-      }
-      .v-toolbar-title {
-         font-size: var(--font-size-h1-toolbar);
-         color: var(--font-color-label);
-         .text-subtitle-2 {
-            font-size: var(--font-size-subtitle-toolbar);
-         }
-      }
-      .label-filter.text-caption {
-         width: 85%;
-      }
-   }
+    // toolbar
+    .v-toolbar {
+        position: fixed;
+        z-index: 1;
+        background-color: var(--bg-app-color);
+        box-shadow: var(--box-shadow-card);
+        .v-btn i.v-icon {
+            margin-right: 0 !important;
+            color: var(--gray-icon-color);
+            &.mdi-chevron-left {
+                font-size: 2em;
+            }
+        }
+        .v-toolbar-title {
+            font-size: var(--font-size-h1-toolbar);
+            color: var(--font-color-label);
+            .text-subtitle-2 {
+                font-size: var(--font-size-subtitle-toolbar);
+            }
+        }
+        .label-filter.text-caption {
+            width: 85%;
+        }
+    }
 
 </style>
    
 <!--  -->
 <template>
 
-   <!-- toolbar -->
-   <v-toolbar
-      class=""
-      color=""
-      dark
-   >
-      <!-- <v-app-bar-nav-icon></v-app-bar-nav-icon> -->
-      <v-btn 
-         icon
-         @click="previous()"
-      >
-         <v-icon
-            class="icon-chev-left mr-0"
-         >mdi-chevron-left</v-icon>
-      </v-btn>
-      <v-toolbar-title
-         class="ml-5 mr-5"
-      >
-         {{trajet.depart}} vers {{trajet.destination}} 
-         <div class="text-subtitle-2 font-weight-medium">{{date}}, {{nbPassager}} passager</div>
-      </v-toolbar-title>
+    <v-app-bar>
+        <!-- toolbar -->
+        <v-toolbar
+            class=""
+            color=""
+            dark
+        >
+            <!-- <v-app-bar-nav-icon></v-app-bar-nav-icon> -->
+            <v-btn 
+                icon
+                @click="previous()"
+            >
+                <v-icon
+                    class="icon-chev-left mr-0"
+                >mdi-chevron-left</v-icon>
+            </v-btn>
+            
+            <v-toolbar-title
+                class="ml-5 mr-5"
+            >
+                {{trajet.depart}} vers {{trajet.destination}} 
+                <div class="text-subtitle-2 font-weight-medium">{{date}}, {{nbPassager}} passager</div>
+            </v-toolbar-title>
 
-      <v-btn icon>
-        <v-icon>mdi-filter</v-icon>
-      </v-btn>
-   </v-toolbar>
-
+            <v-btn icon>
+                <v-icon>mdi-filter</v-icon>
+            </v-btn>
+        </v-toolbar>
+    </v-app-bar>
 </template>
 
 
 
 <!--  -->
 <script>
-   import { defineComponent } from 'vue';
+    import { defineComponent } from 'vue';
 
-   export default defineComponent({
-      name: 'toolbar-comp',
-      components: {
-      },
-      props: {
-         trajet: {
-            type: Object,
-            default (){
-               return {depart: "Tsingoni", destination: "Mamoudzou"};
+    export default defineComponent({
+        name: 'toolbar-comp',
+        components: {
+        },
+        props: {
+            trajet: {
+                type: Object,
+                default (){
+                return {depart: "Tsingoni", destination: "Mamoudzou"};
+                },
             },
-         },
-         date: {
-            type: String,
-            default: "Aujourd'hui",
-         },
-         nombre_trajet: {
-            type: Number,
-            default: 0,
-         },
-         nbPassager: {
-            type: String,
-            default: "0",
-         }
-      },
-      methods: {
-         previous(){
-            this.$router.go(-1);
-         },
-      }
-   });
+            date: {
+                type: String,
+                default: "Aujourd'hui",
+            },
+            nombre_trajet: {
+                type: Number,
+                default: 0,
+            },
+            nbPassager: {
+                type: String,
+                default: "0",
+            }
+        },
+        methods: {
+            previous(){
+                this.$router.go(-1);
+            },
+        }
+    });
 </script>

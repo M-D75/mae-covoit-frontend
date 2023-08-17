@@ -13,7 +13,6 @@ import HourProgram from '@/components/publish/HourProgram.vue'
 import Itineraire from '@/components/publish/Itineraire.vue'
 import TestMap from '@/views/TestMap.vue'
 import MapGoogle from '@/views/MapGoogle.vue'
-import MapTiler from '@/views/MapTiler.vue'
 
 import store from '../store'; // Chemin d'accès à votre fichier store
 
@@ -97,12 +96,6 @@ const routes = [
         path: '/map2',
         name: 'map2',
         component: MapGoogle,
-        meta: { requiresAuth: false },
-    },
-    {
-        path: '/map3',
-        name: 'map3',
-        component: MapTiler,
         meta: { requiresAuth: false },
     },
 ]

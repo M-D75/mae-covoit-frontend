@@ -1,4 +1,10 @@
 
+<style lang="scss" model>
+    // .v-app {
+    //     height: 100dvh !important;
+    // }
+</style>
+
 <style lang="scss">
 
     .ligth-mode * {
@@ -38,6 +44,8 @@
         letter-spacing: 0;
     }
 
+
+    
     .v-application.v-theme--light.v-layout.v-layout--full-height.v-locale--is-ltr {
         background-color: var(--bg-app-color);
         .v-application__wrap {
@@ -52,18 +60,11 @@
         font-size: 26px !important;
     }
 
-    .v-main {
-        position: absolute;
-        top: 0;
-    }
-
 </style>
 
 <template>
     <v-app class="ligth-mode">
-        <v-main v-if="isMobileOrSmallScreen">
-            <router-view/>
-        </v-main>
+        <router-view v-if="isMobileOrSmallScreen"/>
         <MobileOnly v-else></MobileOnly>
     </v-app>
 </template>

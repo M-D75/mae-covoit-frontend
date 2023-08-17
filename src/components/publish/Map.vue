@@ -42,11 +42,11 @@
                 icon="mdi-map-marker-path"
                 :disabled="routes.length <= 1"
                 @click="swapRoute()"  
-            ></v-btn>
+            />
             <v-btn 
                 icon="mdi-check-bold"
                 @click="$emit('trajet-selected')"
-            ></v-btn>
+            />
         </div>
 
         <div class="menu left">
@@ -54,7 +54,7 @@
                 v-if="!open_b"
                 icon="mdi-information-slab-circle-outline"
                 @click="openBottomMenuInfos()"
-            ></v-btn>
+            />
         </div>
 
         <!-- L-map -->
@@ -64,10 +64,8 @@
             :center="center" 
             @ready="isLoaded()" 
             ref="mapRef"
-        >
-            <!-- <l-tile-layer url="https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png"></l-tile-layer> -->
-            
-            <l-tile-layer url="https://api.maptiler.com/maps/winter-v2/{z}/{x}/{y}.png?key=faY6afh2tnFprZqdoyZP"></l-tile-layer>
+        >            
+            <l-tile-layer url="https://api.maptiler.com/maps/winter-v2/{z}/{x}/{y}.png?key=faY6afh2tnFprZqdoyZP"/>
 
 
             <!-- origin -->
@@ -80,7 +78,7 @@
             <!-- route -->
             <div v-if="routeAvail">
                 <l-polyline 
-                    v-for="(route, index) in routes.reverse()"
+                    v-for="(route, index) in routes.slice().reverse()"
                     :key="route.id"
                     :lat-lngs="route.polylineDecoded" 
                     :color="index == routes.length - 1 ? '#1b79cc' : '#838383'" 
@@ -95,14 +93,13 @@
                 </l-polyline>
 
                 <l-polyline 
-                    v-for="(route, index) in routes"
+                    v-for="(route, index) in routes.slice().reverse()"
                     :key="index"
                     :lat-lngs="route.polylineDecoded" 
                     :color="index == routes.length - 1 ? '#01a9e8' : '#bcbcbc'" 
                     :weight="4"
                     @click="trajetSelected(index)"
-                >
-                </l-polyline>
+                />
 
                 <!-- point -->
                 <l-circle-marker 
@@ -160,8 +157,7 @@
         ref="BottomMenuRef"
         v-on:close="open_b = false"
         v-on:opened="open_b = true"
-    >
-    </BottomMenu>
+    />
 
     <!-- Load -->
     <v-overlay
@@ -172,7 +168,7 @@
             color="black"
             indeterminate
             size="64"
-        ></v-progress-circular>
+        />
     </v-overlay>
 
 
@@ -203,9 +199,6 @@
                 const minLon = Math.min(...longitudes);
                 const maxLon = Math.max(...longitudes);
                 return [(minLat + maxLat) / 2, (minLon + maxLon) / 2];
-            },
-            faster(){
-                return this.routes.length > 0 && this.routes[0].faster;
             },
         },
         components: {
@@ -288,7 +281,7 @@
 
                     setTimeout(function(){
                         this.routeAvail = false;
-                        this.routes = this.swapWithLast(this.routes.reverse(), index);
+                        this.routes = this.swapWithLast(this.routes, index);
                         this.itin.duration = this.routes[0].duration;
                         this.itin.distance = this.routes[0].distance;
                         this.routeAvail = true;
@@ -302,7 +295,7 @@
 
                 setTimeout(function(){
                     this.routeAvail = false;
-                    this.routes = this.shiftRight(this.routes.reverse());
+                    this.routes = this.shiftRight(this.routes);
                     console.log(this.routes)
                     this.itin.duration = this.routes[0].duration;
                     this.itin.distance = this.routes[0].distance;
@@ -314,11 +307,12 @@
                 }.bind(this), 500); 
             },
             getRouteInfos(){
+                this.overlayLoad = true;
                 fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-Goog-Api-Key': "AIzaSyCGJAwx8DvEm8JxtfxhLCLtC_mg_jJzUs8",
+                        'X-Goog-Api-Key': process.env.VUE_APP_API_GOOGLE_ROUTE_API_KEY,
                         'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline',
                     },
                     body: JSON.stringify({
@@ -351,19 +345,21 @@
                         units: 'IMPERIAL'
                     }),
                 }).then(response => response.json()).then(data => { 
-                    console.log(data)
+                    console.log(data);
 
-                    this.routes = [];
+                    this.routeAvail = false;
+
+                    var tmp_routes = [];
                     var first = true;
                     for(const route in data.routes){
                         const decoded  = polyline.decode(data.routes[route].polyline.encodedPolyline);
                         const duration = (this.convertSecondsToHoursAndMinutes(parseInt(data.routes[route].duration.replaceAll("s", "")))).toString();
                         const distance = (data.routes[route].distanceMeters/1000).toFixed(2).toString();
 
-                        this.routes.push({
+                        tmp_routes.push({
                             id: route, 
                             polylineDecoded: decoded, 
-                            infosGoogle:data.routes[route], 
+                            infosGoogle: data.routes[route], 
                             duration: duration, 
                             distance: distance, 
                             faster: first,
@@ -378,9 +374,15 @@
                     }
 
                     this.routeAvail = true;
-                    console.log("Avail", this.itineraire)
+                    console.log("Avail", this.itineraire);
+
+                    this.routes = tmp_routes;
+                    this.overlayLoad = false;
                 }).catch(error => {
                     console.error(error);
+                    console.log("Error", error.message);
+
+                    this.overlayLoad = false;
                 });
             },
             swapWithLast(arr, index) {

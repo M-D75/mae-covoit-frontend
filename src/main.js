@@ -42,13 +42,14 @@ const vuetify = createVuetify({
 loadFonts();
 
 // Includes needed icons
-library.add(fas) 
+library.add(fas)
 library.add(fab)
 
 // supabase
 import supabase from '@/utils/supabaseClient.js';
 
 import VueGoogleMaps from '@fawmi/vue-google-maps'
+import './registerServiceWorker'
 
 createApp(App)
     .component('font-awesome-icon', FontAwesomeIcon)

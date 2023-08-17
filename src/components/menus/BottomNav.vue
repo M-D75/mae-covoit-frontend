@@ -25,8 +25,6 @@
             color: var(--gray-icon-color);
             i {
                 font-size: 2.7em !important;
-                margin: 0 !important;
-                margin-bottom: 5px !important;
                 color: var(--gray-icon-color);
             }
         }
@@ -48,7 +46,7 @@
     <v-bottom-navigation
         v-model="value"
         grow
-        style="height: 75px;"
+        height="75"
     >
         <v-btn
             :active="false" 

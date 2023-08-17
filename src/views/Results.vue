@@ -1,37 +1,44 @@
 
 <style lang="scss" model>
 
-   .v-main, .v-application__wrap {
-      overflow: hidden;
-   }
+    .v-main, .v-application__wrap {
+        overflow: hidden;
+    }
 
-   .label-filter.text-caption {
-      width: 85%;
-      max-width: 500px;
-   }
+    .label-filter.text-caption {
+        width: 85%;
+        max-width: 500px;
+    }
 
 </style>
 <!-- scss -->
 <style lang="scss" scoped>
-   .container-trajet-member {
-      margin-top: 100px;
-      height: 90vh;
-      overflow: scroll;
-      .label-filter {
-         color: var(--font-color-label);
-      }
-      .nothing {
-         display: table;
-         text-align: center;
-         height: 90%;
-         span {
-            font-size: 17px;
-            text-transform: uppercase;
-            display: table-cell;
-            vertical-align: middle;
-         }
-      }
-   }
+    .container-trajet-member {
+        margin: 13px 0;
+        .label-filter {
+            color: var(--font-color-label);
+        }
+        .nothing {
+            display: table;
+            text-align: center;
+            height: 83vh;
+            .contenu {
+                text-align: center;
+                display: table-cell;
+                vertical-align: middle;
+                i {
+                    font-size: 35px;
+                    margin-bottom: 5px;
+                }
+                span {
+                    font-size: 17px;
+                    text-transform: uppercase;
+                    display: block;
+                    vertical-align: middle;
+                }
+            }
+        }
+    }
 
 </style>
    
@@ -47,7 +54,7 @@
     />
 
     <!--  -->
-    <div class="container-trajet-member">
+    <v-main class="container-trajet-member">
         <div class="label-filter text-caption text-uppercase mx-auto">{{ date.replaceAll("-", "/") }}</div>
         <TrajetMember 
             v-for="(infos, index) in trajets.filter(trajet => trajet.depart == depart && trajet.destination == destination)" 
@@ -60,7 +67,12 @@
         <div
             v-if="nothing"
             class="nothing label-filter text-caption mx-auto"
-        ><span>Aucun trajet n'a été trouvé</span></div>
+        >
+            <div class="contenu">
+                <v-icon icon="mdi-alert-circle-outline"></v-icon>
+                <span>Aucun trajet n'a été trouvé</span>
+            </div>
+        </div>
 
         <v-overlay 
             v-model="overlay" 
@@ -69,7 +81,7 @@
             style="z-index: 0;"
             @click="callCloseBottomChild()"
         ></v-overlay>
-    </div>
+    </v-main>
 
     <!-- reserve -->
     <BottomMenu 

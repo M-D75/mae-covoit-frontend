@@ -132,7 +132,7 @@
    
 <!--  -->
 <template>
-    <div class="bloc">
+    <v-main class="bloc">
         <div
             class="title text-center"
         >{{ title }}</div>
@@ -194,7 +194,7 @@
                 >{{ item }}</v-list-item> -->
             </v-list>
         </v-card>
-    </div>
+    </v-main>
 </template>
 
 

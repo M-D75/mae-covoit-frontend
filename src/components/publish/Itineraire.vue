@@ -70,7 +70,7 @@
         @click="overlay = false"
     ></v-overlay>
 
-    <div class="itineraire">
+    <v-main class="itineraire">
         <!-- <div
             class="title text-center"
         >Quelle est votre route ?</div> -->
@@ -83,7 +83,7 @@
             ></div>
             <Map :itineraire="itineraire" v-on:trajet-selected="itineraireValided()"></Map>
         </div>
-    </div>
+    </v-main>
 </template>
 
 

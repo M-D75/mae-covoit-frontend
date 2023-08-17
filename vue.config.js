@@ -1,11 +1,9 @@
 const { defineConfig } = require('@vue/cli-service')
 module.exports = defineConfig({
   transpileDependencies: true,
-  chainWebpack: config => {
-    config.plugin('html').tap(args => {
-      args[0].title = 'Shima-Go';
-      return args;
-    });
+  pwa: {
+    name: "Shima-GoGoGo",
+    themeColor: "#ffd100"
   },
   pluginOptions: {
     vuetify: {

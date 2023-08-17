@@ -6,73 +6,83 @@
       // font-size: 2em;
    }
 
-   .v-toolbar {
-      .v-toolbar-title__placeholder {
-         font-size: 16px !important;
-         font-weight: 450;
-      }
-      i.v-icon.mdi-tune {
-         color: v-bind(colorParams) !important;
-      }
-   }
+    .v-app-bar {
+        box-shadow: var(--box-shadow-card) !important;
+        .v-toolbar {
+            .v-toolbar-title__placeholder {
+                font-size: 16px !important;
+                font-weight: 450;
+            }
+            i.v-icon.mdi-tune {
+                color: v-bind(colorParams) !important;
+            }
+        }
+    }
 
 </style>
 
 <!-- scss -->
 <style lang="scss" scoped>
 
-   // toolbar
-   .v-toolbar {
-      z-index: 1;
-      background-color: var(--bg-app-color);
-      box-shadow: var(--box-shadow-card);
-      .v-btn i.v-icon {
-         margin-right: 0 !important;
-         color: var(--gray-icon-color);
-      }
-      .v-toolbar-title {
-         font-size: var(--font-size-h1-toolbar);
-         color: var(--font-color-label);
-      }
-      
-      .label-filter.text-caption {
-         width: 85%;
-      }
-   }
+    // toolbar
+    .v-app-bar {
+        box-shadow: var(--box-shadow-card);
+        .v-toolbar {
+            z-index: 1;
+            background-color: var(--bg-app-color);
+            box-shadow: var(--box-shadow-card);
+            .v-btn i.v-icon {
+                margin-right: 0 !important;
+                color: var(--gray-icon-color);
+            }
+            .v-toolbar-title {
+                font-size: var(--font-size-h1-toolbar);
+                color: var(--font-color-label);
+            }
+            
+            .label-filter.text-caption {
+                width: 85%;
+            }
+        }
+    }
 
 </style>
 
 <!--  -->
 <template>
 
-   <!-- toolbar -->
-   <v-toolbar
-      class="mb-5"
-      dark
-      permanent
-   >
-      <!-- <v-app-bar-nav-icon></v-app-bar-nav-icon> -->
-      <v-btn 
-         icon
-      >
-         <!-- without notif -->
-         <v-icon
-            class="mr-0"
-         >mdi-bell</v-icon>
-      </v-btn>
-      <v-toolbar-title
-         class="ml-5 mr-5 text-center"
-      >
-         {{title}}
-      </v-toolbar-title>
+    <!-- toolbar -->
+    <v-app-bar>
+        <v-toolbar
+            class=""
+            dark
+            permanent
+        >
+            <!-- <v-app-bar-nav-icon></v-app-bar-nav-icon> -->
+            <v-btn 
+                icon
+            >
+                <!-- without notif -->
+                <v-icon
+                    class="mr-0"
+                >mdi-bell</v-icon>
+            </v-btn>
 
-      <v-btn 
-         icon
-         @click="accessSetting()"
-      >
-        <v-icon>mdi-tune</v-icon>
-      </v-btn>
-   </v-toolbar>
+            <v-toolbar-title
+                class="ml-5 mr-5 text-center"
+            >
+                {{title}}
+            </v-toolbar-title>
+
+            <v-btn 
+                icon
+                @click="accessSetting()"
+            >
+                <v-icon>mdi-tune</v-icon>
+            </v-btn>
+            
+        </v-toolbar>
+   </v-app-bar>
 
 </template>
 

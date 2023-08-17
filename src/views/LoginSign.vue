@@ -116,7 +116,6 @@
 <template>
     <v-app class="ligth-mode">
         <v-container >
-
             <!-- From Sign/Connexion -->
             <v-row class="bloc-part">
                 <v-col>
@@ -273,7 +272,7 @@
         },
         computed: {
             ...mapActions("auth", ["refreshToken", "checkSession"]),
-            ...mapMutations("auth", ["SET_TOKEN"]),
+            
         },
         data() {
             return {
@@ -296,6 +295,7 @@
                     "Signup requires a valid password": "Mot de passe non valide",
                     "To signup, please provide your email": "Mail non valide",
                     "Unable to validate email address: invalid format": "Impossible de valider l'adresse électronique : format non valide",
+                    "Invalid login credentials": "login ou mot de passe invalide",
                 },
                 rules: {
                     required: value => !!value || 'Required.',
@@ -316,6 +316,7 @@
         mounted() {
         },
         methods: {
+            ...mapMutations("auth", ["SET_TOKEN"]),
             authService(service){
                 switch (service) {
                     case "google":
@@ -333,15 +334,21 @@
                 }
             },
             async signInEmailSupabase(){
-                let { data, session, error } = await this.supabase.auth.signInWithPassword({
+                let { data, error } = await this.supabase.auth.signInWithPassword({
                     email: this.email,
                     password: this.password
                 });
 
                 if (error) {
                     console.error('Erreur lors de la connexion:', error.message);
+                    const translate = this.translateMessageAuth[error.message] ? this.translateMessageAuth[error.message] : "Une erreur s'est produite";
+                    
+                    this.messageSnackbarError = `Erreur : ${translate}`;
+                    this.showSnackbarError = true;
                     return;
                 }
+
+                const session = data.session;
 
                 console.log('Connexion réussie:', data, session);
                 this.SET_TOKEN({token: session.access_token, expiry: session.expires_at*1000})

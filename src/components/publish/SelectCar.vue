@@ -89,33 +89,33 @@
    
 <!--  -->
 <template>
-
-    <v-container 
-        class="select-car-view"
-    >
-        <div
-            class="title text-center"
-        >Quelle voiture comptez-vous prendre ?</div>
-
-        <div 
-            class="card-contain"
+    <v-main>
+        <v-container 
+            class="select-car-view"
         >
-            <v-card
-                v-for="(info, index) in infos.slice(0, 6)"
-                :key="index"
-                class="car mx-auto"
-                @click="selectCar(index, info)"
-            >
-                <v-list>
-                    <div v-if="info.color=='white'" class="icon-container" style="text-shadow: 1px 1px 2px #555;"><v-icon :style="'color: ' + info.color">{{ info.icon }}</v-icon></div>
-                    <div v-else class="icon-container" ><v-icon :style="`color: ${info.color}; text-shadow: 1px 1px 2px black;`">{{ info.icon }}</v-icon></div>
-                    <div class="model scrollable-container" ><div class="text">{{ info.model }}</div></div>
-                    <div class="color" :style="'background-color: ' + info.color"></div>
-                </v-list>
-            </v-card>
-        </div>
-    </v-container>
+            <div
+                class="title text-center"
+            >Quelle voiture comptez-vous prendre ?</div>
 
+            <div 
+                class="card-contain"
+            >
+                <v-card
+                    v-for="(info, index) in infos.slice(0, 6)"
+                    :key="index"
+                    class="car mx-auto"
+                    @click="selectCar(index, info)"
+                >
+                    <v-list>
+                        <div v-if="info.color=='white'" class="icon-container" style="text-shadow: 1px 1px 2px #555;"><v-icon :style="'color: ' + info.color">{{ info.icon }}</v-icon></div>
+                        <div v-else class="icon-container" ><v-icon :style="`color: ${info.color}; text-shadow: 1px 1px 2px black;`">{{ info.icon }}</v-icon></div>
+                        <div class="model scrollable-container" ><div class="text">{{ info.model }}</div></div>
+                        <div class="color" :style="'background-color: ' + info.color"></div>
+                    </v-list>
+                </v-card>
+            </div>
+        </v-container>
+    </v-main>
 </template>
 
 

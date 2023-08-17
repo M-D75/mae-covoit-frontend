@@ -100,7 +100,7 @@
 <!--  -->
 <template>
   
-    <v-app class="ligth-mode">
+    <v-main class="ligth-mode">
         <v-container >
 
             <!-- From Sign/Connexion -->
@@ -153,7 +153,7 @@
             </h1>
         </div> -->
 
-    </v-app>
+    </v-main>
 
     <!-- Load -->
     <v-overlay

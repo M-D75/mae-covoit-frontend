@@ -11,56 +11,52 @@
 
 <!-- scss -->
 <style lang="scss" scoped>
-    .main {
-        height: 100vh;
-        margin-top: 100px;
-        padding-bottom: 150px;
-        overflow: auto;
-    }
-
-    .grouP {
-        margin-top: 50px;
-    }
-
-    .ctn {
-        margin: 10px auto 10px auto;
-        width: 82.5% !important;
-        .label {
-            margin-top: 14px;
-            margin-bottom: 5px;
-            font-size: 14px;
-            font-weight: bold;
-            color: #616161;
+    .v-main {
+        margin-bottom: 13px;
+        .grouP {
+            margin-top: 50px;
         }
-        .invite-card{
-            //height: 58px;
-            border-radius: 15px;
-            padding: 10px 20px 10px 0px;
-            background-color: #030303;
-            .v-col {
-                &.text {
-                    display: inline-grid;
-                    align-items: center;
-                }
-                &.btn {
-                    display: inline-flex;
-                    align-items: center;
-                    justify-content: flex-end;
-                }
-            }
-            div.text {
-                display: grid;
-                align-items: center;
-                color: white;
-                font-weight: bold;
-                font-size: 16px;
-                margin: auto;
-                height: 100%;
-            }
-            .v-btn {
-                width: 103px;
+
+        .ctn {
+            margin: 10px auto 10px auto;
+            width: 82.5% !important;
+            .label {
+                margin-top: 14px;
+                margin-bottom: 5px;
                 font-size: 14px;
-                height: 32px;
+                font-weight: bold;
+                color: #616161;
+            }
+            .invite-card{
+                //height: 58px;
+                border-radius: 15px;
+                padding: 10px 20px 10px 0px;
+                background-color: #030303;
+                .v-col {
+                    &.text {
+                        display: inline-grid;
+                        align-items: center;
+                    }
+                    &.btn {
+                        display: inline-flex;
+                        align-items: center;
+                        justify-content: flex-end;
+                    }
+                }
+                div.text {
+                    display: grid;
+                    align-items: center;
+                    color: white;
+                    font-weight: bold;
+                    font-size: 16px;
+                    margin: auto;
+                    height: 100%;
+                }
+                .v-btn {
+                    width: 103px;
+                    font-size: 14px;
+                    height: 32px;
+                }
             }
         }
     }
@@ -70,7 +66,8 @@
 <template>
 
     <ToolbarProfil :title="'Parametres'"/>
-    <div class="main">
+
+    <v-main class="main">
         <!--  -->
         <div v-if="mode=='setting'">
             <GroupCard class="grouP" :groupeParameters="groupeParameters" />
@@ -119,7 +116,7 @@
         <div v-if="mode=='infos'">
             <GroupInput :group-input="groupInput"/>
         </div>
-    </div>
+    </v-main>
 </template>
 
 

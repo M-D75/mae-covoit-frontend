@@ -13,10 +13,8 @@
 
 <!-- scss -->
 <style lang="scss" scoped>
-    .cont-main{
-        overflow: scroll;
-        height: 100vh;
-        padding-bottom: 150px;
+    .v-main{
+        margin-bottom: 25px;
         .v-row.home-search-view{
             margin: 30px auto;
             .title {
@@ -43,7 +41,7 @@
       @click="close()"
    ></v-overlay>
 
-   <div class="cont-main">
+   <v-main>
       <v-row 
          class="home-search-view mt-40 mb-0"
          style="margin-top: 40px;"
@@ -84,7 +82,7 @@
          v-on:reserve="reserve()"
       />
 
-   </div>
+   </v-main>
 
    <!-- Menu -->
    <BottomNav />

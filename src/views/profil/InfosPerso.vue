@@ -2,8 +2,7 @@
 <style lang="scss" scoped>
     .main {
         height: 100%;
-        margin-top: 100px;
-        margin-bottom: 50px;
+        margin-bottom: 13px;
     }
 
     .grouP {
@@ -24,7 +23,7 @@
     ></v-overlay>
 
     <ToolbarProfil :title="'Information personnelles'"/>
-    <div class="main">
+    <v-main class="main">
         <!-- Avatar -->
         <Avatar />
 
@@ -37,7 +36,7 @@
         <!-- Credit Card -->
 
         <!--  -->
-    </div>
+    </v-main>
     <BottomNav />
 
     <!-- Car model -->

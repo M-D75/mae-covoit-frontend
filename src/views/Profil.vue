@@ -19,15 +19,10 @@
     }
     .dark-mode * {
         --bg-color: #333333;
-     }
+    }
 
-    .main {
-        overflow: scroll;
-        height: 100%;
-        margin-top: 50px;
-        padding-top: 50px;
-        padding-bottom: 150px;
-
+    .v-main {
+        margin-bottom: 15px;
         div .label {
             width: 82.7%;
             text-transform: uppercase;
@@ -84,7 +79,8 @@
 <template>
 
     <ToolbarProfil />
-    <div class="main">
+
+    <v-main>
         <!-- Avatar -->
         <Avatar 
             :modeEdit="false" 
@@ -121,8 +117,8 @@
             <!-- Trajets -->
             <HistoryTrajets v-if="onglet=='trajets' || onglet=='planning'"/>
         </div>
-    </div>
-    
+    </v-main>
+        
     <BottomNav />
 
     <v-overlay 
