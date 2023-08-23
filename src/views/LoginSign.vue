@@ -266,6 +266,11 @@
     import { inject } from 'vue';
     import { mapActions, mapMutations } from "vuex";
 
+    import { Plugins } from '@capacitor/core';
+
+    const { LocalNotifications } = Plugins;
+
+
     export default {
         setup() {
 
@@ -350,6 +355,8 @@
 
                 const session = data.session;
 
+                this.sendNotification();
+
                 console.log('Connexion réussie:', data, session);
                 this.SET_TOKEN({token: session.access_token, expiry: session.expires_at*1000})
                 this.$router.replace("/search");
@@ -370,6 +377,8 @@
                     
                     return;
                 }
+
+                this.sendNotification();
 
                 this.email = "";
                 this.password = "";
@@ -395,8 +404,11 @@
                 this.showSnackbar = true;                
             },
             async authServiceSupabse(service){
-                let { error } = await this.supabase.auth.signInWithOAuth({
+                let { data, error } = await this.supabase.auth.signInWithOAuth({
                     provider: service,
+                    options: {
+                        skipBrowserRedirect: true,
+                    },
                 });
 
                 if ( error ) {
@@ -409,6 +421,8 @@
 
                     return;
                 }
+
+                window.open(data.url, '_blank');
 
                 // console.log('Auhtenfication via', service, 'envoyé:', data, session);
             },
@@ -424,8 +438,27 @@
                 await this.checkSession;
                 this.overlayLoad = false;
             },
+            async sendNotification() {
+                const permission = await LocalNotifications.requestPermissions();
+
+                if( permission ){
+                    await LocalNotifications.schedule({
+                        notifications: [
+                            {
+                                title: "Welcome",
+                                body: "Welcome to tchap-tchap",
+                                id: 1,
+                                schedule: { at: new Date(Date.now() + 5000) }, // dans 5 secondes
+                                // d'autres options comme 'smallIcon', 'sound', etc. peuvent être définies
+                            }
+                        ]
+                    });
+                }
+                else{
+                    console.log("permission non accordé");
+                }
+            },
         },
-        
         watch: {
         },
     }

@@ -14,7 +14,7 @@ import Itineraire from '@/components/publish/Itineraire.vue'
 import TestMap from '@/views/TestMap.vue'
 import MapGoogle from '@/views/MapGoogle.vue'
 
-import store from '../store'; // Chemin d'accès à votre fichier store
+// import store from '../store'; // Chemin d'accès à votre fichier store
 
 const routes = [
     {
@@ -105,28 +105,28 @@ const router = createRouter({
     routes
 });
 
-router.beforeEach(async (to, from, next) => {
-    const requiresAuth = to.meta.requiresAuth;
-    const isUserAuthenticated = store.getters['auth/isAuthenticated'];
+// router.beforeEach(async (to, from, next) => {
+//     // const requiresAuth = to.meta.requiresAuth;
+//     // const isUserAuthenticated = store.getters['auth/isAuthenticated'];
     
-    console.log("beforeEach...")
-    console.log("to.name", to.name)
-    console.log("isUserAuthenticated", isUserAuthenticated)
-    if ( requiresAuth && !isUserAuthenticated ) {
-        next('/login');
-    }
-    else if ( requiresAuth && isUserAuthenticated ) {
-        const tokenCloseToExpiry = (store.state.auth.tokenExpiry - new Date().getTime()) < (5 * 60 * 1000); // 5 minutes, par exemple
+//     // console.log("beforeEach...")
+//     // console.log("to.name", to.name)
+//     // console.log("isUserAuthenticated", isUserAuthenticated)
+//     // if ( requiresAuth && !isUserAuthenticated ) {
+//     //     next('/login');
+//     // }
+//     // else if ( requiresAuth && isUserAuthenticated ) {
+//     //     const tokenCloseToExpiry = (store.state.auth.tokenExpiry - new Date().getTime()) < (5 * 60 * 1000); // 5 minutes, par exemple
 
-        console.log("close-to-expire:", tokenCloseToExpiry, store.state.auth.tokenExpiry, new Date(store.state.auth.tokenExpiry))
-        // if (tokenCloseToExpiry) {
-        //     await store.dispatch('auth/refreshToken');
-        // }
-        next();
-    }
-    else{
-        next();
-    }
-});
+//     //     console.log("close-to-expire:", tokenCloseToExpiry, store.state.auth.tokenExpiry, new Date(store.state.auth.tokenExpiry))
+//     //     // if (tokenCloseToExpiry) {
+//     //     //     await store.dispatch('auth/refreshToken');
+//     //     // }
+//     //     next();
+//     // }
+//     // else{
+//     //     next();
+//     // }
+// });
 
 export default router

@@ -284,6 +284,9 @@
                         this.routes = this.swapWithLast(this.routes, index);
                         this.itin.duration = this.routes[0].duration;
                         this.itin.distance = this.routes[0].distance;
+                        
+                        this.routes.map((route) => (route.current = false))
+                        this.routes[0].current = true;
                         this.routeAvail = true;
 
                         this.overlayLoad = false;
@@ -296,9 +299,9 @@
                 setTimeout(function(){
                     this.routeAvail = false;
                     this.routes = this.shiftRight(this.routes);
-                    console.log(this.routes)
                     this.itin.duration = this.routes[0].duration;
                     this.itin.distance = this.routes[0].distance;
+                    
                     this.routes.map((route) => (route.current = false))
                     this.routes[0].current = true;
                     this.routeAvail = true;

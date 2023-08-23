@@ -2,9 +2,20 @@
 
 <style lang="scss" model>
     .v-bottom-navigation {
-        .selected {
+        .v-btn {
+            color: var(--gray-icon-color);
             .v-btn__content {
-                color: var(--blue-color);
+                color: var(--gray-icon-color);
+            }
+        }
+
+        .v-btn.selected {
+            color: var(--blue-color);
+            .v-btn__content {
+                color: var(--blue-color) !important;
+                i {
+                    color: var(--blue-color) !important;
+                }
             }
         }
 
@@ -21,21 +32,12 @@
             color: var(--gray-icon-color);
             font-weight: bold;
         }
+
         .v-btn__content {
             color: var(--gray-icon-color);
             i {
                 font-size: 2.7em !important;
                 color: var(--gray-icon-color);
-            }
-        }
-
-        .selected {
-            color: var(--blue-color);
-            .v-btn__content {
-                color: var(--blue-color);
-            }
-            .v-icon {
-                color: var(--blue-color);
             }
         }
     }
@@ -105,11 +107,12 @@
             }
         },
         mounted (){
-            
+            console.log("Menu BootomNav:", this.value);
         },
         methods: {
             keep_menu_selected(){
-                console.log(this.$router.currentRoute._rawValue.path)
+                console.log("Nav : ", this.$router.currentRoute._rawValue.path)
+
                 if (this.value == undefined) {
                     switch (this.$router.currentRoute._rawValue.path) {
                         case '/search':
@@ -130,6 +133,8 @@
         watch:{
             value(){
                 this.keep_menu_selected();
+
+                // Go to ->
                 switch (this.value) {
                     case 0:
                         this.$router.push("/search");
