@@ -35,6 +35,8 @@
                 :chipIcon="param.chipIcon"
                 :chipText="param.chipText"
                 :fun="param.fun"
+                :switchBtn="param.switchBtn"
+                :classConfig="param.classConfig"
             />
         </div>
     </div>

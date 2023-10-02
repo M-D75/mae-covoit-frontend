@@ -44,6 +44,8 @@
                     }
                 }
                 div.text {
+                    padding-left: 15px;
+                    width: 150%;
                     display: grid;
                     align-items: center;
                     color: white;
@@ -53,7 +55,7 @@
                     height: 100%;
                 }
                 .v-btn {
-                    width: 103px;
+                    
                     font-size: 14px;
                     height: 32px;
                 }
@@ -72,7 +74,7 @@
         <div v-if="mode=='setting'">
             <GroupCard class="grouP" :groupeParameters="groupeParameters" />
             <div class="ctn sub-part">
-                <div class="label text-subtitle">Invite Link</div>
+                <!-- <div class="label text-subtitle">Invite Link</div> -->
                 <v-card
                     class="invite-card mx-auto flex"
                     dark
@@ -81,17 +83,16 @@
                         <v-col class="text">
                             <div 
                                 class="text"
-                            >Invite people</div>
+                            >Partager à un amie</div>
                         </v-col>
                         <v-col class="btn">
                             <v-btn
                                 class="text-none"
                                 rounded="xl" 
-                                size="large"
                                 color="blue"
                                 @click="inviteUserSupabase()"
                             >
-                                Invite
+                                <v-icon>mdi-share-variant</v-icon>
                             </v-btn>
                         </v-col>
                     </v-row>

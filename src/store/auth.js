@@ -32,12 +32,13 @@ export default {
             state.token = jwt;
             state.tokenExpiry = session.expires_at * 1000;
 
-            console.log("ooo", error, user)
+            console.log("refreshToken", error, user)
             
         },
         async checkSession({ state, getters, dispatch }){
             let { data, error } = await supabase.auth.getSession();
 
+            console.log("checkSession v-data-session:", data.session)
             if( data.session ){
                 const jwt = data.session.access_token;
 

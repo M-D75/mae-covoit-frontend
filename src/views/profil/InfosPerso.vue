@@ -118,6 +118,8 @@
                                 text:"VW - GOLF 7",
                                 chip:true,
                                 chipIcon: null,
+                                classConfig: ["chip-rounded"],
+                                switchBtn: false,
                                 chipText: "",
                             },
                         ],
@@ -127,11 +129,21 @@
                         label: "préferences de voyage",
                         parameters: [
                             {
+                                prependIconColor: "#bc62ff",
+                                prependIcon:"mdi-auto-fix",
+                                text:"validation automatique",
+                                chip:false,
+                                chipIcon: null,
+                                switchBtn: true,
+                                chipText: "",
+                            },
+                            {
                                 prependIconColor: "var(--blue-color)",
                                 prependIcon:"mdi-forum",
                                 text:"j'aime bien discuter",
                                 chip:false,
                                 chipIcon: null,
+                                switchBtn: false,
                                 chipText: "",
                             },
                             {

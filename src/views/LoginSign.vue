@@ -266,6 +266,8 @@
     import { inject } from 'vue';
     import { mapActions, mapMutations } from "vuex";
 
+
+    import { App } from '@capacitor/app';
     import { Plugins } from '@capacitor/core';
 
     const { LocalNotifications } = Plugins;
@@ -319,6 +321,12 @@
             this.checkSessionIn();
         },
         mounted() {
+            App.addListener('appUrlOpen', (data) => {
+                //console.log('URL reçue: ' + data.url);
+                const fragment = data.url.split('#')[1];  // retire le '#'
+                const path = window.location.href.replaceAll("login", "") + "#" + fragment;
+                window.location.href = path;
+            });
         },
         methods: {
             ...mapMutations("auth", ["SET_TOKEN"]),
@@ -401,15 +409,35 @@
                 this.email = "";
 
                 this.messageSnackbar = "Demande reçue. Vérifiez votre e-mail pour réinitialiser le mot de passe.";
-                this.showSnackbar = true;                
+                this.showSnackbar = true;            
             },
             async authServiceSupabse(service){
+
+                // Android
                 let { data, error } = await this.supabase.auth.signInWithOAuth({
                     provider: service,
                     options: {
                         skipBrowserRedirect: true,
+                        redirectTo: "ekko-vi-shimago-app://callback",
                     },
                 });
+
+                // Test local
+                // let { data, error } = await this.supabase.auth.signInWithOAuth({
+                //     provider: service,
+                //     options: {
+                //         skipBrowserRedirect: true,
+                //         redirectTo: "http://localhost:8080",
+                //     },
+                // });
+
+                // Site Web App 
+                // let { data, error } = await this.supabase.auth.signInWithOAuth({
+                //     provider: service,
+                //     options: {
+                //         skipBrowserRedirect: true,
+                //     },
+                // });
 
                 if ( error ) {
                     console.error("Erreur lors de l'authenfication:", error.message);
@@ -422,9 +450,8 @@
                     return;
                 }
 
+                //console.log('Auhtenfication via', service, 'envoyé:', data);
                 window.open(data.url, '_blank');
-
-                // console.log('Auhtenfication via', service, 'envoyé:', data, session);
             },
             //Other
             createOrLoginSwitchMode(){
@@ -436,22 +463,56 @@
             },
             async checkSessionIn(){
                 await this.checkSession;
+                console.log("checking done!");
                 this.overlayLoad = false;
             },
             async sendNotification() {
                 const permission = await LocalNotifications.requestPermissions();
-
+               
                 if( permission ){
+
+                    await LocalNotifications.registerActionTypes({
+                        types: [
+                            {
+                                id: "action1",
+                                actions: [
+                                    {
+                                        id: 'yes',
+                                        title: 'Accepter',
+                                    },
+                                    {
+                                        id: 'no',
+                                        title: 'Refuser',
+                                    },
+                                ]
+                                
+                            }
+                        ]
+                    });
+
                     await LocalNotifications.schedule({
                         notifications: [
                             {
-                                title: "Welcome",
-                                body: "Welcome to tchap-tchap",
                                 id: 1,
+                                title: "Tchoup Tchoup",
+                                body: "Accepter ou refuser à vous de voir!",
+                                summaryText: "sumaryText!",
                                 schedule: { at: new Date(Date.now() + 5000) }, // dans 5 secondes
-                                // d'autres options comme 'smallIcon', 'sound', etc. peuvent être définies
+                                iconColor: "red",
+                                smallIcon: "res://large_logo",
+                                largeIcon: "res://large_logo",
+                                actionTypeId: "action1",
                             }
                         ]
+                    });
+
+
+                    LocalNotifications.addListener('localNotificationActionPerformed', (notificationAction) => {
+                        if (notificationAction.actionId === 'yes') {
+                            console.log("L'utilisateur a cliqué sur Oui");
+                        } else if (notificationAction.actionId === 'no') {
+                            console.log("L'utilisateur a cliqué sur Non");
+                        }
                     });
                 }
                 else{
