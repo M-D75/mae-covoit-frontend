@@ -50,7 +50,7 @@
     import CardButton from '@/components/menus/setting/CardButton.vue';
 
     export default {
-    name: "group-card-btn-comp",
+    name: "infos-perso-comp",
     components: {
         CardButton,
     },

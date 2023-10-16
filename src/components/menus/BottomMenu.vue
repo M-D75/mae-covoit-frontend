@@ -100,6 +100,9 @@
     }
 
 
+ 
+
+
 </style>
 
 <style lang="scss" scoped>
@@ -405,6 +408,24 @@
                 margin-bottom: 5px;
                 .v-card {
                     border-radius: 20px;
+                    box-shadow: var(--box-shadow-card);
+                    &.v-card--variant-elevated, .v-card--variant-flat{
+                        background: inherit;
+                    }
+                    .v-list{
+                        .v-list-subheader {
+                            color: var(--font-color-label) !important;
+                        }
+
+                        .v-list-item {
+                            .v-list-item-title {
+                                color: var(--font-color-label) !important;
+                            }
+                            .v-icon {
+                                color: var(--font-color-label);
+                            }
+                        }
+                    }
                 }
             }
         }

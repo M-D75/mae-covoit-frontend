@@ -323,9 +323,11 @@
         mounted() {
             App.addListener('appUrlOpen', (data) => {
                 //console.log('URL reçue: ' + data.url);
-                const fragment = data.url.split('#')[1];  // retire le '#'
-                const path = window.location.href.replaceAll("login", "") + "#" + fragment;
-                window.location.href = path;
+                if( data.url.split('#').length > 1 ){
+                    const fragment = data.url.split('#')[1];  // retire le '#'
+                    const path = window.location.href.replaceAll("login", "") + "#" + fragment;
+                    window.location.href = path;
+                }
             });
         },
         methods: {
@@ -414,22 +416,22 @@
             async authServiceSupabse(service){
 
                 // Android
-                let { data, error } = await this.supabase.auth.signInWithOAuth({
-                    provider: service,
-                    options: {
-                        skipBrowserRedirect: true,
-                        redirectTo: "ekko-vi-shimago-app://callback",
-                    },
-                });
-
-                // Test local
                 // let { data, error } = await this.supabase.auth.signInWithOAuth({
                 //     provider: service,
                 //     options: {
                 //         skipBrowserRedirect: true,
-                //         redirectTo: "http://localhost:8080",
+                //         redirectTo: "ekko-vi-shimago-app://callback",
                 //     },
                 // });
+
+                // Test local
+                let { data, error } = await this.supabase.auth.signInWithOAuth({
+                    provider: service,
+                    options: {
+                        skipBrowserRedirect: true,
+                        redirectTo: "http://localhost:8080",
+                    },
+                });
 
                 // Site Web App 
                 // let { data, error } = await this.supabase.auth.signInWithOAuth({

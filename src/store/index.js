@@ -6,6 +6,7 @@ import auth from './auth';
 import profil from './profil';
 import publish from './publish';
 import search from './search';
+import general from './general';
 
 export default createStore({
     modules: {
@@ -13,6 +14,7 @@ export default createStore({
         profil,
         publish,
         search,
+        general,
     },
     plugins: [createPersistedState({
         paths: ['auth', 'profil', 'search.villages', 'search.accounts']

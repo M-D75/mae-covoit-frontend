@@ -533,12 +533,12 @@
             },
             close(){
                 if( this.overlay ){
-                this.overlay = false;
-                if(this.$refs.BottomMenuRef){
-                    this.$refs.BottomMenuRef.close();
-                    this.indexMode = -1;
-                    this.nextStepMode();
-                }
+                    this.overlay = false;
+                    if(this.$refs.BottomMenuRef){
+                        this.$refs.BottomMenuRef.close();
+                        this.indexMode = -1;
+                        this.nextStepMode();
+                    }
                 }
             },
             setItineraire(loc, infoVillage){

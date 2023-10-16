@@ -67,7 +67,16 @@
 <!--  -->
 <template>
 
-    <ToolbarProfil :title="'Parametres'"/>
+    <ToolbarProfil ref="ToolbarProfilRef" :title="'Parametres'"/>
+
+    <!-- overlay -->
+    <v-overlay 
+        v-model="overlay" 
+        contained
+        persistent
+        style="z-index: 9999;"
+        @click="close()"
+    ></v-overlay>
 
     <v-main class="main">
         <!--  -->
@@ -117,7 +126,24 @@
         <div v-if="mode=='infos'">
             <GroupInput :group-input="groupInput"/>
         </div>
+
+        <div v-if="mode=='infos-general'">
+            <InfosGeneral :title="cgu.title" :text="cgu.text"/>
+        </div>
+
+        <div v-if="mode=='data-protection'">
+            <InfosGeneral :mode="mode" :title="dataProtection.title" :text="dataProtection.text"/>
+        </div>
+
+        <SelectVirement v-if="mode=='virement'"/>
+        
     </v-main>
+
+    <BottomMenu 
+        mode="password"
+        ref="BottomMenuRefPassword" 
+        v-on:close="overlay = false"
+    />
 </template>
 
 
@@ -131,6 +157,10 @@
     import ToolbarProfil from '@/components/menus/head/ToolbarProfil.vue';
     import GroupCard from '@/components/menus/setting/GroupCard.vue';
     import GroupInput from '@/components/menus/setting/GroupInput.vue';
+    import BottomMenu from '@/components/menus/BottomMenu.vue';
+    import InfosGeneral from '@/components/menus/setting/InfosGeneral.vue';
+    import SelectVirement from '@/components/menus/setting/SelectVirement.vue';
+
     import { mapActions, mapMutations, mapState } from 'vuex';
 
     export default defineComponent({
@@ -140,9 +170,13 @@
             ToolbarProfil,
             GroupCard,
             GroupInput,
+            BottomMenu,
+            InfosGeneral,
+            SelectVirement,
         },
         computed: {
             ...mapState("profil", ['profil']),
+            ...mapState("general", ['cgu', 'dataProtection']),
             ...mapMutations("auth", ["CLEAR_TOKEN"]),
             ...mapActions("auth", ["logout"]),
         },
@@ -160,6 +194,7 @@
                                 chip:true,
                                 chipIcon: "mdi-chevron-right",
                                 chipText: "",
+                                fun: this.openBottomPassword,
                             },
                             {
                                 prependIcon: null,
@@ -167,7 +202,7 @@
                                 chip:true,
                                 chipIcon: "mdi-chevron-right",
                                 chipText: "",
-                                fun: this.goToInfo,
+                                fun: () => this.goToInfo('infos'),
                             },
                         ],
                     },
@@ -176,21 +211,15 @@
                         parameters: [
                             {
                                 prependIcon: null,
-                                text:"Virements",
+                                text:"Préference de virements",
                                 chip:true,
                                 chipIcon: "mdi-chevron-right",
                                 chipText: "",
+                                fun: () => this.goToInfo('virement'),
                             },
                             {
                                 prependIcon: null,
                                 text:"Remboursement",
-                                chip:true,
-                                chipIcon: "mdi-chevron-right",
-                                chipText: "",
-                            },
-                            {
-                                prependIcon: null,
-                                text:"Virements",
                                 chip:true,
                                 chipIcon: "mdi-chevron-right",
                                 chipText: "",
@@ -206,6 +235,7 @@
                                 chip:true,
                                 chipIcon: "mdi-chevron-right",
                                 chipText: "",
+                                fun: () => this.goToInfo('infos-general'),
                             },
                             {
                                 prependIcon: null,
@@ -213,11 +243,18 @@
                                 chip:true,
                                 chipIcon: "mdi-chevron-right",
                                 chipText: "",
+                                fun: () => this.goToInfo('data-protection'),
                             },
                         ],
                     },
                 ],
                 groupInput: [],
+                cguL: {
+                    title: "",
+                    text: "",
+                },
+                overlay: false,
+                bottomOpened: "",
             }
         },
         methods: {
@@ -234,9 +271,23 @@
 
                 console.log("Invitation réussi", data);
             },
-            goToInfo(){
+            goToInfo(mode){
                 console.log("goToINfo");
-                this.mode="infos";
+                this.mode=mode;
+                this.$refs.ToolbarProfilRef.needToComeBack = true;
+            },
+            openBottomPassword(){
+                this.overlay = true;
+                this.$refs.BottomMenuRefPassword.open();
+                this.bottomOpened = "BottomMenuRefPassword";
+            },
+            close(){
+                if( this.overlay ){
+                    this.overlay = false;
+                    if(this.$refs[this.bottomOpened]){
+                        this.$refs[this.bottomOpened].close();
+                    }
+                }
             },
         },
         mounted() {
@@ -280,6 +331,8 @@
                     value: this.profil.infos_perso.adress.commune,
                 },
             ];
+
+            this.cguL = {title: this.cgu.title, text: this.cgu.text}
         }
     });
 </script>

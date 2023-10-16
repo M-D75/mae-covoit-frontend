@@ -131,6 +131,7 @@
          },
          back(){
             this.$router.back();
+            this.needToComeBack = false;
          }
       },
       mounted() {
@@ -140,7 +141,6 @@
          else if (this.$router.currentRoute._rawValue.path == "/profil/perso") {
             this.needToComeBack = true;
          }
-
       }
    });
 </script>
