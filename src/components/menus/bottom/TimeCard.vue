@@ -100,10 +100,10 @@
                             display: none;
                             display: inline-block;
                             opacity: 0.5;
-                            transform: perspective(100px) translateZ(-30px);
+                            //transform: perspective(100px) translateZ(-30px);
                             font-family: 'Roboto Mono', 'WW Digital', 'Digital Dismay', 'Helvetica', sans-serif;
                             max-height: 100px;
-
+                            will-change: transform;
                             // border: 2px solid black;
                         }
                     }
@@ -146,9 +146,10 @@
                         span {
                             display: inline-block;
                             opacity: 0.5;
-                            transform: perspective(100px) translateZ(-30px);
+                            //transform: perspective(100px) translateZ(-30px);
                             font-family: 'Roboto Mono', 'WW Digital', 'Digital Dismay', 'Helvetica', sans-serif;
                             max-height: 100px;
+                            will-change: transform;
                         }
                     }
                 }
@@ -304,13 +305,13 @@
                     const minuteB = vue.minutes[middleIndexMinutes+0];
                     const minuteC = vue.minutes[middleIndexMinutes+1];
                     const minuteA = vue.minutes[middleIndexMinutes+2];
-                    const minuteAA = vue.minutes[middleIndexMinutes+3];
+                    // const minuteAA = vue.minutes[middleIndexMinutes+3];
 
                     const ecart = ((vue.minutes.length/2)*100) - _this.scrollTop();
 
                     // console.log("hour-----", minuteB, minuteC, minuteA, ecart, ecart/100, (100-ecart)/100, offset, delayInMs, minuteB.toString().padStart(2, '0'), minuteA.toString().padStart(2, '0'));
                     
-                    const ecartDegree = Math.abs(ecart) <= 30 ? Math.abs(ecart) : 30;
+                    // const ecartDegree = Math.abs(ecart) <= 30 ? Math.abs(ecart) : 30;
 
                     
                     if(vue.minuteCanTaked){
@@ -325,24 +326,24 @@
                             vue.vibratePhone();
                         }
                         else{
-                            if(ecart >= 0){
-                                // $(`.scrollable-container.minute-list${vue.className.length != 0 ? "." + vue.className.join(".") : ""} .h-${hourBB.toString().padStart(2, '0')} span`).css("transform", `perspective(100px) translateZ(-30px)`);
-                                $(`${prefixClassMinute} .m-${minuteB.toString().padStart(2, '0') } span`).css("transform", `perspective(100px) translateZ(-${Math.abs(30-ecartDegree)}px)`);
-                            }
+                            // if(ecart >= 0){
+                            //     // $(`.scrollable-container.minute-list${vue.className.length != 0 ? "." + vue.className.join(".") : ""} .h-${hourBB.toString().padStart(2, '0')} span`).css("transform", `perspective(100px) translateZ(-30px)`);
+                            //     $(`${prefixClassMinute} .m-${minuteB.toString().padStart(2, '0') } span`).css("transform", `perspective(100px) translateZ(-${Math.abs(30-ecartDegree)}px)`);
+                            // }
 
-                            $(`${prefixClassMinute} .m-${minuteC.toString().padStart(2, '0') } span`).css("transform", `perspective(100px) translateZ(0px)`);
+                            // $(`${prefixClassMinute} .m-${minuteC.toString().padStart(2, '0') } span`).css("transform", `perspective(100px) translateZ(0px)`);
 
-                            if(ecart < 0){
-                                $(`${prefixClassMinute} .m-${minuteA.toString().padStart(2, '0') } span`).css("transform", `perspective(100px) translateZ(-${Math.abs(30-ecartDegree)}px)`);
-                                $(`${prefixClassMinute} .m-${minuteAA.toString().padStart(2, '0')} span`).css("transform", `perspective(100px) translateZ(-30px))`);
-                            }
+                            // if(ecart < 0){
+                            //     $(`${prefixClassMinute} .m-${minuteA.toString().padStart(2, '0') } span`).css("transform", `perspective(100px) translateZ(-${Math.abs(30-ecartDegree)}px)`);
+                            //     $(`${prefixClassMinute} .m-${minuteAA.toString().padStart(2, '0')} span`).css("transform", `perspective(100px) translateZ(-30px))`);
+                            // }
                             // $(`.m-${minuteAA.toString().padStart(2, '0')}`).css("transform", `rotateX(33deg)`);
 
 
                             // opacity
-                            $(`${prefixClassMinute} .m-${minuteB.toString().padStart(2, '0')}`).css("opacity", 0.3);
-                            $(`${prefixClassMinute} .m-${minuteC.toString().padStart(2, '0')}`).css("opacity", 1-Math.abs(ecart/100));
-                            $(`${prefixClassMinute} .m-${minuteA.toString().padStart(2, '0')}`).css("opacity", 0.3);
+                            $(`${prefixClassMinute} .m-${minuteB.toString().padStart(2, '0')} span`).css("opacity", 0.3);
+                            $(`${prefixClassMinute} .m-${minuteC.toString().padStart(2, '0')} span`).css("opacity", 1-Math.abs(ecart/100));
+                            $(`${prefixClassMinute} .m-${minuteA.toString().padStart(2, '0')} span`).css("opacity", 0.3);
                         }
                         
                         if ( slow && Math.abs(speedInpxPerMs) >= 0.50 ) {
@@ -373,23 +374,24 @@
                                     //console.log("left", middleIndexMinutes-currentIndexMinutes)
                                     vue.minutes = vue.shiftLeftMulti(vue.minutes, Math.abs(middleIndexMinutes-currentIndexMinutes));
                                 }
+                                $(`${prefixClassMinute} .m-${minuteC.toString().padStart(2, '0')} span`).css("opacity", 1);
                                 console.log("Mminute:", vue.minutes[middleIndexMinutes]);
                                 vue.minuteCanTaked = true;
                             });
                         }, 190));
                     }
                     else {
-                        if(ecart >= 0){
-                            // $(`.scrollable-container.minute-list${vue.className.length != 0 ? "." + vue.className.join(".") : ""} .h-${hourBB.toString().padStart(2, '0')} span`).css("transform", `perspective(100px) translateZ(-30px)`);
-                            $(`${prefixClassMinute} .m-${minuteB.toString().padStart(2, '0') } span`).css("transform", `perspective(100px) translateZ(-${Math.abs(30-ecartDegree)}px)`);
-                        }
+                        // if(ecart >= 0){
+                        //     // $(`.scrollable-container.minute-list${vue.className.length != 0 ? "." + vue.className.join(".") : ""} .h-${hourBB.toString().padStart(2, '0')} span`).css("transform", `perspective(100px) translateZ(-30px)`);
+                        //     $(`${prefixClassMinute} .m-${minuteB.toString().padStart(2, '0') } span`).css("transform", `perspective(100px) translateZ(-${Math.abs(30-ecartDegree)}px)`);
+                        // }
 
-                        $(`${prefixClassMinute} .m-${minuteC.toString().padStart(2, '0') } span`).css("transform", `perspective(100px) translateZ(0px)`);
+                        // $(`${prefixClassMinute} .m-${minuteC.toString().padStart(2, '0') } span`).css("transform", `perspective(100px) translateZ(0px)`);
 
-                        if(ecart < 0){
-                            $(`${prefixClassMinute} .m-${minuteA.toString().padStart(2, '0') } span`).css("transform", `perspective(100px) translateZ(-${Math.abs(30-ecartDegree)}px)`);
-                            $(`${prefixClassMinute} .m-${minuteAA.toString().padStart(2, '0')} span`).css("transform", `perspective(100px) translateZ(-30px))`);
-                        }
+                        // if(ecart < 0){
+                        //     $(`${prefixClassMinute} .m-${minuteA.toString().padStart(2, '0') } span`).css("transform", `perspective(100px) translateZ(-${Math.abs(30-ecartDegree)}px)`);
+                        //     $(`${prefixClassMinute} .m-${minuteAA.toString().padStart(2, '0')} span`).css("transform", `perspective(100px) translateZ(-30px))`);
+                        // }
                     }
                     //console.log(e.y, $(this).scrollTop(), e.timeStamp)
                 });
@@ -410,7 +412,7 @@
 
                 // Init opacity currrent hour
                 $(`${prefixClassHour} .h-${this.hourInit.toString().padStart(2, '0')} span`).css("opacity", 1);
-                $(`${prefixClassHour} .h-${this.hourInit.toString().padStart(2, '0')} span`).css("transform", `perspective(100px) translateZ(0px)`);
+                // $(`${prefixClassHour} .h-${this.hourInit.toString().padStart(2, '0')} span`).css("transform", `perspective(100px) translateZ(0px)`);
 
                 var lastOffsetH = $(`.scrollable-container${this.className.length != 0 ? "." + this.className.join(".") : ""}`).scrollTop();
                 var lastDateH = new Date().getTime();
@@ -444,7 +446,7 @@
                     const hourB = vue.heures[middleIndexHours+0];
                     const hourC = vue.heures[middleIndexHours+1];
                     const hourA = vue.heures[middleIndexHours+2];
-                    const hourAA = vue.heures[middleIndexHours+3];
+                    // const hourAA = vue.heures[middleIndexHours+3];
 
                     const ecart = ((vue.heures.length/2)*100) - (_this.scrollTop());
 
@@ -458,13 +460,13 @@
                     //     "offset:", offset, 
                     //     "delayInMs:", delayInMs, hourB.toString().padStart(2, '0'), hourA.toString().padStart(2, '0'));
 
-                    const ecartDegree = Math.abs(ecart) <= 30 ? Math.abs(ecart) : 30;
+                    // const ecartDegree = Math.abs(ecart) <= 30 ? Math.abs(ecart) : 30;
                     // console.log("ecart", ecart, ecartDegree);
 
                     if(vue.hourCanTaked){
                         //console.log("FAST", val, currentIndexHours);
                         if( middleIndexHours > currentIndexHours ){
-                            console.log("rigth===+++", middleIndexHours-currentIndexHours)
+                            console.log("rigth===+++", middleIndexHours-currentIndexHours);
                             vue.heures = vue.shiftRightMulti(vue.heures.slice(), Math.abs(middleIndexHours-currentIndexHours));
                             vue.$emit("time-changed");
                             vue.vibratePhone();
@@ -478,17 +480,17 @@
                         else{
                             // rotate
                             
-                            if(ecart >= 0){
-                                // $(`${prefixClassHour} .h-${hourBB.toString().padStart(2, '0')} span`).css("transform", `perspective(100px) translateZ(-30px)`);
-                                $(`${prefixClassHour} .h-${hourB.toString().padStart(2, '0') } span`).css("transform", `perspective(100px) translateZ(-${Math.abs(30-ecartDegree)}px)`);
-                            }
+                            // if(ecart >= 0){
+                            //     // $(`${prefixClassHour} .h-${hourBB.toString().padStart(2, '0')} span`).css("transform", `perspective(100px) translateZ(-30px)`);
+                            //     $(`${prefixClassHour} .h-${hourB.toString().padStart(2, '0') } span`).css("transform", `perspective(100px) translateZ(-${Math.abs(30-ecartDegree)}px)`);
+                            // }
 
-                            $(`${prefixClassHour} .h-${hourC.toString().padStart(2, '0') } span`).css("transform", `perspective(100px) translateZ(0px)`);
+                            // $(`${prefixClassHour} .h-${hourC.toString().padStart(2, '0') } span`).css("transform", `perspective(100px) translateZ(0px)`);
 
-                            if(ecart < 0){
-                                $(`${prefixClassHour} .h-${hourA.toString().padStart(2, '0') } span`).css("transform", `perspective(100px) translateZ(-${Math.abs(30-ecartDegree)}px)`);
-                                $(`${prefixClassHour} .h-${hourAA.toString().padStart(2, '0')} span`).css("transform", `perspective(100px) translateZ(-30px))`);
-                            }
+                            // if(ecart < 0){
+                            //     $(`${prefixClassHour} .h-${hourA.toString().padStart(2, '0') } span`).css("transform", `perspective(100px) translateZ(-${Math.abs(30-ecartDegree)}px)`);
+                            //     $(`${prefixClassHour} .h-${hourAA.toString().padStart(2, '0')} span`).css("transform", `perspective(100px) translateZ(-30px))`);
+                            // }
                             
                             // opacity
                             $(`${prefixClassHour} .h-${hourB.toString().padStart(2, '0')} span`).css("opacity", 0.3);
@@ -523,23 +525,24 @@
                                     //console.log("left", middleIndexHours-currentIndexHours)
                                     vue.heures = vue.shiftLeftMulti(vue.heures, Math.abs(middleIndexHours-currentIndexHours));
                                 }
+                                $(`${prefixClassHour} .h-${hourC.toString().padStart(2, '0')} span`).css("opacity", 1);
                                 console.log("Hhour:", vue.heures[middleIndexHours+1]);
                                 vue.hourCanTaked = true;
                             });
                         }, 190));
                     }
                     else {
-                        if(ecart >= 0){
-                            // $(`${prefixClassHour} .h-${hourBB.toString().padStart(2, '0')} span`).css("transform", `perspective(100px) translateZ(-30px)`);
-                            $(`${prefixClassHour} .h-${hourB.toString().padStart(2, '0') } span`).css("transform", `perspective(100px) translateZ(-${Math.abs(30-ecartDegree)}px)`);
-                        }
+                        // if(ecart >= 0){
+                        //     // $(`${prefixClassHour} .h-${hourBB.toString().padStart(2, '0')} span`).css("transform", `perspective(100px) translateZ(-30px)`);
+                        //     $(`${prefixClassHour} .h-${hourB.toString().padStart(2, '0') } span`).css("transform", `perspective(100px) translateZ(-${Math.abs(30-ecartDegree)}px)`);
+                        // }
 
-                        $(`${prefixClassHour} .h-${hourC.toString().padStart(2, '0') } span`).css("transform", `perspective(100px) translateZ(0px)`);
+                        // $(`${prefixClassHour} .h-${hourC.toString().padStart(2, '0') } span`).css("transform", `perspective(100px) translateZ(0px)`);
 
-                        if(ecart < 0){
-                            $(`${prefixClassHour} .h-${hourA.toString().padStart(2, '0') } span`).css("transform", `perspective(100px) translateZ(-${Math.abs(30-ecartDegree)}px)`);
-                            $(`${prefixClassHour} .h-${hourAA.toString().padStart(2, '0')} span`).css("transform", `perspective(100px) translateZ(-30px))`);
-                        }
+                        // if(ecart < 0){
+                        //     $(`${prefixClassHour} .h-${hourA.toString().padStart(2, '0') } span`).css("transform", `perspective(100px) translateZ(-${Math.abs(30-ecartDegree)}px)`);
+                        //     $(`${prefixClassHour} .h-${hourAA.toString().padStart(2, '0')} span`).css("transform", `perspective(100px) translateZ(-30px))`);
+                        // }
                     }
                 });
             });

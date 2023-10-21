@@ -4,10 +4,12 @@
 <style lang="scss" scoped>
     .group-card-comp {
         width: 82.5%;
+        margin-top: 15px;
         .title{
             font-size: 16px;
             font-weight: bold;
             text-align: center;
+            color: var(--font-color-label);
         }
 
         .text {
@@ -20,6 +22,8 @@
 
         .v-btn{
             margin-top: 20px;
+            font-size: 16px;
+            color: var(--font-color-label);
         }
     }
 
