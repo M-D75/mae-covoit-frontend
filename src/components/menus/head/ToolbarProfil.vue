@@ -31,6 +31,9 @@
             z-index: 1;
             background-color: var(--bg-app-color);
             box-shadow: var(--box-shadow-card);
+            // natif
+            padding-top: var(--safe-area-inset-top);
+            margin-top: var(--safe-area-inset-top);
             .v-btn i.v-icon {
                 margin-right: 0 !important;
                 color: var(--gray-icon-color);
@@ -52,7 +55,10 @@
 <template>
 
     <!-- toolbar -->
-    <v-app-bar>
+    <v-app-bar
+        extended
+        :extension-height="barHeight"
+    >
         <v-toolbar
             class=""
             dark
@@ -103,44 +109,59 @@
 
 <!--  -->
 <script>
-   import { defineComponent } from 'vue';
+    import { defineComponent } from 'vue';
+    import { SafeAreaController, SafeArea } from '@aashu-dubey/capacitor-statusbar-safe-area';
 
-   export default defineComponent({
-      name: 'toolbar-comp',
-      components: {
-      },
-      props: {
-         title: {
-            type: String,
-            default: "Profil",
-         },
-         date: {
-            type: String,
-            default: "Aujourd'hui",
-         },
-      },
-      data() {
-         return {
-            needToComeBack: false,
-            colorParams: "var(--gray-icon-color)",
-         }
-      },
-      methods: {
-         accessSetting() {
-            this.$router.currentRoute._rawValue.path == "/setting" ? this.$router.back() : this.$router.push("/setting");
-         },
-         back(){
-            this.$router.back();
-            this.needToComeBack = false;
-         }
-      },
-      mounted() {
-         if (this.$router.currentRoute._rawValue.path == "/setting") {
-            this.colorParams = "var(--blue-color)";
-         }
-         else if (this.$router.currentRoute._rawValue.path == "/profil/perso") {
-            this.needToComeBack = true;
-         }
-      }
-   });
+
+    export default defineComponent({
+        name: 'toolbar-comp',
+        components: {
+        },
+        props: {
+            title: {
+                type: String,
+                default: "Profil",
+            },
+            date: {
+                type: String,
+                default: "Aujourd'hui",
+            },
+        },
+        data() {
+            return {
+                needToComeBack: false,
+                colorParams: "var(--gray-icon-color)",
+                barHeight: 0,
+            }
+        },
+        methods: {
+            accessSetting() {
+                this.$router.currentRoute._rawValue.path == "/setting" ? this.$router.back() : this.$router.push("/setting");
+            },
+            back(){
+                this.$router.back();
+                this.needToComeBack = false;
+            },
+            async initStatusBarHeight(){
+                const insets = await this.getSafeAreaInsets();
+                this.barHeight = insets["top"];
+            },
+            async getSafeAreaInsets () {
+                const insets = await SafeArea.getSafeAreaInsets();
+                return insets; // Ex. { "bottom":34, "top":47, "right":0, "left":0 }
+            },
+        },
+        mounted() {
+            if (this.$router.currentRoute._rawValue.path == "/setting") {
+                this.colorParams = "var(--blue-color)";
+            }
+            else if (this.$router.currentRoute._rawValue.path == "/profil/perso") {
+                this.needToComeBack = true;
+            }
+
+            SafeAreaController.injectCSSVariables();
+
+            this.initStatusBarHeight();
+        }
+    });
 </script>

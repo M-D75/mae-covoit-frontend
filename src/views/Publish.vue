@@ -20,8 +20,10 @@
 <!-- scss -->
 <style lang="scss" scoped>
 
+    .v-main {
+       padding-top: var(--safe-top);
+    }
     
-
 </style>
     
 <!--  -->

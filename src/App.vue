@@ -40,6 +40,7 @@
     }
 
     * {
+        --safe-top: var(--safe-area-inset-top);
         font-family: 'Rubik';
         letter-spacing: 0;
     }
@@ -73,6 +74,10 @@
 
     import $ from 'jquery';
     import { inject } from 'vue';
+    // natif
+    import { StatusBar } from '@capacitor/status-bar';
+    import { SafeAreaController, SafeArea } from '@aashu-dubey/capacitor-statusbar-safe-area';
+
 
     // import axios from 'axios'
 
@@ -109,6 +114,9 @@
             
             window.addEventListener('resize', this.updateIsSmallScreen); 
 
+            SafeAreaController.injectCSSVariables();
+            // this.hideStatusBar();
+            StatusBar.setOverlaysWebView({ overlay: true });
             // const url = `${process.env.VUE_APP_API_MBABUF_URL}/credit`;
 
             // const headers = {
@@ -138,6 +146,17 @@
             ...mapMutations("auth", ["SET_TOKEN"]),
             updateIsSmallScreen() {
                 this.isSmallScreen = window.innerWidth <= 600;
+            },
+            async hideStatusBar(){
+                await StatusBar.hide();
+            },
+            async getStatusBarHeight() {
+                const { height } = await SafeArea.getStatusBarHeight();
+                return height; // Ex. 29.090909957885742
+            },
+            async getSafeAreaInsets () {
+                const insets = await SafeArea.getSafeAreaInsets();
+                return insets; // Ex. { "bottom":34, "top":47, "right":0, "left":0 }
             },
             async getUser(){
                 let { data, error } = await this.supabase.auth.getSession()

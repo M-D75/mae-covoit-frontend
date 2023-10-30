@@ -15,6 +15,7 @@
 <style lang="scss" scoped>
     .v-main{
         margin-bottom: 25px;
+        padding-top: var(--safe-top);
         .v-row.home-search-view{
             margin: 30px auto;
             .title {
@@ -32,89 +33,89 @@
 <!--  -->
 <template>
 
-   <!-- overlay -->
-   <v-overlay 
-      v-model="overlay" 
-      contained
-      persistent
-      style="z-index: 30;"
-      @click="close()"
-   ></v-overlay>
+    <!-- overlay -->
+    <v-overlay 
+        v-model="overlay" 
+        contained
+        persistent
+        style="z-index: 30;"
+        @click="close()"
+    ></v-overlay>
 
-   <v-main>
-      <v-row 
-         class="home-search-view mt-40 mb-0"
-         style="margin-top: 40px;"
-      >
-         <!-- Title -->
-         <div
-            class="title text-center"
-         >Le choix de trajets à petits prix</div>
+    <v-main>
+        <v-row 
+            class="home-search-view mt-40 mb-0"
+            style="margin-top: 40px;"
+        >
+            <!-- Title -->
+            <div
+                class="title text-center"
+            >Le choix de trajets à petits prix</div>
 
-         <!-- image -->
-         <v-col>
-            <v-img
-               style="margin: auto;"
-               :width="200"
-               aspect-ratio="16/9"
-               cover
-               src="@/assets/car-removebg-preview.png"
-            ></v-img>
-         </v-col>
-      </v-row>
+            <!-- image -->
+            <v-col>
+                <v-img
+                style="margin: auto;"
+                :width="200"
+                aspect-ratio="16/9"
+                cover
+                src="@/assets/car-removebg-preview.png"
+                ></v-img>
+            </v-col>
+        </v-row>
 
-      <!-- Find Trajet -->
-      <TrajetSearch 
-         class="trajet-search" 
-         ref="TrajetSearchRef"
-         :dateString="dateString"
-         v-on:trajet-selected="getTrajet()" 
-         v-on:open-calendar="openCalendar()"
-         v-on:open-dep="openSearch('dep')"
-         v-on:open-dest="openSearch('dest')"
-         v-on:open-nb-passenger="openSelectNumber()"
-      />
+        <!-- Find Trajet -->
+        <TrajetSearch 
+            class="trajet-search" 
+            ref="TrajetSearchRef"
+            :dateString="dateString"
+            v-on:trajet-selected="getTrajet()" 
+            v-on:open-calendar="openCalendar()"
+            v-on:open-dep="openSearch('dep')"
+            v-on:open-dest="openSearch('dest')"
+            v-on:open-nb-passenger="openSelectNumber()"
+        />
 
-      <!-- Find Fast Trajet -->
-      <Pile 
-         class="pile-search"
-         :infos="infos"
-         v-on:reserve="reserve()"
-      />
+        <!-- Find Fast Trajet -->
+        <Pile 
+            class="pile-search"
+            :infos="infos"
+            v-on:reserve="reserve()"
+        />
 
-   </v-main>
+    </v-main>
 
-   <!-- Menu -->
-   <BottomNav />
+    <!-- Menu -->
+    <BottomNav />
 
-   <!-- Get Value -->
-   <PaneGetValue
-      ref="PaneGetValueRef"
-      :mode="modePanel" 
-      :open-p="openP"
-      v-on:close="close()"
-      v-on:date-selected="getDate()"
-   />
+    <!-- Get Value -->
+    <PaneGetValue
+        ref="PaneGetValueRef"
+        :mode="modePanel" 
+        :open-p="openP"
+        v-on:close="close()"
+        v-on:date-selected="getDate()"
+    />
 
-   <!-- number : nb-pessenger -->
-   <BottomMenu
-      ref="BottomMenuRef"
-      :class-name="['number']"
-      :params-number="{min: 1, max:8}"
-      mode="nb-passenger"
-      labelSelectorN1="Réservation pour combien de personnes ?"
-      v-on:close="overlay = false"
-      v-on:time-valided="getSelected()"
-   />
+    <!-- number : nb-pessenger -->
+    <BottomMenu
+        ref="BottomMenuRef"
+        :class-name="['number']"
+        :params-number="{min: 1, max:8}"
+        mode="nb-passenger"
+        labelSelectorN1="Réservation pour combien de personnes ?"
+        v-on:close="overlay = false"
+        v-on:time-valided="getSelected()"
+    />
 
-   <!-- reserve fast -->
-   <BottomMenu 
-      ref="BottomMenuRefResults"
-      :class-name="['results']" 
-      mode="reserve"
-      v-on:close="overlay = false" 
-      :infos="infos"
-   />
+    <!-- reserve fast -->
+    <BottomMenu 
+        ref="BottomMenuRefResults"
+        :class-name="['results']" 
+        mode="reserve"
+        v-on:close="overlay = false" 
+        :infos="infos"
+    />
 
 </template>
 
@@ -122,149 +123,149 @@
 
 <!--  -->
 <script>
-   // import $ from 'jquery'
-   import { defineComponent } from 'vue';
-   import { mapMutations, mapState } from 'vuex';
+    // import $ from 'jquery'
+    import { defineComponent } from 'vue';
+    import { mapMutations, mapState } from 'vuex';
 
-   // Components
-   import TrajetSearch from '@/components/search/TrajetSearch.vue';
-   import Pile from '@/components/search/Pile.vue'
-   import BottomNav from '@/components/menus/BottomNav.vue';
-   import PaneGetValue from '@/components/menus/PaneGetValue.vue';
-   import BottomMenu from '@/components/menus/BottomMenu.vue';
+    // Components
+    import TrajetSearch from '@/components/search/TrajetSearch.vue';
+    import Pile from '@/components/search/Pile.vue'
+    import BottomNav from '@/components/menus/BottomNav.vue';
+    import PaneGetValue from '@/components/menus/PaneGetValue.vue';
+    import BottomMenu from '@/components/menus/BottomMenu.vue';
 
-   export default defineComponent({
-      name: 'home-search-view',
-      computed: {
-         ...mapState("search", ['depart', "destination"]),
-      },
-      components: {
-         TrajetSearch,
-         Pile,
-         BottomNav,
-         PaneGetValue,
-         BottomMenu,
-      },
-      data() {
-         return {
-            overlay: false,
-            openP: false,
-            modePanel: "date",
-            date: null,
-            dateString: "Aujourd'hui",
-            nbPassager: 1,
-            infos: {
-               "depart": "Tsingoni",
-               "destination": "Mamoudzou",
-               "hour_start": "4:50",
-               "hour_end": "6:55",
-               "price": 4,
-               "name": "Ledou",
-               "passenger_number": 2
+    export default defineComponent({
+        name: 'home-search-view',
+        computed: {
+            ...mapState("search", ['depart', "destination"]),
+        },
+        components: {
+            TrajetSearch,
+            Pile,
+            BottomNav,
+            PaneGetValue,
+            BottomMenu,
+        },
+        data() {
+            return {
+                overlay: false,
+                openP: false,
+                modePanel: "date",
+                date: null,
+                dateString: "Aujourd'hui",
+                nbPassager: 1,
+                infos: {
+                "depart": "Tsingoni",
+                "destination": "Mamoudzou",
+                "hour_start": "4:50",
+                "hour_end": "6:55",
+                "price": 4,
+                "name": "Ledou",
+                "passenger_number": 2
+                },
+            };
+        },
+        mounted() {
+            if(this.$refs.PaneGetValueRef){
+                this.date = this.$refs.PaneGetValueRef.getDate();
+            }
+        },
+        methods: {
+            ...mapMutations("search", ["SET_NB_PASSAGER"]),
+            // TODO : inutile mode prod
+            getTrajet() {
+                if(this.$refs.TrajetSearchRef){
+                const depart = this.$refs.TrajetSearchRef.depart;
+                const destination = this.$refs.TrajetSearchRef.destination;
+                this.infos = this.$store.state.search.trajets.filter(trajet => trajet.depart == depart && trajet.destination == destination)[0];
+                }
             },
-         };
-      },
-      mounted() {
-         if(this.$refs.PaneGetValueRef){
-            this.date = this.$refs.PaneGetValueRef.getDate();
-         }
-      },
-      methods: {
-         ...mapMutations("search", ["SET_NB_PASSAGER"]),
-         // TODO : inutile mode prod
-         getTrajet() {
-            if(this.$refs.TrajetSearchRef){
-               const depart = this.$refs.TrajetSearchRef.depart;
-               const destination = this.$refs.TrajetSearchRef.destination;
-               this.infos = this.$store.state.search.trajets.filter(trajet => trajet.depart == depart && trajet.destination == destination)[0];
-            }
-         },
-         openCalendar(){
-            console.log("open-pan-calendar-search")
-            if( ! this.openP ){
-               this.modePanel = "date";
-               this.openP = true;
-            }
-         },
-         openSearch(mode){
-            console.log("openSearch-mode:", mode);
-            if( ! this.openP ){
-               this.modePanel = mode == 'dep' ? "depart" : "arriver";
-               this.openP = true;
-            }
-         },
-         getDate(){
-            if( this.$refs.PaneGetValueRef ){
-               this.date = this.$refs.PaneGetValueRef.date;
-               this.openP = false;
-            }
-         },
-         close(){
-            this.openP = false;
-            if ( this.$refs.BottomMenuRef && this.overlay && ! this.$refs.BottomMenuRef.move ) {
-               this.overlay = this.$refs.BottomMenuRef.close();
-            }
-         },
-         openSelectNumber(){
-            console.log("open-selected-number")
-            if ( this.$refs.BottomMenuRef && ! this.overlay ) {
-               this.overlay = this.$refs.BottomMenuRef.open();
-            }
-         },
-         getSelected(){
-            if (this.$refs.BottomMenuRef) {
-               this.SET_NB_PASSAGER(this.$refs.BottomMenuRef.numberSelected)
-               if(this.nbPassager){
-                  this.close();
-               }
-            }
-         },
-         reserve(){
-            this.overlay = this.$refs.BottomMenuRefResults.open();
-         },
-      },
-      watch: {
-         depart(){
-            console.log("dep-watch:", this.depart);
-         },
-         destination(){
-            console.log("dest-watch:", this.destination);
-         },
-         date(){
-            const tmpCurrentDate = new Date();
-            var day   = tmpCurrentDate.getDate();
-            var month = tmpCurrentDate.getMonth() + 1;
-            var year  = tmpCurrentDate.getFullYear();
+            openCalendar(){
+                console.log("open-pan-calendar-search")
+                if( ! this.openP ){
+                this.modePanel = "date";
+                this.openP = true;
+                }
+            },
+            openSearch(mode){
+                console.log("openSearch-mode:", mode);
+                if( ! this.openP ){
+                this.modePanel = mode == 'dep' ? "depart" : "arriver";
+                this.openP = true;
+                }
+            },
+            getDate(){
+                if( this.$refs.PaneGetValueRef ){
+                this.date = this.$refs.PaneGetValueRef.date;
+                this.openP = false;
+                }
+            },
+            close(){
+                this.openP = false;
+                if ( this.$refs.BottomMenuRef && this.overlay && ! this.$refs.BottomMenuRef.move ) {
+                this.overlay = this.$refs.BottomMenuRef.close();
+                }
+            },
+            openSelectNumber(){
+                console.log("open-selected-number")
+                if ( this.$refs.BottomMenuRef && ! this.overlay ) {
+                this.overlay = this.$refs.BottomMenuRef.open();
+                }
+            },
+            getSelected(){
+                if (this.$refs.BottomMenuRef) {
+                this.SET_NB_PASSAGER(this.$refs.BottomMenuRef.numberSelected)
+                if(this.nbPassager){
+                    this.close();
+                }
+                }
+            },
+            reserve(){
+                this.overlay = this.$refs.BottomMenuRefResults.open();
+            },
+        },
+        watch: {
+            depart(){
+                console.log("dep-watch:", this.depart);
+            },
+            destination(){
+                console.log("dest-watch:", this.destination);
+            },
+            date(){
+                const tmpCurrentDate = new Date();
+                var day   = tmpCurrentDate.getDate();
+                var month = tmpCurrentDate.getMonth() + 1;
+                var year  = tmpCurrentDate.getFullYear();
 
-            const currentDate = new Date(`${month}/${day}/${year}`);
-            const tomorrowsDate = new Date(currentDate);
-            tomorrowsDate.setDate(currentDate.getDate() + 1);
+                const currentDate = new Date(`${month}/${day}/${year}`);
+                const tomorrowsDate = new Date(currentDate);
+                tomorrowsDate.setDate(currentDate.getDate() + 1);
 
-            day   = this.date.getDate();
-            month = this.date.getMonth() + 1;
-            year  = this.date.getFullYear();
+                day   = this.date.getDate();
+                month = this.date.getMonth() + 1;
+                year  = this.date.getFullYear();
 
-            if (currentDate.getTime() == this.date.getTime()) {
-               this.dateString = "Aujourd'hui";
-            }
-            else if (tomorrowsDate.getTime() == this.date.getTime()) {
-               this.dateString = "Demain";
-            }
-            else {
-               this.dateString = `${day >= 10 ? day : "0" + day}-${month >= 10 ? month : "0" + month}-${year}`;
-            }
-         },
-         overlay(){
-            if( ! this.overlay ){
-               if(this.$refs.BottomMenuRef && ! this.$refs.BottomMenuRef.move){
-                  this.$refs.BottomMenuRef.close();
-               }
-               
-               if(this.$refs.BottomMenuRefResults && ! this.$refs.BottomMenuRefResults.move){
-                  this.$refs.BottomMenuRefResults.close();
-               }
-            }
-         },
-      },
-   });
+                if (currentDate.getTime() == this.date.getTime()) {
+                this.dateString = "Aujourd'hui";
+                }
+                else if (tomorrowsDate.getTime() == this.date.getTime()) {
+                this.dateString = "Demain";
+                }
+                else {
+                this.dateString = `${day >= 10 ? day : "0" + day}-${month >= 10 ? month : "0" + month}-${year}`;
+                }
+            },
+            overlay(){
+                if( ! this.overlay ){
+                if(this.$refs.BottomMenuRef && ! this.$refs.BottomMenuRef.move){
+                    this.$refs.BottomMenuRef.close();
+                }
+                
+                if(this.$refs.BottomMenuRefResults && ! this.$refs.BottomMenuRefResults.move){
+                    this.$refs.BottomMenuRefResults.close();
+                }
+                }
+            },
+        },
+    });
 </script>
