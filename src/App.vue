@@ -78,9 +78,6 @@
     import { StatusBar } from '@capacitor/status-bar';
     import { SafeAreaController, SafeArea } from '@aashu-dubey/capacitor-statusbar-safe-area';
 
-
-    // import axios from 'axios'
-
     //Component
     import MobileOnly from './views/MobileOnly.vue';
     import { mapMutations, mapState } from 'vuex';
@@ -114,30 +111,10 @@
             
             window.addEventListener('resize', this.updateIsSmallScreen); 
 
-            SafeAreaController.injectCSSVariables();
-            // this.hideStatusBar();
-            StatusBar.setOverlaysWebView({ overlay: true });
-            // const url = `${process.env.VUE_APP_API_MBABUF_URL}/credit`;
+            if(SafeAreaController)
+                SafeAreaController.injectCSSVariables();
 
-            // const headers = {
-            //     'accept': 'application/json',
-            //     'Content-Type': 'application/json'
-            // };
-
-            // var data =  {
-            //     amount: 5,
-            //     id: 1,
-            // };
-
-            // console.log("data-to-send:", data)
-
-            // axios.post(url, data, { headers: headers })
-            //     .then(response => {
-            //         console.log(response.data);
-            //     })
-            //     .catch(error => {
-            //         console.error("There was an error!", error);
-            //     });
+            // StatusBar.setOverlaysWebView({ overlay: true });
             
             //$("link[rel*='icon']").attr("href", "/favicon-old.ico");
         },
@@ -208,7 +185,6 @@
             },
         },
         beforeUnmount() {
-            console.log("-----beforeUnmount")
             // window.removeEventListener('resize', this.updateIsSmallScreen);
         }
     }

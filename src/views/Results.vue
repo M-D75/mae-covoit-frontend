@@ -156,8 +156,9 @@
                     "hour_end": "6:55",
                     "price": 4,
                     "name": "Ledou",
-                    "passenger_number": 2
-                    },
+                    "passenger_number": 2,
+                    max_seats: 4
+                },
                 nothing: false,
                 overlay: false,
                 overlayLoad: true,
@@ -172,6 +173,8 @@
             reserve(event, index){
                 const tmp_trajets = this.$store.state.search.trajets.filter(trajet => trajet.depart == this.depart && trajet.destination == this.destination);
                 this.infos = tmp_trajets[index];
+                // TODO: propre
+                this.$store.state.search.trajetSelected = this.infos;
                 this.$store.commit("search/SET_DEPART", "");
                 this.$store.commit("search/SET_DESTINATION", "");
                 this.$store.commit("search/SET_NB_PASSAGER", 1);
@@ -185,6 +188,7 @@
             callCloseBottomChild() {
                 if ( this.$refs.BottomMenuRef ) {
                     this.$refs.BottomMenuRef.close();
+                    this.$store.state.search.trajetSelected = null;
                     setTimeout(function(){
                         this.overlay = false;
                     }.bind(this), 1000)

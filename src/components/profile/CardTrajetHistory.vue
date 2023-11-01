@@ -86,19 +86,19 @@
                         src="https://avatars0.githubusercontent.com/u/9064066?v=4&s=460"
                     ></v-img>
                 </v-avatar>
-                <span class="name">Mamadou</span>
+                <span class="name">{{ infos.name }}</span>
             </div>
             
             <v-list>
                 <div class="trajet">
-                    <div>Tsingoni</div>
+                    <div>{{ infos.depart }}</div>
                     <v-icon>mdi-swap-horizontal</v-icon>
-                    <div>Mamoudzou</div>
+                    <div>{{ infos.destination }}</div>
                 </div>
                 <div class="infos">
                     <div style="display: flex; justify-content: space-between;">
                         <v-icon>mdi-clock</v-icon>
-                        <div class="hour">5:36</div>
+                        <div class="hour">{{ infos.hour_start }}</div>
                     </div>
                     <v-chip
                         class=""
@@ -119,27 +119,23 @@
 <script>
 
    // Components
-   export default {
-      name: 'card-trajet-history-comp',
-      props: {
-         infos: {
-            type: Object,
-            default() {
-              return {
-                   "depart": "Tsingoni",
-                   "destination": "Mamoudzou",
-                   "hour_start": "4:50",
-                   "hour_end": "6:55",
-                   "price": 4,
-                   "name": "Ledou",
-                   "passenger_number": 2
-                 };
+    export default {
+        name: 'card-trajet-history-comp',
+        props: {
+            infos: {
+                type: Object,
+                default() {
+                    return {
+                        "depart": "Tsingoni",
+                        "destination": "Mamoudzou",
+                        "hour_start": "4:50",
+                        "hour_end": "6:55",
+                        "price": 4,
+                        "name": "Ledou",
+                        "passenger_number": 2
+                    };
+                },
             },
-         },
-      },
-      data() {
-         return {
-         }
-      },
-   };
+        },
+    };
 </script>

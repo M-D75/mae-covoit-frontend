@@ -30,7 +30,7 @@
                 :key="info.date"
             >
                 <div class="date">{{info.date}}</div>
-                <GroupCardsHistory />
+                <GroupCardsHistory :infos="info.infos"/>
             </div>
         </div>
     </div>
@@ -58,23 +58,59 @@
                 default() {
                     return [
                         {
-                            "date": "Ajourd'hui"
+                            date: "Aujourd'hui",
+                            infos: [
+                                {
+                                    depart: "Tsingoni",
+                                    destination: "Mamoudzou",
+                                    hour_start: "4:50",
+                                    hour_end: "6:55",
+                                    price: 4,
+                                    name: "Ledou",
+                                    passenger_number: 2
+                                },
+                                {
+                                    depart: "Tsingoni",
+                                    destination: "Mamoudzou",
+                                    hour_start: "5:50",
+                                    hour_end: "6:55",
+                                    price: 2,
+                                    name: "Mamadou",
+                                    passenger_number: 2
+                                },
+                            ],
                         },
                         {
-                            "date": "Demain"
+                            date: "Demain",
+                            infos: [
+                                {
+                                    depart: "Tsingoni",
+                                    destination: "Mamoudzou",
+                                    hour_start: "4:50",
+                                    hour_end: "6:55",
+                                    price: 4,
+                                    name: "Ledou",
+                                    passenger_number: 2
+                                },
+                            ],
                         },
                         {
-                            "date": "Après Demain"
+                            date: "Après Demain",
+                            infos: [
+                                {
+                                    depart: "Tsingoni",
+                                    destination: "Mamoudzou",
+                                    hour_start: "5:50",
+                                    hour_end: "6:55",
+                                    price: 2,
+                                    name: "Mamadou",
+                                    passenger_number: 2
+                                },
+                            ],
                         },
                     ];
                 },
             },
         },
-        data() {
-            return {
-            }
-        },
-        methods: {
-        }
     });
 </script>

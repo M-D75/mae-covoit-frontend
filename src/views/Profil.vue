@@ -97,7 +97,7 @@
         <div>
             <!-- <div class="label mx-auto">tableau de board</div> -->
             <div class="label-btn mx-auto">
-                <v-btn :class="{active: onglet=='table-bord'}" @click="onglet='table-bord'" rounded="xl">tableau de board</v-btn>
+                <v-btn :class="{active: onglet=='table-bord'}" @click="onglet='table-bord'" rounded="xl">tableau de bord</v-btn>
                 <v-btn :class="{active: onglet=='planning'}" class="calendar" @click="onglet='planning'" rounded="xl"><v-icon>mdi-calendar-month</v-icon></v-btn>
                 <v-btn :class="{active: onglet=='trajets'}" @click="onglet='trajets'" rounded="xl">mes trajets</v-btn>
             </div>
@@ -115,7 +115,7 @@
             <StatsTrajet v-if="onglet=='table-bord'"/>
 
             <!-- Trajets -->
-            <HistoryTrajets v-if="onglet=='trajets' || onglet=='planning'"/>
+            <HistoryTrajets v-if="onglet=='trajets' || onglet=='planning'" :infos="infosTravels"/>
         </div>
     </v-main>
         
@@ -172,7 +172,7 @@
 <!--  -->
 <script>
     import { defineComponent } from 'vue';
-    import { mapState } from 'vuex';
+    import { mapState, mapActions } from 'vuex';
 
     // Components
     import ToolbarProfil from '@/components/menus/head/ToolbarProfil.vue';
@@ -188,7 +188,8 @@
     export default defineComponent({
         name: 'profil-view',
         computed: {
-            ...mapState("profil", ["darkMode", "userName"]),
+            ...mapState("profil", ["darkMode", "userName", "profil"]),
+            ...mapActions("profil", ["getTravels"]),
         },
         components: {
             ToolbarProfil,
@@ -303,7 +304,8 @@
                             {mode:'up-money'}, 
                             {mode:'confirme-up-money'},
                         ],
-                }
+                },
+                infosTravels: [],
             }
         },
         mounted(){
@@ -417,6 +419,17 @@
                     }
                     this.indexModeNavigation = -1;
                     this.modePathNavigation = "";
+                }
+            },
+            async onglet(){
+                if( this.onglet != "table-bord" && this.infosTravels.length == 0){
+                    await this.getTravels;
+                    this.infosTravels = this.profil.myTravels;
+                    console.log("infos-travels:", this.infosTravels);
+                }
+                else{
+                    console.log("infosTravels", this.profil.myTravels);
+                    this.infosTravels = this.profil.myTravels;
                 }
             },
         }

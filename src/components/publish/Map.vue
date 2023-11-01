@@ -7,6 +7,9 @@
             position: absolute;
             top: 9px;
             z-index: 999;
+            // natif notif safe-zone
+            // padding-top: var(--safe-area-inset-top);
+            margin-top: var(--safe-area-inset-top);
             &.rigth {
                 right: 15px;
             }
@@ -182,10 +185,11 @@
     
     import "leaflet/dist/leaflet.css";
     import { LMap, LTileLayer, LMarker, LPopup, LPolyline, LTooltip, LCircleMarker } from "@vue-leaflet/vue-leaflet";
-    import BottomMenu from '../menus/BottomMenu.vue';
+    import { SafeAreaController } from '@aashu-dubey/capacitor-statusbar-safe-area';
     // import $ from 'jquery';
     
     //componants
+    import BottomMenu from '../menus/BottomMenu.vue';
 
     export default defineComponent({
         name: 'results-view',
@@ -268,6 +272,9 @@
             }
         },
         mounted(){
+
+            SafeAreaController.injectCSSVariables();
+
             this.$refs.BottomMenuRef.open();
         },
         methods: {

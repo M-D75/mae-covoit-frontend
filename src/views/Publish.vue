@@ -38,151 +38,155 @@
         @click="close()"
     ></v-overlay>
 
+    <v-main>
+
+        <!-- Depart -->
+        <Search 
+            v-if="modePublish.default.slice(0, 2).some(item => item.mode == mode)"
+            ref="SearchRef"
+            title="D'ou partez vous ?"
+            label="Saisissez une commune"
+            :items="villagesSortedFiltered"
+            :history="communesHistory"
+            @selected="getSelected()" 
+            @saisi="getSaisi()"
+        />
+
+        <!-- Destination -->
+        <Search 
+            v-if="mode=='destination'"
+            ref="SearchRef"
+            title="Où allez vous ?"
+            label="Saisissez une commune"
+            :items="villagesSortedFiltered"
+            :history="communesHistory"
+            @selected="getSelected()" 
+            @saisi="getSaisi()"
+        />
+
+        <!-- Mode Publish -->
+        <div class="mode-publish">
+            <v-switch 
+                dark 
+                v-model="modeWork" 
+                :label="modeLabel" 
+                color="blue" 
+                inset
+            ></v-switch>
+        </div>
+
+        <!-- time : Hour Dep -->
+        <BottomMenu
+            v-if="mode=='time' || mode=='depart'"
+            ref="BottomMenuRef" 
+            :class-name="['time']"
+            mode="time"
+            labelSelectorN1="A quelle heure souhaitez-vous partir ?"
+            :time-init="{hourInit: 7, miniteInit: 0}"
+            v-on:close="overlay = false; getSelected();"
+            v-on:time-valided="getSelected()"
+        />
+
+        <!-- Select car -->
+        <SelectCar 
+            v-if="mode=='select-car' || mode == 'nb-passenger'" 
+            ref="SelectCarRef" 
+            v-on:car-selected="getSelected()"
+        />
+
+        <!-- number : nb-pessenger -->
+        <BottomMenu
+            v-if="mode=='nb-passenger' || mode=='select-car'"
+            ref="BottomMenuRef" 
+            :class-name="['number']"
+            mode="nb-passenger"
+            labelSelectorN1="Combien de personnes pouvez-vous prendre à bord ?"
+            v-on:close="overlay = false"
+            v-on:time-valided="getSelected()"
+        />
+
+        <!-- itineraire -->
+        <Itineraire 
+            v-if="mode=='itineraire' || mode=='select-price' || mode=='notification'"
+            :itineraire="itineraire"
+            v-on:itineraire-valided="getSelected()" 
+        />
+
+        <!-- number : select-price -->
+        <BottomMenu
+            v-if="mode=='select-price' || mode=='itineraire'"
+            ref="BottomMenuRef" 
+            :class-name="['select_price']"
+            mode="select-price"
+            labelSelectorN1="Précisez le prix unitaire des places"
+            v-on:close="overlay = false"
+            v-on:time-valided="getSelected()"
+        />
+
+        <!-- notification -->
+        <BottomMenu
+            v-if="mode=='notification'"
+            ref="BottomMenuRef"
+            :class-name="['notification']"
+            mode="notification"
+            v-on:close="overlay = false; nextStepMode()"
+            v-on:time-valided="getSelected()"
+        />
+
+        
+
+        <!-- *********
+            Work
+        -->
+
+        <HourProgram 
+            v-if="mode=='hour-program'"
+            ref="HourProgramRef"
+            v-on:hour-valided="getSelected()"
+        />
+
+        <HourDepOther 
+            v-if="mode=='hour-day-program'"
+            :hour="infosPublish.work.hour"
+            v-on:hour-dep-other-valided="getSelected()"
+        />
+
+        <!-- time : hour domicile -->
+        <BottomMenu
+            v-if="mode=='select-day-hour-domicile'"
+            ref="BottomMenuRef"
+            :class-name="['select_day_hour_domicile']"
+            mode="select-day-hour-domicile"
+            labelSelectorN1="Repeter quelle jour ?"
+            labelSelectorN2="Heur de depart du domicile"
+            v-on:close="overlay = false"
+            v-on:time-valided="getSelected()"
+        />
+
+        <!-- day -->
+        <BottomMenu
+            v-if="mode=='select-day' || mode=='hour-day-program'"
+            ref="BottomMenuRef"
+            :class-name="['select_day']"
+            mode="select-day"
+            labelSelectorN1="Repeter quelle jour ?"
+            v-on:close="overlay = false"
+            v-on:day-valided="getSelected()"
+        />
+
+        <!-- test -->
+        <BottomMenu
+            v-if="mode=='register-credit-card'"
+            ref="BottomMenuRef"
+            :class-name="['notification']"
+            mode="register-credit-card"
+            v-on:close="overlay = false"
+            v-on:time-valided="getSelected()"
+        />
+
+    </v-main>
+
     <BottomNav />
-
-    <!-- Depart -->
-    <Search 
-        v-if="modePublish.default.slice(0, 2).some(item => item.mode == mode)"
-        ref="SearchRef"
-        title="D'ou partez vous ?"
-        label="Saisissez une commune"
-        :items="villagesSortedFiltered"
-        :history="communesHistory"
-        @selected="getSelected()" 
-        @saisi="getSaisi()"
-    />
-
-    <!-- Destination -->
-    <Search 
-        v-if="mode=='destination'"
-        ref="SearchRef"
-        title="Où allez vous ?"
-        label="Saisissez une commune"
-        :items="villagesSortedFiltered"
-        :history="communesHistory"
-        @selected="getSelected()" 
-        @saisi="getSaisi()"
-    />
-
-    <!-- Mode Publish -->
-    <div class="mode-publish">
-        <v-switch 
-            dark 
-            v-model="modeWork" 
-            :label="modeLabel" 
-            color="blue" 
-            inset
-        ></v-switch>
-    </div>
-
-    <!-- time : Hour Dep -->
-    <BottomMenu
-        v-if="mode=='time' || mode=='depart'"
-        ref="BottomMenuRef" 
-        :class-name="['time']"
-        mode="time"
-        labelSelectorN1="A quelle heure souhaitez-vous partir ?"
-        :time-init="{hourInit: 7, miniteInit: 0}"
-        v-on:close="overlay = false"
-        v-on:time-valided="getSelected()"
-    />
-
-    <!-- Select car -->
-    <SelectCar 
-        v-if="mode=='select-car' || mode == 'nb-passenger'" 
-        ref="SelectCarRef" 
-        v-on:car-selected="getSelected()"
-    />
-
-    <!-- number : nb-pessenger -->
-    <BottomMenu
-        v-if="mode=='nb-passenger' || mode=='select-car'"
-        ref="BottomMenuRef" 
-        :class-name="['number']"
-        mode="nb-passenger"
-        labelSelectorN1="Combien de personnes pouvez-vous prendre à bord ?"
-        v-on:close="overlay = false"
-        v-on:time-valided="getSelected()"
-    />
-
-    <!-- itineraire -->
-    <Itineraire 
-        v-if="mode=='itineraire' || mode=='select-price' || mode=='notification'"
-        :itineraire="itineraire"
-        v-on:itineraire-valided="getSelected()" 
-    />
-
-    <!-- number : select-price -->
-    <BottomMenu
-        v-if="mode=='select-price' || mode=='itineraire'"
-        ref="BottomMenuRef" 
-        :class-name="['select_price']"
-        mode="select-price"
-        labelSelectorN1="Précisez le prix unitaire des places"
-        v-on:close="overlay = false"
-        v-on:time-valided="getSelected()"
-    />
-
-    <!-- notification -->
-    <BottomMenu
-        v-if="mode=='notification'"
-        ref="BottomMenuRef"
-        :class-name="['notification']"
-        mode="notification"
-        v-on:close="overlay = false; nextStepMode()"
-        v-on:time-valided="getSelected()"
-    />
-
-    
-
-    <!-- *********
-        Work
-    -->
-
-    <HourProgram 
-        v-if="mode=='hour-program'"
-        ref="HourProgramRef"
-        v-on:hour-valided="getSelected()"
-    />
-
-    <HourDepOther 
-        v-if="mode=='hour-day-program'"
-        :hour="infosPublish.work.hour"
-        v-on:hour-dep-other-valided="getSelected()"
-    />
-
-    <!-- time : hour domicile -->
-    <BottomMenu
-        v-if="mode=='select-day-hour-domicile'"
-        ref="BottomMenuRef"
-        :class-name="['select_day_hour_domicile']"
-        mode="select-day-hour-domicile"
-        labelSelectorN1="Repeter quelle jour ?"
-        labelSelectorN2="Heur de depart du domicile"
-        v-on:close="overlay = false"
-        v-on:time-valided="getSelected()"
-    />
-
-    <!-- day -->
-    <BottomMenu
-        v-if="mode=='select-day' || mode=='hour-day-program'"
-        ref="BottomMenuRef"
-        :class-name="['select_day']"
-        mode="select-day"
-        labelSelectorN1="Repeter quelle jour ?"
-        v-on:close="overlay = false"
-        v-on:day-valided="getSelected()"
-    />
-
-    <!-- test -->
-    <BottomMenu
-        v-if="mode=='register-credit-card'"
-        ref="BottomMenuRef"
-        :class-name="['notification']"
-        mode="register-credit-card"
-        v-on:close="overlay = false"
-        v-on:time-valided="getSelected()"
-    />
 </template>
 
 
@@ -201,6 +205,9 @@
     import Itineraire from '@/components/publish/Itineraire.vue';
     import HourProgram from '@/components/publish/HourProgram.vue';
     import HourDepOther from '@/components/publish/HourDepOther.vue';
+
+    import supabase from '@/utils/supabaseClient.js';
+
 
     export default defineComponent({
         name: 'publish-view',
@@ -308,28 +315,28 @@
                 itineraire: {
                     origin: {
                             location: {
-                            latLng: {
-                                latitude: -12.7243245,
-                                longitude: 45.0589372,
-                                latLngTab: [-12.7243245, 45.0589372]
-                            }
+                                latLng: {
+                                    latitude: -12.7243245,
+                                    longitude: 45.0589372,
+                                    latLngTab: [-12.7243245, 45.0589372]
+                                }
                             },
                             infos: {
-                            village: "Acoua",
-                            commune: "Acoua",
+                                village: "Acoua",
+                                commune: "Acoua",
                             }
                     },
                     destination: {
                             location: {
-                            latLng: {
-                                latitude: -12.9292776,
-                                longitude: 45.1763906,
-                                latLngTab: [-12.9292776, 45.1763906]
-                            }
+                                latLng: {
+                                    latitude: -12.9292776,
+                                    longitude: 45.1763906,
+                                    latLngTab: [-12.9292776, 45.1763906]
+                                }
                             },
                             infos: {
-                            village: "Bambo-Est",
-                            commune: "Bandrélé",
+                                village: "Bambo-Est",
+                                commune: "Bandrélé",
                             }
                     },
                 },
@@ -342,8 +349,20 @@
         },
         mounted() {
             $(".mode-publish").css("display", "initial");
+
+            // this.test();
+
+            console.log(this.$store.state.profil.userUid);
+
         },
         methods: {
+            async test(){
+                let { data: trip, error } = await supabase
+                    .from('trip')
+                    .select('id')
+
+                console.log("test---", error, trip.length);
+            },
             getSaisi(){
                 $(".mode-publish").css("display", "none");
                 this.saisi = this.$refs.SearchRef.saisi;
@@ -370,6 +389,7 @@
                     case "time":
                         if (this.$refs.BottomMenuRef) {
                             this.infosPublish.default.hourDep = this.$refs.BottomMenuRef.time;
+                            console.log("Time-selected:", this.infosPublish.default.hourDep, this.convertTimeString(this.infosPublish.default.hourDep));
                         }
                         
                         //close
@@ -417,8 +437,8 @@
                         var infos = {
                             villageDep: this.GET_ID_VILLAGE_BY_NAME(this.infosPublish.default.depart), 
                             villageDest: this.GET_ID_VILLAGE_BY_NAME(this.infosPublish.default.destination), 
-                            driverId: "2efc018a-c89b-4aea-9c93-666557a9efa1", 
-                            timeDep: new Date(), 
+                            driverId: this.$store.state.profil.userUid, 
+                            timeDep: this.convertTimeString(this.infosPublish.default.hourDep), 
                             maxSeats: this.infosPublish.default.nbPassager,
                         };
 
@@ -554,6 +574,25 @@
                 const index = str.indexOf(query);
                 if (index === -1) return Infinity;
                 return index;
+            },
+            convertTimeString(timeString) {
+                // Obtenir la date et l'heure actuelles
+                const now = new Date();
+
+                // Extraire l'heure et les minutes de la chaîne d'entrée
+                const [hours, minutes] = timeString.split(':').map(Number);
+
+                // Créer un nouvel objet Date avec l'heure et les minutes spécifiées
+                const time = new Date(now);
+                time.setHours(hours, minutes, 0, 0);
+
+                // Comparer avec l'heure actuelle et ajuster la date si nécessaire
+                if (time <= now) {
+                    time.setDate(now.getDate() + 1);
+                }
+
+                // Retourner l'objet Date résultant
+                return time;
             },
         },
         watch: {

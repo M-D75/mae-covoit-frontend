@@ -15,38 +15,46 @@
 
 <!-- scoped -->
 <style lang="scss" scoped>
+    .v-app-bar{
+        // toolbar
+        .v-toolbar {
+            position: fixed;
+            z-index: 1;
+            background-color: var(--bg-app-color);
+            box-shadow: var(--box-shadow-card);
+            // natif bar notif safe zone
+            padding-top: var(--safe-area-inset-top);
+            margin-top: var(--safe-area-inset-top);
 
-    // toolbar
-    .v-toolbar {
-        position: fixed;
-        z-index: 1;
-        background-color: var(--bg-app-color);
-        box-shadow: var(--box-shadow-card);
-        .v-btn i.v-icon {
-            margin-right: 0 !important;
-            color: var(--gray-icon-color);
-            &.mdi-chevron-left {
-                font-size: 2em;
+            .v-btn i.v-icon {
+                margin-right: 0 !important;
+                color: var(--gray-icon-color);
+                &.mdi-chevron-left {
+                    font-size: 2em;
+                }
+            }
+            .v-toolbar-title {
+                font-size: var(--font-size-h1-toolbar);
+                color: var(--font-color-label);
+                .text-subtitle-2 {
+                    font-size: var(--font-size-subtitle-toolbar);
+                }
+            }
+            .label-filter.text-caption {
+                width: 85%;
             }
         }
-        .v-toolbar-title {
-            font-size: var(--font-size-h1-toolbar);
-            color: var(--font-color-label);
-            .text-subtitle-2 {
-                font-size: var(--font-size-subtitle-toolbar);
-            }
-        }
-        .label-filter.text-caption {
-            width: 85%;
-        }
-    }
+}
 
 </style>
    
 <!--  -->
 <template>
 
-    <v-app-bar>
+    <v-app-bar
+        extended
+        :extension-height="barHeight"
+    >
         <!-- toolbar -->
         <v-toolbar
             class=""
@@ -82,6 +90,7 @@
 <!--  -->
 <script>
     import { defineComponent } from 'vue';
+    import { SafeAreaController, SafeArea } from '@aashu-dubey/capacitor-statusbar-safe-area';
 
     export default defineComponent({
         name: 'toolbar-comp',
@@ -91,7 +100,7 @@
             trajet: {
                 type: Object,
                 default (){
-                return {depart: "Tsingoni", destination: "Mamoudzou"};
+                    return {depart: "Tsingoni", destination: "Mamoudzou"};
                 },
             },
             date: {
@@ -107,9 +116,27 @@
                 default: "0",
             }
         },
+        data() {
+            return {
+                barHeight: 0,
+            }
+        },
+        mounted() {
+            SafeAreaController.injectCSSVariables();
+
+            this.initStatusBarHeight();
+        },
         methods: {
             previous(){
                 this.$router.go(-1);
+            },
+            async initStatusBarHeight(){
+                const insets = await this.getSafeAreaInsets();
+                this.barHeight = insets["top"];
+            },
+            async getSafeAreaInsets () {
+                const insets = await SafeArea.getSafeAreaInsets();
+                return insets; // Ex. { "bottom":34, "top":47, "right":0, "left":0 }
             },
         }
     });

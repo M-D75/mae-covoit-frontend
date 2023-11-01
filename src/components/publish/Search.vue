@@ -61,14 +61,16 @@
 
 <!-- scss -->
 <style lang="scss" scoped>
-   .bloc {
-        position: absolute;
+
+    .bloc {
+        // padding-top: var(--safe-top);
+        // position: absolute;
+        // top: 0;
+        // left: 0;
         background-color: var(--bg-app-color);
-        top: 0;
-        left: 0;
         width: 100%;
         height: 100%;
-        padding-bottom: 110px;
+        //padding-bottom: 110px;
         .title {
             font-size: var(--font-size-h1);
             font-weight: bold;
@@ -127,12 +129,11 @@
             }
         }
     }
-
 </style>
    
 <!--  -->
 <template>
-    <v-main class="bloc">
+    <div class="bloc">
         <div
             class="title text-center"
         >{{ title }}</div>
@@ -194,7 +195,7 @@
                 >{{ item }}</v-list-item> -->
             </v-list>
         </v-card>
-    </v-main>
+    </div>
 </template>
 
 

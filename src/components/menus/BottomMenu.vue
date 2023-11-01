@@ -613,7 +613,7 @@
                 class="select-number mx-auto"
             >
                 <div class="label text-center">{{ labelSelectorN1 }}</div>
-                <SelectNumber :min="1" :max="200" icon="mdi-currency-eur" />
+                <SelectNumber ref="SelectNumberRef" :min="1" :max="200" icon="mdi-currency-eur" />
                 <v-btn 
                     class="text-none"
                     rounded="xl" 
@@ -1027,10 +1027,10 @@
                 this.open();
             }
             else {
-                $(classBottomMenuNameJquery).addClass("closed")
+                $(classBottomMenuNameJquery).addClass("closed");
             }
             
-            $("div.sub-label-color").addClass("warn-good-to-low")
+            $("div.sub-label-color").addClass("warn-good-to-low");
         },
         methods: {
             checkNumericalValue(event, nextInputRef){
@@ -1194,7 +1194,9 @@
                 }
             },
             recharger(){
+                console.log("number-up", this.$refs.SelectNumberRef.number);
                 // TODO : get value
+                this.$store.dispatch('profil/addCredit', {userId: this.$store.state.profil.userUid, credit: this.$refs.SelectNumberRef.number});
                 this.$emit("up-money");
             },
             emit(value){

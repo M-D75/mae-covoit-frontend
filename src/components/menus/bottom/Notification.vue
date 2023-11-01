@@ -42,7 +42,7 @@
          }
 
          .v-btn {
-            margin: 50px auto;
+            margin: 0px auto;
             margin-top: 80px;
             color: var(--font-color-label);
          }

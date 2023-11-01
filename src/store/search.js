@@ -3,6 +3,8 @@ import axios from 'axios'
 
 import store from '../store'; 
 
+import supabase from '@/utils/supabaseClient.js';
+
 export default {
     namespaced: true,
     state: {
@@ -113,6 +115,7 @@ export default {
             "passenger_number": 2
         },
         ],
+        trajetSelected: {},
         accounts: [],
     },
     getters: {
@@ -144,6 +147,9 @@ export default {
         },
         SET_ACCOUNTS(state, accounts){
             state.accounts = accounts;
+        },
+        SET_TRAJET_SELECTED(state, trajet){
+            state.trajetSelected = trajet;
         },
     },
     actions: {
@@ -187,12 +193,13 @@ export default {
                             id: trips[i_trip].id,
                             depart: trips[i_trip].village_departure.village,
                             destination: trips[i_trip].village_arrival.village,
+                            departure_time: trips[i_trip].departure_time,
                             hour_start: departure_time,
                             hour_end: arrival_time,
                             price: (Math.ceil(Math.random()*4)+1),
                             name: username,
                             passenger_number: trips[i_trip].bookings.length,
-                            max_seat: trips[i_trip].max_seats,
+                            max_seats: trips[i_trip].max_seats,
                         };
                         _trips.push(_trip);
                     }
@@ -222,6 +229,56 @@ export default {
                 .catch(error => {
                     console.error(error);
                 });
+        },
+        async reserveTrajet(context, playload){
+            console.log("p:", playload, playload.user_id, playload.trip_id);
+
+            let { data: booking, error } = await supabase
+                .from('booking')
+                .select('id')
+
+            if (error) {
+                console.error('Erreur lors de la requête :', error);
+                return false;
+            }
+
+            const newId = booking.length+1;
+
+            // console.log("newId", newId);
+
+            // get Id user
+            let { data: account, error: errorUser } = await supabase
+                .from('account')
+                .select("*")
+                .eq('user_id', playload.user_id)
+            
+            if (errorUser) {
+                console.error('Erreur lors de la requête :', errorUser);
+                return false;
+            }
+            
+            console.log("account", account, account[0]);
+            if(account && account.length>0 && account[0].id){
+                const user_id = account[0].id;
+
+                console.log("infos==", newId, playload.trip_id, user_id, playload.user_id);
+                let { data: data_booking, error: error_booking } = await supabase
+                    .from('booking')
+                    .insert([
+                        { id: newId, trip_id: playload.trip_id, passenger_account_id: user_id },
+                    ])
+                    .select()
+
+                if (error_booking) {
+                    console.error('Erreur lors de la requête :', error_booking);
+                    return false;
+                }
+        
+                console.log("reserveTrajet:", data_booking);
+            
+                return true;
+            }
+            return false;
         },
     },
 }

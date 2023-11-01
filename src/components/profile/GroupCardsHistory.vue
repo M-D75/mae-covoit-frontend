@@ -52,8 +52,11 @@
     <div class="bloc-history">
         <div class="sub-bloc-history">
             <div class="sub-sub-bloc-history scrollable-container">
-                <CardTrajetHistory />
-                <CardTrajetHistory />
+                <CardTrajetHistory 
+                    v-for="(info, key) in infos"
+                    :key="key"
+                    :infos="info"
+                />
             </div>
         </div>
     </div>
@@ -71,15 +74,35 @@
 
     export default defineComponent({
         name: 'group-cards-history-comp',
-
         components: {
             CardTrajetHistory,
         },
-        data() {
-            return {
-            }
+        props: {
+            infos: {
+                type: Array,
+                default() {
+                    return [
+                        {
+                            depart: "Tsingoni",
+                            destination: "Mamoudzou",
+                            hour_start: "4:50",
+                            hour_end: "6:55",
+                            price: 4,
+                            name: "Ledou",
+                            passenger_number: 2
+                        },
+                        {
+                            depart: "Tsingoni",
+                            destination: "Mamoudzou",
+                            hour_start: "5:50",
+                            hour_end: "6:55",
+                            price: 2,
+                            name: "Mamadou",
+                            passenger_number: 2
+                        },
+                    ];
+                },
+            },
         },
-        methods: {
-        }
     });
 </script>

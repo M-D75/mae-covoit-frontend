@@ -24,7 +24,9 @@
     .v-container {
         position: absolute;
         padding: 0;
+        padding-top: var(--safe-top);
         background-color: white;
+        // background-color: var(--bg-app-color);
         width: 100%;
         max-width: 100%;
         height: 100%;
@@ -33,6 +35,9 @@
             height: 100%;
             &.scrolling {
                 overflow: scroll;
+            }
+            &.not-scroll{
+                overflow: hidden;
             }
             .title {
                 font-size: var(--font-size-h1);
@@ -178,6 +183,7 @@
         },
         methods: {
             open(){
+                console.log("bar-hei-", this.barHeight);
                 $(".pan-get-value").removeClass("closed");
 
                 switch (this.mode) {
@@ -195,7 +201,7 @@
                     this.$refs.SearchRef.saisi = "";
                 }
                 this.saisi = "";
-                $(".pan-get-value").animate({top: "0px"}, 'fast')
+                $(".pan-get-value").animate({top: `0px`}, 'fast')
                 $(".pan-get-value").css("top", `0px`);
                 
                 this.opened = true;

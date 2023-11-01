@@ -83,39 +83,40 @@
             v-on:reserve="reserve()"
         />
 
+        <!-- Get Value -->
+        <PaneGetValue
+            ref="PaneGetValueRef"
+            :mode="modePanel" 
+            :open-p="openP"
+            v-on:close="close()"
+            v-on:date-selected="getDate()"
+        />
+
+        <!-- number : nb-pessenger -->
+        <BottomMenu
+            ref="BottomMenuRef"
+            :class-name="['number']"
+            :params-number="{min: 1, max:8}"
+            mode="nb-passenger"
+            labelSelectorN1="Réservation pour combien de personnes ?"
+            v-on:close="overlay = false"
+            v-on:time-valided="getSelected()"
+        />
+
+        <!-- reserve fast -->
+        <BottomMenu 
+            ref="BottomMenuRefResults"
+            :class-name="['results']" 
+            mode="reserve"
+            v-on:close="overlay = false" 
+            :infos="infos"
+        />
     </v-main>
 
     <!-- Menu -->
     <BottomNav />
 
-    <!-- Get Value -->
-    <PaneGetValue
-        ref="PaneGetValueRef"
-        :mode="modePanel" 
-        :open-p="openP"
-        v-on:close="close()"
-        v-on:date-selected="getDate()"
-    />
-
-    <!-- number : nb-pessenger -->
-    <BottomMenu
-        ref="BottomMenuRef"
-        :class-name="['number']"
-        :params-number="{min: 1, max:8}"
-        mode="nb-passenger"
-        labelSelectorN1="Réservation pour combien de personnes ?"
-        v-on:close="overlay = false"
-        v-on:time-valided="getSelected()"
-    />
-
-    <!-- reserve fast -->
-    <BottomMenu 
-        ref="BottomMenuRefResults"
-        :class-name="['results']" 
-        mode="reserve"
-        v-on:close="overlay = false" 
-        :infos="infos"
-    />
+    
 
 </template>
 
@@ -155,13 +156,13 @@
                 dateString: "Aujourd'hui",
                 nbPassager: 1,
                 infos: {
-                "depart": "Tsingoni",
-                "destination": "Mamoudzou",
-                "hour_start": "4:50",
-                "hour_end": "6:55",
-                "price": 4,
-                "name": "Ledou",
-                "passenger_number": 2
+                    "depart": "Tsingoni",
+                    "destination": "Mamoudzou",
+                    "hour_start": "4:50",
+                    "hour_end": "6:55",
+                    "price": 4,
+                    "name": "Ledou",
+                    "passenger_number": 2
                 },
             };
         },
@@ -175,49 +176,50 @@
             // TODO : inutile mode prod
             getTrajet() {
                 if(this.$refs.TrajetSearchRef){
-                const depart = this.$refs.TrajetSearchRef.depart;
-                const destination = this.$refs.TrajetSearchRef.destination;
-                this.infos = this.$store.state.search.trajets.filter(trajet => trajet.depart == depart && trajet.destination == destination)[0];
+                    const depart = this.$refs.TrajetSearchRef.depart;
+                    const destination = this.$refs.TrajetSearchRef.destination;
+                    this.infos = this.$store.state.search.trajets.filter(trajet => trajet.depart == depart && trajet.destination == destination)[0];
                 }
             },
             openCalendar(){
                 console.log("open-pan-calendar-search")
                 if( ! this.openP ){
-                this.modePanel = "date";
-                this.openP = true;
+                    this.modePanel = "date";
+                    this.openP = true;
                 }
             },
             openSearch(mode){
                 console.log("openSearch-mode:", mode);
                 if( ! this.openP ){
-                this.modePanel = mode == 'dep' ? "depart" : "arriver";
-                this.openP = true;
+                    this.modePanel = mode == 'dep' ? "depart" : "arriver";
+                    this.openP = true;
                 }
             },
             getDate(){
                 if( this.$refs.PaneGetValueRef ){
-                this.date = this.$refs.PaneGetValueRef.date;
-                this.openP = false;
+                    this.date = this.$refs.PaneGetValueRef.date;
+                    this.openP = false;
                 }
             },
             close(){
                 this.openP = false;
+                this.modePanel = "date";
                 if ( this.$refs.BottomMenuRef && this.overlay && ! this.$refs.BottomMenuRef.move ) {
-                this.overlay = this.$refs.BottomMenuRef.close();
+                    this.overlay = this.$refs.BottomMenuRef.close();
                 }
             },
             openSelectNumber(){
                 console.log("open-selected-number")
                 if ( this.$refs.BottomMenuRef && ! this.overlay ) {
-                this.overlay = this.$refs.BottomMenuRef.open();
+                    this.overlay = this.$refs.BottomMenuRef.open();
                 }
             },
             getSelected(){
                 if (this.$refs.BottomMenuRef) {
-                this.SET_NB_PASSAGER(this.$refs.BottomMenuRef.numberSelected)
-                if(this.nbPassager){
-                    this.close();
-                }
+                    this.SET_NB_PASSAGER(this.$refs.BottomMenuRef.numberSelected)
+                    if(this.nbPassager){
+                        this.close();
+                    }
                 }
             },
             reserve(){
@@ -246,24 +248,24 @@
                 year  = this.date.getFullYear();
 
                 if (currentDate.getTime() == this.date.getTime()) {
-                this.dateString = "Aujourd'hui";
+                 this.dateString = "Aujourd'hui";
                 }
                 else if (tomorrowsDate.getTime() == this.date.getTime()) {
-                this.dateString = "Demain";
+                    this.dateString = "Demain";
                 }
                 else {
-                this.dateString = `${day >= 10 ? day : "0" + day}-${month >= 10 ? month : "0" + month}-${year}`;
+                    this.dateString = `${day >= 10 ? day : "0" + day}-${month >= 10 ? month : "0" + month}-${year}`;
                 }
             },
             overlay(){
                 if( ! this.overlay ){
-                if(this.$refs.BottomMenuRef && ! this.$refs.BottomMenuRef.move){
-                    this.$refs.BottomMenuRef.close();
-                }
-                
-                if(this.$refs.BottomMenuRefResults && ! this.$refs.BottomMenuRefResults.move){
-                    this.$refs.BottomMenuRefResults.close();
-                }
+                    if(this.$refs.BottomMenuRef && ! this.$refs.BottomMenuRef.move){
+                        this.$refs.BottomMenuRef.close();
+                    }
+                    
+                    if(this.$refs.BottomMenuRefResults && ! this.$refs.BottomMenuRefResults.move){
+                        this.$refs.BottomMenuRefResults.close();
+                    }
                 }
             },
         },

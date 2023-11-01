@@ -109,7 +109,7 @@
       </v-btn>
 
       <v-btn
-         v-on:click="$emit('test-notif-success')"
+         v-on:click="tryReserve"
          class="mr-4 text-none"
          prepend-icon="mdi-credit-card"
          rounded="xl" 
@@ -124,23 +124,65 @@
 
 
 <script>
-   import $ from 'jquery'
+    import $ from 'jquery'
+    
+    import { mapActions, mapState } from 'vuex';
+    import { Plugins } from '@capacitor/core';
 
-   // Components
-   export default {
-      name: 'reserve-place-menu-comp',
-      emits: ["test-notif-success"],
-      data() {
-         return {
-            model_car: "VW-GOLF 7",
-         }
-      },
-      props: {
-      },
-      mounted (){
-         // const vue = this;
-         $(document).ready(function() {
-         });
-      },
-   };
+    const { LocalNotifications } = Plugins;
+
+    // Components
+    export default {
+        name: 'reserve-place-menu-comp',
+        emits: ["test-notif-success"],
+        computed: {
+            ...mapState("search", ["trajetSelected"]),
+            ...mapActions("search", ["reserveTrajet"]),
+        },
+        data() {
+            return {
+                model_car: "VW-GOLF 7",
+            }
+        },
+        props: {
+        },
+        mounted (){
+            // const vue = this;
+            $(document).ready(function() {
+            });
+        },
+        methods: {
+            async sendNotification() {
+                const permission = await LocalNotifications.requestPermissions();
+            
+                if( permission ){
+                    await LocalNotifications.schedule({
+                        notifications: [{
+                            id: 1,
+                            title: "Tchoup Tchoup",
+                            body: `Super ! Votre trajet de ${this.trajetSelected.depart} à ${this.trajetSelected.destination} à bien été validéÒÒ.`,
+                            summaryText: "sumaryText!",
+                            schedule: { at: new Date(Date.now() + 3000) }, // dans 5 secondes
+                            iconColor: "red",
+                            smallIcon: "res://large_logo",
+                            largeIcon: "res://large_logo",
+                        }]
+                    });
+                }
+                else{
+                    console.log("permission non accordé");
+                }
+            },
+            async tryReserve(){
+                const reserved = await this.$store.dispatch("search/reserveTrajet", {trip_id: this.$store.state.search.trajetSelected.id, user_id: this.$store.state.profil.userUid});
+
+                if(reserved){
+                this.sendNotification();
+                this.$emit('test-notif-success');
+                }
+                else
+                console.log("Erreur de reservation");
+            },
+        },
+    };
 </script>

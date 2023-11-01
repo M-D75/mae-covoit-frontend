@@ -200,7 +200,7 @@
                     color="blue"
                     label
                 >
-                {{infos.price}}€
+                    {{infos.price}}€
                 </v-chip>
 
                 <v-chip
@@ -208,7 +208,7 @@
                     color="blue"
                     label
                 >
-                {{ infos.passenger_number }}/4
+                    {{ infos.passenger_number }}/{{ infos.max_seats }}
                 </v-chip>
             </div>
 
@@ -226,14 +226,15 @@
             infos: {
                 type: Object,
                 default() {
-                return {
-                        "depart": "Tsingoni",
-                        "destination": "Mamoudzou",
-                        "hour_start": "4:50",
-                        "hour_end": "6:55",
-                        "price": 4,
-                        "name": "Ledou",
-                        "passenger_number": 2
+                    return {
+                        depart: "Tsingoni",
+                        destination: "Mamoudzou",
+                        hour_start: "4:50",
+                        hour_end: "6:55",
+                        price: 4,
+                        name: "Ledou",
+                        passenger_number: 2,
+                        max_seats: 4
                     };
                 },
             },
