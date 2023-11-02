@@ -172,8 +172,6 @@
 
 <!--  -->
 <script>
-    // @ is an alias to /src
-    // import $ from 'jquery'
     import { mapActions } from 'vuex'
 
     export default {
@@ -190,13 +188,13 @@
             submit(){
                 this.$router.push({ path: '/login' })
             },
-            async checkSessionIn(){
-                await this.checkSession;
-                this.overlayLoad = false;
-            },
         },
         created() {
-            this.checkSessionIn();
+            const sessionValided = this.checkSession;
+            if(sessionValided)
+                this.$router.replace("/search");
+
+            this.overlayLoad = false;
         },
         mounted() {
             // force ligth-mode

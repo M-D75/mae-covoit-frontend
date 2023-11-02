@@ -189,7 +189,8 @@
         name: 'profil-view',
         computed: {
             ...mapState("profil", ["darkMode", "userName", "profil"]),
-            ...mapActions("profil", ["getTravels"]),
+            ...mapActions("profil", ["getTravels", "getPublish"]),
+            ...mapActions("auth", ["checkSession"]),
         },
         components: {
             ToolbarProfil,
@@ -308,8 +309,15 @@
                 infosTravels: [],
             }
         },
+        beforeMount(){
+            const sessionValided = this.checkSession;
+            if(!sessionValided)
+                this.$router.replace("/");
+        },
         mounted(){
             // this.$refs.BottomMenuRef.open()
+            
+                
         },
         methods: {
             goToInfoPerso(){
@@ -422,15 +430,23 @@
                 }
             },
             async onglet(){
-                if( this.onglet != "table-bord" && this.infosTravels.length == 0){
+                if( this.onglet == "trajets" && this.profil.myTravels.length == 0){
                     await this.getTravels;
                     this.infosTravels = this.profil.myTravels;
-                    console.log("infos-travels:", this.infosTravels);
+                }
+                else if( this.onglet == "planning" && this.profil.myPublish.length == 0 ){
+                    await this.getPublish;
+                    this.infosTravels = this.profil.myPublish;
                 }
                 else{
-                    console.log("infosTravels", this.profil.myTravels);
-                    this.infosTravels = this.profil.myTravels;
+                    if( this.onglet == "trajets" ){
+                        this.infosTravels = this.profil.myTravels;
+                    }
+                    else if( this.onglet == "planning" ){
+                        this.infosTravels = this.profil.myPublish;
+                    }
                 }
+                console.log("infos-travels:", this.infosTravels);
             },
         }
     });

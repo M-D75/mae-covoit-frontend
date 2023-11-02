@@ -83,40 +83,40 @@
             v-on:reserve="reserve()"
         />
 
-        <!-- Get Value -->
-        <PaneGetValue
-            ref="PaneGetValueRef"
-            :mode="modePanel" 
-            :open-p="openP"
-            v-on:close="close()"
-            v-on:date-selected="getDate()"
-        />
-
-        <!-- number : nb-pessenger -->
-        <BottomMenu
-            ref="BottomMenuRef"
-            :class-name="['number']"
-            :params-number="{min: 1, max:8}"
-            mode="nb-passenger"
-            labelSelectorN1="Réservation pour combien de personnes ?"
-            v-on:close="overlay = false"
-            v-on:time-valided="getSelected()"
-        />
-
-        <!-- reserve fast -->
-        <BottomMenu 
-            ref="BottomMenuRefResults"
-            :class-name="['results']" 
-            mode="reserve"
-            v-on:close="overlay = false" 
-            :infos="infos"
-        />
+        
     </v-main>
 
     <!-- Menu -->
     <BottomNav />
 
-    
+    <!-- Get Value -->
+    <PaneGetValue
+        ref="PaneGetValueRef"
+        :mode="modePanel" 
+        :open-p="openP"
+        v-on:close="close()"
+        v-on:date-selected="getDate()"
+    />
+
+    <!-- number : nb-pessenger -->
+    <BottomMenu
+        ref="BottomMenuRef"
+        :class-name="['number']"
+        :params-number="{min: 1, max:8}"
+        mode="nb-passenger"
+        labelSelectorN1="Réservation pour combien de personnes ?"
+        v-on:close="overlay = false"
+        v-on:time-valided="getSelected()"
+    />
+
+    <!-- reserve fast -->
+    <BottomMenu 
+        ref="BottomMenuRefResults"
+        :class-name="['results']" 
+        mode="reserve"
+        v-on:close="overlay = false" 
+        :infos="infos"
+    />
 
 </template>
 
@@ -248,7 +248,7 @@
                 year  = this.date.getFullYear();
 
                 if (currentDate.getTime() == this.date.getTime()) {
-                 this.dateString = "Aujourd'hui";
+                    this.dateString = "Aujourd'hui";
                 }
                 else if (tomorrowsDate.getTime() == this.date.getTime()) {
                     this.dateString = "Demain";

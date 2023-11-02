@@ -79,7 +79,7 @@ export default {
                     }
                 }
 
-                router.replace("/search");
+                //router.replace("/search");
 
                 return true;
             }

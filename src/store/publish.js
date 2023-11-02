@@ -34,12 +34,12 @@ export default {
             if( playload.driverId ){
 
                 var dataNewTrip =  {
-                    "id": trip.length+1,
-                    "village_departure_id": playload.villageDep,
-                    "village_arrival_id": playload.villageDest,
-                    "driver_id": playload.driverId,
-                    "departure_time": playload.timeDep,
-                    "max_seats": playload.maxSeats,
+                    id: trip.length+1,
+                    village_departure_id: playload.villageDep,
+                    village_arrival_id: playload.villageDest,
+                    driver_id: playload.driverId,
+                    departure_time: playload.timeDep,
+                    max_seats: playload.maxSeats,
                 };
 
                 console.log("data=", dataNewTrip);

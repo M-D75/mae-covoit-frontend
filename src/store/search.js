@@ -231,52 +231,68 @@ export default {
                 });
         },
         async reserveTrajet(context, playload){
-            console.log("p:", playload, playload.user_id, playload.trip_id);
 
-            let { data: booking, error } = await supabase
+            // get all booking id
+            let { data: booking, error: error_booking } = await supabase
                 .from('booking')
                 .select('id')
 
-            if (error) {
-                console.error('Erreur lors de la requête :', error);
+            if ( error_booking ) {
+                console.error('Erreur lors de la requête :', error_booking);
                 return false;
             }
 
-            const newId = booking.length+1;
+            // new id = last_id+1
+            const newBookingId = booking.length+1;
 
-            // console.log("newId", newId);
-
-            // get Id user
+            // get account user
             let { data: account, error: errorUser } = await supabase
                 .from('account')
                 .select("*")
                 .eq('user_id', playload.user_id)
             
-            if (errorUser) {
+            if ( errorUser ) {
                 console.error('Erreur lors de la requête :', errorUser);
                 return false;
             }
             
-            console.log("account", account, account[0]);
-            if(account && account.length>0 && account[0].id){
-                const user_id = account[0].id;
-
-                console.log("infos==", newId, playload.trip_id, user_id, playload.user_id);
-                let { data: data_booking, error: error_booking } = await supabase
-                    .from('booking')
-                    .insert([
-                        { id: newId, trip_id: playload.trip_id, passenger_account_id: user_id },
-                    ])
+            // check soldes enouth
+            if( account[0].credit - playload.price >= 0 ){
+                // debit le montant
+                let { data: account_update, error: error_update } = await supabase
+                    .from('account')
+                    .update({ credit: (account[0].credit - playload.price) })
+                    .eq('user_id', playload.user_id)
                     .select()
 
-                if (error_booking) {
-                    console.error('Erreur lors de la requête :', error_booking);
+                if( error_update ){
+                    console.error("Error update", error_update)
                     return false;
-                }
-        
-                console.log("reserveTrajet:", data_booking);
+                }    
+                
+                store.state.profil.soldes = account_update[0].credit;
+                console.log("new-soldes:", account_update[0].credit);
+
+                if(account && account.length>0 && account[0].id){
+                    const user_id = account[0].id;
+
+                    //add +1 reserve
+                    let { data: data_booking, error: error_booking } = await supabase
+                        .from('booking')
+                        .insert([
+                            { id: newBookingId, trip_id: playload.trip_id, passenger_account_id: user_id },
+                        ])
+                        .select()
+
+                    if ( error_booking ) {
+                        console.error('Erreur lors de la requête :', error_booking);
+                        return false;
+                    }
             
-                return true;
+                    console.log("reserveTrajet:", data_booking);
+                
+                    return true;
+                }
             }
             return false;
         },

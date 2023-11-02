@@ -174,14 +174,21 @@
                 }
             },
             async tryReserve(){
-                const reserved = await this.$store.dispatch("search/reserveTrajet", {trip_id: this.$store.state.search.trajetSelected.id, user_id: this.$store.state.profil.userUid});
+                const reserved = await this.$store.dispatch("search/reserveTrajet", 
+                                                                {
+                                                                    trip_id: this.trajetSelected.id, 
+                                                                    user_id: this.$store.state.profil.userUid,
+                                                                    passenger_number: this.trajetSelected.passenger_number,
+                                                                    price: this.trajetSelected.price,
+                                                                }
+                                                            );
 
-                if(reserved){
-                this.sendNotification();
-                this.$emit('test-notif-success');
+                if( reserved ){
+                    this.sendNotification();
+                    this.$emit('test-notif-success');
                 }
                 else
-                console.log("Erreur de reservation");
+                    console.log("Erreur de reservation");
             },
         },
     };

@@ -5,6 +5,7 @@
 
 import store from '../store';
 import supabase from '@/utils/supabaseClient.js';
+import { dateConverter } from '@/utils/utils.js';
 
 export default {
     namespaced: true,
@@ -30,6 +31,7 @@ export default {
                 },
             },
             myTravels: [],
+            myPublish: [],
         },
     },
     getters: {
@@ -64,7 +66,7 @@ export default {
         async getTravels({state}){
             console.log("get-travel", state, state.userUid);
 
-            // get-credit
+            // get-account
             let { data: account, error: error_account } = await supabase
                 .from('account')
                 .select("*")
@@ -100,12 +102,12 @@ export default {
 
             const groupedInfos = _trips.reduce((acc, info) => {
                 const departureDate = new Date(info.departure_time);
-                const formattedDate = departureDate.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+                const formattedDate = dateConverter(departureDate);
                 
                 const existingGroup = acc.find(group => group.date === formattedDate);
-                if (existingGroup) {
+                if ( existingGroup ) {
                     existingGroup.infos.push(info);
-                } 
+                }
                 else {
                     acc.push({
                         date: formattedDate,
@@ -122,6 +124,68 @@ export default {
             console.log("_trips:", _trips, state.profil.myTravels);
 
             return true;
-        }, 
+        },
+        async getPublish({state}){
+            console.log("get-publish", state, state.userUid);
+
+            // get-account
+            let { data: account, error: error_account } = await supabase
+                .from('account')
+                .select("*")
+                .eq('user_id', state.userUid)
+
+            console.log("account:", account, error_account);
+
+            let { data: db_trip, error: error_trips } = await supabase
+                .from('trip')
+                .select('*')
+                .eq('driver_id', state.userUid)
+
+            if( error_trips ){
+                console.error("Error booking", error_trips)
+                return false;
+            }
+
+            if(db_trip.length==0){
+                console.log("no trips");
+                return false
+            }
+
+            console.log("trips::", db_trip.length, db_trip[0].id);
+
+            await store.dispatch("search/getTrajets");
+
+            let _trips = [];
+            for (let index = 0; index < db_trip.length; index++) {
+                const trip_id = db_trip[index].id;
+
+                _trips.push(store.state.search.trajets.filter((trajet) => trajet.id == trip_id)[0]);
+            }
+
+            const groupedInfos = _trips.reduce((acc, info) => {
+                const departureDate = new Date(info.departure_time);
+                const formattedDate = dateConverter(departureDate);
+                
+                const existingGroup = acc.find(group => group.date === formattedDate);
+                if ( existingGroup ) {
+                    existingGroup.infos.push(info);
+                }
+                else {
+                    acc.push({
+                        date: formattedDate,
+                        infos: [info],
+                    });
+                }
+                
+                return acc;
+            }, []);
+            
+            console.log("groupedInfos", groupedInfos);
+
+            state.profil.myPublish = groupedInfos;
+            console.log("_trips:", _trips, state.profil.myPublish);
+
+            return true;
+        },
     },
 }

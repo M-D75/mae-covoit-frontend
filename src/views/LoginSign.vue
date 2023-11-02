@@ -318,7 +318,10 @@
             }
         },
         created(){
-            this.checkSessionIn();
+            const sessionValided = this.checkSessionIn();
+            if(sessionValided)
+                this.$router.replace("/search");
+
         },
         mounted() {
             App.addListener('appUrlOpen', (data) => {

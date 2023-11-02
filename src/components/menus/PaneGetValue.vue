@@ -22,17 +22,17 @@
     }
 
     .v-container {
-        position: absolute;
+        position: fixed;
         padding: 0;
         padding-top: var(--safe-top);
         background-color: white;
-        // background-color: var(--bg-app-color);
+        background-color: var(--bg-app-color);
         width: 100%;
         max-width: 100%;
-        height: 100%;
+        height: 100vh;
         z-index: 9999;
         .sub-cont {
-            height: 100%;
+            height: 90%;
             &.scrolling {
                 overflow: scroll;
             }
@@ -48,13 +48,17 @@
         }
     }
 
+    .bg-white {
+        background-color: white;
+    }
+
 </style>
 
 <template>
 
     <!--  -->
     <v-container
-        class="pan-get-value"
+        class="pan-get-value" :class="mode=='date' ? 'bg-white' : 'bg-gray'"
     >
         <div class="sub-cont" :class="mode=='date' ? 'scrolling' : 'not-scroll'">
             <div
@@ -201,17 +205,20 @@
                     this.$refs.SearchRef.saisi = "";
                 }
                 this.saisi = "";
-                $(".pan-get-value").animate({top: `0px`}, 'fast')
-                $(".pan-get-value").css("top", `0px`);
+                $(".pan-get-value").animate({top: `0px`}, 'fast', function(){
+                                $(".pan-get-value").css("top", `0px`);
+                            })
+                
                 
                 this.opened = true;
             },
             close(){
                 $(".pan-get-value").animate({top: `${this.sizeScreen}px`}, "fast", function(){
                     $(this).addClass("closed");
+                    $(".pan-get-value").css("top", `${this.sizeScreen}px`);
                 });
 
-                $(".pan-get-value").css("top", `${this.sizeScreen}px`);
+                
 
                 this.opened = false;
 
