@@ -172,7 +172,7 @@
 
     // struct
     .draggable{
-        position: absolute;
+        position: fixed;
         width: 100%;
         height: 50px;
         z-index: 99999;

@@ -11,6 +11,7 @@
     }
 
 </style>
+
 <!-- scss -->
 <style lang="scss" scoped>
     .container-trajet-member {
@@ -56,7 +57,7 @@
     <v-main class="container-trajet-member">
         <div class="label-filter text-caption text-uppercase mx-auto">{{ date.replaceAll("-", "/") }}</div>
         <TrajetMember 
-            v-for="(infos, index) in trajets.filter(trajet => trajet.depart == depart && trajet.destination == destination)" 
+            v-for="(infos, index) in trajetFiltered" 
             :key="index" 
             :infos="infos"
             :data-index="index"
@@ -121,8 +122,16 @@
     export default defineComponent({
         name: 'results-view',
         computed: {
-            ...mapState("search", ["trajets"]),
+            ...mapState("search", ["trajets", "trajetSelected"]),
             ...mapActions("search", ["getTrajets"]),
+            trajetFiltered(){
+                console.log("filtred trajjj");
+                return this.trajets.filter(
+                    (trajet) => trajet.depart == this.depart 
+                    && trajet.destination == this.destination
+                    && trajet.passenger_number + this.nbPassager <= trajet.max_seats
+                );
+            },
         },
         components: {
             Toolbar,
@@ -143,20 +152,20 @@
                 default: "Aujourd'hui",
             },
             nbPassager: {
-                type: String,
-                default: "0",
+                type: Number,
+                default: 0,
             }
         },
         data() {
             return {
                 infos: {
-                    "depart": "Tsingoni",
-                    "destination": "Mamoudzou",
-                    "hour_start": "4:50",
-                    "hour_end": "6:55",
-                    "price": 4,
-                    "name": "Ledou",
-                    "passenger_number": 2,
+                    depart: "Tsingoni",
+                    destination: "Mamoudzou",
+                    hour_start: "4:50",
+                    hour_end: "6:55",
+                    price: 4,
+                    name: "Ledou",
+                    passenger_number: 2,
                     max_seats: 4
                 },
                 nothing: false,
@@ -166,15 +175,14 @@
         },
         mounted(){
             this.waitInit();
-            console.log("params", this.$route.params);
+            // console.log("params", this.$route.params);
         },
         methods: {
             ...mapMutations("search", ["SET_DEPART", "SET_DESTINATION", "SET_NB_PASSENGER"]),
             reserve(event, index){
-                const tmp_trajets = this.$store.state.search.trajets.filter(trajet => trajet.depart == this.depart && trajet.destination == this.destination);
-                this.infos = tmp_trajets[index];
+                this.infos = this.trajetFiltered[index];
                 // TODO: propre
-                this.$store.state.search.trajetSelected = this.infos;
+                this.trajetSelected = this.infos;
                 this.$store.commit("search/SET_DEPART", "");
                 this.$store.commit("search/SET_DESTINATION", "");
                 this.$store.commit("search/SET_NB_PASSAGER", 1);
@@ -188,23 +196,23 @@
             callCloseBottomChild() {
                 if ( this.$refs.BottomMenuRef ) {
                     this.$refs.BottomMenuRef.close();
-                    this.$store.state.search.trajetSelected = null;
-                    setTimeout(function(){
-                        this.overlay = false;
-                    }.bind(this), 1000)
+                    this.trajetSelected = null;
+                    setTimeout(
+                            function(){
+                                this.overlay = false;
+                            }.bind(this), 1000
+                        );
                 }
             },
             async waitInit(){
                 this.overlayLoad = true;
                 try{
                     await this.getTrajets;
-                    const _tmp_trajets = this.trajets.filter(trajet => trajet.depart == this.depart && trajet.destination == this.destination)
-                    console.log("nb-trajets", _tmp_trajets.length, _tmp_trajets)
-                    if(_tmp_trajets.length == 0)
+                    if(this.trajetFiltered.length == 0)
                         this.nothing = true;
-                    } 
+                } 
                 catch (error) {
-                    console.log("Error:", error)
+                    console.error("Error:", error)
                     this.nothing = true;
                 }
             },

@@ -51,10 +51,11 @@
 <!--  -->
 <template>
     <div class="blc-pile">
-        <TrajetMemberBtn v-if="fastSearch == false" @click="fastSearch = true" class="tj main" style="z-index: 88; position: absolute; top:50%"/>
+        <TrajetMemberBtn v-if="fastSearch == false" @click="getFastSearch" class="tj main" style="z-index: 88; position: absolute; top:50%"/>
         <TrajetMember
-            @click="reserve()"
             v-if="fastSearch == true" 
+            @click="reserve()"
+            :infos="infos"
             class="tj main" 
             style="z-index: 88; 
             position: absolute; 
@@ -70,6 +71,7 @@
 <!--  -->
 <script>
     import { defineComponent } from 'vue';
+    import { mapActions, mapState, mapMutations } from 'vuex';
 
     // Components
     import TrajetMemberBtn from './TrajetMemberBtn.vue';
@@ -77,35 +79,47 @@
 
     export default defineComponent({
         name: 'pile-search-comp',
-
+        computed: {
+            ...mapState("search", ["trajets", "trajetSelected"]),
+            ...mapActions("search", ["getTrajets"]),
+        },
         components: {
             TrajetMemberBtn,
             TrajetMember,
         },
         props: {
-            infos: {
-                type: Object,
-                default() {
-                return {
-                        "depart": "Tsingoni",
-                        "destination": "Mamoudzou",
-                        "hour_start": "4:50",
-                        "hour_end": "6:55",
-                        "price": 4,
-                        "name": "Ledou",
-                        "passenger_number": 2
-                    };
-                },
-            },
+            // infos: {
+            //     type: Object,
+            //     default() {
+            //     return {
+            //             "depart": "Tsingoni",
+            //             "destination": "Mamoudzou",
+            //             "hour_start": "4:50",
+            //             "hour_end": "6:55",
+            //             "price": 4,
+            //             "name": "Ledou",
+            //             "passenger_number": 2
+            //         };
+            //     },
+            // },
         },
         data() {
             return {
                 fastSearch: false,
+                infos: {},
             }
         },
         methods: {
+            ...mapMutations("search", ["SET_TRAJET_SELECTED"]),
             reserve(){
+                this.SET_TRAJET_SELECTED(this.infos);
                 this.$emit("reserve");
+            },
+            async getFastSearch(){
+                await this.getTrajets;
+                this.infos = this.trajets[0];
+                this.fastSearch = true;
+                this.$emit("fast-get-trip");
             },
         },
         mounted() {

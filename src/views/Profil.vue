@@ -156,15 +156,6 @@
         v-on:up-money="onUpMoney()"
         />
 
-    <!-- password -->
-    <BottomMenu
-        :class-name="['password']"
-        :mode="'password'"
-        labelSelectorN1="Quel montant souhaitez-vous créditer sur votre compte ?"
-        ref="BottomMenuRef" 
-        v-on:close="overlay = false"
-        />
-
 </template>
 
 

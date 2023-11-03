@@ -14,10 +14,10 @@
 <!-- scss -->
 <style lang="scss" scoped>
     .v-main{
-        margin-bottom: 25px;
+        //margin-bottom: 25px;
         padding-top: var(--safe-top);
         .v-row.home-search-view{
-            margin: 30px auto;
+            //margin: 30px auto;
             .title {
                 font-size: var(--font-size-h1);
                 color: var(--font-color-label);
@@ -43,6 +43,7 @@
     ></v-overlay>
 
     <v-main>
+
         <v-row 
             class="home-search-view mt-40 mb-0"
             style="margin-top: 40px;"
@@ -79,44 +80,47 @@
         <!-- Find Fast Trajet -->
         <Pile 
             class="pile-search"
+            ref="PileRef"
             :infos="infos"
             v-on:reserve="reserve()"
+            v-on:fast-get-trip="getFastInfo"
         />
 
+        <!-- Get Value -->
+        <PaneGetValue
+            ref="PaneGetValueRef"
+            :mode="modePanel" 
+            :open-p="openP"
+            v-on:close="close()"
+            v-on:date-selected="getDate()"
+        />
+
+        <!-- number : nb-pessenger -->
+        <BottomMenu
+            ref="BottomMenuRef"
+            :class-name="['number']"
+            :params-number="{min: 1, max:8}"
+            mode="nb-passenger"
+            labelSelectorN1="Réservation pour combien de personnes ?"
+            v-on:close="overlay = false"
+            v-on:time-valided="getSelected()"
+        />
+
+        <!-- reserve fast -->
+        <BottomMenu 
+            ref="BottomMenuRefResults"
+            :class-name="['results']" 
+            mode="reserve"
+            v-on:close="overlay = false" 
+            :infos="infos"
+        />
         
     </v-main>
 
     <!-- Menu -->
     <BottomNav />
 
-    <!-- Get Value -->
-    <PaneGetValue
-        ref="PaneGetValueRef"
-        :mode="modePanel" 
-        :open-p="openP"
-        v-on:close="close()"
-        v-on:date-selected="getDate()"
-    />
-
-    <!-- number : nb-pessenger -->
-    <BottomMenu
-        ref="BottomMenuRef"
-        :class-name="['number']"
-        :params-number="{min: 1, max:8}"
-        mode="nb-passenger"
-        labelSelectorN1="Réservation pour combien de personnes ?"
-        v-on:close="overlay = false"
-        v-on:time-valided="getSelected()"
-    />
-
-    <!-- reserve fast -->
-    <BottomMenu 
-        ref="BottomMenuRefResults"
-        :class-name="['results']" 
-        mode="reserve"
-        v-on:close="overlay = false" 
-        :infos="infos"
-    />
+    
 
 </template>
 
@@ -138,7 +142,7 @@
     export default defineComponent({
         name: 'home-search-view',
         computed: {
-            ...mapState("search", ['depart', "destination"]),
+            ...mapState("search", ['depart', "destination", "nbPassenger"]),
         },
         components: {
             TrajetSearch,
@@ -154,7 +158,6 @@
                 modePanel: "date",
                 date: null,
                 dateString: "Aujourd'hui",
-                nbPassager: 1,
                 infos: {
                     "depart": "Tsingoni",
                     "destination": "Mamoudzou",
@@ -217,14 +220,21 @@
             getSelected(){
                 if (this.$refs.BottomMenuRef) {
                     this.SET_NB_PASSAGER(this.$refs.BottomMenuRef.numberSelected)
-                    if(this.nbPassager){
+                    if(this.nbPassenger){
                         this.close();
                     }
                 }
             },
             reserve(){
-                this.overlay = this.$refs.BottomMenuRefResults.open();
+                if( this.$refs.BottomMenuRefResults ){
+                    this.overlay = this.$refs.BottomMenuRefResults.open();
+                }
             },
+            getFastInfo(){
+                if( this.$refs.PileRef ){
+                    this.infos = this.$refs.PileRef.infos;
+                }
+            }
         },
         watch: {
             depart(){

@@ -238,7 +238,7 @@
                     <v-list-item
                         class="nb-person"
                         prepend-icon="mdi-account-plus"
-                        :title="nbPassager"
+                        :title="nbPassenger"
                         :active="false"
                         :ripple="false"
                         @click="$emit('open-nb-passenger')"
@@ -271,7 +271,7 @@
         name: 'trajet-search-comp',
         emits: ["switch-commune", "trajet-selected", "open-dep", "open-dest", "open-calendar", "open-nb-passenger"],
         computed: {
-            ...mapState("search", ['villages', 'depart', 'destination', 'nbPassager']),
+            ...mapState("search", ['villages', 'depart', 'destination', 'nbPassenger']),
             ...mapActions("search", ['getVillages']),
         },
         components: {
@@ -284,7 +284,6 @@
         },
         data() {
             return {
-                numberTrajet: 0,
                 switch: false,
             }
         },
@@ -292,12 +291,6 @@
             if( this.villages == undefined || this.villages == null || this.villages.length == 0 ){
                 this.getVillages;
             }
-        },
-        beforeMount() {
-            
-        },
-        mounted (){
-            
         },
         methods: {
             ...mapMutations("search", ["SET_DEPART", "SET_DESTINATION"]),
@@ -334,16 +327,10 @@
                 this.SET_DESTINATION(tmp);
             },
             goResult(){
-                this.checkTrajet();
-                console.log("go to :", `/results/${this.depart}/${this.destination}/${this.dateString}/${this.nbPassager}`, this.numberTrajet)
+                console.log("go to :", `/results/${this.depart}/${this.destination}/${this.dateString}/${this.nbPassenger}`)
                 if ( this.depart && this.destination ) {
-                    this.$router.push(`/results/${this.depart}/${this.destination}/${this.dateString}/${this.nbPassager}`);
-                }
-            },
-            checkTrajet(){
-                this.numberTrajet = this.$store.state.search.trajets.filter(trajet => trajet.depart == this.depart && trajet.destination == this.destination).length;
-                if (this.depart && this.destination) {
                     this.$emit("trajet-selected");
+                    this.$router.push(`/results/${this.depart}/${this.destination}/${this.dateString}/${this.nbPassenger}`);
                 }
             },
         },

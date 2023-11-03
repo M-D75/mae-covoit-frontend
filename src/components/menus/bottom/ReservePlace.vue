@@ -160,7 +160,7 @@
                         notifications: [{
                             id: 1,
                             title: "Tchoup Tchoup",
-                            body: `Super ! Votre trajet de ${this.trajetSelected.depart} à ${this.trajetSelected.destination} à bien été validéÒÒ.`,
+                            body: `Super ! Votre trajet de ${this.trajetSelected.depart} à destination de ${this.trajetSelected.destination} à ${this.trajetSelected.hour_start} à bien été validé.`,
                             summaryText: "sumaryText!",
                             schedule: { at: new Date(Date.now() + 3000) }, // dans 5 secondes
                             iconColor: "red",
@@ -174,14 +174,7 @@
                 }
             },
             async tryReserve(){
-                const reserved = await this.$store.dispatch("search/reserveTrajet", 
-                                                                {
-                                                                    trip_id: this.trajetSelected.id, 
-                                                                    user_id: this.$store.state.profil.userUid,
-                                                                    passenger_number: this.trajetSelected.passenger_number,
-                                                                    price: this.trajetSelected.price,
-                                                                }
-                                                            );
+                const reserved = await this.$store.dispatch("search/reserveTrajet", { user_id: this.$store.state.profil.userUid });
 
                 if( reserved ){
                     this.sendNotification();

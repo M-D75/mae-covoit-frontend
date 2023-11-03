@@ -1,5 +1,6 @@
 
 <style lang="scss" model>
+
     .ligth-mode * {
         --bg-app-color: #f5f5f5;
         --white-bg-color: #FBFBFB;
@@ -91,10 +92,15 @@
             margin: 50px auto;
 
         }
+
+        .v-row{
+            margin: 30px auto;
+            v.btn{
+                color: var(--font-color-label);
+            }
+        }
     }
-    .v-row{
-        margin: 30px auto;
-    }
+   
 </style>
    
 <!--  -->
@@ -123,7 +129,7 @@
                     <v-col>
                         <v-btn
                             class="mr-4 text-none"
-                            @click="submit"
+                            @click="goToLoginSign"
                             rounded="xl" 
                             size="x-large"
                             variant="outlined"
@@ -175,7 +181,7 @@
     import { mapActions } from 'vuex'
 
     export default {
-        name: 'HomeTest',
+        name: 'home-view',
         computed: {
             ...mapActions("auth", ["refreshToken", "checkSession"]),
         },
@@ -185,7 +191,7 @@
             }
         },
         methods: {
-            submit(){
+            goToLoginSign(){
                 this.$router.push({ path: '/login' })
             },
         },

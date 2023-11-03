@@ -8,10 +8,13 @@ import supabase from '@/utils/supabaseClient.js';
 export default {
     namespaced: true,
     state: {
+        // user choice
         depart: "",
         destination: "",
         date: null,
-        nbPassager: 1,
+        nbPassenger: 1,
+        trajetSelected: {},
+        // serveur
         villages: [],
         communesHistory: ["Tsingoni", "Mamoudzou", "Dzaoudzi"],
         trajets: [
@@ -115,7 +118,6 @@ export default {
             "passenger_number": 2
         },
         ],
-        trajetSelected: {},
         accounts: [],
     },
     getters: {
@@ -140,7 +142,7 @@ export default {
             state.destination = destination;
         },
         SET_NB_PASSAGER(state, number){
-            state.nbPassager = number;
+            state.nbPassenger = number;
         },
         SET_TRAJETS(state, trips){
             state.trajets = trips;
@@ -230,7 +232,7 @@ export default {
                     console.error(error);
                 });
         },
-        async reserveTrajet(context, playload){
+        async reserveTrajet({state}, playload){
 
             // get all booking id
             let { data: booking, error: error_booking } = await supabase
@@ -257,11 +259,11 @@ export default {
             }
             
             // check soldes enouth
-            if( account[0].credit - playload.price >= 0 ){
+            if( account[0].credit - state.trajetSelected.price >= 0 ){
                 // debit le montant
                 let { data: account_update, error: error_update } = await supabase
                     .from('account')
-                    .update({ credit: (account[0].credit - playload.price) })
+                    .update({ credit: (account[0].credit - state.trajetSelected.price) })
                     .eq('user_id', playload.user_id)
                     .select()
 
@@ -273,26 +275,35 @@ export default {
                 store.state.profil.soldes = account_update[0].credit;
                 console.log("new-soldes:", account_update[0].credit);
 
-                if(account && account.length>0 && account[0].id){
+                if(account && account.length>0 && account[0].id && state.nbPassenger + state.trajetSelected.passenger_number <= state.trajetSelected.max_seats){
                     const user_id = account[0].id;
+
+                    let list_ins_passenger = [];
+                    for(let index_passenger=0; index_passenger < state.nbPassenger; index_passenger++){
+                        list_ins_passenger.push({ id: newBookingId+index_passenger, trip_id: state.trajetSelected.id, passenger_account_id: user_id })
+                    }
 
                     //add +1 reserve
                     let { data: data_booking, error: error_booking } = await supabase
                         .from('booking')
-                        .insert([
-                            { id: newBookingId, trip_id: playload.trip_id, passenger_account_id: user_id },
-                        ])
+                        .insert(list_ins_passenger)
                         .select()
 
                     if ( error_booking ) {
                         console.error('Erreur lors de la requête :', error_booking);
                         return false;
                     }
-            
+
                     console.log("reserveTrajet:", data_booking);
                 
                     return true;
                 }
+                else{
+                    console.log("accound prob ou pas de place", state.nbPassenger, state.trajetSelected.passenger_number, state.trajetSelected.max_seats);
+                }
+            }
+            else{
+                console.log("no credit", account[0].credit, state.trajetSelected.price);
             }
             return false;
         },
