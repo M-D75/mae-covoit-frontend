@@ -665,6 +665,7 @@
                             @input="checkNumericalValue($event, 'input2')"
                             single-line
                             variant="solo"
+                            role="number"
                             ></v-text-field>
                     </div>
                     <div>
@@ -676,6 +677,7 @@
                             ref="input2"
                             single-line
                             variant="solo"
+                            role="number"
                             ></v-text-field>
                     </div>
                     <div>
@@ -687,6 +689,7 @@
                             ref="input3"
                             single-line
                             variant="solo"
+                            role="number"
                             ></v-text-field>
                     </div>
                     <div>
@@ -698,6 +701,7 @@
                             ref="input4"
                             single-line
                             variant="solo"
+                            role="number"
                             ></v-text-field>
                     </div>
                 </div>
@@ -714,6 +718,7 @@
                                 placeholder="MM" 
                                 maxLength="2" 
                                 variant="solo"
+                                role="number"
                             ></v-text-field>
                         </div>
                         <div class="slash">/</div>
@@ -725,6 +730,7 @@
                                 placeholder="YY" 
                                 maxLength="2" 
                                 variant="solo"
+                                role="number"
                             ></v-text-field>
                         </div>
                     </div>
@@ -738,6 +744,7 @@
                             placeholder="123" 
                             variant="solo"
                             maxLength="3"
+                            role="number"
                         ></v-text-field>
                     </div>
                 </div>

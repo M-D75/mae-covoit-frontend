@@ -55,7 +55,7 @@ export default {
                     console.log('4:User already conneced:', user);
                     store.state.profil.userUid = user.id;
                     
-                    if(user.user_metadata.avatar_url)
+                    if(user.user_metadata.avatar_url && store.state.profil.avatarUrl == "https://avatars0.githubusercontent.com/u/9064066?v=4&s=460")
                         store.state.profil.avatarUrl = user.user_metadata.avatar_url;
 
                     await store.dispatch("search/getAccounts");

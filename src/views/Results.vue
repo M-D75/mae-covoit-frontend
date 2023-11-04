@@ -98,7 +98,7 @@
         class="align-center justify-center"
     >
         <v-progress-circular
-            color="black"
+            color="blue"
             indeterminate
             size="64"
         ></v-progress-circular>

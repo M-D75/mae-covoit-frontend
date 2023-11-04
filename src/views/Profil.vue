@@ -115,7 +115,7 @@
             <StatsTrajet v-if="onglet=='table-bord'"/>
 
             <!-- Trajets -->
-            <HistoryTrajets v-if="onglet=='trajets' || onglet=='planning'" :infos="infosTravels"/>
+            <HistoryTrajets v-if="onglet=='trajets' || onglet=='planning'" :infos="infosTravels" :mode="onglet"/>
         </div>
     </v-main>
         
@@ -163,7 +163,7 @@
 <!--  -->
 <script>
     import { defineComponent } from 'vue';
-    import { mapState, mapActions } from 'vuex';
+    import { mapState, mapActions, mapMutations } from 'vuex';
 
     // Components
     import ToolbarProfil from '@/components/menus/head/ToolbarProfil.vue';
@@ -179,8 +179,8 @@
     export default defineComponent({
         name: 'profil-view',
         computed: {
-            ...mapState("profil", ["darkMode", "userName", "profil"]),
-            ...mapActions("profil", ["getTravels", "getPublish"]),
+            ...mapState("profil", ["darkMode", "userName", "profil", "history"]),
+            ...mapActions("profil", ["getTravels", "getPublish", "buildHistoriqueBooking"]),
             ...mapActions("auth", ["checkSession"]),
         },
         components: {
@@ -306,11 +306,10 @@
                 this.$router.replace("/");
         },
         mounted(){
-            // this.$refs.BottomMenuRef.open()
-            
                 
         },
         methods: {
+            ...mapMutations("profil", ["SET_LOAD_GET_TRIP_PUBLISH"]),
             goToInfoPerso(){
                 this.$router.push("/profil/perso")
             },
@@ -319,6 +318,9 @@
                 if ( this.$refs.BottomMenuRefHistory ) {
                     if( ! this.overlay ){
                         this.overlay = this.$refs.BottomMenuRefHistory.open();
+                        if(this.overlay && ( history.historycalBooking == undefined || Object.keys(history.historycalBooking).length == 0 ) ){
+                            this.buildHistoriqueBooking;
+                        }
                     }
                     else {
                         this.overlay = this.$refs.BottomMenuRefHistory.close();
@@ -421,6 +423,8 @@
                 }
             },
             async onglet(){
+                this.SET_LOAD_GET_TRIP_PUBLISH(true);
+                this.infosTravels = [];
                 if( this.onglet == "trajets" && this.profil.myTravels.length == 0){
                     await this.getTravels;
                     this.infosTravels = this.profil.myTravels;
@@ -437,6 +441,7 @@
                         this.infosTravels = this.profil.myPublish;
                     }
                 }
+                this.SET_LOAD_GET_TRIP_PUBLISH(false);
                 console.log("infos-travels:", this.infosTravels);
             },
         }

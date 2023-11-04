@@ -2,7 +2,7 @@
 <style lang="scss" model>
     .scrollable-container {
         cursor: pointer;
-        overflow-y: scroll;
+        overflow-y: hidden !important;
         scrollbar-width: thin;
         scrollbar-color: transparent transparent;
     }

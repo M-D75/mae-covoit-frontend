@@ -18,13 +18,80 @@
                 }
             }
         }
+
+        .contain-history-empty {
+            height: 150px;
+            .nothing {
+                display: table;
+                text-align: center;
+                height: 100%;
+                .contenu {
+                    text-align: center;
+                    display: table-cell;
+                    vertical-align: middle;
+                    i {
+                        font-size: 35px;
+                        margin-bottom: 5px;
+                    }
+                    span {
+                        font-size: 17px;
+                        text-transform: uppercase;
+                        display: block;
+                    }
+                }
+            }
+            
+            .load-cont{
+                display: grid;
+                height: 100%;
+            }
+        }
     }
 </style>
    
 <!--  -->
 <template>
     <div class="history-trajets">
-        <div class="contain-history">
+
+        <div 
+            v-if="infos.length==0"
+            class="contain-history-empty"
+        >
+            <div
+                v-if="!profil.loadGetTripPublish"
+                class="nothing label-filter text-caption mx-auto"
+                @click="overlayLoad=true"
+            >
+                <div class="contenu">
+                    <v-icon icon="mdi-alert-circle-outline"></v-icon>
+                    <span
+                        v-if="mode=='planning'"
+                    >Aucune publication récente !</span>
+
+                    <span
+                        v-else
+                    >Aucune réservation récente !</span>
+                </div>
+            </div>
+
+            <!-- loading -->
+            <div 
+                v-if="profil.loadGetTripPublish"
+                class="load-cont align-center justify-center"
+                >
+
+                <v-progress-circular
+                    color="blue"
+                    indeterminate
+                    size="64"
+                ></v-progress-circular>
+            </div>
+        </div>
+
+        <div 
+            v-else
+            class="contain-history"
+        >
             <div 
                 v-for="info in infos"
                 :key="info.date"
@@ -41,6 +108,7 @@
 <!--  -->
 <script>
     import { defineComponent } from 'vue';
+    import { mapState } from 'vuex';
 
     // Components
     import GroupCardsHistory from './GroupCardsHistory.vue';
@@ -48,11 +116,17 @@
 
     export default defineComponent({
         name: 'history-trajets-comp',
-
+        computed: {
+            ...mapState("profil", ["profil"])
+        },
         components: {
             GroupCardsHistory,
         },
         props: {
+            mode: {
+                type: String,
+                default: "planning",
+            },
             infos: {
                 type: Array,
                 default() {

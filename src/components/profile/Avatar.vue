@@ -44,9 +44,12 @@
                 alt="Avatar"
                 :src="avatarUrl"
             ></v-img>
-            <v-icon v-if="modeEdit">
+            <v-icon v-if="modeEdit" @click="triggerFileInput">
                 mdi-camera-plus
             </v-icon>
+
+            <!-- File input (caché) -->
+            <input type="file" ref="fileInput" style="display: none" @change="handleFileChange" />
         </v-avatar>
 
         <div
@@ -67,7 +70,7 @@
 <!--  -->
 <script>
     import { defineComponent } from 'vue';
-    import { mapState } from 'vuex';
+    import { mapState, mapMutations } from 'vuex';
 
     // Components
     // ...
@@ -103,8 +106,26 @@
             }
         },
         methods: {
+            ...mapMutations("profil", ["SET_AVATAR_URL"]),
             avatarTouchedEmit(){
                 this.$emit("avatar-touched");
+            },
+            triggerFileInput() {
+                // Active le clic sur l'input de type file
+                this.$refs.fileInput.click();
+            },
+            handleFileChange(event) {
+                // Affiche l'image sélectionnée
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        //this.avatarUrl = e.target.result;
+                        this.SET_AVATAR_URL(e.target.result)
+                        console.log("load img", this.avatarUrl);
+                    };
+                    reader.readAsDataURL(file);
+                }
             },
         }
     });

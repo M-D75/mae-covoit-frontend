@@ -206,7 +206,7 @@ export default {
                         _trips.push(_trip);
                     }
 
-                    console.log(_trips)
+                    console.log("trips:", _trips)
                     
                     commit('SET_TRAJETS', _trips);
                 })
