@@ -77,162 +77,269 @@
 </style>
 
 <style lang="scss" scoped>
-   .v-card {
-      background-color: var(--white-bg-color);
-      margin: 20px;
-      width: 87.2%;
-      border-radius: 24px;
-      box-shadow: var(--box-shadow-card);
-      .v-list{
-         .v-list-item {
-            .v-list-item__content {
-                background-color: #eee !important;
-                color: #eee !important;
+    .v-card {
+        background-color: var(--white-bg-color);
+        margin: 20px;
+        width: 87.2%;
+        border-radius: 24px;
+        box-shadow: var(--box-shadow-card);
+        .v-list{
+            .v-list-item {
+                .v-list-item__content {
+                    background-color: #eee !important;
+                    color: #eee !important;
+                }
             }
-         }
-      }
-      .hour {
-         &.v-list-item {
-            width: 73px;
-         }
-      }
-   }
-   .v-btn {
-      position: relative;
-      bottom: -8px;
-      margin-top: 16px;
-   }
-   .empty-mask {
-      //display: none;
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: #eee;
-      z-index: 9;
-      opacity: 0.7;
-   }
-   .empty {
-      //display: none;
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 9999;
-      text-align: center;
-      .v-icon {
-         font-size: 5em;
-         min-height: 100%;
-         align-items: center;
-         display: inline-flex;
-         color: #484848;
-      }
-   }
+        }
+        .hour {
+            &.v-list-item {
+                width: 73px;
+            }
+        }
+    }
+    .v-btn {
+        position: relative;
+        bottom: -8px;
+        margin-top: 16px;
+    }
+    .empty-mask {
+        //display: none;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #eee;
+        z-index: 9;
+        opacity: 0.7;
+    }
+    .empty {
+        //display: none;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 9999;
+        text-align: center;
+        .v-icon {
+            font-size: 5em;
+            min-height: 100%;
+            align-items: center;
+            display: inline-flex;
+            color: #484848;
+        }
+
+        .nothing {
+            display: table;
+            text-align: center;
+            height: 100%;
+            .contenu {
+                text-align: center;
+                display: table-cell;
+                vertical-align: middle;
+                i {
+                    font-size: 35px;
+                    margin-bottom: 5px;
+                    min-height: inherit;
+                }
+                span {
+                    font-size: 17px;
+                    text-transform: uppercase;
+                    display: block;
+                }
+            }
+        }
+    }
 
 </style>
 
 <template>
-   <v-card
-      class="card-trajet-member-btn mx-auto"
-      max-width="500"
-   >
-      <div class="empty-mask"></div>
-      <div class="empty">
-         <v-icon icon="fa:fa-brands fa-searchengin" />
-      </div>
-      <v-list>
+    <v-card
+        v-if="!empty"
+        class="card-trajet-member-btn mx-auto"
+        max-width="500"
+    >
+        <div class="empty-mask"></div>
+        <div class="empty">
+            <v-icon icon="fa:fa-brands fa-searchengin" />
+        </div>
+        <v-list>
+            <div class="part-list">
+                <div>
+                    <div class="comune flex">
+                        <v-list-item
+                            class="hour"
+                            :title="infos.hour_start"
+                        ></v-list-item>
+                        <v-list-item
+                            prepend-icon="mdi-navigation"
+                            :title="infos.depart"
+                        ><div class="line"></div></v-list-item>
+                        
+                    </div>
 
-         <div class="part-list">
-            <div>
-               <div class="comune flex">
-                  <v-list-item
-                     class="hour"
-                    :title="infos.hour_start"
-                  ></v-list-item>
-                  <v-list-item
-                    prepend-icon="mdi-navigation"
-                    :title="infos.depart"
-                  ><div class="line"></div></v-list-item>
-                  
-               </div>
+                    <div class="comune flex">
+                        <v-list-item
+                            class="hour"
+                            :title="infos.hour_end"
+                        ></v-list-item>
+                        <v-list-item
+                            prepend-icon="mdi-navigation"
+                            :title="infos.destination"
+                        ></v-list-item>
+                    </div>
+                </div>
 
-               <div class="comune flex">
-                  <v-list-item
-                     class="hour"
-                    :title="infos.hour_end"
-                  ></v-list-item>
-                  <v-list-item
-                    prepend-icon="mdi-navigation"
-                    :title="infos.destination"
-                  ></v-list-item>
-               </div>
+                <div class="avatar flex">
+                <v-avatar
+                    size="47px"
+                >
+                    <v-img
+                        alt="Avatar"
+                        src="https://avatars0.githubusercontent.com/u/9064066?v=4&s=460"
+                    ></v-img>
+                </v-avatar>
+                <!-- <v-avatar color="blue">
+                    <span class="text-h5">{{infos.name[0].toUpperCase()}}</span>
+                </v-avatar> -->
+                <v-list-item
+                    :title="infos.name"
+                ></v-list-item>
+                </div>
+
+                <v-chip
+                    class="ma-2 prix"
+                    color="blue"
+                    label
+                >
+                    {{infos.price}}€
+                </v-chip>
+
+                <v-chip
+                    class="ma-2 rapport"
+                    color="blue"
+                    label
+                >
+                    {{ infos.passenger_number }}/4
+                </v-chip>
             </div>
 
-            <div class="avatar flex">
-               <v-avatar
-                  size="47px"
-               >
-                  <v-img
-                     alt="Avatar"
-                     src="https://avatars0.githubusercontent.com/u/9064066?v=4&s=460"
-                  ></v-img>
-               </v-avatar>
-               <!-- <v-avatar color="blue">
-                  <span class="text-h5">{{infos.name[0].toUpperCase()}}</span>
-               </v-avatar> -->
-               <v-list-item
-                  :title="infos.name"
-               ></v-list-item>
+        </v-list>
+    </v-card>
+
+    <!-- empty -->
+    <v-card
+        v-else
+        class="card-trajet-member-btn mx-auto"
+        max-width="500"
+    >
+        <div class="empty-mask"></div>
+        <div class="empty">
+            <div
+                class="nothing label-filter text-caption mx-auto"
+            >
+                <div class="contenu">
+                    <v-icon icon="mdi-alert-circle-outline"></v-icon>
+                    <span>Aucun trajet trouvé !</span>
+                </div>
+            </div>
+        </div>
+        <v-list>
+
+            <div class="part-list">
+                <div>
+                <div class="comune flex">
+                    <v-list-item
+                        class="hour"
+                        :title="infos.hour_start"
+                    ></v-list-item>
+                    <v-list-item
+                        prepend-icon="mdi-navigation"
+                        :title="infos.depart"
+                    ><div class="line"></div></v-list-item>
+                    
+                </div>
+
+                <div class="comune flex">
+                    <v-list-item
+                        class="hour"
+                        :title="infos.hour_end"
+                    ></v-list-item>
+                    <v-list-item
+                        prepend-icon="mdi-navigation"
+                        :title="infos.destination"
+                    ></v-list-item>
+                </div>
+                </div>
+
+                <div class="avatar flex">
+                <v-avatar
+                    size="47px"
+                >
+                    <v-img
+                        alt="Avatar"
+                        src="https://avatars0.githubusercontent.com/u/9064066?v=4&s=460"
+                    ></v-img>
+                </v-avatar>
+                <!-- <v-avatar color="blue">
+                    <span class="text-h5">{{infos.name[0].toUpperCase()}}</span>
+                </v-avatar> -->
+                <v-list-item
+                    :title="infos.name"
+                ></v-list-item>
+                </div>
+
+                <v-chip
+                    class="ma-2 prix"
+                    color="blue"
+                    label
+                >
+                    {{infos.price}}€
+                </v-chip>
+
+                <v-chip
+                    class="ma-2 rapport"
+                    color="blue"
+                    label
+                >
+                    {{ infos.passenger_number }}/4
+                </v-chip>
             </div>
 
-            <v-chip
-               class="ma-2 prix"
-               color="blue"
-               label
-            >
-              {{infos.price}}€
-            </v-chip>
-
-            <v-chip
-               class="ma-2 rapport"
-               color="blue"
-               label
-            >
-              {{ infos.passenger_number }}/4
-            </v-chip>
-         </div>
-
-      </v-list>
-  </v-card>
+        </v-list>
+    </v-card>
 </template>
 
 
 <script>
 
-   // Components
-   export default {
-      name: 'trajet-member-btn-comp',
-      props: {
-         infos: {
-            type: Object,
-            default() {
-              return {
-                   "depart": "XXXXXXX",
-                   "destination": "XXXXXXX",
-                   "hour_start": "X:XX",
-                   "hour_end": "X:XX",
-                   "price": 4,
-                   "name": "XXXXXXXXXXXXX",
-                   "passenger_number": 2
-                 };
+    // Components
+    export default {
+        name: 'trajet-member-btn-comp',
+        props: {
+            infos: {
+                type: Object,
+                default() {
+                return {
+                    "depart": "XXXXXXX",
+                    "destination": "XXXXXXX",
+                    "hour_start": "X:XX",
+                    "hour_end": "X:XX",
+                    "price": 4,
+                    "name": "XXXXXXXXXXXXX",
+                    "passenger_number": 2
+                    };
+                },
             },
-         },
-      },
-      data() {
-         return {
-         }
-      },
-   };
+            empty: {
+                type: Boolean,
+                default: false,
+            },
+        },
+        data() {
+            return {
+            }
+        },
+    };
 </script>

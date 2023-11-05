@@ -75,7 +75,7 @@
                 class="ml-5 mr-5"
             >
                 {{trajet.depart}} vers {{trajet.destination}} 
-                <div class="text-subtitle-2 font-weight-medium">{{date}}, {{nbPassager}} passager</div>
+                <div class="text-subtitle-2 font-weight-medium">{{date}}, {{nbPassenger}} passager</div>
             </v-toolbar-title>
 
             <v-btn icon>
@@ -111,7 +111,7 @@
                 type: Number,
                 default: 0,
             },
-            nbPassager: {
+            nbPassenger: {
                 type: String,
                 default: "0",
             }

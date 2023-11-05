@@ -82,7 +82,7 @@
             :class-name="['time']"
             mode="time"
             labelSelectorN1="A quelle heure souhaitez-vous partir ?"
-            :time-init="{hourInit: 7, miniteInit: 0}"
+            :time-init="timeInit"
             v-on:close="overlay = false; getSelected();"
             v-on:time-valided="getSelected()"
         />
@@ -340,6 +340,11 @@
                             }
                     },
                 },
+                timeInit: {
+                    hourInit: 7,
+                    minuteInit: 30,
+                    nbPasMinutes: 5,
+                },
             }
         },
         created() {
@@ -351,6 +356,15 @@
             $(".mode-publish").css("display", "initial");
 
             // this.test();
+            let date = new Date();
+
+            let offset = date.getTimezoneOffset();
+            date = new Date(((date.getTime()+(60000*10)) - (offset * 60000)));
+
+            //let hours = date.getUTCHours().toString().padStart(2, '0');
+            //let minutes = date.getUTCMinutes().toString().padStart(2, '0');
+            this.timeInit.hourInit = date.getUTCHours()
+            this.timeInit.minuteInit = Math.ceil(date.getUTCMinutes()/this.timeInit.nbPasMinutes)*this.timeInit.nbPasMinutes
 
             console.log(this.$store.state.profil.userUid);
 

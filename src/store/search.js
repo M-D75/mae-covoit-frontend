@@ -4,6 +4,7 @@ import axios from 'axios'
 import store from '../store'; 
 
 import supabase from '@/utils/supabaseClient.js';
+import router from '@/router';
 
 export default {
     namespaced: true,
@@ -169,6 +170,10 @@ export default {
                 });
         },
         async getTrajets({ commit, state, dispatch }) {
+            const sessionChecked = await store.dispatch("auth/checkSession");
+            if(!sessionChecked)
+                router.replace("/login");
+
             await dispatch("getAccounts");
 
             await axios.get(`${process.env.VUE_APP_API_MBABUF_URL}/trips`, {
@@ -183,6 +188,10 @@ export default {
                     for(const i_trip in trips){
                         let isoDate = trips[i_trip].departure_time;
                         let date = new Date(isoDate);
+
+                        let offset = date.getTimezoneOffset();
+                        date = new Date(date.getTime() - (offset * 60000));
+
                         let hours = date.getUTCHours().toString().padStart(2, '0');
                         let minutes = date.getUTCMinutes().toString().padStart(2, '0');
                         let departure_time = `${hours}:${minutes}`;
@@ -193,6 +202,7 @@ export default {
 
                         const _trip  = {
                             id: trips[i_trip].id,
+                            driver_id: trips[i_trip].driver_id,
                             depart: trips[i_trip].village_departure.village,
                             destination: trips[i_trip].village_arrival.village,
                             departure_time: trips[i_trip].departure_time,
@@ -233,6 +243,43 @@ export default {
                 });
         },
         async reserveTrajet({state}, playload){
+            const sessionChecked = await store.dispatch("auth/checkSession");
+            if(!sessionChecked)
+                router.replace("/login");
+
+            if(state.nbPassenger + state.trajetSelected.passenger_number > state.trajetSelected.max_seats){
+                return { valided: false, message: "Pas assez place sur ce trajet !"};
+            }
+
+            if( ! state.trajetSelected ){
+                return { valided: false, message: "Erreur lors de la selection du trajet"};
+            }
+
+            // get account passenger
+            let { data: account_passenger, error: error_passenger } = await supabase
+                .from('account')
+                .select("*")
+                .eq('user_id', playload.user_id)
+            
+            if ( error_passenger ) {
+                console.error('Erreur lors de la requête :', error_passenger);
+                return { valided: false, message: "Une erreur est survenue !"};
+            }
+
+            let { data: account_driver, error: error_driver } = await supabase
+                .from('account')
+                .select("*")
+                .eq('user_id', state.trajetSelected.driver_id)
+            
+            if ( error_driver ) {
+                console.error('Erreur lors de la requête :', error_driver);
+                return { valided: false, message: "Une erreur est survenue !!!"};
+            }
+
+            // check soldes enouth
+            if( 0 > account_passenger[0].credit - state.trajetSelected.price ){
+                return { valided: false, message: "Pas assez de credit !"}
+            }
 
             // get all booking id
             let { data: booking, error: error_booking } = await supabase
@@ -241,71 +288,60 @@ export default {
 
             if ( error_booking ) {
                 console.error('Erreur lors de la requête :', error_booking);
-                return false;
+                return { valided: false, message: "Une erreur est survenue !"};
             }
 
             // new id = last_id+1
             const newBookingId = booking.length+1;
-
-            // get account user
-            let { data: account, error: errorUser } = await supabase
+            
+            // debit le montant
+            let { data: account_update, error: error_update } = await supabase
                 .from('account')
-                .select("*")
+                .update({ credit: (account_passenger[0].credit - state.trajetSelected.price) })
                 .eq('user_id', playload.user_id)
-            
-            if ( errorUser ) {
-                console.error('Erreur lors de la requête :', errorUser);
-                return false;
+                .select()
+
+            if( error_update ){
+                console.error("Error update", error_update)
+                return { valided: false, message: "Nous avons pas pu debiter votre solde veuillez réessayer plus tard."};
             }
             
-            // check soldes enouth
-            if( account[0].credit - state.trajetSelected.price >= 0 ){
-                // debit le montant
-                let { data: account_update, error: error_update } = await supabase
-                    .from('account')
-                    .update({ credit: (account[0].credit - state.trajetSelected.price) })
-                    .eq('user_id', playload.user_id)
-                    .select()
+            store.state.profil.soldes = account_update[0].credit;
+            console.log("new-soldes:", account_update[0].credit);
 
-                if( error_update ){
-                    console.error("Error update", error_update)
-                    return false;
-                }    
-                
-                store.state.profil.soldes = account_update[0].credit;
-                console.log("new-soldes:", account_update[0].credit);
+            //credité driver
+            let { data: account_update_driver, error: error_update_driver } = await supabase
+                .from('account')
+                .update({ credit: (account_driver[0].credit + state.trajetSelected.price) })
+                .eq('user_id', state.trajetSelected.driver_id)
+                .select()
 
-                if(account && account.length>0 && account[0].id && state.nbPassenger + state.trajetSelected.passenger_number <= state.trajetSelected.max_seats){
-                    const user_id = account[0].id;
-
-                    let list_ins_passenger = [];
-                    for(let index_passenger=0; index_passenger < state.nbPassenger; index_passenger++){
-                        list_ins_passenger.push({ id: newBookingId+index_passenger, trip_id: state.trajetSelected.id, passenger_account_id: user_id })
-                    }
-
-                    //add +1 reserve
-                    let { data: data_booking, error: error_booking } = await supabase
-                        .from('booking')
-                        .insert(list_ins_passenger)
-                        .select()
-
-                    if ( error_booking ) {
-                        console.error('Erreur lors de la requête :', error_booking);
-                        return false;
-                    }
-
-                    console.log("reserveTrajet:", data_booking);
-                
-                    return true;
-                }
-                else{
-                    console.log("accound prob ou pas de place", state.nbPassenger, state.trajetSelected.passenger_number, state.trajetSelected.max_seats);
-                }
+            if( error_update_driver ){
+                console.error("Error update", error_update_driver, account_update_driver);
+                return { valided: false, message: "Une erreur est survenue."};
             }
-            else{
-                console.log("no credit", account[0].credit, state.trajetSelected.price);
+
+            const user_id = account_passenger[0].id;
+
+            let list_ins_passenger = [];
+            for(let index_passenger=0; index_passenger < state.nbPassenger; index_passenger++){
+                list_ins_passenger.push({ id: newBookingId+index_passenger, trip_id: state.trajetSelected.id, passenger_account_id: user_id })
             }
-            return false;
+
+            //add +1 reserve
+            let { data: data_booking, error: error_booking_update } = await supabase
+                .from('booking')
+                .insert(list_ins_passenger)
+                .select()
+
+            if ( error_booking_update ) {
+                console.error('Erreur lors de la requête :', error_booking_update);
+                return {valided: false, message: "Nous avons pas pu réserver ce trajet, vous serez rembourser sous 24h"};
+            }
+
+            console.log("reserveTrajet:", data_booking);
+        
+            return {valided: true, message: "Votre trajet à bien été reservé"};
         },
     },
 }

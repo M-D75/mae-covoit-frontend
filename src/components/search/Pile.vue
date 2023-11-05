@@ -51,7 +51,7 @@
 <!--  -->
 <template>
     <div class="blc-pile">
-        <TrajetMemberBtn v-if="fastSearch == false" @click="getFastSearch" class="tj main" style="z-index: 88; position: absolute; top:50%"/>
+        <TrajetMemberBtn v-if="fastSearch == false" @click="getFastSearch" :empty="empty" class="tj main" style="z-index: 88; position: absolute; top:50%"/>
         <TrajetMember
             v-if="fastSearch == true" 
             @click="reserve()"
@@ -80,33 +80,28 @@
     export default defineComponent({
         name: 'pile-search-comp',
         computed: {
-            ...mapState("search", ["trajets", "trajetSelected"]),
+            ...mapState("search", ["trajets", "trajetSelected", "nbPassenger"]),
             ...mapActions("search", ["getTrajets"]),
+            trajetFiltered(){
+                const currentDate = new Date();
+                return this.trajets.filter(
+                    (trajet) => trajet.passenger_number + parseInt(this.nbPassenger) <= trajet.max_seats
+                    && currentDate.getTime() < new Date(trajet.departure_time).getTime()
+                    && this.isSameDay(currentDate, new Date(trajet.departure_time))
+                );
+            },
         },
         components: {
             TrajetMemberBtn,
             TrajetMember,
         },
         props: {
-            // infos: {
-            //     type: Object,
-            //     default() {
-            //     return {
-            //             "depart": "Tsingoni",
-            //             "destination": "Mamoudzou",
-            //             "hour_start": "4:50",
-            //             "hour_end": "6:55",
-            //             "price": 4,
-            //             "name": "Ledou",
-            //             "passenger_number": 2
-            //         };
-            //     },
-            // },
         },
         data() {
             return {
                 fastSearch: false,
                 infos: {},
+                empty: false,
             }
         },
         methods: {
@@ -117,9 +112,22 @@
             },
             async getFastSearch(){
                 await this.getTrajets;
-                this.infos = this.trajets[0];
-                this.fastSearch = true;
-                this.$emit("fast-get-trip");
+                if( this.trajetFiltered.length > 0 ){
+                    this.infos = this.trajetFiltered[0];
+                    this.fastSearch = true;
+                    this.$emit("fast-get-trip");
+                }
+                else{
+                    this.infos = {};
+                    this.empty = true;
+                }
+            },
+            isSameDay(date1, date2) {
+                return (
+                    date1.getFullYear() === date2.getFullYear() &&
+                    date1.getMonth() === date2.getMonth() &&
+                    date1.getDate() === date2.getDate()
+                );
             },
         },
         mounted() {

@@ -264,7 +264,7 @@
 <script>
     // import $ from 'jquery'
     import { inject } from 'vue';
-    import { mapActions, mapMutations } from "vuex";
+    import { mapActions, mapMutations, mapState } from "vuex";
 
 
     import { App } from '@capacitor/app';
@@ -278,6 +278,7 @@
 
         },
         computed: {
+            ...mapState("auth", ["logged_in"]),
             ...mapActions("auth", ["refreshToken", "checkSession"]),
             
         },
@@ -310,18 +311,18 @@
                     emailMatch: () => (`The email and password you entered don't match`),
                 },
                 icons: [
-                    {icn: 'mdi-apple', color:"black", fn:""},
+                    {icn: 'mdi-apple', color:"black", fn:"apple"},
                     {icn: 'mdi-google', color:"red", fn:"google"},
-                    {icn: 'mdi-facebook', color:"indigo", fn:""},
+                    {icn: 'mdi-facebook', color:"indigo", fn:"facebook"},
                 ],
                 provider: null,
             }
         },
         created(){
-            const sessionValided = this.checkSessionIn();
-            if(sessionValided)
-                this.$router.replace("/search");
-
+            this.checkSessionIn();
+        },
+        beforeMount(){
+            
         },
         mounted() {
             App.addListener('appUrlOpen', (data) => {
@@ -468,8 +469,9 @@
             },
             async checkSessionIn(){
                 await this.checkSession;
-                console.log("checking done!");
                 this.overlayLoad = false;
+                if(this.logged_in)
+                    this.$router.replace("/search");
             },
             async sendNotification() {
                 const permission = await LocalNotifications.requestPermissions();

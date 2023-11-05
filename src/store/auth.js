@@ -11,6 +11,7 @@ export default {
         userId: "",
         token: null,
         tokenExpiry: null,
+        logged_in: false,
     },
     mutations: {
         SET_TOKEN(state, payload) {
@@ -39,6 +40,7 @@ export default {
             let { data, error } = await supabase.auth.getSession();
 
             console.log("checkSession v-data-session:", data.session)
+            state.logged_in = false;
             if( data.session ){
                 const jwt = data.session.access_token;
 
@@ -48,6 +50,7 @@ export default {
                 if( ! getters.isAuthenticated ){
                     console.log("Session expired")
                     dispatch("refreshToken")
+                    state.logged_in = false;
                 }
 
                 const { data: { user } } = await supabase.auth.getUser(jwt);
@@ -80,7 +83,7 @@ export default {
                 }
 
                 //router.replace("/search");
-
+                state.logged_in = true;
                 return true;
             }
             else{

@@ -2,6 +2,8 @@
 // import axios from 'axios'
 
 import supabase from '@/utils/supabaseClient.js';
+import router from '@/router';
+import store from '@/store'; 
 
 
 export default {
@@ -17,6 +19,9 @@ export default {
     },
     actions: {
         async newTrip({state}, playload){
+            const sessionChecked = await store.dispatch("auth/checkSession");
+            if(!sessionChecked)
+                router.replace("/login");
             console.log("playload", playload, state)
             // const url = `${process.env.VUE_APP_API_MBABUF_URL}/trip`;
 

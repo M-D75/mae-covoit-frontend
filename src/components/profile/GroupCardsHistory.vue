@@ -1,11 +1,6 @@
 <!-- scss -->
 <style lang="scss" model>
-    .scrollable-container {
-        cursor: pointer;
-        overflow-y: hidden !important;
-        scrollbar-width: thin;
-        scrollbar-color: transparent transparent;
-    }
+    
 
     /* Pour Chrome, Edge et Safari */
     .scrollable-container::-webkit-scrollbar {
@@ -22,6 +17,13 @@
 </style>
 
 <style lang="scss" scoped>
+    .scrollable-container {
+        cursor: pointer;
+        overflow-y: hidden !important;
+        scrollbar-width: thin;
+        scrollbar-color: transparent transparent;
+    }
+
     .bloc-history {
         overflow: visible;
         width: 100%;

@@ -62,7 +62,7 @@
 
 <template>
 
-
+    <!-- nothing and loading -->
     <div 
         v-if="Object.keys(history.historycalBooking).length==0"
         class="group-list-cards-history-empty"

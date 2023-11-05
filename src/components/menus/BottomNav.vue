@@ -2,6 +2,9 @@
 
 <style lang="scss" model>
     .v-bottom-navigation {
+        .v-bottom-navigation__content{
+            justify-content: space-evenly !important;
+        }
         .v-btn {
             color: var(--gray-icon-color);
             .v-btn__content {
@@ -28,9 +31,11 @@
 <style lang="scss" scoped>
     .v-bottom-navigation {
         background-color: var(--bg-app-color);
+        
         .v-btn {
             color: var(--gray-icon-color);
             font-weight: bold;
+            flex-grow: 0;
         }
 
         .v-btn__content {

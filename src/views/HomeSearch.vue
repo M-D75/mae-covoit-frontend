@@ -109,7 +109,7 @@
         <!-- reserve fast -->
         <BottomMenu 
             ref="BottomMenuRefResults"
-            :class-name="['results']" 
+            :class-name="['reserve']" 
             mode="reserve"
             v-on:close="overlay = false" 
             :infos="infos"

@@ -479,7 +479,8 @@
                 class="select-time mx-auto"
             >
                 <div class="label text-center">{{ labelSelectorN1 }}</div>
-                <TimeCard ref="TimeCardRef" :class-name="className" :hour-init="timeInit.hourInit" :minute-init="timeInit.minuteInit" v-on:time-changed="emit('time-changed')"/>
+                <TimeCard ref="TimeCardRef" :class-name="className" :hour-init="timeInit.hourInit" :minute-init="timeInit.minuteInit" :nb-pas-minutes="
+                timeInit.nbPasMinutes" v-on:time-changed="emit('time-changed')"/>
                 <v-btn 
                     class="text-none"
                     rounded="xl" 
@@ -1152,6 +1153,11 @@
                     $(classBottomMenuNameJquery).animate({"top": `${this.y}px`}, "fast", function(){
                         $(this).addClass("closed");
                         _this.move = false;
+
+                        //reload if trajet reserved and closed
+                        if( _this.mode == "reserve" && _this.notif ){
+                            _this.$router.replace("/")
+                        }
                         _this.$emit('close');
                     });
 
@@ -1227,6 +1233,9 @@
                 const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
                 $(classBottomMenuNameJquery).css("top", `${this.y}px`);
             },
+            mode(){
+                console.log("mode------", this.mode);
+            }
         }
    });
 </script>

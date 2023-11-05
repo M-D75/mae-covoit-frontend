@@ -257,6 +257,8 @@
                 active: false,
                 hourCanTaked: true,
                 minuteCanTaked: true,
+                in_minutes_ev: false,
+                in_hour_ev: false,
             }
         },
         mounted(){
@@ -268,16 +270,20 @@
                 console.log("Minutes Init is :", this.minuteInit);
                 const middleIndexMinutes = (this.minutes.length/2);
 
-                if(this.minuteInit < 0){
-                    this.minutes = this.shiftLeftMulti(this.minutes, ((60-this.minuteInit)/this.nbPasMinutes)-1);
-                }
-                else{
-                    this.minutes = this.shiftRightMulti(this.minutes, ((60-this.minuteInit)/this.nbPasMinutes)+1);
-                }
+                // const currentIndexMinutes = (Math.ceil(Math.abs($(".scrollable-container.minute-list").scrollTop())/100));
+                // const currentIndexHours = (Math.ceil(Math.abs($(".scrollable-container.hour-list").scrollTop())/100));
+                //30,00,12,5,12
 
                 const prefixClassMinute = `.scrollable-container.minute-list${vue.className.length != 0 ? "." + vue.className.join(".") : ""}`;
 
-                console.log("prefixClassMinute", prefixClassMinute);
+                if(this.minuteInit > 0){
+                    this.minutes = this.shiftLeftMulti(this.minutes, ((this.minuteInit)/this.nbPasMinutes)-1);
+                }
+                else{
+                    this.minutes = this.shiftRightMulti(this.minutes, ((this.minuteInit)/this.nbPasMinutes)+1);
+                }
+
+                //console.log("prefixClassMinute", prefixClassMinute);
                 $(`${prefixClassMinute} .m-${this.minuteInit.toString().padStart(2, '0')} span`).css("opacity", 1);
                 $(`${prefixClassMinute} .m-${this.minuteInit.toString().padStart(2, '0')} span`).css("transform", `perspective(100px) translateZ(0px)`);
                     
@@ -285,10 +291,12 @@
                 var lastDate = new Date().getTime();
 
                 
-                console.log("lastOffset:", lastOffset)
-
+                //console.log("lastOffset:", lastOffset)
+                
+                this.in_minutes_ev = false;
                 var slow = true;
                 $(prefixClassMinute).on("scroll", function(e){
+                    vue.in_minutes_ev = true;
                     const _this = $(this);
                     // console.log("change----")
 
@@ -375,7 +383,7 @@
                                     vue.minutes = vue.shiftLeftMulti(vue.minutes, Math.abs(middleIndexMinutes-currentIndexMinutes));
                                 }
                                 $(`${prefixClassMinute} .m-${minuteC.toString().padStart(2, '0')} span`).css("opacity", 1);
-                                console.log("Mminute:", vue.minutes[middleIndexMinutes]);
+                                console.log("Mminute:", vue.minutes[middleIndexMinutes+1]);
                                 vue.minuteCanTaked = true;
                             });
                         }, 190));
@@ -419,6 +427,7 @@
                 var scrollmax = 0;
                 
                 $(prefixClassHour).on("scroll", function(e){
+                    vue.in_hour_ev = true;
                     const _this = $(this);
                     
                     var delayInMs = e.timeStamp - lastDateH;
@@ -549,44 +558,52 @@
         },
         methods: {
             shiftRight(arr) {
+                
                 if (arr.length === 0) {
                     return arr;
                 }
-                let lastElement = arr.pop();
-                arr.unshift(lastElement);
-                return arr;
+
+                let copy_arr = arr.slice();
+                let lastElement = copy_arr.pop();
+                copy_arr.unshift(lastElement);
+                return copy_arr;
             },
             shiftLeft(arr) {
                 if (arr.length === 0) {
                     return arr;
                 }
-                let firstElement = arr.shift();
-                arr.push(firstElement);
-                return arr;
+
+                let copy_arr = arr.slice();
+                let firstElement = copy_arr.shift();
+                copy_arr.push(firstElement);
+                return copy_arr;
             },
             shiftRightMulti(arr, nb){
+                console.log("rigth", nb, arr.length);
+                let copy_arr = arr.slice();
                 for (let index = 0; index < nb; index++) {
-                    arr = this.shiftRight(arr);
+                    copy_arr = this.shiftRight(copy_arr);
                 }
-                return arr.slice();
+                return copy_arr;
             },
             shiftLeftMulti(arr, nb){
+                console.log("Left", nb, arr.length);
+                let copy_arr = arr.slice();
                 for (let index = 0; index < nb; index++) {
-                    arr = this.shiftLeft(arr);
+                    copy_arr = this.shiftLeft(copy_arr);
                 }
-                return arr.slice();
+                return copy_arr;
             },
             getTime(){
                 const middleIndexHours = (this.heures.length/2)+1;
                 const middleIndexMinutes = (this.minutes.length/2)+1;
-                // const currentIndexMinutes = (Math.ceil(Math.abs($(".scrollable-container.minute-list").scrollTop())/100));
-                // const currentIndexHours = (Math.ceil(Math.abs($(".scrollable-container.hour-list").scrollTop())/100));
-                return this.heures[middleIndexHours] + ":" + this.minutes[middleIndexMinutes];
+                return `${(this.in_hour_ev ? this.heures[middleIndexHours] : this.heures[1])}:${(this.in_minutes_ev ?  this.minutes[middleIndexMinutes] : this.minutes[1])}`;
             },
             vibratePhone() {
                 if (navigator.vibrate) {
                     navigator.vibrate(1);
-                } else {
+                } 
+                else {
                     console.log("L'API Vibration PWA n'est pas prise en charge sur cet appareil.");
                 }
 

@@ -178,11 +178,12 @@
 
 <!--  -->
 <script>
-    import { mapActions } from 'vuex'
+    import { mapActions, mapState } from 'vuex'
 
     export default {
         name: 'home-view',
         computed: {
+            ...mapState("auth", ["logged_in"]),
             ...mapActions("auth", ["refreshToken", "checkSession"]),
         },
         data() {
@@ -194,13 +195,15 @@
             goToLoginSign(){
                 this.$router.push({ path: '/login' })
             },
+            async checkSessionIn(){
+                await this.checkSession;
+                this.overlayLoad = false;
+                if(this.logged_in)
+                    this.$router.replace("/search");
+            },
         },
         created() {
-            const sessionValided = this.checkSession;
-            if(sessionValided)
-                this.$router.replace("/search");
-
-            this.overlayLoad = false;
+            this.checkSessionIn();
         },
         mounted() {
             // force ligth-mode
