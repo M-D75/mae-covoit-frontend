@@ -149,8 +149,8 @@
                     <v-text-field
                         v-model="saisi"
                         :label="label"
-                        :focused="focus"
-                        :active="focus"
+                        :focused="false"
+                        :active="false"
                         :autofocus="focus"
                         persistent-hint
                         prepend-icon="mdi-navigation"

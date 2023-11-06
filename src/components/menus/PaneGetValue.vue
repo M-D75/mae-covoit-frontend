@@ -189,7 +189,7 @@
             open(){
                 console.log("bar-hei-", this.barHeight);
                 $(".pan-get-value").removeClass("closed");
-
+                const vue = this;
                 switch (this.mode) {
                     case "depart":
                         this.$store.commit("search/SET_DEPART", "");                     
@@ -205,22 +205,21 @@
                     this.$refs.SearchRef.saisi = "";
                 }
                 this.saisi = "";
-                $(".pan-get-value").animate({top: `0px`}, 'fast', function(){
-                                $(".pan-get-value").css("top", `0px`);
-                            })
+                $(".pan-get-value").animate({top: `0px`}, 'fast', 
+                                function(){
+                                    $(this).css("top", `0px`);
+                                    vue.opened = true;
+                                }
+                            );
                 
-                
-                this.opened = true;
             },
             close(){
+                const vue = this;
                 $(".pan-get-value").animate({top: `${this.sizeScreen}px`}, "fast", function(){
                     $(this).addClass("closed");
                     $(".pan-get-value").css("top", `${this.sizeScreen}px`);
+                    vue.opened = false;
                 });
-
-                
-
-                this.opened = false;
 
                 if( this.date == null ){
                     const date = new Date();

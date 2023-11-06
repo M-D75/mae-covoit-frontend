@@ -58,6 +58,7 @@
             ref="SearchRef"
             title="Où allez vous ?"
             label="Saisissez une commune"
+            :focus="true"
             :items="villagesSortedFiltered"
             :history="communesHistory"
             @selected="getSelected()" 
