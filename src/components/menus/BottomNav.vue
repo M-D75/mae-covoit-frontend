@@ -36,6 +36,7 @@
             color: var(--gray-icon-color);
             font-weight: bold;
             flex-grow: 0;
+            width: 33%;
         }
 
         .v-btn__content {
