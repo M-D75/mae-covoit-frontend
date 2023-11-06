@@ -105,13 +105,13 @@ import BottomMenu from '@/components/menus/BottomMenu.vue';
 export default defineComponent({
     name: 'results-view',
     computed: {
-        ...mapState("search", ["trajets", "trajetSelected"]),
+        ...mapState("search", ["trajets", "trajetSelected", "nbPassenger"]),
         ...mapActions("search", ["getTrajets"]),
         trajetFiltered() {
             return this.trajets.filter(
                 (trajet) => trajet.depart == this.depart
                     && trajet.destination == this.destination
-                    && trajet.passenger_number + parseInt(this.nbPassenger) <= trajet.max_seats
+                    //&& trajet.passenger_number + parseInt(this.nbPassenger) <= trajet.max_seats
                     && this.getDate().getTime() < new Date(trajet.departure_time).getTime()
                     && this.isSameDay(this.getDate(), new Date(trajet.departure_time))
             );
@@ -135,10 +135,10 @@ export default defineComponent({
             type: String,
             default: "Aujourd'hui",
         },
-        nbPassenger: {
-            type: String,
-            default: "1",
-        }
+        // nbPassenger: {
+        //     type: String,
+        //     default: "2",
+        // }
     },
     data() {
         return {
@@ -169,7 +169,7 @@ export default defineComponent({
             this.SET_TRAJET_SELECTED(this.infos);
             this.$store.commit("search/SET_DEPART", "");
             this.$store.commit("search/SET_DESTINATION", "");
-            this.$store.commit("search/SET_NB_PASSAGER", 1);
+            //this.$store.commit("search/SET_NB_PASSAGER", 1);
             this.callChildMethod();
         },
         callChildMethod() {
@@ -206,9 +206,11 @@ export default defineComponent({
             var month = tmpCurrentDate.getMonth() + 1;
             var year = tmpCurrentDate.getFullYear();
 
-            const currentDate = new Date(`${month}/${day}/${year}`);
+            let currentDate = new Date(`${month}/${day}/${year}`);
             const tomorrowsDate = new Date(currentDate);
             tomorrowsDate.setDate(currentDate.getDate() + 1);
+
+            currentDate = new Date();
 
             day = this.date.split("/")[0];
             month = this.date.split("/")[1];
