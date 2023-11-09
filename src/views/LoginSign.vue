@@ -280,7 +280,6 @@
         computed: {
             ...mapState("auth", ["logged_in", "account_created"]),
             ...mapActions("auth", ["refreshToken", "checkSession"]),
-            
         },
         data() {
             return {
@@ -371,20 +370,10 @@
 
                 this.sendNotification();
 
-                console.log('Connexion réussie:', data, session);
+                console.log('Connexion par mail réussie:', data, session);
                 this.SET_TOKEN({token: session.access_token, expiry: session.expires_at*1000})
                 
-                await this.checkSession;
-                if(this.logged_in){
-                    if( ! this.account_created ){
-                        console.log("no account");
-                        this.$router.replace("/account-info");
-                    }
-                    else {
-                        console.log("afted---------------------");
-                        this.$router.replace("/search");
-                    }
-                }
+                await this.checkSessionIn();
                 //this.$router.replace("/search");
             },
             async signUpEmailSupabase(){
@@ -480,15 +469,13 @@
                 this.passwordForgetMode = false;
             },
             async checkSessionIn(){
-                await this.checkSession;
+                await this.$store.dispatch("auth/checkSession");
                 this.overlayLoad = false;
                 if(this.logged_in){
                     if( ! this.account_created ){
-                        console.log("no account");
                         this.$router.replace("/account-info");
                     }
                     else {
-                        console.log("afted---------------------");
                         this.$router.replace("/search");
                     }
                 }

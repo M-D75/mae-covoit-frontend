@@ -37,6 +37,7 @@
     "semver": "^7.5.4",
     "v-calendar": "^3.0.3",
     "vue": "^3.2.13",
+    "vue-advanced-cropper": "^2.8.8",
     "vue-leaflet": "^0.1.0",
     "vue-router": "^4.0.3",
     "vue3-draggable-resizable": "^1.6.5",

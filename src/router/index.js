@@ -14,10 +14,17 @@ import Itineraire from '@/components/publish/Itineraire.vue'
 import TestMap from '@/views/TestMap.vue'
 import MapGoogle from '@/views/MapGoogle.vue'
 import CreateAccount from '@/views/CreateAccount.vue'
+import CropperAvatar from '@/components/profile/CropperAvatar.vue'
 
 // import store from '../store'; // Chemin d'accès à votre fichier store
 
 const routes = [
+    {
+        path: '/cropper',
+        name: 'cropper',
+        component: CropperAvatar,
+        meta: { requiresAuth: false },
+    },
     {
         path: '/login',
         name: 'login',

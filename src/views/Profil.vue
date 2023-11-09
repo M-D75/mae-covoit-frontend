@@ -301,15 +301,18 @@
             }
         },
         beforeMount(){
-            const sessionValided = this.checkSession;
-            if(!sessionValided)
-                this.$router.replace("/");
+            this.checkSessionIn();
         },
         mounted(){
                 
         },
         methods: {
             ...mapMutations("profil", ["SET_LOAD_GET_TRIP_PUBLISH"]),
+            async checkSessionIn(){
+                const sessionValided = await this.$store.dispatch("auth/checkSession");
+                if( ! sessionValided )
+                    this.$router.replace("/");
+            },
             goToInfoPerso(){
                 this.$router.push("/profil/perso")
             },

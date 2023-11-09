@@ -215,7 +215,6 @@
                 if(this.firstname != "" && this.name != ""){
                     await this.$store.dispatch("auth/createAccount", {name: this.name, firstname: this.firstname, village: this.village});
                     if( this.account_created ){
-                        console.log("youpi account");
                         this.$router.replace("/search");
                     }
                 }

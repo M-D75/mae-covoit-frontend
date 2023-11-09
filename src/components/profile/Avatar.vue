@@ -125,9 +125,9 @@
                 if (file) {
                     const reader = new FileReader();
                     reader.onload = (e) => {
-                        //this.avatarUrl = e.target.result;
                         this.SET_AVATAR_URL(e.target.result)
-                        console.log("load img", this.avatarUrl);
+                        this.$router.replace("/cropper");
+                        window.location = "/cropper";
                     };
                     reader.readAsDataURL(file);
                 }

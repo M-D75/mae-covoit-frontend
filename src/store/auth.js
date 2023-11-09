@@ -75,22 +75,17 @@ export default {
             console.log("refreshToken", error, user)
             
         },
-        async checkSession({ state, getters, dispatch }){
+        async checkSession({ state }){
             let { data, error } = await supabase.auth.getSession();
 
             console.log("checkSession v-data-session:", data.session)
             state.logged_in = false;
             if( data.session ){
+                state.logged_in = true;
                 const jwt = data.session.access_token;
 
                 state.token = jwt;
                 state.tokenExpiry = data.session.expires_at * 1000;
-
-                if( ! getters.isAuthenticated ){
-                    console.log("Session expired")
-                    dispatch("refreshToken")
-                    state.logged_in = false;
-                }
 
                 const { data: { user } } = await supabase.auth.getUser(jwt);
                 if( user ){
@@ -121,20 +116,20 @@ export default {
                     if(user.user_metadata.avatar_url && store.state.profil.avatarUrl == "https://avatars0.githubusercontent.com/u/9064066?v=4&s=460")
                         store.state.profil.avatarUrl = user.user_metadata.avatar_url;
 
-                    //await store.dispatch("search/getAccounts");
-
                     if( account.length > 0 ){
-                        //const current_account = store.state.search.accounts.filter((account) => (account.user_id == user.id))[0];
                         const current_account = account[0];
                         if(current_account){
                             store.state.profil.soldes = current_account.credit;
 
                             //store.state.profil.userName = ! user.user_metadata.full_name ? current_account.username : user.user_metadata.full_name;
                             store.state.profil.userName = `${current_account.lastname} ${current_account.firstname}`;
+                            if(current_account.lastname == "" && current_account.firstname == "")
+                                store.state.profil.userName = ! user.user_metadata.full_name ? current_account.username : user.user_metadata.full_name;
+                            
                             store.state.profil.profil.infos_perso.nom = current_account.lastname;
                             store.state.profil.profil.infos_perso.prenom = current_account.firstname;
                             store.state.profil.profil.infos_perso.email = current_account.email;
-                            console.log("store", store.state.profil, store.state.search.accounts, current_account)
+                            //console.log("store", store.state.profil, store.state.search.accounts, current_account)
                         }
                         else {
                             store.state.profil.soldes = 0;
@@ -149,11 +144,10 @@ export default {
 
                 //router.replace("/search");
                 state.logged_in = true;
-
                 return true;
             }
             else{
-                console.log("Error:", error)
+                console.log("Error cheking session:", error)
                 return false;
             }
         },
@@ -165,7 +159,6 @@ export default {
                 return;
             }
             commit('CLEAR_TOKEN');
-            localStorage.clear();
             router.replace("/login");
         },
     },
