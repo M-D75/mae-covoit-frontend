@@ -16,8 +16,13 @@
             .part-list {
                 
                 padding: 10px 0 10px 16px !important;
-                .v-list-item i.v-icon {
-                    color: gray !important;
+                .v-list-item {
+                    .v-list-item__prepend{
+                        display: inherit !important;
+                    }
+                    i.v-icon {
+                        color: gray !important;
+                    }
                 }
                 
                 .container-text.trajet-search-comp {

@@ -186,34 +186,37 @@ export default {
                     var _trips = [];
             
                     for(const i_trip in trips){
-                        let isoDate = trips[i_trip].departure_time;
-                        let date = new Date(isoDate);
+                        console.log("driver,", trips[i_trip].driver_id, store.state.profil.userUid);
+                        if( trips[i_trip].driver_id != store.state.profil.userUid ){
+                            let isoDate = trips[i_trip].departure_time;
+                            let date = new Date(isoDate);
 
-                        let offset = date.getTimezoneOffset();
-                        date = new Date(date.getTime() - (offset * 60000));
+                            let offset = date.getTimezoneOffset();
+                            date = new Date(date.getTime() - (offset * 60000));
 
-                        let hours = date.getUTCHours().toString().padStart(2, '0');
-                        let minutes = date.getUTCMinutes().toString().padStart(2, '0');
-                        let departure_time = `${hours}:${minutes}`;
-                        //TODO GET arrival
-                        let arrival_time = `${hours}:${minutes}`;
+                            let hours = date.getUTCHours().toString().padStart(2, '0');
+                            let minutes = date.getUTCMinutes().toString().padStart(2, '0');
+                            let departure_time = `${hours}:${minutes}`;
+                            //TODO GET arrival
+                            let arrival_time = `${hours}:${minutes}`;
 
-                        const username = state.accounts.filter((acount) => (acount.user_id == trips[i_trip].driver_id))[0].firstname;
+                            const username = state.accounts.filter((acount) => (acount.user_id == trips[i_trip].driver_id))[0].firstname;
 
-                        const _trip  = {
-                            id: trips[i_trip].id,
-                            driver_id: trips[i_trip].driver_id,
-                            depart: trips[i_trip].village_departure.village,
-                            destination: trips[i_trip].village_arrival.village,
-                            departure_time: trips[i_trip].departure_time,
-                            hour_start: departure_time,
-                            hour_end: arrival_time,
-                            price: (Math.ceil(Math.random()*4)+1),
-                            name: username,
-                            passenger_number: trips[i_trip].bookings.length,
-                            max_seats: trips[i_trip].max_seats,
-                        };
-                        _trips.push(_trip);
+                            const _trip  = {
+                                id: trips[i_trip].id,
+                                driver_id: trips[i_trip].driver_id,
+                                depart: trips[i_trip].village_departure.village,
+                                destination: trips[i_trip].village_arrival.village,
+                                departure_time: trips[i_trip].departure_time,
+                                hour_start: departure_time,
+                                hour_end: arrival_time,
+                                price: (Math.ceil(Math.random()*4)+1),
+                                name: username,
+                                passenger_number: trips[i_trip].bookings.length,
+                                max_seats: trips[i_trip].max_seats,
+                            };
+                            _trips.push(_trip);
+                        }
                     }
 
                     console.log("trips:", _trips)

@@ -12,6 +12,7 @@ export default {
         token: null,
         tokenExpiry: null,
         logged_in: false,
+        account_created: false,
     },
     mutations: {
         SET_TOKEN(state, payload) {
@@ -24,6 +25,44 @@ export default {
         }
     },
     actions: {
+        async createAccount({state}, info){
+
+            const { data: { user } } = await supabase.auth.getUser();
+
+            if(!user){
+                console.log("user not exist")
+                return
+            }
+            
+            const { data: account_ins, error: err_account_ins } = await supabase
+                .from('account')
+                .insert([
+                    { username: 'new', lastname: info.name, firstname: info.firstname, user_id: user.id, credit: 0, email: user.email },
+                ])
+                .select()
+
+            if(err_account_ins){
+                console.error("Erreur", err_account_ins)
+            }
+
+            console.log(info, account_ins);
+
+            //Check if account are created
+            let { data: account, error: error_account } = await supabase
+                .from('account')
+                .select('*')
+                .eq('user_id', store.state.profil.userUid)
+
+            if(error_account){
+                console.error("Erreur", error_account)
+            }
+            else{
+                if(account.length > 0){
+                    console.log("Welcome ! ", account[0].firstname);
+                    state.account_created = true;
+                }
+            }
+        },
         async refreshToken({state}){
             const { data, error } = await supabase.auth.refreshSession()
             const { session, user } = data;
@@ -57,18 +96,44 @@ export default {
                 if( user ){
                     console.log('4:User already conneced:', user);
                     store.state.profil.userUid = user.id;
+
+                    //Check if account are created
+                    let { data: account, error: error_account } = await supabase
+                        .from('account')
+                        .select('*')
+                        .eq('user_id', user.id)
+
+                    if(error_account){
+                        console.error("Erreur", error_account)
+                        state.account_created = false;
+                    }
+                    else{
+                        if(account.length > 0){
+                            console.log("Welcome ! ", account[0].firstname);
+                            state.account_created = true;
+                        }
+                        else{
+                            console.log("No account")
+                            state.account_created = false;
+                        }
+                    }
                     
                     if(user.user_metadata.avatar_url && store.state.profil.avatarUrl == "https://avatars0.githubusercontent.com/u/9064066?v=4&s=460")
                         store.state.profil.avatarUrl = user.user_metadata.avatar_url;
 
-                    await store.dispatch("search/getAccounts");
+                    //await store.dispatch("search/getAccounts");
 
-                    if( store.state.search.accounts && store.state.search.accounts.length >= 1 ){
-                        const current_account = store.state.search.accounts.filter((account) => (account.user_id == user.id))[0];
+                    if( account.length > 0 ){
+                        //const current_account = store.state.search.accounts.filter((account) => (account.user_id == user.id))[0];
+                        const current_account = account[0];
                         if(current_account){
                             store.state.profil.soldes = current_account.credit;
 
-                            store.state.profil.userName = ! user.user_metadata.full_name ? current_account.username : user.user_metadata.full_name;
+                            //store.state.profil.userName = ! user.user_metadata.full_name ? current_account.username : user.user_metadata.full_name;
+                            store.state.profil.userName = `${current_account.lastname} ${current_account.firstname}`;
+                            store.state.profil.profil.infos_perso.nom = current_account.lastname;
+                            store.state.profil.profil.infos_perso.prenom = current_account.firstname;
+                            store.state.profil.profil.infos_perso.email = current_account.email;
                             console.log("store", store.state.profil, store.state.search.accounts, current_account)
                         }
                         else {
@@ -84,6 +149,7 @@ export default {
 
                 //router.replace("/search");
                 state.logged_in = true;
+
                 return true;
             }
             else{

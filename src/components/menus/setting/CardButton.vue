@@ -1,6 +1,7 @@
 <style lang="scss" model>
     .card-btn {
         .v-list-item__prepend {
+            display: grid;
             .v-icon {
                 font-size: 16px;
                 margin-right: 10px !important;
@@ -9,6 +10,7 @@
         }
         .v-list-item-title {
             font-weight: 450;
+            max-width: 84%;
         }
     }
 </style>
@@ -114,7 +116,7 @@
 
 
 <script>
-    import $ from 'jquery'
+    // import $ from 'jquery'
 
     // Components
     export default {
@@ -162,9 +164,7 @@
             }
         },
         mounted (){
-            // const vue = this;
-            $(document).ready(function() {
-            });
+            
         },
         methods: {
             invokFun(){

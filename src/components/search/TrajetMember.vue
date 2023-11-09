@@ -15,6 +15,12 @@
             }
         }
 
+        .v-list-item {
+            .v-list-item__prepend{
+                display: block !important;
+            }
+        }
+
         .mdi-navigation.mdi.v-icon.notranslate.v-theme--light.v-icon--size-default{
             color: gray;
             opacity: inherit !important;

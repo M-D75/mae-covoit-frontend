@@ -65,7 +65,6 @@
                 <v-chip
                     class=""
                     color="blue"
-                    label
                 >
                     {{ infos.price }}€
                 </v-chip>

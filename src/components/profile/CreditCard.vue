@@ -3,6 +3,10 @@
 </style>
 
 <style lang="scss" scoped>
+    .gray{
+        color: gray;
+    }
+
     .credit-card-profil {
         height: 207px;
         width: 82.7%;
@@ -13,7 +17,7 @@
         .row-item {
             position: relative;
             width: 100%;
-            height: 50%;
+            height: 33%;
             &.infos {
                 .label {
                     font-size: 12px;
@@ -27,6 +31,17 @@
                         margin-right: 5px;
                         margin-top: -3px;
                     }
+                }
+            }
+            &.code-card{
+                text-align: right;
+                font-size: 24px;
+                line-height: 2.6;
+                color: var(--font-color-label);
+                .v-icon{
+                    font-size: 23px;
+                    color: #ff4949;
+                    fill: #ff4949;
                 }
             }
             &.btn {
@@ -98,6 +113,10 @@
             </div>
         </div>
 
+        <div class="row-item code-card">
+            <v-icon v-if="!credit_card.available" icon="mdi-alert-circle-outline"></v-icon> <span :class="{ gray: !credit_card.available }">•••• {{ credit_card.num_end_credit_card }}</span>
+        </div>
+
         <div class="row-item btn">
             <div
                 class="btn bloc"
@@ -135,14 +154,14 @@
 
 
 <script>
-import { mapState } from 'vuex';
+    import { mapState } from 'vuex';
 
 
     // Components
     export default {
         name: 'credit-card-comp',
         computed: {
-            ...mapState("profil", ["soldes"]),
+            ...mapState("profil", ["soldes", "credit_card"]),
         },
         props: {
             

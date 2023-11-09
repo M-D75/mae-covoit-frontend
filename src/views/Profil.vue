@@ -105,7 +105,7 @@
             <!-- Tableau de bord -->
             <!-- Credit Card -->
             <CreditCard 
-                v-if="onglet=='table-bord'" 
+                v-if="onglet=='table-bord'"
                 v-on:up-money="onUpMoney()"
                 v-on:add-card="onAddCard()"
                 v-on:drop-money="onDropMoney()"

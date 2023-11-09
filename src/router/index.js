@@ -13,6 +13,7 @@ import HourProgram from '@/components/publish/HourProgram.vue'
 import Itineraire from '@/components/publish/Itineraire.vue'
 import TestMap from '@/views/TestMap.vue'
 import MapGoogle from '@/views/MapGoogle.vue'
+import CreateAccount from '@/views/CreateAccount.vue'
 
 // import store from '../store'; // Chemin d'accès à votre fichier store
 
@@ -28,6 +29,12 @@ const routes = [
         name: 'sign',
         component: LoginSign,
         meta: { requiresAuth: false },
+    },
+    {
+        path: '/account-info',
+        name: 'account-info',
+        component: CreateAccount,
+        meta: { requiresAuth: true },
     },
     {
         path: '/profil',
@@ -50,7 +57,7 @@ const routes = [
         meta: { requiresAuth: true },
     },
     {
-        path: '/results/:depart/:destination/:date/:nbPassager',
+        path: '/results/:depart/:destination/:date/:nbPassenger',
         component: Results,
         props: true,
         meta: { requiresAuth: true },

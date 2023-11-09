@@ -1,23 +1,29 @@
 
 <style lang="scss" model>
-    .scrollable-container {
-        cursor: pointer;
-        overflow-x: auto;
-        scrollbar-width: thin;
-        scrollbar-color: transparent transparent;
-    }
+    .select-car-view {
+        .model.scrollable-container {
+            cursor: pointer;
+            overflow-x: auto;
+            scrollbar-width: thin;
+            scrollbar-color: transparent transparent;
+            //display: inline-table;
+            .text{
+                margin-top: 5px;
+            }
+        }
 
-    /* Pour Chrome, Edge et Safari */
-    .scrollable-container::-webkit-scrollbar {
-        width: 6px;
-    }
+        /* Pour Chrome, Edge et Safari */
+        .scrollable-container::-webkit-scrollbar {
+            width: 6px;
+        }
 
-    .scrollable-container::-webkit-scrollbar-track {
-        background: transparent;
-    }
+        .scrollable-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
 
-    .scrollable-container::-webkit-scrollbar-thumb {
-        background-color: transparent;
+        .scrollable-container::-webkit-scrollbar-thumb {
+            background-color: transparent;
+        }
     }
 </style>
 
@@ -61,7 +67,7 @@
                         }
                     }
                     .model {
-                        max-width: 170px;
+                        //max-width: 170px;
                         margin: auto 15px !important;
                         width: 65%;
                         overflow-x: auto;

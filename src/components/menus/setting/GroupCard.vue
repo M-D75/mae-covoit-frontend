@@ -46,85 +46,83 @@
 
 
 <script>
-    import $ from 'jquery'
+    // import $ from 'jquery'
 
     // Components
     import CardButton from '@/components/menus/setting/CardButton.vue';
 
     export default {
-    name: "group-card-btn-comp",
-    components: {
-        CardButton,
-    },
-    props: {
-        groupeParameters: {
-            type: Array,
-            default: () => [
-                {
-                    label: "Preferences",
-                    parameters: [
-                        {
-                            prependIcon:"mdi-car",
-                            text:"Text prepend chip",
-                            chip:true,
-                            chipIcon: null,
-                            chipText: "",
-
-                        },
-                    ],
-                },
-                {
-                    label: "Other",
-                    parameters: [
-                        {
-                            prependIcon:"mdi-car",
-                            text:"Text prepend and chipIcon",
-                            chip:true,
-                            chipIcon: "mdi-chevron-right",
-                            chipText: "",
-
-                        },
-                        {
-                            prependIcon:"",
-                            text:"Text and no prepend",
-                            chip:true,
-                            chipIcon: null,
-                            chipText: "",
-
-                        },
-                        {
-                            prependIcon:"",
-                            text:"Text and text chip",
-                            chip:true,
-                            chipIcon: null,
-                            chipText: "chip-text",
-
-                        },
-                        {
-                            prependIcon:"",
-                            text:"Text and chip icon",
-                            chip:true,
-                            chipIcon: "mdi-chevron-right",
-                            chipText: "",
-
-                        },
-                    ],
-                },
-            ]
+        name: "group-card-btn-comp",
+        components: {
+            CardButton,
         },
-    },
-    data() {
-        return {
+        props: {
+            groupeParameters: {
+                type: Array,
+                default: () => [
+                    {
+                        label: "Preferences",
+                        parameters: [
+                            {
+                                prependIcon:"mdi-car",
+                                text:"Text prepend chip",
+                                chip:true,
+                                chipIcon: null,
+                                chipText: "",
+
+                            },
+                        ],
+                    },
+                    {
+                        label: "Other",
+                        parameters: [
+                            {
+                                prependIcon:"mdi-car",
+                                text:"Text prepend and chipIcon",
+                                chip:true,
+                                chipIcon: "mdi-chevron-right",
+                                chipText: "",
+
+                            },
+                            {
+                                prependIcon:"",
+                                text:"Text and no prepend",
+                                chip:true,
+                                chipIcon: null,
+                                chipText: "",
+
+                            },
+                            {
+                                prependIcon:"",
+                                text:"Text and text chip",
+                                chip:true,
+                                chipIcon: null,
+                                chipText: "chip-text",
+
+                            },
+                            {
+                                prependIcon:"",
+                                text:"Text and chip icon",
+                                chip:true,
+                                chipIcon: "mdi-chevron-right",
+                                chipText: "",
+
+                            },
+                        ],
+                    },
+                ]
+            },
+        },
+        data() {
+            return {
+                
+            };
+        },
+        methods: {
+        },
+        mounted() {
             
-        };
-    },
-    methods: {
-    },
-    mounted() {
-        // const vue = this;
-        $(document).ready(function () {
-        });
-    },
-};
+        },
+    };
 </script>
 

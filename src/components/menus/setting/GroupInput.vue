@@ -46,6 +46,7 @@
             <v-text-field 
                 v-model="group.value" 
                 variant="solo-filled"
+                :disabled="'disabled' in group ? true : false"
                 hide-details
                 :persistent-placeholder="false"
                 :persistent-hint="false"
@@ -58,69 +59,66 @@
 
 
 <script>
-    import $ from 'jquery'
+    //import $ from 'jquery'
 
     // Components
 
     export default {
-    name: "group-card-btn-comp",
-    components: {
-    },
-    props: {
-        groupInput: {
-            type: Array,
-            default: () => [
-                {
-                    label: "Civilite",
-                    value: "Mr",
-                },
-                {
-                    label: "Nom",
-                    value: "Ledou",
-                },
-                {
-                    label: "prénom",
-                    value: "BG",
-                },
-                {
-                    label: "email",
-                    value: "mail@bg.com",
-                },
-                {
-                    label: "Téléphone",
-                    value: "0606060606",
-                },
-                {
-                    label: "Adresse",
-                    value: "1 rue des BG",
-                },
-                {
-                    label: "Complement",
-                    value: "",
-                },
-                {
-                    label: "Code Postal",
-                    value: "97680",
-                },
-                {
-                    label: "Commune",
-                    value: "Tsingoni",
-                },
-            ]
+        name: "group-card-btn-comp",
+        components: {
         },
-    },
-    data() {
-        return {
-            
-        };
-    },
-    methods: {
-    },
-    mounted() {
-        // const vue = this;
-        $(document).ready(function () {
-        });
-    },
-};
+        props: {
+            groupInput: {
+                type: Array,
+                default: () => [
+                    {
+                        label: "Civilite",
+                        value: "Mr",
+                    },
+                    {
+                        label: "Nom",
+                        value: "Ledou",
+                    },
+                    {
+                        label: "prénom",
+                        value: "BGG",
+                    },
+                    {
+                        label: "email",
+                        value: "mail@bg.com",
+                    },
+                    {
+                        label: "Téléphone",
+                        value: "0606060606",
+                    },
+                    {
+                        label: "Adresse",
+                        value: "1 rue des BG",
+                    },
+                    {
+                        label: "Complement",
+                        value: "",
+                    },
+                    {
+                        label: "Code Postal",
+                        value: "97680",
+                    },
+                    {
+                        label: "Commune",
+                        value: "Tsingoni",
+                    },
+                ]
+            },
+        },
+        data() {
+            return {
+                
+            };
+        },
+        methods: {
+        },
+        mounted() {
+        },
+    };
 </script>
 

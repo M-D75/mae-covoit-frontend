@@ -47,6 +47,15 @@
         :mode="modeBottomMenu"
         v-on:close="overlay = false"
     />
+
+    <!-- Car model -->
+    <BottomMenu
+        ref="BottomMenuRefPreference"
+        :class-name="['preference-choice']"
+        :about="about"
+        mode="preference-choice"
+        v-on:close="overlay = false"
+    />
 </template>
 
 
@@ -54,6 +63,7 @@
 <!--  -->
 <script>
     import { defineComponent } from 'vue';
+    import { mapState } from 'vuex';
 
     // Components
     import ToolbarProfil from '@/components/menus/head/ToolbarProfil.vue';
@@ -65,7 +75,12 @@
 
     export default defineComponent({
         name: 'infos-profil-view',
-
+        computed: {
+            ...mapState("profil", [ "profil"]),
+            ...mapState("profil", {
+                preferences: state => state.profil.infos_perso.preferences,
+            }),
+        },
         components: {
             ToolbarProfil,
             Avatar,
@@ -77,6 +92,7 @@
         data() {
             return {
                 overlay: false,
+                about: "discution",
                 modeBottomMenu: "select-model-car",
                 infos_panneau: [
                     {
@@ -138,15 +154,17 @@
                                 chipText: "",
                             },
                             {
+                                about: "discution",
                                 prependIconColor: "var(--blue-color)",
                                 prependIcon:"mdi-forum",
-                                text:"j'aime bien discuter",
+                                text:"j'aime bien discuter--",
                                 chip:false,
                                 chipIcon: null,
                                 switchBtn: false,
                                 chipText: "",
                             },
                             {
+                                about: "smoke",
                                 prependIconColor: "#ff5353",
                                 prependIcon:"mdi-smoking-off",
                                 text:"Pas de cigarette en voiture",
@@ -156,6 +174,7 @@
 
                             },
                             {
+                                about: "music",
                                 prependIconColor: "#9fcb66",
                                 prependIcon:"mdi-music",
                                 text:"Music tout au long !",
@@ -165,18 +184,22 @@
 
                             },
                             {
+                                about: "animal",
                                 prependIconColor: "#ff9c00",
                                 prependIcon:"mdi-paw",
                                 text:"J'aime bien les animaux",
                                 chip:false,
                                 chipIcon: null,
                                 chipText: "",
-
                             },
                         ],
                     },
                 ],
             }
+        },
+        mounted() {
+            //this.$refs.BottomMenuRefPreference.open();
+            this.updateGrouparameterPreference();
         },
         methods: {
             choiceFunctionBtnInfo(name){
@@ -206,6 +229,24 @@
                     this.overlay = this.$refs.BottomMenuRef.open();
                 }
             },
+            selectPreference(about){
+                this.about = about;
+                if(this.$refs.BottomMenuRefPreference){
+                    this.overlay = this.$refs.BottomMenuRefPreference.open();
+                }
+            },
+            updateGrouparameterPreference(){
+                this.groupeParameters[2].parameters = this.groupeParameters[2].parameters.map(
+                    (pref) => { 
+                        if('about' in pref){
+                            console.log(this.preferences, this.preferences.filter((prefs) => prefs.about == pref.about)[0], pref);
+                            this.preferences.filter((prefs) => prefs.about == pref.about)[0].fun = () => this.selectPreference(pref.about);
+                            return this.preferences.filter((prefs) => prefs.about == pref.about)[0];
+                        }
+                        return pref;
+                    }
+                )
+            }
         },
         watch: {
             overlay(){
@@ -213,7 +254,16 @@
                     if ( this.$refs.BottomMenuRef ) {
                         this.$refs.BottomMenuRef.close();
                     }
+
+                    if(this.$refs.BottomMenuRefPreference){
+                        this.$refs.BottomMenuRefPreference.close();
+                        this.updateGrouparameterPreference();
+                    }
                 }
+            },
+            preferences(){
+                console.log("pref modifierd");
+                this.updateGrouparameterPreference();
             },
         }
     });

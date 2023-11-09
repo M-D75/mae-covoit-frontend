@@ -13,22 +13,67 @@ export default {
         darkMode: false,
         userId: null,
         userUid: "",
-        userName: "Pseudo",
+        userName: "",
         avatarUrl: 'https://avatars0.githubusercontent.com/u/9064066?v=4&s=460',
         soldes: 0,
+        credit_card: {
+            num_end_credit_card: "0000",
+            available: false,
+        },
         profil: {
             infos_perso: {
                 civilite: "Mr.",
                 nom: "Ledou",
                 prenom: "BG",
-                email: "bg@mail.com",
-                tel: "0606060606",
+                email: "",
+                tel: "",
                 adress: {
-                    principal: "1 RUE DES GAMBWI",
-                    complement: "BOUZI",
-                    code_postal: "97680",
-                    commune: "Combani",
+                    principal: "",
+                    complement: "",
+                    code_postal: "",
+                    commune: "",
                 },
+                preferences: [
+                    {
+                        about: "discution",
+                        prependIconColor: "var(--blue-color)",
+                        prependIcon:"mdi-forum",
+                        text:"j'aime bien discuter",
+                        chip:false,
+                        chipIcon: null,
+                        switchBtn: false,
+                        chipText: "",
+                    },
+                    {
+                        about: "smoke",
+                        prependIconColor: "#ff5353",
+                        prependIcon:"mdi-smoking-off",
+                        text:"Pas de cigarette en voiture",
+                        chip:false,
+                        chipIcon: null,
+                        chipText: "",
+
+                    },
+                    {
+                        about: "music",
+                        prependIconColor: "#9fcb66",
+                        prependIcon:"mdi-music",
+                        text:"Music tout au long !",
+                        chip:false,
+                        chipIcon: null,
+                        chipText: "",
+
+                    },
+                    {
+                        about: "animal",
+                        prependIconColor: "#ff9c00",
+                        prependIcon:"mdi-paw",
+                        text:"J'aime bien les animaux",
+                        chip:false,
+                        chipIcon: null,
+                        chipText: "",
+                    },
+                ],
             },
             myTravels: [],
             myPublish: [],
@@ -51,6 +96,16 @@ export default {
         },
         SET_LOAD_GET_TRIP_PUBLISH(state, boolean){
             state.profil.loadGetTripPublish = boolean;
+        },
+        SET_PREFERENCE_ABOUT(state, pref){
+            console.log("SET_PREFERENCE_ABOUT", pref);
+            for(let i=0; i<state.profil.infos_perso.preferences.length; i++){
+                if(pref.about == state.profil.infos_perso.preferences[i].about){
+                    console.log("ppp", pref, state.profil.infos_perso.preferences[i]);
+                    state.profil.infos_perso.preferences[i] = pref;
+                    console.log("ddd", state.profil.infos_perso.preferences[i]);
+                }
+            }
         },
     },
     actions: {

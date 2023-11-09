@@ -272,7 +272,7 @@
                 console.log("Invitation réussi", data);
             },
             goToInfo(mode){
-                console.log("goToINfo");
+                console.log("goToINfo", mode);
                 this.mode=mode;
                 this.$refs.ToolbarProfilRef.needToComeBack = true;
             },
@@ -309,6 +309,7 @@
                 {
                     label: "email",
                     value: this.profil.infos_perso.email,
+                    disabled: true,
                 },
                 {
                     label: "Téléphone",

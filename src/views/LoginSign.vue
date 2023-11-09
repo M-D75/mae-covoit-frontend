@@ -278,7 +278,7 @@
 
         },
         computed: {
-            ...mapState("auth", ["logged_in"]),
+            ...mapState("auth", ["logged_in", "account_created"]),
             ...mapActions("auth", ["refreshToken", "checkSession"]),
             
         },
@@ -373,7 +373,19 @@
 
                 console.log('Connexion réussie:', data, session);
                 this.SET_TOKEN({token: session.access_token, expiry: session.expires_at*1000})
-                this.$router.replace("/search");
+                
+                await this.checkSession;
+                if(this.logged_in){
+                    if( ! this.account_created ){
+                        console.log("no account");
+                        this.$router.replace("/account-info");
+                    }
+                    else {
+                        console.log("afted---------------------");
+                        this.$router.replace("/search");
+                    }
+                }
+                //this.$router.replace("/search");
             },
             async signUpEmailSupabase(){
                 let { error } = await this.supabase.auth.signUp({
@@ -470,8 +482,16 @@
             async checkSessionIn(){
                 await this.checkSession;
                 this.overlayLoad = false;
-                if(this.logged_in)
-                    this.$router.replace("/search");
+                if(this.logged_in){
+                    if( ! this.account_created ){
+                        console.log("no account");
+                        this.$router.replace("/account-info");
+                    }
+                    else {
+                        console.log("afted---------------------");
+                        this.$router.replace("/search");
+                    }
+                }
             },
             async sendNotification() {
                 const permission = await LocalNotifications.requestPermissions();

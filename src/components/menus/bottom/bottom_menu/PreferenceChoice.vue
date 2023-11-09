@@ -1,0 +1,263 @@
+<style lang="scss" model>
+
+    .grouPreference {
+        margin-top: 50px;
+        .v-list-item-title {
+            white-space: inherit !important;
+            overflow: visible !important;
+        }
+    }
+</style>
+
+<!-- scss -->
+<style lang="scss" scoped>
+
+    .grouPreference {
+        margin-top: 50px;
+        .v-list-item-title {
+            white-space: inherit !important;
+            overflow: visible !important;
+        }
+    }
+</style>
+   
+<!--  -->
+<template>
+
+    <!--  -->
+    <GroupCard class="grouPreference" :groupeParameters="groupeParameters" />
+   
+</template>
+
+
+
+<!--  -->
+<script>
+    import { defineComponent } from 'vue';
+    import { mapState, mapMutations } from 'vuex';
+
+    // Components
+    import GroupCard from '@/components/menus/setting/GroupCard.vue';
+
+    const _ = require('lodash');
+
+    export default defineComponent({
+        name: 'preference-choice-comp',
+        computed: {
+            ...mapState("profil", [ "profil"]),
+            ...mapState("profil", {
+                preferences: state => state.profil.infos_perso.preferences,
+            }),
+        },
+        components: {
+            GroupCard,
+        },
+        props: {
+            about: {
+                type: String,
+                default: "discution",
+            },
+        },
+        data() {
+            return {
+                overlay: false,
+                aboutPreference: {
+                    discution: [
+                        {
+                            about: "discution",
+                            prependIconColor: "var(--blue-color)",
+                            prependIcon:"mdi-forum",
+                            text:"j'aime bien discuter",
+                            chip:false,
+                            chipIcon: null,
+                            switchBtn: false,
+                            chipText: "",
+                            fun: () => this.updatePref(1),
+                        },
+                        {
+                            about: "discution",
+                            prependIconColor: "#ff5353",
+                            prependIcon:"mdi-forum",
+                            text: "je discute de temps à autres",
+                            chip:false,
+                            chipIcon: null,
+                            switchBtn: false,
+                            chipText: "",
+                            fun: () => this.updatePref(2),
+                        },
+                        {
+                            about: "discution",
+                            prependIconColor: "#9fcb66",
+                            prependIcon:"mdi-forum",
+                            text:"je ne parle pas beaucoup",
+                            chip:false,
+                            chipIcon: null,
+                            switchBtn: false,
+                            chipText: "",
+                            fun: () => this.updatePref(3),
+                        },
+                    ],
+                    smoke: [
+                        {
+                            about: "smoke",
+                            prependIconColor: "var(--blue-color)",
+                            prependIcon:"mdi-smoking-off",
+                            text:"Je fume dans ma voiture",
+                            chip:false,
+                            chipIcon: null,
+                            chipText: "",
+                            fun: () => this.updatePref(1),
+                        },
+                        {
+                            about: "smoke",
+                            prependIconColor: "#ff5353",
+                            prependIcon:"mdi-smoking-off",
+                            text:"Je fume en dehors de la voiture",
+                            chip:false,
+                            chipIcon: null,
+                            chipText: "",
+                            fun: () => this.updatePref(2),
+                        },
+                        {
+                            about: "smoke",
+                            prependIconColor: "#9fcb66",
+                            prependIcon:"mdi-smoking-off",
+                            text:"Pas de cigarette en voiture",
+                            chip:false,
+                            chipIcon: null,
+                            chipText: "",
+                            fun: () => this.updatePref(3),
+                        },
+                    ],
+                    music: [
+                        {
+                            about: "music",
+                            prependIconColor: "var(--blue-color)",
+                            prependIcon:"mdi-music",
+                            text:"Music tout au long !",
+                            chip:false,
+                            chipIcon: null,
+                            chipText: "",
+                            fun: () => this.updatePref(1),
+                        },
+                        {
+                            about: "music",
+                            prependIconColor: "#ff5353",
+                            prependIcon:"mdi-music",
+                            text:"Tout depend de la music",
+                            chip:false,
+                            chipIcon: null,
+                            chipText: "",
+                            fun: () => this.updatePref(2),
+                        },
+                        {
+                            about: "music",
+                            prependIconColor: "#9fcb66",
+                            prependIcon:"mdi-music",
+                            text:"Le silence est d'or",
+                            chip:false,
+                            chipIcon: null,
+                            chipText: "",
+                            fun: () => this.updatePref(3),
+                        },
+                    ],
+                    animal: [
+                        {
+                            about: "animal",
+                            prependIconColor: "var(--blue-color)",
+                            prependIcon:"mdi-paw",
+                            text:"J'aime bien les animaux",
+                            chip:false,
+                            chipIcon: null,
+                            chipText: "",
+                            fun: () => this.updatePref(1),
+                        },
+                        {
+                            about: "animal",
+                            prependIconColor: "#ff9c00",
+                            prependIcon:"mdi-paw",
+                            text:"J'aime certains animaux",
+                            chip:false,
+                            chipIcon: null,
+                            chipText: "",
+                            fun: () => this.updatePref(2),
+                        },
+                        {
+                            about: "animal",
+                            prependIconColor: "#9fcb66",
+                            prependIcon:"mdi-paw",
+                            text:"Pas d'animaux en voiture",
+                            chip:false,
+                            chipIcon: null,
+                            chipText: "",
+                            fun: () => this.updatePref(3),
+                        },
+                    ],
+                },
+                groupeParameters: [
+                    {
+                        label: "préferences de voyage",
+                        parameters: [
+                            {
+                                about: "discution",
+                                prependIconColor: "var(--blue-color)",
+                                prependIcon:"mdi-forum",
+                                text:"j'aime bien discuter",
+                                chip:false,
+                                chipIcon: null,
+                                switchBtn: false,
+                                chipText: "",
+                            },
+                            {
+                                about: "smoke",
+                                prependIconColor: "#ff5353",
+                                prependIcon:"mdi-smoking-off",
+                                text:"Pas de cigarette en voiture",
+                                chip:false,
+                                chipIcon: null,
+                                chipText: "",
+                            },
+                            {
+                                about: "music",
+                                prependIconColor: "#9fcb66",
+                                prependIcon:"mdi-music",
+                                text:"Music tout au long !",
+                                chip:false,
+                                chipIcon: null,
+                                chipText: "",
+                            },
+                            {
+                                about: "animal",
+                                prependIconColor: "#ff9c00",
+                                prependIcon:"mdi-paw",
+                                text:"J'aime bien les animaux",
+                                chip:false,
+                                chipIcon: null,
+                                chipText: "",
+
+                            },
+                        ],
+                    },
+                ],
+            }
+        },
+        mounted() {
+            this.groupeParameters[0].label = this.about;
+            this.groupeParameters[0].parameters = this.aboutPreference[this.about].slice();
+        },
+        methods: {
+            ...mapMutations("profil", ["SET_PREFERENCE_ABOUT"]),
+            updatePref(index){
+                this.SET_PREFERENCE_ABOUT(_.cloneDeep(this.groupeParameters[0].parameters[index-1]));
+                this.$emit('pref-selected');
+            },
+        },
+        watch: {
+            about(){
+                //rebuild parameter when about changing
+                this.groupeParameters[0].label = this.about;
+                this.groupeParameters[0].parameters = this.aboutPreference[this.about].slice();
+            }
+        }
+    });
+</script>

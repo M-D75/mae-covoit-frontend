@@ -810,6 +810,15 @@
                 >Continuer</v-btn>
             </div>
 
+            <!-- Preference -->
+
+            <PreferenceChoice
+                v-if="mode=='preference-choice'"
+                :about="about"
+                v-on:pref-selected="$emit('close')"
+            ></PreferenceChoice>
+
+
             <!-- End Pofile -->
 
 
@@ -889,6 +898,7 @@
     import GroupListCardsHistory from '@/components/menus/bottom/GroupListCardsHistory.vue';
     import TimeCard from './bottom/TimeCard.vue';
     import SelectNumber from './bottom/SelectNumber.vue';
+    import PreferenceChoice from '@/components/menus/bottom/bottom_menu/PreferenceChoice.vue';
    
 
     export default defineComponent({
@@ -902,6 +912,7 @@
             GroupListCardsHistory,
             TimeCard,
             SelectNumber,
+            PreferenceChoice,
         },
         computed: {
             numericRule() {
@@ -971,6 +982,10 @@
                         destination: "Mamoudzou"
                     };
                 },
+            },
+            about: {
+                type: String,
+                default: "discution",
             },
         },
         data() {
@@ -1087,6 +1102,7 @@
                 
                 this.subContHeigth = this.$refs.subCont.clientHeight;
                 
+                console.log("open_b", this.open_b);
                 if ( ! this.open_b ) {
                     if ( this.y >= this.sizeScreen - this.marge_bar ) {
                         if( ! this.move ){

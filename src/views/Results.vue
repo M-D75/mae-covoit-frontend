@@ -105,7 +105,7 @@ import BottomMenu from '@/components/menus/BottomMenu.vue';
 export default defineComponent({
     name: 'results-view',
     computed: {
-        ...mapState("search", ["trajets", "trajetSelected", "nbPassenger"]),
+        ...mapState("search", ["trajets", "trajetSelected"]),
         ...mapActions("search", ["getTrajets"]),
         trajetFiltered() {
             return this.trajets.filter(
@@ -135,10 +135,10 @@ export default defineComponent({
             type: String,
             default: "Aujourd'hui",
         },
-        // nbPassenger: {
-        //     type: String,
-        //     default: "2",
-        // }
+        nbPassenger: {
+            type: String,
+            default: "2",
+        }
     },
     data() {
         return {
@@ -199,6 +199,7 @@ export default defineComponent({
                 console.error("Error:", error)
                 this.nothing = true;
             }
+            this.overlayLoad = false;
         },
         getDate() {
             const tmpCurrentDate = new Date();
