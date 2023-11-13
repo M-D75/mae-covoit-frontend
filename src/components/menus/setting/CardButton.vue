@@ -104,10 +104,11 @@
             
             <v-switch
                 v-if="switchBtn"
+                v-model="validation"
                 inset
                 color="info"
-            >
-            </v-switch>
+            />
+            
         </v-list-item>
     </v-card>
  
@@ -117,12 +118,17 @@
 
 <script>
     // import $ from 'jquery'
+    import { mapState, mapMutations } from 'vuex';
 
     // Components
     export default {
         name: 'card-btn-menu-comp',
+        computed:{
+            ...mapState("profil", ["autoValidation"]),
+        },
         data() {
             return {
+                validation: false,
             }
         },
         props: {
@@ -164,13 +170,19 @@
             }
         },
         mounted (){
-            
+            this.validation = this.autoValidation;
         },
         methods: {
+            ...mapMutations("profil", ["SET_AUTO_VALIDATION"]),
             invokFun(){
                 this.fun();
             },
         },
+        watch: {
+            validation(){
+                this.SET_AUTO_VALIDATION(this.validation);
+            }
+        }
     };
 </script>
 

@@ -54,7 +54,7 @@
             </v-icon>
 
             <!-- File input (caché) -->
-            <input type="file" ref="fileInput" style="display: none" @change="handleFileChange" />
+            <input type="file" ref="fileInput" accept="image/png, image/jpeg" style="display: none" @change="handleFileChange" />
         </v-avatar>
 
         <div
@@ -123,11 +123,26 @@
                 // Affiche l'image sélectionnée
                 const file = event.target.files[0];
                 if (file) {
+                    // type de fichier
+                    const validTypes = ['image/jpeg', 'image/png'];
+                    if ( ! validTypes.includes(file.type) ) {
+                        alert("Ce type de fichier n'est pas pris en charge.");
+                        return;
+                    }
+
+                    console.log("size-file", file.size);
+
+                    // taille de l'image 
+                    const maxSizeInBytes = 3e6; // 3 Megabytes
+                    if (file.size > maxSizeInBytes) {
+                        alert("Oups ! Cette image dépasse la taille maximale autorisée. Veuillez choisir une image plus légère.");
+                        return;
+                    }
+
                     const reader = new FileReader();
                     reader.onload = (e) => {
-                        this.SET_AVATAR_URL(e.target.result)
+                        this.SET_AVATAR_URL(e.target.result);
                         this.$router.replace("/cropper");
-                        window.location = "/cropper";
                     };
                     reader.readAsDataURL(file);
                 }

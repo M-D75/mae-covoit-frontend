@@ -25,7 +25,7 @@
     <ToolbarProfil :title="'Information personnelles'"/>
     <v-main class="main">
         <!-- Avatar -->
-        <Avatar />
+        <Avatar :name="userName"/>
 
         <!-- ? -->
         <PanneauInfo :infos_panneau="infos_panneau"/>
@@ -76,7 +76,7 @@
     export default defineComponent({
         name: 'infos-profil-view',
         computed: {
-            ...mapState("profil", [ "profil"]),
+            ...mapState("profil", [ "profil", "userName"]),
             ...mapState("profil", {
                 preferences: state => state.profil.infos_perso.preferences,
             }),

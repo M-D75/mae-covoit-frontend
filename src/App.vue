@@ -73,10 +73,51 @@
 <script>
 
     import $ from 'jquery';
-    import { inject } from 'vue';
     // natif
     import { StatusBar } from '@capacitor/status-bar';
     import { SafeAreaController, SafeArea } from '@aashu-dubey/capacitor-statusbar-safe-area';
+    import { PushNotifications } from '@capacitor/push-notifications';
+    import { Capacitor } from '@capacitor/core';
+
+    const addListeners = async () => {
+        await PushNotifications.addListener('registration', token => {
+            console.info('Registration token: ', token.value);
+        });
+
+        await PushNotifications.addListener('registrationError', err => {
+            console.error('Registration error: ', err.error);
+        });
+
+        await PushNotifications.addListener('pushNotificationReceived', notification => {
+            console.log('Push notification received: ', notification);
+        });
+
+        await PushNotifications.addListener('pushNotificationActionPerformed', notification => {
+            console.log('Push notification action performed', notification.actionId, notification.inputValue);
+        });
+    }
+
+    const registerNotifications = async () => {
+        let permStatus = await PushNotifications.checkPermissions();
+
+        if (permStatus.receive === 'prompt') {
+            permStatus = await PushNotifications.requestPermissions();
+        }
+
+        if (permStatus.receive !== 'granted') {
+            throw new Error('User denied permissions!');
+        }
+
+        await PushNotifications.register();
+    }
+
+    const getDeliveredNotifications = async () => {
+        const notificationList = await PushNotifications.getDeliveredNotifications();
+        console.log('delivered notifications', notificationList);
+    }
+
+    const isAndroid = Capacitor.getPlatform() === 'android';
+    const isIOS = Capacitor.getPlatform() === 'ios';
 
     //Component
     import MobileOnly from './views/MobileOnly.vue';
@@ -94,13 +135,21 @@
             },
         },
         data: () => ({
-            supabase: inject('supabase'),
+            // supabase: inject('supabase'),
             isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
             isSmallScreen: window.innerWidth <= 600,
         }),
         mounted(){
             console.log("isMobile:", this.isMobile);
             console.log("isSmallScreen:", this.isSmallScreen);
+            if(isAndroid)
+                console.log("You are on Android");
+            else if(isIOS)
+                console.log("You are on IOS");
+            else
+                console.log("You are on Web");
+
+            
             
             if( this.darkMode ){
                 $("#app .v-application").removeClass("ligth-mode");
@@ -114,7 +163,34 @@
             if(SafeAreaController)
                 SafeAreaController.injectCSSVariables();
 
-            // StatusBar.setOverlaysWebView({ overlay: true });
+            if( isIOS ){
+                PushNotifications.requestPermissions().then(result => {
+                    if (result.receive === 'granted') {
+                        PushNotifications.register();
+                        PushNotifications.addListener('pushNotificationReceived', notification => {
+                            // Gérer la réception de la notification
+                            console.log("Notification reçu", notification);
+                        });
+
+                        PushNotifications.addListener('pushNotificationActionPerformed', notification => {
+                            // Gérer l'action de l'utilisateur sur la notification
+                            console.log("Notification action user", notification);
+                        });
+                    } else {
+                        // Handle denial of permission
+                        console.log("Autoriasation failed:");
+                    }
+                });
+
+                registerNotifications();
+                addListeners();
+                getDeliveredNotifications();
+            }
+
+            if(isAndroid)
+                StatusBar.setOverlaysWebView({ overlay: true });
+
+            console.log("platform", isAndroid, isIOS);
             
             //$("link[rel*='icon']").attr("href", "/favicon-old.ico");
         },
@@ -134,54 +210,6 @@
             async getSafeAreaInsets () {
                 const insets = await SafeArea.getSafeAreaInsets();
                 return insets; // Ex. { "bottom":34, "top":47, "right":0, "left":0 }
-            },
-            async getUser(){
-                let { data, error } = await this.supabase.auth.getSession()
-
-                console.log("session:", data, error, data.session.access_token);
-
-                const date = new Date(data.session.expires_at * 1000); // Multiplié par 1000 pour le convertir en millisecondes
-                console.log(date.toISOString('fr-FR'));
-
-                const dateToday = new Date();
-                console.log(dateToday.toISOString('fr-FR'));
-
-                const jwt = localStorage.getItem("mae-covoit-supabase-jwt")
-                if( jwt ){
-                    const { data: { user } } = await this.supabase.auth.getUser(jwt);
-                    if(user){
-                        console.log('User already conneced:', user, jwt);
-                        this.$router.push("/search");
-                    }
-                    else{
-                        console.log('User session expired:', user, jwt);
-                        this.getToken();
-                    }
-                }
-                else{
-                    this.getToken();
-                }
-            },
-            async getToken(){
-                let { data, error } = await this.supabase.auth.getSession()
-
-                console.log("session:", data, error);
-                if(data.session){
-                    const jwt = data.session.access_token;
-                    localStorage.setItem("mae-covoit-supabase-jwt", jwt);
-                    localStorage.setItem("mae-covoit-supabase-jwt.expires_at", data.session.expires_at*1000);
-                    const { data: { user } } = await this.supabase.auth.getUser(jwt);
-                    if(user){
-                        console.log('2:User already conneced:', user);
-                        this.$router.push("/search");
-                    }
-                    else{
-                        console.log('2:User session expired:', user);
-                    }
-                }
-                else{
-                    console.log("error session");
-                }
             },
         },
         beforeUnmount() {

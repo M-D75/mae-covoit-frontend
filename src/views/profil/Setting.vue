@@ -99,7 +99,7 @@
                                 class="text-none"
                                 rounded="xl" 
                                 color="blue"
-                                @click="inviteUserSupabase()"
+                                @click="copyAndShare()"
                             >
                                 <v-icon>mdi-share-variant</v-icon>
                             </v-btn>
@@ -152,6 +152,8 @@
 <script>
     import { defineComponent } from 'vue';
     import { inject } from 'vue';
+    import { Clipboard } from '@capacitor/clipboard';
+    import { Share } from '@capacitor/share';
 
     // Components
     import ToolbarProfil from '@/components/menus/head/ToolbarProfil.vue';
@@ -287,6 +289,31 @@
                     if(this.$refs[this.bottomOpened]){
                         this.$refs[this.bottomOpened].close();
                     }
+                }
+            },
+            async copyToClipboard(text) {
+                await Clipboard.write({
+                    string: text,
+                });
+            },
+            async shareContent() {
+                await Share.share({
+                    title: 'Partagez ce lien',
+                    text: 'Hey, test la nouvelle appli de covoiturage !',
+                    url: 'https://tchap-tchap.yt',
+                    dialogTitle: 'Partagez avec vos amis',
+                });
+            },
+            async copyAndShare() {
+                // const text = 'https://example.com'; // Le lien que vous voulez partager
+                try {
+                    // Copie dans le presse-papiers
+                    // await this.copyToClipboard(text);
+
+                    // Ouvre la boîte de dialogue de partage natif
+                    await this.shareContent();
+                } catch (error) {
+                    console.error('Nous avons rencontré un problème:', error);
                 }
             },
         },

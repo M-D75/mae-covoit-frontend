@@ -16,6 +16,7 @@ export default {
         userName: "",
         avatarUrl: 'https://avatars0.githubusercontent.com/u/9064066?v=4&s=460',
         soldes: 0,
+        autoValidation: true,
         credit_card: {
             num_end_credit_card: "0000",
             available: false,
@@ -107,6 +108,9 @@ export default {
                 }
             }
         },
+        SET_AUTO_VALIDATION(state, bool){
+            state.autoValidation = bool;
+        }
     },
     actions: {
         async addCredit({state}, playload){
@@ -222,11 +226,13 @@ export default {
 
             await store.dispatch("search/getTrajets");
 
+
             let _trips = [];
             for (let index = 0; index < db_trip.length; index++) {
                 const trip_id = db_trip[index].id;
-
-                _trips.push(store.state.search.trajets.filter((trajet) => trajet.id == trip_id)[0]);
+                const trajets = store.state.search.trajets.filter((trajet) => trajet.id == trip_id);
+                if(trajets.length > 0)
+                    _trips.push(trajets[0]);
             }
 
             const groupedInfos = _trips.reduce((acc, info) => {
@@ -252,7 +258,7 @@ export default {
             state.profil.myPublish = groupedInfos;
             console.log("_trips:", _trips, state.profil.myPublish);
 
-            return true;
+            return _trips.length > 0;
         },
         async buildHistoriqueBooking({state}){
 

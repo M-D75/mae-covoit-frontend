@@ -32,11 +32,13 @@
                     i {
                         font-size: 35px;
                         margin-bottom: 5px;
+                        color: var(--font-color-label);
                     }
                     span {
                         font-size: 17px;
                         text-transform: uppercase;
                         display: block;
+                        color: var(--font-color-label);
                     }
                 }
             }

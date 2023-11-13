@@ -32,7 +32,7 @@
         class="cropper"
         ref="cropper"
         :stencil-component="$options.components.CircleStencil"
-        :src="avatarUrl"
+        :src="img"
         :stencil-props="{
             previewClass: 'preview',
         }"
@@ -44,7 +44,7 @@
         @click="crop()"
     />
 
-    <CircleStencil/>
+    <CircleStencil v-if="false"/>
     
 </template>
 
@@ -75,19 +75,27 @@
                 },
             };
         },
+        beforeMount(){
+            this.img = this.avatarUrl;
+        },
         mounted(){
-            //this.img = this.avatarUrl;
+            this.img = this.avatarUrl;
+            console.log("mount-cropper");
         },
         methods: {
             ...mapMutations("profil", ["SET_AVATAR_URL"]),
             crop() {
-                const { coordinates, canvas, } = this.$refs.cropper.getResult();
+                const { coordinates, canvas } = this.$refs.cropper.getResult();
                 this.coordinates = coordinates;
-                console.log("coordinates", coordinates);
-                this.image = canvas.toDataURL();
-                this.SET_AVATAR_URL(this.image);
-                //this.$router.replace("/profil");
-                window.location = "/profil";
+                console.log("coordinate", coordinates);
+                try {
+                    this.image = canvas.toDataURL();
+                    this.SET_AVATAR_URL(this.image);
+                    this.$router.replace("/profil");
+                } catch (e) {
+                    console.error('Erreur lors de la tentative de toDataURL', e);
+                }
+                
             },
         },
     });

@@ -266,12 +266,10 @@
     import { inject } from 'vue';
     import { mapActions, mapMutations, mapState } from "vuex";
 
-
     import { App } from '@capacitor/app';
     import { Plugins } from '@capacitor/core';
 
     const { LocalNotifications } = Plugins;
-
 
     export default {
         setup() {
@@ -430,21 +428,21 @@
                 // });
 
                 // Test local
-                // let { data, error } = await this.supabase.auth.signInWithOAuth({
-                //     provider: service,
-                //     options: {
-                //         skipBrowserRedirect: true,
-                //         redirectTo: "http://localhost:8080",
-                //     },
-                // });
-
-                // Site Web App 
                 let { data, error } = await this.supabase.auth.signInWithOAuth({
                     provider: service,
                     options: {
                         skipBrowserRedirect: true,
+                        redirectTo: "http://localhost:8080",
                     },
                 });
+
+                // Site Web App 
+                // let { data, error } = await this.supabase.auth.signInWithOAuth({
+                //     provider: service,
+                //     options: {
+                //         skipBrowserRedirect: true,
+                //     },
+                // });
 
                 if ( error ) {
                     console.error("Erreur lors de l'authenfication:", error.message);

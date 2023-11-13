@@ -51,6 +51,7 @@ import supabase from '@/utils/supabaseClient.js';
 import VueGoogleMaps from '@fawmi/vue-google-maps'
 import './registerServiceWorker'
 
+
 createApp(App)
     .component('font-awesome-icon', FontAwesomeIcon)
     .provide('supabase', supabase)

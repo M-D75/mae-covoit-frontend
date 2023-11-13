@@ -315,31 +315,32 @@
                 },
                 itineraire: {
                     origin: {
-                            location: {
-                                latLng: {
-                                    latitude: -12.7243245,
-                                    longitude: 45.0589372,
-                                    latLngTab: [-12.7243245, 45.0589372]
-                                }
-                            },
-                            infos: {
-                                village: "Acoua",
-                                commune: "Acoua",
+                        location: {
+                            latLng: {
+                                latitude: -12.7243245,
+                                longitude: 45.0589372,
+                                latLngTab: [-12.7243245, 45.0589372]
                             }
+                        },
+                        infos: {
+                            village: "Acoua",
+                            commune: "Acoua",
+                        }
                     },
                     destination: {
-                            location: {
-                                latLng: {
-                                    latitude: -12.9292776,
-                                    longitude: 45.1763906,
-                                    latLngTab: [-12.9292776, 45.1763906]
-                                }
-                            },
-                            infos: {
-                                village: "Bambo-Est",
-                                commune: "Bandrélé",
+                        location: {
+                            latLng: {
+                                latitude: -12.9292776,
+                                longitude: 45.1763906,
+                                latLngTab: [-12.9292776, 45.1763906]
                             }
+                        },
+                        infos: {
+                            village: "Bambo-Est",
+                            commune: "Bandrélé",
+                        }
                     },
+                    departureTime: '2023-10-15T15:01:23.045123456Z',
                 },
                 timeInit: {
                     hourInit: 7,
@@ -404,6 +405,7 @@
                     case "time":
                         if (this.$refs.BottomMenuRef) {
                             this.infosPublish.default.hourDep = this.$refs.BottomMenuRef.time;
+                            this.itineraire.departureTime = this.convertTimeString(this.$refs.BottomMenuRef.time);
                             console.log("Time-selected:", this.infosPublish.default.hourDep, this.convertTimeString(this.infosPublish.default.hourDep));
                         }
                         

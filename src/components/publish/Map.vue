@@ -272,9 +272,8 @@
             }
         },
         mounted(){
-
             SafeAreaController.injectCSSVariables();
-
+            console.log("itineraire", this.itineraire);
             this.$refs.BottomMenuRef.open();
         },
         methods: {
@@ -344,7 +343,7 @@
                         },
                         travelMode: 'DRIVE',
                         routingPreference: 'TRAFFIC_AWARE',
-                        departureTime: '2023-10-15T15:01:23.045123456Z',
+                        departureTime: this.itineraire.departureTime,
                         computeAlternativeRoutes: true,
                         routeModifiers: {
                             avoidTolls: true,
@@ -388,6 +387,7 @@
 
                     this.routes = tmp_routes;
                     this.overlayLoad = false;
+                    
                 }).catch(error => {
                     console.error(error);
                     console.log("Error", error.message);
