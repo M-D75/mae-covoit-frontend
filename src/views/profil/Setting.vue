@@ -61,13 +61,29 @@
                 }
             }
         }
+
+        @keyframes swipeRightToLeft {
+            from {
+                transform: translateX(100%); // commencer à droite, en dehors de l'écran
+                opacity: 0; // commencer avec une opacité de 0 pour un effet de fondu
+            }
+            to {
+                transform: translateX(0); // finir aligné avec la position normale
+                opacity: 1; // finir avec une opacité de 1
+            }
+        }
+
+        .swipe {
+            position: relative;
+            animation: swipeRightToLeft 0.1s ease-out forwards; // ajustez le temps et la fonction d'easing comme vous le souhaitez
+        }
     }
 </style>
    
 <!--  -->
 <template>
 
-    <ToolbarProfil ref="ToolbarProfilRef" :title="'Parametres'"/>
+    <ToolbarProfil ref="ToolbarProfilRef" :title="'Parametres'" v-on:back="backToolbar()"/>
 
     <!-- overlay -->
     <v-overlay 
@@ -81,7 +97,10 @@
     <v-main class="main">
         <!--  -->
         <div v-if="mode=='setting'">
+            <!-- btns setting -->
             <GroupCard class="grouP" :groupeParameters="groupeParameters" />
+
+            <!-- btn share friend -->
             <div class="ctn sub-part">
                 <!-- <div class="label text-subtitle">Invite Link</div> -->
                 <v-card
@@ -108,6 +127,7 @@
                     
                 </v-card>
             </div>
+
             <div class="ctn logout">
                 <v-btn
                     class="logout mt-5 mx-auto text-none"
@@ -123,19 +143,32 @@
             </div>
         </div>
 
-        <div v-if="mode=='infos'">
+        <!-- champ input d'information personnel -->
+        <div 
+            v-if="mode=='infos'"
+            class="swipe"
+        >
             <GroupInput :group-input="groupInput"/>
         </div>
 
-        <div v-if="mode=='infos-general'">
+        <div 
+            v-if="mode=='infos-general'"
+            class="swipe"
+        >
             <InfosGeneral :title="cgu.title" :text="cgu.text"/>
         </div>
 
-        <div v-if="mode=='data-protection'">
+        <div 
+            v-if="mode=='data-protection'"
+            class="swipe"
+        >
             <InfosGeneral :mode="mode" :title="dataProtection.title" :text="dataProtection.text"/>
         </div>
 
-        <SelectVirement v-if="mode=='virement'"/>
+        <SelectVirement 
+            v-if="mode=='virement'"
+            class="swipe"
+        />
         
     </v-main>
 
@@ -150,10 +183,15 @@
 
 <!--  -->
 <script>
+    import $ from 'jquery';
     import { defineComponent } from 'vue';
     import { inject } from 'vue';
     import { Clipboard } from '@capacitor/clipboard';
     import { Share } from '@capacitor/share';
+    import { Capacitor } from '@capacitor/core';
+
+    const isAndroid = Capacitor.getPlatform() === 'android';
+    const isIOS = Capacitor.getPlatform() === 'ios';
 
     // Components
     import ToolbarProfil from '@/components/menus/head/ToolbarProfil.vue';
@@ -179,6 +217,7 @@
         computed: {
             ...mapState("profil", ['profil']),
             ...mapState("general", ['cgu', 'dataProtection']),
+            ...mapState("auth", ['provider']),
             ...mapMutations("auth", ["CLEAR_TOKEN"]),
             ...mapActions("auth", ["logout"]),
         },
@@ -186,11 +225,27 @@
             return {
                 supabase: inject('supabase'),
                 mode: "setting",
-                groupeParameters: [
+                groupeParameters: [],
+                groupInput: [],
+                cguL: {
+                    title: "",
+                    text: "",
+                },
+                overlay: false,
+                bottomOpened: "",
+            }
+        },
+        created() {
+            this.initializeGroupeParameters();
+        },
+        methods: {
+            initializeGroupeParameters() {
+                this.groupeParameters = [
                     {
                         label: "coordonnes",
                         parameters: [
                             {
+                                none: this.provider == "email",
                                 prependIcon: null,
                                 text:"Mots de passe",
                                 chip:true,
@@ -249,17 +304,8 @@
                             },
                         ],
                     },
-                ],
-                groupInput: [],
-                cguL: {
-                    title: "",
-                    text: "",
-                },
-                overlay: false,
-                bottomOpened: "",
-            }
-        },
-        methods: {
+                ];
+            },
             async signOutSupabase(){
                 this.logout;
             },
@@ -267,7 +313,7 @@
                 let { data, error } = await this.supabase.auth.api.inviteUserByEmail('someone@email.com');
 
                 if (error) {
-                    console.error('Erreur lors de la deconnexion:', error.message);
+                    console.error('Erreur lors du partage:', error.message);
                     return;
                 }
 
@@ -291,6 +337,17 @@
                     }
                 }
             },
+            backToolbar(){
+                if( this.mode == 'setting' ){
+                    this.$router.back();
+                }
+                else { 
+                    $('.swipe').animate({left: "100%" }, 50, function() {
+                        this.mode = 'setting';
+                        console.log("Animation terminée!");
+                    }.bind(this));
+                }
+            },
             async copyToClipboard(text) {
                 await Clipboard.write({
                     string: text,
@@ -305,13 +362,17 @@
                 });
             },
             async copyAndShare() {
-                // const text = 'https://example.com'; // Le lien que vous voulez partager
+                const text = 'https://tchap-tchap.yt'; // Le lien que vous voulez partager
                 try {
-                    // Copie dans le presse-papiers
-                    // await this.copyToClipboard(text);
+                    //Copie dans le presse-papiers
+                    if( ! isAndroid && ! isIOS ){
+                        await this.copyToClipboard(text);
+                    }
 
-                    // Ouvre la boîte de dialogue de partage natif
-                    await this.shareContent();
+                    if( isAndroid || isIOS ){
+                        // Ouvre la boîte de dialogue de partage natif
+                        await this.shareContent();
+                    }
                 } catch (error) {
                     console.error('Nous avons rencontré un problème:', error);
                 }
@@ -322,8 +383,10 @@
 
             this.groupInput = [
                 {
+                    typeInput: "select",
                     label: "Civilite",
                     value: this.profil.infos_perso.civilite,
+                    items: ["Mr", "Mme", "Non binaire"],
                 },
                 {
                     label: "Nom",

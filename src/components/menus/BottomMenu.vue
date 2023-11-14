@@ -771,43 +771,45 @@
                 class="password"
             >
                 <div class="label text-center">Réinitialiser votre mots de passe.</div>
+                <v-form @submit.prevent>
+                    <div class="contain-input">
+                        <div class="label">Nouveau mot de passe.</div>
+                        <v-text-field
+                            v-model="passwordChange.password"
+                            placeholder=""
+                            single-line
+                            :rules="[passwordChange.rules.required, passwordChange.rules.min]"
+                            type="password"
+                            variant="solo"
+                            hint="Au moins 8 characters"
+                            counter
+                        ></v-text-field>
+                    </div>
 
-                <div class="contain-input">
-                    <div class="label">Nouveau mot de passe.</div>
-                    <v-text-field
-                        v-model="passwordChange.password"
-                        placeholder=""
-                        single-line
-                        :rules="[rules.required, rules.min]"
-                        type="password"
-                        variant="solo"
-                        hint="Au moins 8 characters"
-                        counter
-                    ></v-text-field>
-                </div>
+                    <div class="contain-input">
+                        <div class="label">Confirmation du mot passe</div>
+                        <v-text-field
+                            v-model="passwordChange.passwordComfirmed"
+                            placeholder=""
+                            :rules="[passwordChange.rules.required, passwordChange.rules.min, passwordChange.rules.passwordMatch]"
+                            type="password"
+                            single-line
+                            variant="solo"
+                            hint="Au moins 8 characters"
+                            counter
+                        ></v-text-field>
+                    </div>
 
-                <div class="contain-input">
-                    <div class="label">Confirmation du mot passe</div>
-                    <v-text-field
-                        v-model="passwordChange.passwordComfirmed"
-                        placeholder=""
-                        :rules="[rules.required, rules.min]"
-                        type="password"
-                        single-line
-                        variant="solo"
-                        hint="Au moins 8 characters"
-                        counter
-                    ></v-text-field>
-                </div>
-
-                <v-btn 
-                    class="text-none"
-                    rounded="xl" 
-                    size="x-large"
-                    variant="outlined"
-                    block
-                    @click="recharger()"
-                >Continuer</v-btn>
+                    <v-btn 
+                        class="text-none"
+                        rounded="xl" 
+                        size="x-large"
+                        variant="outlined"
+                        type="submit"
+                        block
+                        @click="changePassword()"
+                    >Continuer</v-btn>
+                </v-form>
             </div>
 
             <!-- Preference -->
@@ -879,7 +881,29 @@
             </div>
         </div>
 
+        
     </v-container>
+
+    <!-- message error -->
+    <v-snackbar
+        v-model="showSnackbarError"
+        :timeout="4000"
+        color="error"
+        style="z-index: 99999;"
+    >
+        <v-icon icon="mdi-alert-circle"></v-icon> <span>{{ messageSnackbarError }}</span>
+    </v-snackbar>
+
+
+    <!-- message succes -->
+    <v-snackbar
+        v-model="showSnackbarSuccess"
+        :timeout="4000"
+        color="success"
+        style="z-index: 99999;"
+    >
+        <v-icon icon="mdi-alert-circle"></v-icon> <span>{{ messageSnackbarSuccess }}</span>
+    </v-snackbar>
 
 
 </template>
@@ -889,6 +913,7 @@
 <script>
     import { defineComponent } from 'vue';
     import $ from 'jquery';
+    import supabase from '@/utils/supabaseClient';
 
     // Components
     import Vue3DraggableResizable from 'vue3-draggable-resizable';
@@ -1024,15 +1049,19 @@
                     {model: "SUV", color: "red", icon:"mdi-car-pickup"},
                     {model: "MONO SPACE", color: "navy", icon:"mdi-car"},
                 ],
-                rules: {
-                    required: value => !!value || 'Requis.',
-                    min: v => v.length >= 8 || '8 characters minimum',
-                    emailMatch: () => (`The email and password you entered don't match`),
-                },
                 passwordChange: {
                     password: "",
                     passwordComfirmed: "",
+                    rules: {
+                        required: value => !!value || 'Requis.',
+                        min: v => v.length >= 8 || '8 characters minimum',
+                        passwordMatch: () => this.passwordChange.password == this.passwordChange.passwordComfirmed || `Vous devez entrer le même mot de passe`,
+                    },
                 },
+                showSnackbarError: false,
+                messageSnackbarError: "",
+                showSnackbarSuccess: false,
+                messageSnackbarSuccess: "",
             }
         },
         mounted() {
@@ -1054,6 +1083,11 @@
             }
             
             $("div.sub-label-color").addClass("warn-good-to-low");
+            // if(this.mode=="password"){
+            //     this.open();
+            //     this.messageSnackbarError = "test";
+            //     this.showSnackbarError = true;
+            // }
         },
         methods: {
             checkNumericalValue(event, nextInputRef){
@@ -1243,15 +1277,30 @@
                 }
                 this.$emit(value)
             },
+            async changePassword(){
+                if( this.passwordChange.password.length >= 8 && this.passwordChange.password == this.passwordChange.passwordComfirmed ){
+                    let { error } = await supabase.auth.updateUser({ password: this.passwordChange.password });
+                    
+                    if( error ){
+                        this.messageSnackbarError = error.message == "New password should be different from the old password." ? "Le nouveau mot de passe doit être différent de l'ancien" : error.message;
+                        this.showSnackbarError = true;
+                        return;
+                    }
+                    
+                    this.messageSnackbarSuccess = "Changement de mot de passe effectuée. Vous allez être deconnecté";
+                    this.showSnackbarSuccess = true;
+                    
+                    setTimeout(async function(){
+                        await this.$store.dispatch("auth/logout");
+                    }.bind(this), 4000);
+                }
+            },
         },
         watch:{
             y(){
                 const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
                 $(classBottomMenuNameJquery).css("top", `${this.y}px`);
             },
-            mode(){
-                console.log("mode------", this.mode);
-            }
         }
    });
 </script>

@@ -18,8 +18,7 @@
 <style lang="scss" scoped>
     .hour-program-comp {
         overflow: auto;
-        height: 100vh;
-        padding-bottom: 110px;
+        height: 90vh;
         .title {
             font-size: var(--font-size-h1);
             color: var(--font-color-label);
@@ -27,7 +26,7 @@
             width: 100%;
             padding: 0 39px 0px 39px;
             margin: 30px auto;
-            margin-bottom: 150px;
+            margin-bottom: 100px;
         }
 
         .cont {
@@ -217,7 +216,7 @@
                 labelSelectorTime: "Heure",
                 modeHour: "dom",
                 hour: {
-                    "domicile":"08:00",
+                    "domicile":"07:00",
                     "work":"17:00",
                 },
                 timeDomInit: {

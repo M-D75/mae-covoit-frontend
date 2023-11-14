@@ -2,6 +2,11 @@
 <style lang="scss" model>
 
     .card-trajet-member-btn {
+        .v-list-item {
+            .v-list-item__prepend{
+                display: block !important;
+            }
+        }
         .mdi-navigation.mdi.v-icon.notranslate.v-theme--light.v-icon--size-default{
             color: #eee !important;
             opacity: inherit !important;
@@ -17,10 +22,11 @@
         }
         .line {
             background-color: white !important;
+            border: dotted 2px gray;
             width: 2px;
             height: 38px;
             position: absolute;
-            left: 25px;
+            left: 26.5px;
             top: 21px;
             z-index: 0;
             opacity: var(--v-medium-emphasis-opacity);

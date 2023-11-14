@@ -71,7 +71,6 @@
             >
                 <!-- without notif -->
                 <v-icon
-                   
                     class="mr-0"
                 >mdi-bell</v-icon>
             </v-btn>
@@ -139,7 +138,8 @@
                 this.$router.currentRoute._rawValue.path == "/setting" ? this.$router.back() : this.$router.push("/setting");
             },
             back(){
-                this.$router.back();
+                //this.$router.back();
+                this.$emit("back");
                 this.needToComeBack = false;
             },
             async initStatusBarHeight(){

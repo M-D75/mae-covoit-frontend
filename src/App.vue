@@ -78,43 +78,46 @@
     import { SafeAreaController, SafeArea } from '@aashu-dubey/capacitor-statusbar-safe-area';
     import { PushNotifications } from '@capacitor/push-notifications';
     import { Capacitor } from '@capacitor/core';
+    import { Plugins } from '@capacitor/core';
 
-    const addListeners = async () => {
-        await PushNotifications.addListener('registration', token => {
-            console.info('Registration token: ', token.value);
-        });
+    const { LocalNotifications } = Plugins;
 
-        await PushNotifications.addListener('registrationError', err => {
-            console.error('Registration error: ', err.error);
-        });
+    // const addListeners = async () => {
+    //     await PushNotifications.addListener('registration', token => {
+    //         console.info('Registration token: ', token.value);
+    //     });
 
-        await PushNotifications.addListener('pushNotificationReceived', notification => {
-            console.log('Push notification received: ', notification);
-        });
+    //     await PushNotifications.addListener('registrationError', err => {
+    //         console.error('Registration error: ', err.error);
+    //     });
 
-        await PushNotifications.addListener('pushNotificationActionPerformed', notification => {
-            console.log('Push notification action performed', notification.actionId, notification.inputValue);
-        });
-    }
+    //     await PushNotifications.addListener('pushNotificationReceived', notification => {
+    //         console.log('Push notification received: ', notification);
+    //     });
 
-    const registerNotifications = async () => {
-        let permStatus = await PushNotifications.checkPermissions();
+    //     await PushNotifications.addListener('pushNotificationActionPerformed', notification => {
+    //         console.log('Push notification action performed', notification.actionId, notification.inputValue);
+    //     });
+    // }
 
-        if (permStatus.receive === 'prompt') {
-            permStatus = await PushNotifications.requestPermissions();
-        }
+    // const registerNotifications = async () => {
+    //     let permStatus = await PushNotifications.checkPermissions();
 
-        if (permStatus.receive !== 'granted') {
-            throw new Error('User denied permissions!');
-        }
+    //     if (permStatus.receive === 'prompt') {
+    //         permStatus = await PushNotifications.requestPermissions();
+    //     }
 
-        await PushNotifications.register();
-    }
+    //     if (permStatus.receive !== 'granted') {
+    //         throw new Error('User denied permissions!');
+    //     }
 
-    const getDeliveredNotifications = async () => {
-        const notificationList = await PushNotifications.getDeliveredNotifications();
-        console.log('delivered notifications', notificationList);
-    }
+    //     await PushNotifications.register();
+    // }
+
+    // const getDeliveredNotifications = async () => {
+    //     const notificationList = await PushNotifications.getDeliveredNotifications();
+    //     console.log('delivered notifications', notificationList);
+    // }
 
     const isAndroid = Capacitor.getPlatform() === 'android';
     const isIOS = Capacitor.getPlatform() === 'ios';
@@ -163,18 +166,27 @@
             if(SafeAreaController)
                 SafeAreaController.injectCSSVariables();
 
-            if( isIOS ){
+            if( isIOS || isAndroid ){
                 PushNotifications.requestPermissions().then(result => {
                     if (result.receive === 'granted') {
                         PushNotifications.register();
                         PushNotifications.addListener('pushNotificationReceived', notification => {
                             // Gérer la réception de la notification
-                            console.log("Notification reçu", notification);
+                            console.log("Notification reçu", JSON.stringify(notification));
+                            this.sendNotification(notification.title, notification.body);
                         });
 
                         PushNotifications.addListener('pushNotificationActionPerformed', notification => {
                             // Gérer l'action de l'utilisateur sur la notification
-                            console.log("Notification action user", notification);
+                            console.log("Notification action user", JSON.stringify(notification));
+                        });
+
+                        PushNotifications.addListener('registration', token => {
+                            console.info('Registration token: ', token.value);
+                        });
+
+                        PushNotifications.addListener('registrationError', err => {
+                            console.error('Registration error: ', err.error);
                         });
                     } else {
                         // Handle denial of permission
@@ -182,9 +194,9 @@
                     }
                 });
 
-                registerNotifications();
-                addListeners();
-                getDeliveredNotifications();
+                // registerNotifications();
+                // addListeners();
+                // getDeliveredNotifications();
             }
 
             if(isAndroid)
@@ -210,6 +222,30 @@
             async getSafeAreaInsets () {
                 const insets = await SafeArea.getSafeAreaInsets();
                 return insets; // Ex. { "bottom":34, "top":47, "right":0, "left":0 }
+            },
+            async sendNotification(title, body) {
+                const permission = await LocalNotifications.requestPermissions();
+               
+                if( permission ){
+
+                    await LocalNotifications.schedule({
+                        notifications: [
+                            {
+                                id: 1,
+                                title: title,
+                                body: body,
+                                summaryText: "sumaryText!",
+                                schedule: { at: new Date(Date.now() + 2000) }, // dans 5 secondes
+                                iconColor: "red",
+                                smallIcon: "res://large_logo",
+                                largeIcon: "res://large_logo",
+                            }
+                        ]
+                    });
+                }
+                else{
+                    console.log("permission non accordé");
+                }
             },
         },
         beforeUnmount() {

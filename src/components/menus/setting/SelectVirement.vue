@@ -19,6 +19,14 @@
     .scrollable-container::-webkit-scrollbar-thumb {
         background-color: transparent;
     }
+
+
+    .v-container.select-car-view{
+        // circle radio
+        .mdi-radiobox-blank{
+            color: var(--font-color-label);
+        }
+    }
 </style>
 
 <!-- scss -->
@@ -113,7 +121,7 @@
                         </div>
                         <!-- <div class="color" :style="'background-color: ' + info.color"></div> -->
                         <v-radio
-                            color="black"
+                            :color="darkMode ? 'white' : 'black'"
                             :value="info.value"
                         ></v-radio>
                     </v-list>
@@ -129,12 +137,15 @@
 <script>
     import $ from 'jquery'
     import { defineComponent } from 'vue';
+    import { mapState } from 'vuex';
 
     // Components
 
     export default defineComponent({
         name: 'select-virement-mode',
-
+        computed: {
+            ...mapState("profil", ["darkMode"]),
+        },
         components: {
         },
         data() {

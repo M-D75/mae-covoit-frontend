@@ -17,7 +17,9 @@ export default createStore({
         general,
     },
     plugins: [createPersistedState({
-        paths: ['profil.userUid', 
+        paths: ['auth.provider',
+                'profil.darkMode',
+                'profil.userUid', 
                 'profil.userName', 
                 'profil.autoValidation', 
                 'profil.avatarUrl', 

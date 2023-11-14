@@ -9,10 +9,9 @@ export default {
     namespaced: true,
     state: {
         userId: "",
-        token: null,
-        tokenExpiry: null,
         logged_in: false,
         account_created: false,
+        provider: "",
     },
     mutations: {
         SET_TOKEN(state, payload) {
@@ -78,71 +77,66 @@ export default {
         async checkSession({ state }){
             let { data, error } = await supabase.auth.getSession();
 
-            console.log("checkSession v-data-session:", data.session)
+            console.log("checkSession data.session:", data.session)
             state.logged_in = false;
             if( data.session ){
+                
                 state.logged_in = true;
-                const jwt = data.session.access_token;
 
-                state.token = jwt;
-                state.tokenExpiry = data.session.expires_at * 1000;
+                const user = data.session.user;
+                store.state.profil.userUid = user.id;
+                state.provider = user.app_metadata.provider;
+                console.log('User is already connected:', user);
 
-                const { data: { user } } = await supabase.auth.getUser(jwt);
-                if( user ){
-                    console.log('4:User already conneced:', user);
-                    store.state.profil.userUid = user.id;
+                //Check if account are created
+                let { data: account, error: error_account } = await supabase
+                    .from('account')
+                    .select('*')
+                    .eq('user_id', user.id)
 
-                    //Check if account are created
-                    let { data: account, error: error_account } = await supabase
-                        .from('account')
-                        .select('*')
-                        .eq('user_id', user.id)
-
-                    if(error_account){
-                        console.error("Erreur", error_account)
+                if(error_account){
+                    console.error("Erreur", error_account)
+                    state.account_created = false;
+                }
+                else{
+                    if(account.length > 0){
+                        console.log("Welcome ! ", account[0].firstname);
+                        state.account_created = true;
+                    }
+                    else{
+                        console.log("No account")
                         state.account_created = false;
                     }
-                    else{
-                        if(account.length > 0){
-                            console.log("Welcome ! ", account[0].firstname);
-                            state.account_created = true;
-                        }
-                        else{
-                            console.log("No account")
-                            state.account_created = false;
-                        }
-                    }
-                    
-                    if(user.user_metadata.avatar_url && store.state.profil.avatarUrl == "https://avatars0.githubusercontent.com/u/9064066?v=4&s=460")
-                        store.state.profil.avatarUrl = user.user_metadata.avatar_url;
+                }
+                
+                if(user.user_metadata.avatar_url && store.state.profil.avatarUrl == "https://avatars0.githubusercontent.com/u/9064066?v=4&s=460")
+                    store.state.profil.avatarUrl = user.user_metadata.avatar_url;
 
-                    if( account.length > 0 ){
-                        const current_account = account[0];
-                        if(current_account){
-                            store.state.profil.soldes = current_account.credit;
+                if( account.length > 0 ){
+                    const current_account = account[0];
+                    if(current_account){
+                        store.state.profil.soldes = current_account.credit;
 
-                            //store.state.profil.userName = ! user.user_metadata.full_name ? current_account.username : user.user_metadata.full_name;
-                            store.state.profil.userName = `${current_account.lastname} ${current_account.firstname}`;
-                            if(current_account.lastname == "" && current_account.firstname == "")
-                                store.state.profil.userName = ! user.user_metadata.full_name ? current_account.username : user.user_metadata.full_name;
-                            
-                            store.state.profil.profil.infos_perso.nom = current_account.lastname;
-                            store.state.profil.profil.infos_perso.prenom = current_account.firstname;
-                            store.state.profil.profil.infos_perso.email = current_account.email;
-                            //console.log("store", store.state.profil, store.state.search.accounts, current_account)
-                        }
-                        else {
-                            store.state.profil.soldes = 0;
-                            store.state.profil.userName = `Anonyme-${user.id.substring(0, 3)}`;
-                        }
+                        //store.state.profil.userName = ! user.user_metadata.full_name ? current_account.username : user.user_metadata.full_name;
+                        store.state.profil.userName = `${current_account.lastname} ${current_account.firstname}`;
+                        if(current_account.lastname == "" && current_account.firstname == "")
+                            store.state.profil.userName = ! user.user_metadata.full_name ? current_account.username : user.user_metadata.full_name;
+                        
+                        store.state.profil.profil.infos_perso.nom = current_account.lastname;
+                        store.state.profil.profil.infos_perso.prenom = current_account.firstname;
+                        store.state.profil.profil.infos_perso.email = current_account.email;
+                        //console.log("store", store.state.profil, store.state.search.accounts, current_account)
                     }
-                    else{
+                    else {
                         store.state.profil.soldes = 0;
                         store.state.profil.userName = `Anonyme-${user.id.substring(0, 3)}`;
                     }
                 }
+                else{
+                    store.state.profil.soldes = 0;
+                    store.state.profil.userName = `Anonyme-${user.id.substring(0, 3)}`;
+                }
 
-                //router.replace("/search");
                 state.logged_in = true;
                 return true;
             }
@@ -163,8 +157,15 @@ export default {
         },
     },
     getters: {
-        isAuthenticated(state) {
-            const tokenValid = state.token && new Date().getTime() < state.tokenExpiry;
+        async isAuthenticated() {
+            let { data, error } = await supabase.auth.getSession();
+
+            if( error ){
+                router.replace("/login");
+                return false;
+            }
+
+            const tokenValid = new Date().getTime() < data.session.expires_at * 1000;
             return tokenValid;
         },
     },

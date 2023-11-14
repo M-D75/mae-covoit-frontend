@@ -167,8 +167,13 @@ export default {
             let _trips = [];
             for (let index = 0; index < booking.length; index++) {
                 const trip_id = booking[index].trip_id;
+                const trajets = store.state.search.trajets.filter(
+                            (trajet) => trajet.id == trip_id
+                            && new Date().getTime() < new Date(trajet.departure_time).getTime()
+                        );
 
-                _trips.push(store.state.search.trajets.filter((trajet) => trajet.id == trip_id)[0]);
+                if(trajets.length > 0)
+                    _trips.push(trajets[0]);
             }
 
             const groupedInfos = _trips.reduce((acc, info) => {

@@ -1,12 +1,5 @@
 <!-- scoped -->
 <style lang="scss" model>
-    .group-card-comp {
-        .v-text-field {
-            .v-field__input {
-                color: var(--font-color-label);
-            }
-        }
-    }
 
 </style>
 
@@ -25,9 +18,6 @@
             border-radius: 10px;
             font-size: 16px;
             height: 50px;
-            .v-field__input {
-                color: var(--font-color-label);
-            }
         }
     }
 
@@ -44,6 +34,7 @@
         >
             <div class="label text-subtitle">{{ group.label }}</div>
             <v-text-field 
+                v-if=" ! group.typeInput || group.typeInput == 'text-field'"
                 v-model="group.value" 
                 variant="solo-filled"
                 :disabled="'disabled' in group ? true : false"
@@ -51,6 +42,13 @@
                 :persistent-placeholder="false"
                 :persistent-hint="false"
             ></v-text-field>
+
+            <v-select
+                v-if="group.typeInput == 'select'"
+                :label="group.label"
+                :items="group.items"
+                variant="solo-filled"
+            ></v-select>
         </div>
     </div>
  
