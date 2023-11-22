@@ -10,6 +10,8 @@ PODS:
   - CapacitorClipboard (5.0.6):
     - Capacitor
   - CapacitorCordova (5.2.3)
+  - CapacitorGeolocation (5.0.6):
+    - Capacitor
   - CapacitorLocalNotifications (5.0.6):
     - Capacitor
   - CapacitorPushNotifications (5.1.0):
@@ -26,6 +28,7 @@ DEPENDENCIES:
   - "CapacitorCamera (from `../../node_modules/@capacitor/camera`)"
   - "CapacitorClipboard (from `../../node_modules/@capacitor/clipboard`)"
   - "CapacitorCordova (from `../../node_modules/@capacitor/ios`)"
+  - "CapacitorGeolocation (from `../../node_modules/@capacitor/geolocation`)"
   - "CapacitorLocalNotifications (from `../../node_modules/@capacitor/local-notifications`)"
   - "CapacitorPushNotifications (from `../../node_modules/@capacitor/push-notifications`)"
   - "CapacitorShare (from `../../node_modules/@capacitor/share`)"
@@ -44,6 +47,8 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capacitor/clipboard"
   CapacitorCordova:
     :path: "../../node_modules/@capacitor/ios"
+  CapacitorGeolocation:
+    :path: "../../node_modules/@capacitor/geolocation"
   CapacitorLocalNotifications:
     :path: "../../node_modules/@capacitor/local-notifications"
   CapacitorPushNotifications:
@@ -60,11 +65,12 @@ SPEC CHECKSUMS:
   CapacitorCamera: 084b0b228bba7d00587910337b1c89e93b1d32ab
   CapacitorClipboard: 77edf49827ea21da2a9c05c690a4a6a4d07199c4
   CapacitorCordova: 35def3ebfdef491f0a7b652816eb873ff4b20bbf
+  CapacitorGeolocation: 7be5f77abc205c0efe319fff8587a7183e7b0240
   CapacitorLocalNotifications: c2d8b14794064fd4814b1d6c4ddbac8029afa295
   CapacitorPushNotifications: b31e326c6e4eb216a622041d6ca21a973f34943f
   CapacitorShare: cd41743331cb71d217c029de54b681cbd91e0fcc
   CapacitorStatusBar: 565c0a1ebd79bb40d797606a8992b4a105885309
 
-PODFILE CHECKSUM: 29eb84e5275158ccf4ef48421b16aaad46197817
+PODFILE CHECKSUM: 0afcd12b24d81f3901abd6834047b8a4b69c5f97
 
 COCOAPODS: 1.13.0

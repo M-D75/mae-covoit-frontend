@@ -144,6 +144,19 @@
                     <span style="font-weight: bold; color: chocolate;"> {{ itin.distance }}</span> km -->
                 </l-tooltip>
             </l-circle-marker>
+
+            <!-- point-dest -->
+            <l-circle-marker 
+                v-if="currentLocation.current.length >= 2"
+                :lat-lng="currentLocation.current"
+                :radius="9"
+                :weight="2"
+                :color="'white'"
+                :fillColor="'#33BBFF'" 
+                :fillOpacity="0.7"
+                style="z-index: 9999;"
+            >
+            </l-circle-marker>
         </l-map>
     </div>
 
@@ -180,6 +193,7 @@
 <script>
     import { defineComponent } from 'vue';
     import polyline from '@mapbox/polyline';
+
 
     import L from "leaflet";
     
@@ -269,6 +283,10 @@
                 },
                 infosItin: [],
                 routeAvail: false,
+                currentLocation: {
+                    current: [],
+                    passedPoints: [],
+                },
             }
         },
         mounted(){
@@ -395,6 +413,85 @@
                     this.overlayLoad = false;
                 });
             },
+            getCurrentRouteInfos(){
+                this.overlayLoad = true;
+                fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Goog-Api-Key': process.env.VUE_APP_API_GOOGLE_ROUTE_API_KEY,
+                        'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline',
+                    },
+                    body: JSON.stringify({
+                        origin: {
+                            location: {
+                                latLng: {
+                                    latitude: this.currentLocation.current[0],
+                                    longitude: this.currentLocation.current[1],
+                                }
+                            }
+                        },
+                        destination: {
+                            location: {
+                                latLng: {
+                                    latitude:  43.60460024300767,
+                                    longitude: 3.8807644833742567,
+                                }
+                            }
+                        },
+                        travelMode: 'DRIVE',
+                        routingPreference: 'TRAFFIC_AWARE',
+                        computeAlternativeRoutes: true,
+                        routeModifiers: {
+                            avoidTolls: true,
+                            avoidHighways: true,
+                            avoidFerries: true
+                        },
+                        languageCode: 'en-US',
+                        units: 'IMPERIAL'
+                    }),
+                }).then(response => response.json()).then(data => { 
+                    console.log(data);
+
+                    this.routeAvail = false;
+
+                    var tmp_routes = [];
+                    var first = true;
+                    for(const route in data.routes){
+                        const decoded  = polyline.decode(data.routes[route].polyline.encodedPolyline);
+                        const duration = (this.convertSecondsToHoursAndMinutes(parseInt(data.routes[route].duration.replaceAll("s", "")))).toString();
+                        const distance = (data.routes[route].distanceMeters/1000).toFixed(2).toString();
+
+                        tmp_routes.push({
+                            id: route, 
+                            polylineDecoded: decoded, 
+                            infosGoogle: data.routes[route], 
+                            duration: duration, 
+                            distance: distance, 
+                            faster: first,
+                            current: first,
+                        });
+                        
+                        if(route == 0){
+                            this.itin.duration = duration;
+                            this.itin.distance = distance;
+                        }
+                        first = false;
+                    }
+
+                    this.routeAvail = true;
+                    console.log("Avail", this.itineraire, tmp_routes);
+
+                    this.routes = tmp_routes.slice(0, 1);
+                    this.overlayLoad = false;
+                    
+                }).catch(error => {
+                    console.error(error);
+                    console.log("Error", error.message);
+
+                    this.overlayLoad = false;
+                });
+            },
             swapWithLast(arr, index) {
                 if (index < 0 || index >= arr.length) {
                     throw new Error('Index hors limites')
@@ -423,7 +520,7 @@
                         padding: [18, 18] // padding en pixels autour des limites.
                     });
                 }
-                
+      
                 this.getRouteInfos();
             },
             convertSecondsToHoursAndMinutes(seconds) {
@@ -439,6 +536,31 @@
             openBottomMenuInfos(){
                 if( this.$refs.BottomMenuRef )
                     this.$refs.BottomMenuRef.open();
+            },
+            formatDate(date) {
+                function padTo2Digits(num) {
+                    return num.toString().padStart(2, '0');
+                }
+
+                function padTo3Digits(num) {
+                    return num.toString().padStart(3, '0');
+                }
+
+                const year = date.getFullYear();
+                const month = padTo2Digits(date.getMonth() + 1);
+                const day = padTo2Digits(date.getDate());
+                const hours = padTo2Digits(date.getHours());
+                const minutes = padTo2Digits(date.getMinutes());
+                const seconds = padTo2Digits(date.getSeconds());
+                const milliseconds = padTo3Digits(date.getMilliseconds());
+
+                // Pour le fuseau horaire, nous utilisons toISOString et extrayons la partie pertinente
+                const timezoneOffset = -date.getTimezoneOffset();
+                const sign = timezoneOffset >= 0 ? '+' : '-';
+                const offsetHours = padTo2Digits(Math.floor(Math.abs(timezoneOffset) / 60));
+                const offsetMinutes = padTo2Digits(Math.abs(timezoneOffset) % 60);
+
+                return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}${sign}${offsetHours}${offsetMinutes}`;
             },
         },
         watch: {

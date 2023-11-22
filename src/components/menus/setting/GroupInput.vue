@@ -19,6 +19,10 @@
             font-size: 16px;
             height: 50px;
         }
+
+        .v-btn{
+            margin: 30px auto;
+        }
     }
 
 </style>
@@ -50,6 +54,17 @@
                 variant="solo-filled"
             ></v-select>
         </div>
+
+        <v-btn
+            class="map-btn mr-4 text-none"
+            rounded="xl" 
+            size="x-large"
+            variant="outlined"
+            block
+            @click="valid()"
+        >
+            Valider
+        </v-btn>
     </div>
  
  </template>

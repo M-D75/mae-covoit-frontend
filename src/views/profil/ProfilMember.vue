@@ -33,29 +33,8 @@
         <!--  -->
         <GroupCard class="grouP" :groupeParameters="groupeParameters" />
 
-        <!-- Credit Card -->
-
-        <!--  -->
     </v-main>
     <BottomNav />
-
-    <!-- Car model -->
-    <BottomMenu
-        v-if="modeBottomMenu=='select-model-car'"
-        ref="BottomMenuRef"
-        :class-name="['notification']"
-        :mode="modeBottomMenu"
-        v-on:close="overlay = false"
-    />
-
-    <!-- Car model -->
-    <BottomMenu
-        ref="BottomMenuRefPreference"
-        :class-name="['preference-choice']"
-        :about="about"
-        mode="preference-choice"
-        v-on:close="overlay = false"
-    />
 </template>
 
 
@@ -74,7 +53,7 @@
     import BottomMenu from '@/components/menus/BottomMenu.vue';
 
     export default defineComponent({
-        name: 'infos-profil-view',
+        name: 'profil-member-view',
         computed: {
             ...mapState("profil", [ "profil", "userName"]),
             ...mapState("profil", {
@@ -126,33 +105,8 @@
                         ],
                     },
                     {
-                        label: "véhicule",
-                        parameters: [
-                            {
-                                prependIconColor: "var(--blue-color)",
-                                prependIcon:"mdi-car",
-                                text:"VW - GOLF 7",
-                                chip:true,
-                                chipIcon: null,
-                                classConfig: ["chip-rounded"],
-                                switchBtn: false,
-                                chipText: "",
-                            },
-                        ],
-                        fun: this.selectModel,
-                    },
-                    {
                         label: "préferences de voyage",
                         parameters: [
-                            {
-                                prependIconColor: "#bc62ff",
-                                prependIcon:"mdi-auto-fix",
-                                text:"validation automatique",
-                                chip:false,
-                                chipIcon: null,
-                                switchBtn: true,
-                                chipText: "",
-                            },
                             {
                                 about: "discution",
                                 prependIconColor: "var(--blue-color)",
@@ -212,7 +166,6 @@
                         break;
                     case 'Papayas':
                         console.log('Mangoes and papayas are $2.79 a pound.');
-                        // Expected output: "Mangoes and papayas are $2.79 a pound."
                         break;
                     default:
                         console.log(`Sorry, we are out of ${name}.`);

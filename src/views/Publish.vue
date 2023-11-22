@@ -61,7 +61,7 @@
             :focus="true"
             :items="villagesSortedFiltered"
             :history="communesHistory"
-            @selected="getSelected()" 
+            @selected="getSelected()"
             @saisi="getSaisi()"
         />
 
@@ -224,17 +224,16 @@
         computed: {
             ...mapState("search", ['villages', 'communesHistory']),
             ...mapGetters("search", ["getVillagesByName", "GET_ID_VILLAGE_BY_NAME"]),
-            ...mapActions("search", ['getVillages']),
             ...mapMutations("publish", ["newTrip"]),
             villagesSortedFiltered(){
                 const typePath = this.modeWork ? "work" : "default";
 
                 if( this.saisi == "" || this.saisi == null ){
                     if ( this.mode == "destination" ) {
-                        return this.communesHistory.filter((commune) => this.saisi != commune && commune != this.infosPublish[typePath].depart && commune.toLowerCase().includes(this.saisi.toLocaleLowerCase()));
+                        return this.communesHistory.filter((commune) => this.saisi != commune && commune != this.infosPublish[typePath].depart && commune.toLowerCase().includes(this.saisi.toLocaleLowerCase())).slice(0, 3);
                     }
                     else if(this.mode == "depart") {
-                        return this.communesHistory;
+                        return this.communesHistory.slice(0, 3);
                     }
                 }
                 else {
@@ -350,6 +349,7 @@
             }
         },
         created() {
+            this.chargerHistorique();
             if( this.villages == undefined || this.villages == null || this.villages.length == 0 ){
                 this.getVillages;
             }
@@ -372,6 +372,8 @@
 
         },
         methods: {
+            ...mapActions("search", ['ajouterAuHistorique', 'sauvegarderHistorique', 'chargerHistorique']),
+            ...mapActions("search", ['getVillages']),
             async test(){
                 let { data: trip, error } = await supabase
                     .from('trip')
@@ -394,6 +396,8 @@
                         // get value
                         this.infosPublish[typePath].depart = this.$refs.SearchRef.saisi;
                         this.itineraire.origin.infos.village = this.infosPublish[typePath].depart;
+                        this.ajouterAuHistorique(this.infosPublish[typePath].depart);
+                        this.sauvegarderHistorique();
                         _tmp_village = this.getVillagesByName(this.itineraire.origin.infos.village);
                         this.setItineraire("origin", _tmp_village[0]);
                         console.log("Name origin", this.itineraire.origin)
@@ -419,6 +423,8 @@
                         if (this.$refs.SearchRef) {
                             this.infosPublish[typePath].destination = this.$refs.SearchRef.saisi;
                             this.itineraire.destination.infos.village = this.infosPublish[typePath].destination;
+                            this.ajouterAuHistorique(this.infosPublish[typePath].destination);
+                            this.sauvegarderHistorique();
                             _tmp_village = this.getVillagesByName(this.itineraire.destination.infos.village);
                             this.setItineraire("destination", _tmp_village[0]);
                             console.log("Name dest", this.itineraire.destination)

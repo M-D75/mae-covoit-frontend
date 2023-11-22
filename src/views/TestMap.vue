@@ -29,6 +29,7 @@
 
     //comp
     import Map from "@/components/publish/Map.vue"
+    //import Map from "@/views/MapGoogle.vue"
 
     export default defineComponent({
         name: 'results-view',

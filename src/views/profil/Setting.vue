@@ -12,6 +12,24 @@
 <!-- scss -->
 <style lang="scss" scoped>
     .v-main {
+        .sub-main{
+            display: inherit;
+            width: 100%;
+        }
+
+        .sub-main.and{
+            position: relative;
+            left: 0;
+            display: flex;
+            width: 200%;
+            .menu-setting{
+                width: 50%;
+            }
+            .other-mode{
+                width: 50%;
+            }
+        }
+
         margin-bottom: 13px;
         .grouP {
             margin-top: 50px;
@@ -64,18 +82,30 @@
 
         @keyframes swipeRightToLeft {
             from {
-                transform: translateX(100%); // commencer à droite, en dehors de l'écran
-                opacity: 0; // commencer avec une opacité de 0 pour un effet de fondu
+                left: 0;
             }
             to {
-                transform: translateX(0); // finir aligné avec la position normale
-                opacity: 1; // finir avec une opacité de 1
+                left: -100%;
+            }
+        }
+
+        @keyframes swipeToToRight {
+            from {
+                left: -100%;
+            }
+            to {
+                left: 0%;
             }
         }
 
         .swipe {
             position: relative;
-            animation: swipeRightToLeft 0.1s ease-out forwards; // ajustez le temps et la fonction d'easing comme vous le souhaitez
+            animation: swipeRightToLeft 0.1s linear forwards;
+        }
+
+        .swipeR {
+            position: relative;
+            animation: swipeToToRight 0.1s linear forwards;
         }
     }
 </style>
@@ -95,80 +125,84 @@
     ></v-overlay>
 
     <v-main class="main">
-        <!--  -->
-        <div v-if="mode=='setting'">
-            <!-- btns setting -->
-            <GroupCard class="grouP" :groupeParameters="groupeParameters" />
+        <div class="sub-main and">
+            <!--  -->
+            <div v-if="mode=='setting' || true"
+                class="menu-setting"
+            >
+                <!-- btns setting -->
+                <GroupCard class="grouP" :groupeParameters="groupeParameters" />
 
-            <!-- btn share friend -->
-            <div class="ctn sub-part">
-                <!-- <div class="label text-subtitle">Invite Link</div> -->
-                <v-card
-                    class="invite-card mx-auto flex"
-                    dark
-                >
-                    <v-row>
-                        <v-col class="text">
-                            <div 
-                                class="text"
-                            >Partager à un amie</div>
-                        </v-col>
-                        <v-col class="btn">
-                            <v-btn
-                                class="text-none"
-                                rounded="xl" 
-                                color="blue"
-                                @click="copyAndShare()"
-                            >
-                                <v-icon>mdi-share-variant</v-icon>
-                            </v-btn>
-                        </v-col>
-                    </v-row>
-                    
-                </v-card>
+                <!-- btn share friend -->
+                <div class="ctn sub-part">
+                    <!-- <div class="label text-subtitle">Invite Link</div> -->
+                    <v-card
+                        class="invite-card mx-auto flex"
+                        dark
+                    >
+                        <v-row>
+                            <v-col class="text">
+                                <div 
+                                    class="text"
+                                >Partager à un amie</div>
+                            </v-col>
+                            <v-col class="btn">
+                                <v-btn
+                                    class="text-none"
+                                    rounded="xl" 
+                                    color="blue"
+                                    @click="copyAndShare()"
+                                >
+                                    <v-icon>mdi-share-variant</v-icon>
+                                </v-btn>
+                            </v-col>
+                        </v-row>
+                        
+                    </v-card>
+                </div>
+
+                <div class="ctn logout">
+                    <v-btn
+                        class="logout mt-5 mx-auto text-none"
+                        prepend-icon="mdi-logout"
+                        rounded="xl" 
+                        size="x-large"
+                        variant="outlined"
+                        block
+                        @click="signOutSupabase()"
+                    >
+                        Deconnexion
+                    </v-btn>
+                </div>
             </div>
 
-            <div class="ctn logout">
-                <v-btn
-                    class="logout mt-5 mx-auto text-none"
-                    prepend-icon="mdi-logout"
-                    rounded="xl" 
-                    size="x-large"
-                    variant="outlined"
-                    block
-                    @click="signOutSupabase()"
-                >
-                    Deconnexion
-                </v-btn>
+            <!-- champ input d'information personnel -->
+            <div 
+                v-if="mode=='infos' "
+                class="other-mode"
+            >
+                <GroupInput :group-input="groupInput"/>
             </div>
-        </div>
 
-        <!-- champ input d'information personnel -->
-        <div 
-            v-if="mode=='infos'"
-            class="swipe"
-        >
-            <GroupInput :group-input="groupInput"/>
-        </div>
+            <div 
+                v-if="mode=='infos-general'"
+                class="other-mode"
+            >
+                <InfosGeneral :title="cgu.title" :text="cgu.text"/>
+            </div>
 
-        <div 
-            v-if="mode=='infos-general'"
-            class="swipe"
-        >
-            <InfosGeneral :title="cgu.title" :text="cgu.text"/>
-        </div>
+            <div 
+                v-if="mode=='data-protection'"
+                class="other-mode"
+            >
+                <InfosGeneral :mode="mode" :title="dataProtection.title" :text="dataProtection.text"/>
+            </div>
 
-        <div 
-            v-if="mode=='data-protection'"
-            class="swipe"
-        >
-            <InfosGeneral :mode="mode" :title="dataProtection.title" :text="dataProtection.text"/>
+            <SelectVirement 
+                v-if="mode=='virement' || mode=='setting'"
+                class="other-mode"
+            />
         </div>
-
-        <SelectVirement 
-            v-if="mode=='virement'"
-            class="swipe"
-        />
         
     </v-main>
 
@@ -342,10 +376,16 @@
                     this.$router.back();
                 }
                 else { 
-                    $('.swipe').animate({left: "100%" }, 50, function() {
+                    // $('.sub-main.and').animate({left: "0%" }, 1000, function() {
+                    //     this.mode = 'setting';
+                    //     console.log("Animation terminée!");
+                    // }.bind(thi-s));
+                    $('.sub-main').removeClass("swipe");
+                    $('.sub-main').addClass("swipeR");
+                    setTimeout(function(){
                         this.mode = 'setting';
-                        console.log("Animation terminée!");
-                    }.bind(this));
+                    }.bind(this), 100)
+                    
                 }
             },
             async copyToClipboard(text) {
@@ -424,6 +464,20 @@
             ];
 
             this.cguL = {title: this.cgu.title, text: this.cgu.text}
-        }
+        },
+        watch: {
+            mode(){
+                if( this.mode != 'setting' ){
+                    // $('.sub-main').addClass("and");
+                    $('.sub-main').addClass("swipe");
+                    $('.sub-main').removeClass("swipeR");
+                }
+                else{
+                    // $('.sub-main').removeClass("and");
+                    // $('.sub-main').removeClass("swipe");
+                    // $('.sub-main').addClass("swipeR");
+                }
+            },
+        },
     });
 </script>

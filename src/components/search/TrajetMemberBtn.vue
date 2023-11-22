@@ -115,9 +115,10 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background: #eee;
+        background: var(--white-bg-color);
         z-index: 9;
         opacity: 0.7;
+        z-index: 200;
     }
     .empty {
         //display: none;
@@ -134,6 +135,7 @@
             align-items: center;
             display: inline-flex;
             color: #484848;
+            color: var(--font-color-label);
         }
 
         .nothing {
@@ -148,6 +150,7 @@
                     font-size: 35px;
                     margin-bottom: 5px;
                     min-height: inherit;
+                    color: var(--font-color-label);
                 }
                 span {
                     font-size: 17px;

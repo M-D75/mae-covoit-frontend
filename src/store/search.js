@@ -18,6 +18,7 @@ export default {
         // serveur
         villages: [],
         communesHistory: ["Tsingoni", "Mamoudzou", "Dzaoudzi"],
+        communesFrequency: {},
         trajets: [
         {
             "depart": "Tsingoni",
@@ -131,6 +132,11 @@ export default {
         GET_ACCOUNTS: (state) => {
             return state.accounts
         },
+        historiqueTrie: (state) => {
+            return Object.entries(state.communesFrequency)
+                .sort((a, b) => b[1] - a[1])
+                .map(item => item[0]);
+        },
     },
     mutations: {
         SET_VILLAGES(state, villages) {
@@ -154,8 +160,32 @@ export default {
         SET_TRAJET_SELECTED(state, trajet){
             state.trajetSelected = trajet;
         },
+        ajouterCommune(state, commune) {
+            if (state.communesFrequency[commune]) {
+                state.communesFrequency[commune]++;
+            }
+            else {
+                state.communesFrequency[commune] = 1;
+            }
+        },
+        initialiserHistorique(state, historique) {
+            state.communesFrequency = historique;
+        },
     },
     actions: {
+        ajouterAuHistorique({ commit }, commune) {
+            commit('ajouterCommune', commune);
+        },
+        chargerHistorique({ commit, getters, state }) {
+            const historiqueEnregistre = localStorage.getItem('communesFrequency');
+            if (historiqueEnregistre) {
+                commit('initialiserHistorique', JSON.parse(historiqueEnregistre));
+                state.communesHistory = getters.historiqueTrie;
+            }
+        },
+        sauvegarderHistorique({ state }) {
+            localStorage.setItem('communesFrequency', JSON.stringify(state.communesFrequency));
+        },
         async getVillages({ commit }) {
             axios.get(`${process.env.VUE_APP_API_MBABUF_URL}/villages`, {
                     params:{

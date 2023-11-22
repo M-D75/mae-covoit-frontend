@@ -15,10 +15,24 @@ import TestMap from '@/views/TestMap.vue'
 import MapGoogle from '@/views/MapGoogle.vue'
 import CreateAccount from '@/views/CreateAccount.vue'
 import CropperAvatar from '@/components/profile/CropperAvatar.vue'
+import Trip from '@/views/trip/Trip.vue'
+import Chat from '@/views/trip/Chat.vue'
 
 // import store from '../store'; // Chemin d'accès à votre fichier store
 
 const routes = [
+    {
+        path: '/trip',
+        name: 'trip',
+        component: Trip,
+        meta: { requiresAuth: true },
+    },
+    {
+        path: '/message',
+        name: 'chat',
+        component: Chat,
+        meta: { requiresAuth: true },
+    },
     {
         path: '/cropper',
         name: 'cropper',

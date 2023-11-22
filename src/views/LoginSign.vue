@@ -419,22 +419,22 @@
             async authServiceSupabse(service){
 
                 // Android
-                // let { data, error } = await this.supabase.auth.signInWithOAuth({
-                //     provider: service,
-                //     options: {
-                //         skipBrowserRedirect: true,
-                //         redirectTo: "ekko-vi-shimago-app://callback",
-                //     },
-                // });
-
-                // Test local
                 let { data, error } = await this.supabase.auth.signInWithOAuth({
                     provider: service,
                     options: {
                         skipBrowserRedirect: true,
-                        redirectTo: "http://localhost:8080",
+                        redirectTo: "ekko-vi-shimago-app://callback",
                     },
                 });
+
+                // Test local
+                // let { data, error } = await this.supabase.auth.signInWithOAuth({
+                //     provider: service,
+                //     options: {
+                //         skipBrowserRedirect: true,
+                //         redirectTo: "http://localhost:8080",
+                //     },
+                // });
 
                 // Site Web App 
                 // let { data, error } = await this.supabase.auth.signInWithOAuth({

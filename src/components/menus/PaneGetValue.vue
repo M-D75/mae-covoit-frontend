@@ -107,7 +107,7 @@
 <!-- vuejs -->
 <script>
     import { defineComponent } from 'vue';
-    import { mapMutations, mapState } from 'vuex';
+    import { mapMutations, mapState, mapGetters, mapActions } from 'vuex';
     import $ from 'jquery';
 
     import { useScreens } from 'vue-screen-utils';
@@ -119,11 +119,12 @@
         name: 'pan-get-value-comp',
         emits: ["close", "date-selected"],
         computed: {
+            ...mapGetters("search", ['historiqueTrie']),
             ...mapState("search", ['villages', 'communesHistory', 'depart', 'destination']),
             ...mapMutations("search", ["SET_DEPART"]),
             villagesSortedFiltered(){
                 if( this.saisi == "" || this.saisi == null ){
-                    return this.communesHistory.filter((commune) => (commune != this.depart && commune != this.destination));
+                    return this.communesHistory.filter((commune) => (commune != this.depart && commune != this.destination)).slice(0, 3);
                 }
                 else {
                     return this.villages.filter(
@@ -162,6 +163,9 @@
                 opened: false,
             }
         },
+        created() {
+            this.chargerHistorique();
+        },
         mounted() {
             this.sizeScreen = $(window).innerHeight();            
             $(".pan-get-value").css("top", `${this.sizeScreen}px`);
@@ -184,8 +188,10 @@
             let year = date.getFullYear();
 
             this.date = new Date(`${month}/${day}/${year}`);
+
         },
         methods: {
+            ...mapActions("search", ['ajouterAuHistorique', 'sauvegarderHistorique', 'chargerHistorique']),
             open(){
                 console.log("bar-hei-", this.barHeight);
                 $(".pan-get-value").removeClass("closed");
@@ -242,11 +248,15 @@
             getSelected(){
                 if ( this.mode == "depart" ) {
                     this.$store.commit("search/SET_DEPART", this.$refs.SearchRef.saisi);
+                    this.ajouterAuHistorique(this.$refs.SearchRef.saisi);
+                    this.sauvegarderHistorique();
                     this.saisi = "";
                     this.$emit("close");
                 }
                 else if(this.mode == "arriver") {
                     this.$store.commit("search/SET_DESTINATION", this.$refs.SearchRef.saisi);
+                    this.ajouterAuHistorique(this.$refs.SearchRef.saisi);
+                    this.sauvegarderHistorique();
                     this.$emit("close");
                 }
             },

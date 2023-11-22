@@ -9,6 +9,11 @@
             z-index: 0 !important;
         }
     }
+
+    .v-btn.map-btn{
+        color: var(--font-color-label);
+        margin: 10px auto;
+    }
 </style>
 
 <!-- scss -->
@@ -85,6 +90,17 @@
             v-on:reserve="reserve()"
             v-on:fast-get-trip="getFastInfo"
         />
+
+        <!-- <v-btn
+            class="map-btn mr-4 text-none"
+            rounded="xl" 
+            size="x-large"
+            variant="outlined"
+            block
+            @click="goToMap()"
+        >
+            Map
+        </v-btn> -->
 
         <!-- Get Value -->
         <PaneGetValue
@@ -234,6 +250,9 @@
                 if( this.$refs.PileRef ){
                     this.infos = this.$refs.PileRef.infos;
                 }
+            },
+            goToMap(){
+                this.$router.replace("/map")
             }
         },
         watch: {

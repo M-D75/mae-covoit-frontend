@@ -25,6 +25,7 @@ export default createStore({
                 'profil.avatarUrl', 
                 'profil.profil.infos_perso.preferences', 
                 'search.villages', 
-                'search.accounts']
+                'search.accounts',
+                'search.communesFrequency']
     })],
 });

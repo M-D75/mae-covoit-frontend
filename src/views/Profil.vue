@@ -33,7 +33,7 @@
             color: #616161;
         }
         .label-btn {
-            margin-top: 30px;
+            margin-top: 20px;
             margin-bottom: 20px;
             width: 82.7%;
             display: flex;
