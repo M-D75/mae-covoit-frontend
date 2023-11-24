@@ -115,7 +115,11 @@
             <StatsTrajet v-if="onglet=='table-bord'"/>
 
             <!-- Trajets -->
-            <HistoryTrajets v-if="onglet=='trajets' || onglet=='planning'" :infos="infosTravels" :mode="onglet"/>
+            <HistoryTrajets 
+                v-if="onglet=='trajets' || onglet=='planning'" 
+                :infos="infosTravels" 
+                :mode="onglet"
+                />
         </div>
     </v-main>
         
@@ -180,8 +184,6 @@
         name: 'profil-view',
         computed: {
             ...mapState("profil", ["darkMode", "userName", "profil", "history"]),
-            ...mapActions("profil", ["getTravels", "getPublish", "buildHistoriqueBooking"]),
-            ...mapActions("auth", ["checkSession"]),
         },
         components: {
             ToolbarProfil,
@@ -307,6 +309,8 @@
                 
         },
         methods: {
+            ...mapActions("profil", ["getTravels", "getPublish", "buildHistoriqueBooking"]),
+            ...mapActions("auth", ["checkSession"]),
             ...mapMutations("profil", ["SET_LOAD_GET_TRIP_PUBLISH"]),
             async checkSessionIn(){
                 const sessionValided = await this.$store.dispatch("auth/checkSession");
@@ -429,11 +433,11 @@
                 this.SET_LOAD_GET_TRIP_PUBLISH(true);
                 this.infosTravels = [];
                 if( this.onglet == "trajets" && this.profil.myTravels.length == 0){
-                    await this.getTravels;
+                    await this.getTravels();
                     this.infosTravels = this.profil.myTravels;
                 }
                 else if( this.onglet == "planning" && this.profil.myPublish.length == 0 ){
-                    await this.getPublish;
+                    await this.getPublish();
                     this.infosTravels = this.profil.myPublish;
                 }
                 else{

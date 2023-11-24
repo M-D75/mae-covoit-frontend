@@ -58,6 +58,8 @@
                     v-for="(info, key) in infos"
                     :key="key"
                     :infos="info"
+                    :mode="mode"
+                    v-on:card-touched="$emit('card-touched')"
                 />
             </div>
         </div>
@@ -76,10 +78,15 @@
 
     export default defineComponent({
         name: 'group-cards-history-comp',
+        emits: ["card-touched"],
         components: {
             CardTrajetHistory,
         },
         props: {
+            mode: {
+                type: String,
+                default: "",
+            },
             infos: {
                 type: Array,
                 default() {

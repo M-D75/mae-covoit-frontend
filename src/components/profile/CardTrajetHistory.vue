@@ -78,6 +78,7 @@
         <v-card
             class="mx-auto"
             max-width="500"
+            @click="selectTrip()"
         >
             <div class="header">
                 <v-avatar>
@@ -117,11 +118,20 @@
 
 
 <script>
+    import { mapState, mapMutations, mapActions } from 'vuex';
 
    // Components
     export default {
         name: 'card-trajet-history-comp',
+        emits: ["card-touched"],
+        computed: {
+            ...mapState("trip", ['driver', 'chat']),
+        },
         props: {
+            mode: {
+                type: String,
+                default: "",
+            },
             infos: {
                 type: Object,
                 default() {
@@ -137,5 +147,21 @@
                 },
             },
         },
+        methods: {
+            ...mapMutations("trip", ["SET_TRIP_SELECTED"]),
+            ...mapActions("trip", ["getContacts"]),
+            async selectTrip(){
+                this.SET_TRIP_SELECTED(this.infos);
+                if( this.mode == 'trajets' ){
+                    this.$router.push('/trip')
+                }
+                else{
+                    await this.getContacts();
+                    console.log("contacts:", this.chat.contacts);
+                    if(this.chat.contacts.length > 0)
+                        this.$router.push('/message');
+                }
+            },
+        }
     };
 </script>

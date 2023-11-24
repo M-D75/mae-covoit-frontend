@@ -252,7 +252,7 @@
                 }
             },
             goToMap(){
-                this.$router.replace("/map")
+                this.$router.replace("/trip")
             }
         },
         watch: {

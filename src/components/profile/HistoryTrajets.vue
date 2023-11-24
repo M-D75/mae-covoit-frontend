@@ -99,7 +99,7 @@
                 :key="info.date"
             >
                 <div class="date">{{info.date}}</div>
-                <GroupCardsHistory :infos="info.infos"/>
+                <GroupCardsHistory :infos="info.infos" :mode="mode"/>
             </div>
         </div>
     </div>

@@ -229,7 +229,7 @@ export default {
 
             console.log("trips::", db_trip.length, db_trip[0].id);
 
-            await store.dispatch("search/getTrajets");
+            await store.dispatch("search/getOwnTrajets");
 
 
             let _trips = [];
@@ -245,8 +245,17 @@ export default {
                 const formattedDate = dateConverter(departureDate);
                 
                 const existingGroup = acc.find(group => group.date === formattedDate);
+                //console.log("infooooooo:", info, JSON.stringify(existingGroup));
                 if ( existingGroup ) {
                     existingGroup.infos.push(info);
+                    existingGroup.infos = existingGroup.infos.sort((a, b) => {
+                        // Convertir les chaînes de temps en objets Date
+                        let dateA = new Date(a.departure_time);
+                        let dateB = new Date(b.departure_time);
+                      
+                        // Trier du plus récent au plus ancien
+                        return dateB - dateA;
+                    })
                 }
                 else {
                     acc.push({
@@ -256,7 +265,7 @@ export default {
                 }
                 
                 return acc;
-            }, []);
+            }, []).reverse();
             
             console.log("groupedInfos", groupedInfos);
 

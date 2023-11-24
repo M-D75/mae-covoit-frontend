@@ -7,6 +7,7 @@ import profil from './profil';
 import publish from './publish';
 import search from './search';
 import general from './general';
+import trip from './trip';
 
 export default createStore({
     modules: {
@@ -15,17 +16,24 @@ export default createStore({
         publish,
         search,
         general,
+        trip,
     },
-    plugins: [createPersistedState({
-        paths: ['auth.provider',
+    plugins: [
+        createPersistedState({
+            paths: [
+                'auth.provider',
                 'profil.darkMode',
-                'profil.userUid', 
-                'profil.userName', 
-                'profil.autoValidation', 
-                'profil.avatarUrl', 
-                'profil.profil.infos_perso.preferences', 
-                'search.villages', 
+                'profil.userUid',
+                'profil.userName',
+                'profil.autoValidation',
+                'profil.avatarUrl',
+                'profil.profil.infos_perso.preferences',
+                'search.villages',
                 'search.accounts',
-                'search.communesFrequency']
-    })],
+                'search.communesFrequency',
+                'trip.tripSelected',
+                'trip.chat',
+            ]
+        })
+    ],
 });
