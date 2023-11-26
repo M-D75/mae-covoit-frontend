@@ -577,7 +577,7 @@
                 //     });
                 // }
                 
-                //await this.getRouteInfos();
+                await this.getRouteInfos();
                 this.updateLoc();
                             
                 // this.getRouteInfos();
@@ -604,9 +604,9 @@
                 
                 //await this.getCurrentRouteInfos();
 
-                const latitude = this.routes[0].polylineDecoded[0][0];
-                const longitude = this.routes[0].polylineDecoded[0][1];
-                this.currentLocation.current = [latitude, longitude];
+                // const latitude = this.routes[0].polylineDecoded[0][0];
+                // const longitude = this.routes[0].polylineDecoded[0][1];
+                // this.currentLocation.current = [latitude, longitude];
 
                 //console.log("localisation", latitude, longitude, this.itineraire.destination.location.latLng.latLngTab);
                 // const bounds = [[latitude, longitude], [43.60461578085957, 3.880710839194244]]

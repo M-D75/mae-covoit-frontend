@@ -323,6 +323,11 @@
             </div>
         </div>
 
+        <!-- loading -->
+        <v-overlay :model-value="overlayLoad" class="align-center justify-center">
+            <v-progress-circular color="blue" indeterminate size="64"></v-progress-circular>
+        </v-overlay>
+
     </v-main>
 
     <!--  -->
@@ -381,9 +386,6 @@
     import io from 'socket.io-client';
     import supabase from '@/utils/supabaseClient.js';
     import { SafeAreaController, SafeArea } from '@aashu-dubey/capacitor-statusbar-safe-area';
-
-    // Connectez-vous à votre serveur Socket.IO
-    //const socket = io('http://localhost:3000'); // Assurez-vous que l'URL correspond à l'adresse de votre serveur
 
     // Components
 
@@ -449,6 +451,7 @@
                 ],
                 notifMessage: false,
                 socket: null,
+                overlayLoad: true,
             };
         },
         mounted(){
@@ -490,11 +493,14 @@
                 this.scrollToBottom();
             }.bind(this), 500);
 
-            const adresse = {local: "http://192.168.134.15:8090", online: "https://server-mae-covoit-notif.infinityinsights.fr"}
+            const adresse = {local: "http://localhost:8090", online: "https://server-mae-covoit-notif.infinityinsights.fr"}
 
             if( Object.keys(this.tripSelected).length > 0 && this.userUid != this.tripSelected.driver_id ){//mode passager
                 this.mode_driver = false;
                 this.socket = io(adresse.online, {
+                    reconnection: true,
+                    reconnectionDelay: 1000,
+                    reconnectionAttempts: 100,
                     query: {
                         userId: this.userUid,
                         chatIds: [[this.userUid, this.tripSelected.driver_id].sort((a, b) => {
@@ -520,6 +526,9 @@
                 }
 
                 this.socket = io(adresse.online, {
+                    reconnection: true,
+                    reconnectionDelay: 1000,
+                    reconnectionAttempts: 100,
                     query: {
                         userId: this.userUid,
                         chatIds: chatIds,
@@ -533,6 +542,7 @@
 
             this.socket.on('connect', () => {
                 console.log('Connecté au serveur Socket.IO!');
+                this.overlayLoad = false;
             });
 
             this.socket.on('get messages', (data) => {
