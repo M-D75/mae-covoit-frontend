@@ -7,11 +7,17 @@ module.exports = defineConfig({
         msTileColor: '#000000',
         appleMobileWebAppCapable: 'yes',
         appleMobileWebAppStatusBarStyle: 'black',
-        
+        iconPaths: {
+            favicon32: 'src/assets/logo.png',
+            favicon16: 'src/assets/logo.png',
+            appleTouchIcon: 'src/assets/logo.png',
+            maskIcon: 'src/assets/logo.png',
+            msTileImage: 'src/assets/logo.png'
+        }
     },
     pluginOptions: {
         vuetify: {
-                // https://github.com/vuetifyjs/vuetify-loader/tree/next/packages/vuetify-loader
-            }
+            // https://github.com/vuetifyjs/vuetify-loader/tree/next/packages/vuetify-loader
+        }
     }
 })

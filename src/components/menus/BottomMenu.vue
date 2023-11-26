@@ -175,10 +175,15 @@
         position: fixed;
         width: 100%;
         height: 50px;
-        z-index: 99999;
+        z-index: 0;
         cursor: pointer;
+        // background-color: black;
+        // opacity: 0.05;
         &.dragging, &.active {
             border: none;
+        }
+        &.open{
+            z-index: 99999;
         }
     }
 
@@ -1103,18 +1108,25 @@
 
                 const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${Object.keys(this.className).join(".")}` : ".bottom-menu";
                 $(classBottomMenuNameJquery).css("top", `${pos.y}px`);
+                const classBottomMenuNameJqueryDraggable = this.className != "" && this.className != null ? `.draggable.${this.className.join(".")}` : ".draggable";
+                $(classBottomMenuNameJqueryDraggable).addClass("open");
                 if (pos.y >= this.sizeScreen - this.marge_bar) {
                     this.close();
                 }
             },
             onDragStop(pos) {
+                console.log("onstooooop");
 
-
+                const _this = this;
                 if ( ! this.move ) {
                     const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
 
                     if ( pos.y >= this.sizeScreen-this.marge_bar && !$(classBottomMenuNameJquery).hasClass("closed") ) {
                         this.open();
+                        setTimeout(function(){
+                            const classBottomMenuNameJqueryDraggable = _this.className != "" && _this.className != null ? `.draggable.${_this.className.join(".")}` : ".draggable";
+                            $(classBottomMenuNameJqueryDraggable).addClass("open")
+                        }, 100)
                     }
                     else if( ! $(classBottomMenuNameJquery).hasClass("closed") ){
                         console.log("onDragStop")
@@ -1128,19 +1140,25 @@
                         this.disabledY = false;
                         this.y = this.sizeScreen - this.marge_bar;
                     }
+                    setTimeout(function(){
+                        const classBottomMenuNameJqueryDraggable = _this.className != "" && _this.className != null ? `.draggable.${_this.className.join(".")}` : ".draggable";
+                        $(classBottomMenuNameJqueryDraggable).addClass("open")
+                    }, 100)
                 }
 
+               
+                
                 this.move = false;
             },
             open(){
                 
                 this.subContHeigth = this.$refs.subCont.clientHeight;
                 
-                console.log("open_b", this.open_b);
+                //console.log("open_b", this.open_b);
                 if ( ! this.open_b ) {
                     if ( this.y >= this.sizeScreen - this.marge_bar ) {
                         if( ! this.move ){
-                            console.log("will-open")
+                            //console.log("will-open")
                             const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
                             $(classBottomMenuNameJquery).removeClass("closed");
 
@@ -1156,6 +1174,8 @@
                                 _this.y = parseInt($(this).css("top").replace("px", ""));
                                 _this.move = false;
                                 _this.$emit('opened');
+                                const classBottomMenuNameJqueryDraggable = _this.className != "" && _this.className != null ? `.draggable.${_this.className.join(".")}` : ".draggable";
+                                $(classBottomMenuNameJqueryDraggable).addClass("open")
                             });
 
                             this.open_b = true;
@@ -1208,6 +1228,9 @@
                         if( _this.mode == "reserve" && _this.notif ){
                             _this.$router.replace("/")
                         }
+                        console.log("vclose");
+                        const classBottomMenuNameJqueryDraggable = _this.className != "" && _this.className != null ? `.draggable.${_this.className.join(".")}` : ".draggable";
+                        $(classBottomMenuNameJqueryDraggable).removeClass("open")
                         _this.$emit('close');
                     });
 
