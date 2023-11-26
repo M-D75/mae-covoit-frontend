@@ -4,5 +4,10 @@
   "webDir": "dist",
   "server": {
     "androidScheme": "https"
+  },
+  "icons": {
+    "src": "src/assets/logo.png",
+    "sizes": "1081×1081",
+    "type": "image/png"
   }
 }
