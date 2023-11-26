@@ -51,7 +51,6 @@
     .v-application {
         background-color: #eee;
         overflow: visible;
-        
     }
 
     .v-container {
@@ -419,13 +418,13 @@
             async authServiceSupabse(service){
 
                 // Android
-                let { data, error } = await this.supabase.auth.signInWithOAuth({
-                    provider: service,
-                    options: {
-                        skipBrowserRedirect: true,
-                        redirectTo: "ekko-vi-shimago-app://callback",
-                    },
-                });
+                // let { data, error } = await this.supabase.auth.signInWithOAuth({
+                //     provider: service,
+                //     options: {
+                //         skipBrowserRedirect: true,
+                //         redirectTo: "ekko-vi-shimago-app://callback",
+                //     },
+                // });
 
                 // Test local
                 // let { data, error } = await this.supabase.auth.signInWithOAuth({
@@ -437,12 +436,12 @@
                 // });
 
                 // Site Web App 
-                // let { data, error } = await this.supabase.auth.signInWithOAuth({
-                //     provider: service,
-                //     options: {
-                //         skipBrowserRedirect: true,
-                //     },
-                // });
+                let { data, error } = await this.supabase.auth.signInWithOAuth({
+                    provider: service,
+                    options: {
+                        skipBrowserRedirect: true,
+                    },
+                });
 
                 if ( error ) {
                     console.error("Erreur lors de l'authenfication:", error.message);

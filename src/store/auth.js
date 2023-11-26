@@ -12,8 +12,13 @@ export default {
         logged_in: false,
         account_created: false,
         provider: "",
+        // device Id pour Android, IOS
+        registerDeviceToken: "",
     },
     mutations: {
+        SET_REGISTER_DEVICE_TOKEN(state, token) {
+            state.registerDeviceToken = token;
+        },
         SET_TOKEN(state, payload) {
             state.token = payload.token;
             state.tokenExpiry = payload.expiry;

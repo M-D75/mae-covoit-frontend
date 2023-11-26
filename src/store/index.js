@@ -22,6 +22,7 @@ export default createStore({
         createPersistedState({
             paths: [
                 'auth.provider',
+                'auth.registerDeviceToken',
                 'profil.darkMode',
                 'profil.userUid',
                 'profil.userName',

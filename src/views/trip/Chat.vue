@@ -30,11 +30,42 @@
         }
     }
 
+    .v-toolbar{
+        .v-toolbar__content{
+            .v-toolbar__append {
+                .v-btn {
+                    .v-btn__content {
+                        span.notif-message{
+                            width: 10px;
+                            height: 10px;
+                            display: block;
+                            z-index: 9999;
+                            background: rgba(216, 8, 8, 0.825);
+                            border-radius: 100px;
+                            position: absolute;
+                            right: 10px;
+                            bottom: 13px;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     .v-footer{
         .card-foot{
             .v-text-field{
                 .v-input__details{
                     display: none;
+                }
+
+                .v-input__control {
+                    .v-field{
+                        .v-field__field{
+                            background-color: var(--bg-app-color) !important;
+                            color: var(--font-color-label) !important;
+                        }
+                    }
                 }
             }
         }
@@ -43,18 +74,39 @@
 
 <!-- scss -->
 <style lang="scss" scoped>
-    .v-toolbar{
-        .v-avatar {
-            margin-left: 15px;
-        }
-        .v-list{
-            &.contact{
-                .v-list-item{
-                    border-bottom: 0.5px solid gray;
+    .v-app-bar {
+        .v-toolbar{
+            z-index: 1;
+            background-color: var(--bg-app-color);
+            box-shadow: var(--box-shadow-card);
+            // natif
+            padding-top: var(--safe-area-inset-top);
+            margin-top: var(--safe-area-inset-top);
+            // padding-top: 58px;
+            // margin-top: 58px;
+
+            .v-btn i.v-icon {
+                margin-right: 0 !important;
+                color: var(--gray-icon-color);
+            }
+            .v-toolbar-title {
+                font-size: var(--font-size-h1-toolbar);
+                color: var(--font-color-label);
+            }
+
+            .v-avatar {
+                margin-left: 15px;
+            }
+            .v-list{
+                &.contact{
+                    .v-list-item{
+                        border-bottom: 0.5px solid gray;
+                    }
                 }
             }
         }
     }
+
     .v-application{
         height: 100vh !important;
         .v-application__wrap{
@@ -123,19 +175,28 @@
                         font-size: 13px;
                     }
                 }
-                
             }
         }
     }
 
     .v-footer{
+        background-color: var(--bg-app-color);
         .card-foot{
             display: flex;
             flex: auto;
             .v-text-field{
+                .v-input__control {
+                    .v-field{
+                        .v-field__field{
+                            background-color: var(--bg-app-color) !important;
+                            color: var(--font-color-label) !important;
+                        }
+                    }
+                }
                 .v-input__details{
                     display: none;
                 }
+                
             }
         }
         .v-btn{
@@ -150,40 +211,24 @@
 <template>
     <!--  -->
     <v-app-bar
+        extended
+        :extension-height="barHeight"
     >
         <v-toolbar
             class=""
             dark
-            color=""
+            permanent
         >
-            <!-- <template v-slot:prepend>
-
-                <v-menu 
-                    v-if="mode_driver"
-                    class="contact"
+            <template
+                v-if="mode_driver"
+                v-slot:prepend
+            >
+                <v-btn icon
+                    @click="$router.push('/profil')"
                 >
-                    <template v-slot:activator="{ props }">
-                        <v-btn icon
-                            v-bind="props"
-                        >
-                            <v-icon>mdi-account-supervisor-circle-outline</v-icon>
-                        </v-btn>
-                    </template>
-
-                    <v-list class="contact">
-                        <v-list-item
-                            v-for="(contact, i) in contacts"
-                            :key="i"
-                            :value="contact.username"
-                            :prepend-avatar="contact.avatar"
-                            @click="selectContact(contact.username)"
-                        >
-                            <v-list-item-title>{{ contact.username }}</v-list-item-title>
-                            <span class="nb-message">{{ contact.messageNumber }}</span>
-                        </v-list-item>
-                    </v-list>
-                </v-menu>
-            </template> -->
+                    <v-icon>mdi-chevron-left</v-icon>
+                </v-btn>
+            </template>
 
             <v-avatar
                 size="47px"
@@ -213,7 +258,8 @@
 
             <template 
                 v-else
-                v-slot:append>
+                v-slot:append
+            >
                 <v-menu 
                     class="contact"
                 >
@@ -222,6 +268,10 @@
                             v-bind="props"
                         >
                             <v-icon>mdi-account-supervisor-circle-outline</v-icon>
+                            <span 
+                                v-if="notifMessage"
+                                class="notif-message"
+                            ></span>
                         </v-btn>
                     </template>
 
@@ -235,6 +285,7 @@
                         >
                             <v-list-item-title>{{ contact.username }}</v-list-item-title>
                             <span class="nb-message" :class="{red: contact.messageNumber > 0 || contact.messageNumber=='9+'}">{{ contact.messageNumber }}</span>
+                            
                         </v-list-item>
                     </v-list>
                 </v-menu>
@@ -279,8 +330,8 @@
         app
         name="footer"
         height="60"
+        permanent
     >
-
         <div
             class="card-foot"
         >
@@ -298,8 +349,8 @@
                 :active="false"
                 :ripple="false"
                 variant="plain"
-                color="gray"
-                style="opacity: 0.5"
+                :color="darkMode ? 'white' : 'gray'"
+                style="opacity: 0.7"
             >
                 <v-icon>mdi-send-variant</v-icon>
             </v-btn >
@@ -317,8 +368,6 @@
             </v-btn >
         </div>
     </v-footer>
-
-
 </template>
 
 
@@ -331,6 +380,7 @@
     // Importez la bibliothèque Socket.IO client
     import io from 'socket.io-client';
     import supabase from '@/utils/supabaseClient.js';
+    import { SafeAreaController, SafeArea } from '@aashu-dubey/capacitor-statusbar-safe-area';
 
     // Connectez-vous à votre serveur Socket.IO
     //const socket = io('http://localhost:3000'); // Assurez-vous que l'URL correspond à l'adresse de votre serveur
@@ -340,13 +390,15 @@
     export default defineComponent({
         name: 'chat-view',
         computed: {
-            ...mapState("profil", ['userUid']),
+            ...mapState("profil", ['userUid', 'darkMode', "userName"]),
+            ...mapState("auth", ['registerDeviceToken']),
             ...mapState("trip", ['tripSelected', 'chat']),
         },
         components: {
         },
         data() {
             return {
+                barHeight: 0,
                 mode_driver: false,
                 currentContact: {
                     username: "Username",
@@ -395,11 +447,16 @@
                         messageNumber: 0,
                     },
                 ],
-                
+                notifMessage: false,
                 socket: null,
             };
         },
         mounted(){
+
+            SafeAreaController.injectCSSVariables();
+
+            this.initStatusBarHeight();
+
             // this.messages = [
             //         { from: this.userUid, message: "Bonjour, c'est Marc. Je suis votre conducteur pour le covoiturage de demain.", type: 0, time: "08:22", status: "vue" },
             //         { from: "this.userUid", message: "Salut Marc, ici Léa. Oui, je me réjouis de notre trajet !", type: 1, time: "08:22", status: "vue" },
@@ -433,14 +490,17 @@
                 this.scrollToBottom();
             }.bind(this), 500);
 
+            const adresse = {local: "http://192.168.134.15:8090", online: "https://server-mae-covoit-notif.infinityinsights.fr"}
+
             if( Object.keys(this.tripSelected).length > 0 && this.userUid != this.tripSelected.driver_id ){//mode passager
                 this.mode_driver = false;
-                this.socket = io('http://localhost:8090', {
+                this.socket = io(adresse.online, {
                     query: {
                         userId: this.userUid,
                         chatIds: [[this.userUid, this.tripSelected.driver_id].sort((a, b) => {
                                 return a.localeCompare(b);
-                            }).join(":")]
+                            }).join(":")],
+                        registerDeviceToken: this.registerDeviceToken,
                     }
                 });
 
@@ -459,10 +519,11 @@
                             }).join(":"));
                 }
 
-                this.socket = io('http://localhost:8090', {
+                this.socket = io(adresse.online, {
                     query: {
                         userId: this.userUid,
                         chatIds: chatIds,
+                        registerDeviceToken: this.registerDeviceToken,
                     }
                 });
                 this.currentContact.username = this.contacts[0].username;
@@ -484,6 +545,7 @@
                             if( messageNotSee.length > 0 )
                                 this.socket.emit("vue message", messageNotSee);
                         }
+                        this.scrollToBottom();
                     }
                     else{//not current contact
                         const messageNotSee = data.filter((msg) => msg && msg.from != this.userUid && msg.status != "vue");
@@ -491,6 +553,7 @@
                             const index = this.contacts.findIndex(contact => contact.userUid == data[0].from || contact.userUid == data[0].to );
                             const nbMessage = messageNotSee.length;
                             if ( index !== -1 ) {
+                                this.notifMessage = true;
                                 this.contacts[index].messageNumber = nbMessage < 10 ? nbMessage : "9+";
                             }
                         }
@@ -518,6 +581,7 @@
                     else{
                         const index = this.contacts.findIndex(contact => contact.user_id == msg.from );
                         if( index !== -1 && this.contacts[index].messageNumber != "9+" ){
+                            this.notifMessage = true;
                             this.contacts[index].messageNumber++;
                             this.contacts[index].messageNumber = this.contacts[index].messageNumber < 10 ? this.contacts[index].messageNumber : "9+";
                         }
@@ -533,16 +597,27 @@
             
         },
         beforeUnmount() {
-            if (this.socket) {
+            if ( this.socket ) {
+                this.socket.emit('pre-disconnect', { userUid: this.userUid });
                 this.socket.disconnect();
             }
         },
         methods: {
+            async initStatusBarHeight(){
+                const insets = await this.getSafeAreaInsets();
+                this.barHeight = insets["top"];
+            },
+            async getSafeAreaInsets () {
+                const insets = await SafeArea.getSafeAreaInsets();
+                return insets; // Ex. { "bottom":34, "top":47, "right":0, "left":0 }
+            },
             sendMessage() {
                 if ( this.newMessage.trim() !== '' ) {
                     let newMsg = {
                             from: this.userUid,
                             to: this.currentContact.userUid,
+                            fromName: this.userName,
+                            toName: this.currentContact.username,
                             message: this.newMessage, 
                             time: this.timeNow(), 
                             status: "send", 
@@ -574,6 +649,7 @@
                 this.currentContact.userUid = currentContact.user_id;
 
                 this.contacts[index].messageNumber = 0;
+                this.notifMessage = false;
 
                 this.socket.emit("ask messages", {
                                     userUid: this.userUid, 
@@ -581,7 +657,8 @@
                                         return a.localeCompare(b);
                                     }).join(":")
                                 }
-                            )
+                            );
+
             },
             async updateName(userUid){
                 //Check if account are created

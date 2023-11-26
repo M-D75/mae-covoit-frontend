@@ -3,7 +3,7 @@ module.exports = defineConfig({
     transpileDependencies: true,
     pwa: {
         name: "Shima-GoGoGo",
-        themeColor: '#4DBA87',
+        themeColor: '#08A0EC',
         msTileColor: '#000000',
         appleMobileWebAppCapable: 'yes',
         appleMobileWebAppStatusBarStyle: 'black',

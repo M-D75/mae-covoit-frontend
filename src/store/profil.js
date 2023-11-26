@@ -14,7 +14,7 @@ export default {
         userId: null,
         userUid: "",
         userName: "",
-        avatarUrl: 'https://avatars0.githubusercontent.com/u/9064066?v=4&s=460',
+        avatarUrl: 'https://avataaars.io/?avatarStyle=Circle&topType=ShortHairDreads01&accessoriesType=Blank&hairColor=PastelPink&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Wink&eyebrowType=DefaultNatural&mouthType=Serious&skinColor=Tanned',
         soldes: 0,
         autoValidation: true,
         credit_card: {

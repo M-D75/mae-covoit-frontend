@@ -199,7 +199,7 @@
     import { defineComponent } from 'vue';
     import polyline from '@mapbox/polyline';
     import { Geolocation } from '@capacitor/geolocation';
-
+    import { mapActions, mapState, mapGetters } from 'vuex';
 
     import L from "leaflet";
     
@@ -215,6 +215,8 @@
         name: 'results-view',
         emits: ["trajet-selected"],
         computed: {
+            ...mapState("trip", ["tripSelected"]),
+            ...mapGetters("search", ["getVillagesByName", "GET_ID_VILLAGE_BY_NAME"]),
             center() {
                 const latitudes =  [this.itineraire.origin.location.latLng.latitude, this.itineraire.destination.location.latLng.latitude];
                 const longitudes = [this.itineraire.origin.location.latLng.longitude, this.itineraire.destination.location.latLng.longitude];
@@ -236,39 +238,39 @@
             BottomMenuTrip,
         },
         props: {
-            itineraire: {
-                type: Object,
-                default: () => {
-                    return {
-                        origin: {
-                            location: {
-                                latLng: {
-                                    latitude: -12.7243245,
-                                    longitude: 45.0589372,
-                                    latLngTab: [-12.7243245, 45.0589372]
-                                }
-                            },
-                            infos: {
-                                village: "Acoua",
-                                commune: "Acoua",
-                            }
-                        },
-                        destination: {
-                            location: {
-                                latLng: {
-                                    latitude: -12.9292776,
-                                    longitude: 45.1763906,
-                                    latLngTab: [-12.9292776, 45.1763906]
-                                }
-                            },
-                            infos: {
-                                village: "Bambo-Est",
-                                commune: "Bandrélé",
-                            }
-                        },
-                    }
-                }
-            },
+            // itineraire: {
+            //     type: Object,
+            //     default: () => {
+            //         return {
+            //             origin: {
+            //                 location: {
+            //                     latLng: {
+            //                         latitude: -12.7243245,
+            //                         longitude: 45.0589372,
+            //                         latLngTab: [-12.7243245, 45.0589372]
+            //                     }
+            //                 },
+            //                 infos: {
+            //                     village: "Acoua",
+            //                     commune: "Acoua",
+            //                 }
+            //             },
+            //             destination: {
+            //                 location: {
+            //                     latLng: {
+            //                         latitude: -12.9292776,
+            //                         longitude: 45.1763906,
+            //                         latLngTab: [-12.9292776, 45.1763906]
+            //                     }
+            //                 },
+            //                 infos: {
+            //                     village: "Bambo-Est",
+            //                     commune: "Bandrélé",
+            //                 }
+            //             },
+            //         }
+            //     }
+            // },
         },
         data() {
             return {
@@ -299,14 +301,56 @@
                     intervalId: null,
                 },
                 routeTmp: [{"id":"0","polylineDecoded":[[43.60245,3.86996],[43.60374,3.86797],[43.60363,3.86778],[43.60328,3.86785],[43.60169,3.86807],[43.60147,3.86809],[43.60136,3.86804],[43.60112,3.86785],[43.60112,3.86777],[43.60108,3.86772],[43.60102,3.86775],[43.60101,3.86784],[43.60106,3.86788],[43.60111,3.86785],[43.60136,3.86804],[43.60143,3.86821],[43.60152,3.86855],[43.60151,3.86869],[43.60141,3.86908],[43.60128,3.86944],[43.60094,3.87008],[43.60006,3.87153],[43.59973,3.87205],[43.59961,3.8723],[43.59956,3.87244],[43.59942,3.87297],[43.59939,3.87318],[43.59939,3.87359],[43.59971,3.87535],[43.59975,3.87551],[43.59979,3.87585],[43.59995,3.87673],[43.60032,3.87825],[43.60055,3.87911],[43.6006,3.87938],[43.60119,3.88158],[43.60214,3.88126],[43.60222,3.88122],[43.60227,3.88127],[43.60219,3.88142],[43.60289,3.8822],[43.60315,3.88253],[43.60302,3.88053],[43.60303,3.88038],[43.60323,3.88015],[43.60341,3.87984],[43.60346,3.87981],[43.60353,3.87986],[43.60437,3.88107]],"infosGoogle":{"distanceMeters":2458,"duration":"429s","polyline":{"encodedPolyline":"ibciGgzrVaGlKTd@dAM|Hk@j@CTHn@d@?NFHJE@QIGIDq@e@Ma@QcA@[RmAXgAbA_CnDaH`AgBVq@H[ZiBDi@?qA_A_JG_@GcA_@oDiAoHm@kDIu@uBwL}D~@OFIIN]kC{Cs@aAXnKA\\g@l@c@|@IDMIgDqF"}},"duration":"07 min","distance":"2.46","faster":true,"current":true},{"id":"1","polylineDecoded":[[43.60245,3.86996],[43.60374,3.86797],[43.60363,3.86778],[43.60328,3.86785],[43.60169,3.86807],[43.60147,3.86809],[43.60136,3.86804],[43.60112,3.86785],[43.60112,3.86777],[43.60108,3.86772],[43.60102,3.86775],[43.60101,3.86784],[43.60104,3.86788],[43.60085,3.86825],[43.60046,3.86896],[43.59981,3.87036],[43.59976,3.87054],[43.59977,3.87057],[43.59853,3.87295],[43.59825,3.87355],[43.59789,3.87426],[43.59739,3.87531],[43.5973,3.8755],[43.59701,3.87705],[43.59691,3.87772],[43.59685,3.87769],[43.59648,3.87767],[43.5964,3.87764],[43.59614,3.87764],[43.59619,3.87738],[43.59637,3.87697],[43.59662,3.87662],[43.59667,3.87662],[43.59693,3.87634],[43.59707,3.8762],[43.5975,3.87603],[43.59764,3.87595],[43.5979,3.87587],[43.59872,3.87577],[43.59905,3.8758],[43.59977,3.87575],[43.59995,3.87673],[43.60032,3.87825],[43.60055,3.87911],[43.6006,3.87938],[43.60119,3.88158],[43.60214,3.88126],[43.60222,3.88122],[43.60227,3.88127],[43.60219,3.88142],[43.60289,3.8822],[43.60315,3.88253],[43.60302,3.88053],[43.60303,3.88038],[43.60323,3.88015],[43.60341,3.87984],[43.60346,3.87981],[43.60353,3.87986],[43.60437,3.88107]],"infosGoogle":{"distanceMeters":3191,"duration":"492s","polyline":{"encodedPolyline":"ibciGgzrVaGlKTd@dAM|Hk@j@CTHn@d@?NFHJE@QEGd@iAlAmC`CwGHc@AEvF{Mv@wBfAmCbBqEPe@x@uHReCJDhABNDr@?Ir@c@pAq@dAI?s@v@[ZuA`@[Ns@NcDRaAEoCHc@cEiAoHm@kDIu@uBwL}D~@OFIIN]kC{Cs@aAXnKA\\g@l@c@|@IDMIgDqF"}},"duration":"08 min","distance":"3.19","faster":false,"current":false},{"id":"2","polylineDecoded":[[43.60245,3.86996],[43.60374,3.86797],[43.60363,3.86778],[43.60328,3.86785],[43.60169,3.86807],[43.60147,3.86809],[43.60136,3.86804],[43.60112,3.86785],[43.60112,3.86777],[43.60108,3.86772],[43.60102,3.86775],[43.60073,3.86775],[43.60055,3.86761],[43.6003,3.86731],[43.59999,3.86766],[43.59802,3.86869],[43.59754,3.8689],[43.59705,3.86891],[43.59701,3.86886],[43.59694,3.86887],[43.59693,3.86895],[43.59694,3.869],[43.59694,3.86936],[43.59698,3.86964],[43.59707,3.86983],[43.59751,3.87044],[43.59792,3.87115],[43.59745,3.8718],[43.59697,3.87252],[43.59569,3.87432],[43.59489,3.87542],[43.59458,3.87563],[43.5945,3.87579],[43.59511,3.87624],[43.59532,3.87632],[43.59588,3.87623],[43.59622,3.87609],[43.59643,3.87604],[43.59666,3.87611],[43.59683,3.87619],[43.59693,3.87617],[43.59707,3.8762],[43.5975,3.87603],[43.59764,3.87595],[43.5979,3.87587],[43.59872,3.87577],[43.59905,3.8758],[43.59977,3.87575],[43.59995,3.87673],[43.60032,3.87825],[43.60055,3.87911],[43.6006,3.87938],[43.60119,3.88158],[43.60214,3.88126],[43.60222,3.88122],[43.60227,3.88127],[43.60219,3.88142],[43.60289,3.8822],[43.60315,3.88253],[43.60302,3.88053],[43.60303,3.88038],[43.60323,3.88015],[43.60341,3.87984],[43.60346,3.87981],[43.60353,3.87986],[43.60437,3.88107]],"infosGoogle":{"distanceMeters":3560,"duration":"532s","polyline":{"encodedPolyline":"ibciGgzrVaGlKTd@dAM|Hk@j@CTHn@d@?NFHJEx@?b@Zp@z@|@eAhKmE~Ai@`BAFHLA@OAI?gAGw@Qe@wAyBqAmC|AaC~AoC~FgJ~C{E|@i@N_@yByAi@OoBPcAZi@Hm@Ma@OSB[EuA`@[Ns@NcDRaAEoCHc@cEiAoHm@kDIu@uBwL}D~@OFIIN]kC{Cs@aAXnKA\\g@l@c@|@IDMIgDqF"}},"duration":"08 min","distance":"3.56","faster":false,"current":false}],
+                itineraire: {
+                    origin: {
+                        location: {
+                            latLng: {
+                                latitude: -12.7243245,
+                                longitude: 45.0589372,
+                                latLngTab: [-12.7243245, 45.0589372]
+                            }
+                        },
+                        infos: {
+                            village: "Acoua",
+                            commune: "Acoua",
+                        }
+                    },
+                    destination: {
+                        location: {
+                            latLng: {
+                                latitude: -12.9292776,
+                                longitude: 45.1763906,
+                                latLngTab: [-12.9292776, 45.1763906]
+                            }
+                        },
+                        infos: {
+                            village: "Bambo-Est",
+                            commune: "Bandrélé",
+                        }
+                    },
+                },
             }
         },
+        beforeMount(){
+            let _tmp_village = this.getVillagesByName(this.tripSelected.depart);
+            this.setItineraire("origin", _tmp_village[0]);
+
+            _tmp_village = this.getVillagesByName(this.tripSelected.destination);
+            this.setItineraire("destination", _tmp_village[0]);
+
+            console.log(this.itineraire);
+        },
         mounted(){
+
+            
+
             SafeAreaController.injectCSSVariables();
             console.log("itineraire", this.itineraire);
             this.$refs.BottomMenuRef.open();
+            
         },
         methods: {
+            ...mapActions("search", ['getVillages']),
             trajetSelected(index){
                 // console.log("trajetSelectd", index)
                 if(index == this.routes.length - 1){
@@ -345,9 +389,9 @@
                     this.overlayLoad = false;
                 }.bind(this), 500); 
             },
-            getRouteInfos(){
+            async getRouteInfos(){
                 this.overlayLoad = true;
-                fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
+                await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -525,14 +569,15 @@
                 arr.push(firstElement);          
                 return arr;
             },
-            isLoaded(){
+            async isLoaded(){
                 // const bounds = [this.itineraire.origin.location.latLng.latLngTab, this.itineraire.destination.location.latLng.latLngTab]
                 // if(this.$refs.mapRef){
                 //     this.$refs.mapRef.leafletObject.fitBounds(bounds, {
                 //         padding: [18, 18] // padding en pixels autour des limites.
                 //     });
                 // }
-
+                
+                //await this.getRouteInfos();
                 this.updateLoc();
                             
                 // this.getRouteInfos();
@@ -553,21 +598,28 @@
             },
             async updateLoc(){
                 // Obtention de la position actuelle
-                const coordinates = await Geolocation.getCurrentPosition();
-                const { latitude, longitude } = coordinates.coords;
+                //const coordinates = await Geolocation.getCurrentPosition();
+                //const { latitude, longitude } = coordinates.coords;
+
                 
+                //await this.getCurrentRouteInfos();
+
+                const latitude = this.routes[0].polylineDecoded[0][0];
+                const longitude = this.routes[0].polylineDecoded[0][1];
+                this.currentLocation.current = [latitude, longitude];
+
                 //console.log("localisation", latitude, longitude, this.itineraire.destination.location.latLng.latLngTab);
-                const bounds = [[latitude, longitude], [43.60461578085957, 3.880710839194244]]
-                if(this.$refs.mapRef){
-                    this.currentLocation.current = [latitude, longitude];
-                    this.$refs.mapRef.leafletObject.fitBounds(bounds, {
-                        padding: [18, 18] // padding en pixels autour des limites.
-                    });
-                }
-                // this.getCurrentRouteInfos();
-                this.routeAvail = true;
-                this.routes = this.routeTmp.slice(0, 1);
-                console.log(this.routes);
+                // const bounds = [[latitude, longitude], [43.60461578085957, 3.880710839194244]]
+                // if(this.$refs.mapRef){
+                //     this.currentLocation.current = [latitude, longitude];
+                //     this.$refs.mapRef.leafletObject.fitBounds(bounds, {
+                //         padding: [18, 18] // padding en pixels autour des limites.
+                //     });
+                // }
+
+                // this.routeAvail = true;
+                // this.routes = this.routeTmp.slice(0, 1);
+                //console.log(this.routes);
 
                 // setInterval(async function () {
                 //     const coordinates = await Geolocation.getCurrentPosition();
@@ -585,7 +637,7 @@
                 // }.bind(this), 10000); // Met à jour toutes les secondes, par exemple
 
                 // setTimeout(this.avancerSurItineraire, 1000);
-                this.simuleMovement.intervalId = setInterval(this.avancerSurItineraire, 100);
+                this.simuleMovement.intervalId = setInterval(this.avancerSurItineraire, 50);
             },
             formatDate(date) {
                 function padTo2Digits(num) {
@@ -675,7 +727,7 @@
                 // console.log("distance", R * c);
                 return R * c; // Distance en mètres
             },
-            avancerSurItineraire() {
+            async avancerSurItineraire() {
                 let itineraire = this.routes[0].polylineDecoded;
                 let prochainPoint = itineraire[this.simuleMovement.segmentActuel + 1];
                 let positionActuelle = this.currentLocation.current;
@@ -689,9 +741,13 @@
                 //console.log(parseInt(this.routes[0].infosGoogle.duration.replaceAll("s", "")), percent, this.routes[0].infosGoogle.distanceMeters);
                 //this.updatePassedPoints(positionActuelle);
                 //console.log("positionActuel", positionActuelle, prochainPoint);
-                if (prochainPoint) {
+                if ( prochainPoint ) {
                     // Mettre à jour la position de l'individu
-                    positionActuelle = this.calculerNouvellePosition(positionActuelle, prochainPoint, this.simuleMovement.vitesse);
+                    //positionActuelle = this.calculerNouvellePosition(positionActuelle, prochainPoint, this.simuleMovement.vitesse);
+                    
+                    const coordinates = await Geolocation.getCurrentPosition();
+                    const { latitude, longitude } = coordinates.coords;
+                    positionActuelle = [latitude, longitude];
                     //console.log("positionActuel--", positionActuelle);
                     if (this.aAtteintPoint(positionActuelle, prochainPoint)) {
                         //console.log("Next");
@@ -783,8 +839,15 @@
                 return distance < seuil;
             },
             back(){
-                window.location = "/search";
-            }
+                window.location = "/profil";
+            },
+            setItineraire(loc, infoVillage){
+                this.itineraire[loc].infos.village = infoVillage.village;
+                this.itineraire[loc].infos.commune = infoVillage.commune;
+                this.itineraire[loc].location.latLng.latitude = infoVillage.lat;
+                this.itineraire[loc].location.latLng.longitude = infoVillage.lon;
+                this.itineraire[loc].location.latLng.latLngTab = [infoVillage.lat, infoVillage.lon];
+            },
         },
         watch: {
         },

@@ -1,7 +1,7 @@
 
 <style lang="scss" model>
 
-    .ligth-mode * {
+    .v-main.ligth-mode * {
         --bg-app-color: #f5f5f5;
         --white-bg-color: #FBFBFB;
         --gray-bg-icon-color: #b1b1b1;
@@ -86,17 +86,19 @@
 
 <!-- scss -->
 <style lang="scss" scoped>
-    .v-container {
-        margin: auto;
-        .bloc-part{
-            margin: 50px auto;
+    .home{
+        background-color: #eee;
+        .v-container {
+            margin: auto;
+            .bloc-part{
+                margin: 50px auto;
+            }
 
-        }
-
-        .v-row{
-            margin: 30px auto;
-            v.btn{
-                color: var(--font-color-label);
+            .v-row{
+                margin: 30px auto;
+                v.btn{
+                    color: var(--font-color-label);
+                }
             }
         }
     }
@@ -106,7 +108,7 @@
 <!--  -->
 <template>
   
-    <v-main class="ligth-mode">
+    <v-main class="ligth-mode home">
         <v-container >
 
             <!-- From Sign/Connexion -->

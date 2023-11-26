@@ -15,6 +15,11 @@
         }
         .part-list {
             padding: 0 0 10px 16px;
+            .comune {
+                .v-list-item {
+                    padding: auto;
+                }
+            }
         }
         .card-trajet-member i.v-icon {
             font-size: 1.2em;
@@ -48,6 +53,7 @@
             display: grid;
             background-color: #eee !important;
             color: #eee !important;
+            border-radius: 5px;
             &.prix {
                 background-color: #eee !important;
                 color: #eee !important;
@@ -74,6 +80,7 @@
                     .v-list-item__content {
                         background-color: #eee !important;
                         color: #eee !important;
+                        border-radius: 10px;
                     }
                 }
             }
@@ -94,12 +101,14 @@
                 .v-list-item__content {
                     background-color: #eee !important;
                     color: #eee !important;
+                    border-radius: 10px;
                 }
             }
         }
         .hour {
             &.v-list-item {
                 width: 73px;
+                padding-right: 0;
             }
         }
     }
@@ -156,6 +165,7 @@
                     font-size: 17px;
                     text-transform: uppercase;
                     display: block;
+                    color: var(--font-color-label);
                 }
             }
         }
@@ -206,7 +216,7 @@
                 >
                     <v-img
                         alt="Avatar"
-                        src="https://avatars0.githubusercontent.com/u/9064066?v=4&s=460"
+                        src="https://avataaars.io/?avatarStyle=Circle&topType=ShortHairDreads01&accessoriesType=Blank&hairColor=PastelPink&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Wink&eyebrowType=DefaultNatural&mouthType=Serious&skinColor=Tanned"
                     ></v-img>
                 </v-avatar>
                 <!-- <v-avatar color="blue">
@@ -330,14 +340,14 @@
             infos: {
                 type: Object,
                 default() {
-                return {
-                    "depart": "XXXXXXX",
-                    "destination": "XXXXXXX",
-                    "hour_start": "X:XX",
-                    "hour_end": "X:XX",
-                    "price": 4,
-                    "name": "XXXXXXXXXXXXX",
-                    "passenger_number": 2
+                    return {
+                        "depart": "XXXXXXX",
+                        "destination": "XXXXXXX",
+                        "hour_start": "X:XX",
+                        "hour_end": "X:XX",
+                        "price": 4,
+                        "name": "XXXXXXXXXXXXX",
+                        "passenger_number": 2
                     };
                 },
             },

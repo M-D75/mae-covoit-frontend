@@ -134,6 +134,7 @@
 
 <script>
     import $ from 'jquery'
+    import axios from 'axios';
     
     import { mapActions, mapState } from 'vuex';
     import { Plugins } from '@capacitor/core';
@@ -145,6 +146,7 @@
         name: 'reserve-place-menu-comp',
         emits: ["test-notif-success"],
         computed: {
+            ...mapState("profil", ["userUid"]),
             ...mapState("search", ["trajetSelected"]),
             ...mapActions("search", ["reserveTrajet"]),
         },
@@ -175,8 +177,8 @@
                             summaryText: "sumaryText!",
                             schedule: { at: new Date(Date.now() + 3000) }, // dans 5 secondes
                             iconColor: "red",
-                            smallIcon: "res://large_logo",
-                            largeIcon: "res://large_logo",
+                            smallIcon: "res://icon",
+                            largeIcon: "res://icon",
                         }]
                     });
 
@@ -205,18 +207,36 @@
                     else
                         console.log("non-diff");
 
-                    await LocalNotifications.schedule({
-                        notifications: [{
-                            id: 1,
-                            title: "Tchipou Tchipou",
-                            body: `Tsiyo : Votre trajet de ${this.trajetSelected.depart} à ${this.trajetSelected.destination} depart à ${this.trajetSelected.hour_start} est proche. Ne soyez pas en retard.`,
-                            summaryText: "sumaryText!",
-                            schedule: { at: date}, // dans 5 secondes
-                            iconColor: "red",
-                            smallIcon: "res://large_logo",
-                            largeIcon: "res://large_logo",
-                        }]
+                    const adresse = {local: "http://192.168.134.15:8090", online: "https://server-mae-covoit-notif.infinityinsights.fr"}
+                    axios.post(`${adresse.online}/reservation`, {
+                        userId: this.userUid,
+                        date: date,
+                        title: "Tchipou Tchipou",
+                        body: `Tsiyo, soyez prêt pour vôtre départ ! Horaire : ${this.trajetSelected.hour_start}. Ne soyez pas en retard !`,
+                        data: {
+                            largeBody: `Tsiyo : Votre trajet de ${this.trajetSelected.depart} à ${this.trajetSelected.destination} depart à ${this.trajetSelected.hour_start} est proche. Ne soyez pas en retard.`,
+                        }
+                    })
+                    .then(response => {
+                        console.log(response.data);
+                    })
+                    .catch(error => {
+                        console.error('Il y a eu une erreur :', error);
                     });
+
+                    // await LocalNotifications.schedule({
+                    //     notifications: [{
+                    //         id: 1,
+                    //         title: "Tchipou Tchipou",
+                    //         body: "Tsiyo, soyez prêt pour vôtre départ !",
+                    //         largeBody: `Tsiyo : Votre trajet de ${this.trajetSelected.depart} à ${this.trajetSelected.destination} depart à ${this.trajetSelected.hour_start} est proche. Ne soyez pas en retard.`,
+                    //         summaryText: "",
+                    //         schedule: { at: date }, // dans 5 secondes
+                    //         iconColor: "red",
+                    //         smallIcon: "res://icon",
+                    //         largeIcon: "res://icon",
+                    //     }]
+                    // });
                 //} 
                 }
                 else{
