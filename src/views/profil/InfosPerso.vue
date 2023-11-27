@@ -28,7 +28,7 @@
         <Avatar :name="userName"/>
 
         <!-- ? -->
-        <PanneauInfo :infos_panneau="infos_panneau"/>
+        <PanneauInfo v-if="modeDriver" :infos_panneau="infos_panneau"/>
 
         <!--  -->
         <GroupCard class="grouP" :groupeParameters="groupeParameters" />
@@ -76,7 +76,7 @@
     export default defineComponent({
         name: 'infos-profil-view',
         computed: {
-            ...mapState("profil", [ "profil", "userName"]),
+            ...mapState("profil", [ "profil", "userName", "modeDriver"]),
             ...mapState("profil", {
                 preferences: state => state.profil.infos_perso.preferences,
             }),
@@ -124,6 +124,7 @@
                                 chipText: "3/3",
                             },
                         ],
+                        disable: false,
                     },
                     {
                         label: "véhicule",
@@ -140,6 +141,7 @@
                             },
                         ],
                         fun: this.selectModel,
+                        disable: false,
                     },
                     {
                         label: "préferences de voyage",
@@ -200,6 +202,7 @@
         mounted() {
             //this.$refs.BottomMenuRefPreference.open();
             this.updateGrouparameterPreference();
+            this.switchModeDriverGroupParameters();
         },
         methods: {
             choiceFunctionBtnInfo(name){
@@ -247,6 +250,18 @@
                     }
                 )
             },
+            switchModeDriverGroupParameters(){
+                if( this.modeDriver ){
+                    this.groupeParameters[0].disable = false;
+                    this.groupeParameters[1].disable = false;
+                    this.groupeParameters[2].parameters[0].none = true;
+                }
+                else{
+                    this.groupeParameters[0].disable = true;
+                    this.groupeParameters[1].disable = true;
+                    this.groupeParameters[2].parameters[0].none = false;
+                }
+            },
             back(){
                 this.$router.push("/profil")
             },
@@ -267,6 +282,9 @@
             preferences(){
                 console.log("pref modifierd");
                 this.updateGrouparameterPreference();
+            },
+            modeDriver(){
+                this.switchModeDriverGroupParameters();
             },
         }
     });

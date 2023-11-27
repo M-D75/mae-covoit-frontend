@@ -146,7 +146,7 @@
         name: 'reserve-place-menu-comp',
         emits: ["test-notif-success"],
         computed: {
-            ...mapState("profil", ["userUid"]),
+            ...mapState("profil", ["userUid", "notification"]),
             ...mapState("search", ["trajetSelected"]),
             ...mapActions("search", ["reserveTrajet"]),
         },
@@ -168,7 +168,7 @@
             async sendNotification() {
                 const permission = await LocalNotifications.requestPermissions();
             
-                if( permission ){
+                if( permission && this.notification ){
                     await LocalNotifications.schedule({
                         notifications: [{
                             id: 1,

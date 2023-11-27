@@ -387,6 +387,9 @@
     import supabase from '@/utils/supabaseClient.js';
     import { SafeAreaController, SafeArea } from '@aashu-dubey/capacitor-statusbar-safe-area';
 
+    import { Plugins } from '@capacitor/core';
+    const { App } = Plugins;
+
     // Components
 
     export default defineComponent({
@@ -455,7 +458,7 @@
             };
         },
         mounted(){
-
+            App.addListener('appStateChange', this.handleAppStateChange);
             SafeAreaController.injectCSSVariables();
 
             this.initStatusBarHeight();
@@ -493,7 +496,7 @@
                 this.scrollToBottom();
             }.bind(this), 500);
 
-            const adresse = {local: "http://localhost:8090", online: "https://server-mae-covoit-notif.infinityinsights.fr"}
+            const adresse = {local: "http://localhost:3001", online: "https://server-mae-covoit-notif.infinityinsights.fr"}
 
             if( Object.keys(this.tripSelected).length > 0 && this.userUid != this.tripSelected.driver_id ){//mode passager
                 this.mode_driver = false;
@@ -611,8 +614,31 @@
                 this.socket.emit('pre-disconnect', { userUid: this.userUid });
                 this.socket.disconnect();
             }
+            App.removeAllListeners();
+        },
+        beforeRouteLeave(to, from, next) {
+            console.log("beforeRouteLeave", to, from);
+            if ( this.socket ) {
+                this.socket.emit('pre-disconnect', { userUid: this.userUid });
+            }
+            // Effectuer des actions avant de quitter cette page
+            next();
         },
         methods: {
+            handleAppStateChange(state) {
+                if (state.isActive) {
+                    console.log("L'application est au premier plan");
+                    if ( this.socket ) {
+                        this.socket.emit('re-connect', { userUid: this.userUid });
+                    }
+                } 
+                else {
+                    console.log("L'application est en arrière-plan");
+                    if ( this.socket ) {
+                        this.socket.emit('pre-disconnect', { userUid: this.userUid });
+                    }
+                }
+            },
             async initStatusBarHeight(){
                 const insets = await this.getSafeAreaInsets();
                 this.barHeight = insets["top"];

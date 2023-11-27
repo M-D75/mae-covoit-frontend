@@ -98,7 +98,7 @@
             <!-- <div class="label mx-auto">tableau de board</div> -->
             <div class="label-btn mx-auto">
                 <v-btn :class="{active: onglet=='table-bord'}" @click="onglet='table-bord'" rounded="xl">tableau de bord</v-btn>
-                <v-btn :class="{active: onglet=='planning'}" class="calendar" @click="onglet='planning'" rounded="xl"><v-icon>mdi-calendar-month</v-icon></v-btn>
+                <v-btn v-if="modeDriver" :class="{active: onglet=='planning'}" class="calendar" @click="onglet='planning'" rounded="xl"><v-icon>mdi-calendar-month</v-icon></v-btn>
                 <v-btn :class="{active: onglet=='trajets'}" @click="onglet='trajets'" rounded="xl">mes trajets</v-btn>
             </div>
 
@@ -183,7 +183,7 @@
     export default defineComponent({
         name: 'profil-view',
         computed: {
-            ...mapState("profil", ["darkMode", "userName", "profil", "history"]),
+            ...mapState("profil", ["darkMode", "userName", "profil", "history", 'modeDriver']),
         },
         components: {
             ToolbarProfil,
@@ -209,7 +209,7 @@
                         text:"historique",
                     },
                     {
-                        btn:false,
+                        btn:true,
                         icon:"mdi-car",
                         text:"chauffeur",
                     },
@@ -306,7 +306,7 @@
             this.checkSessionIn();
         },
         mounted(){
-                
+            this.switchModeDriverPanneauInfos();
         },
         methods: {
             ...mapActions("profil", ["getTravels", "getPublish", "buildHistoriqueBooking"]),
@@ -325,8 +325,8 @@
                 if ( this.$refs.BottomMenuRefHistory ) {
                     if( ! this.overlay ){
                         this.overlay = this.$refs.BottomMenuRefHistory.open();
-                        if(this.overlay && ( history.historycalBooking == undefined || Object.keys(history.historycalBooking).length == 0 ) ){
-                            this.buildHistoriqueBooking;
+                        if(this.overlay && ( this.history.historycalBooking == undefined || Object.keys(this.history.historycalBooking).length == 0 ) ){
+                            this.buildHistoriqueBooking();
                         }
                     }
                     else {
@@ -407,6 +407,16 @@
                 console.log("recharger");
                 this.modeBottomMenu = "recharge-valided";
             },
+            switchModeDriverPanneauInfos(){
+                if(this.modeDriver){
+                    this.infos_panneau[1].icon = "mdi-car";
+                    this.infos_panneau[1].text = "chauffeur";
+                }
+                else{
+                    this.infos_panneau[1].icon = "mdi-seat-passenger";
+                    this.infos_panneau[1].text = "passager";
+                }
+            },
         },
         watch: {
             darkMode(){
@@ -450,6 +460,9 @@
                 }
                 this.SET_LOAD_GET_TRIP_PUBLISH(false);
                 console.log("infos-travels:", this.infosTravels);
+            },
+            modeDriver(){
+                this.switchModeDriverPanneauInfos();
             },
         }
     });

@@ -2,6 +2,7 @@
 export default {
     namespaced: true,
     state: {
+        isNative: false,
         cgu: {
             title: "CGU/CGV",
             text: `1. Objet
@@ -21,7 +22,9 @@ export default {
         
     },
     mutations: {
-        
+        SET_IS_NATIVE(state, bool){
+            state.isNative = bool;
+        },
     },
     actions: {
         

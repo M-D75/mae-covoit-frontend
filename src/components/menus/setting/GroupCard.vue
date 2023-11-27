@@ -24,26 +24,27 @@
             v-for="(group, indexG) in groupeParameters"
             :key="indexG"
         >
-            
-            <div class="label text-subtitle">{{ group.label }}</div>
-            <div 
-                v-for="(param, indexP) in group.parameters"
-                :key="indexP"
-                class="cont-lab-card"
-            >
-                <CardButton 
-                    v-if="param.none == undefined || param.none != false"
-                    
-                    :prependIconColor="param.prependIconColor" 
-                    :prependIcon="param.prependIcon"
-                    :text="param.text"
-                    :chip="param.chip"
-                    :chipIcon="param.chipIcon"
-                    :chipText="param.chipText"
-                    :fun="param.fun"
-                    :switchBtn="param.switchBtn"
-                    :classConfig="param.classConfig"
-                />
+            <div v-if="!group.disable" class="contain-lab-card">
+                <div class="label text-subtitle">{{ group.label }}</div>
+                <div 
+                    v-for="(param, indexP) in group.parameters"
+                    :key="indexP"
+                    class="cont-lab-card"
+                >
+                    <CardButton 
+                        v-if="param.none == undefined || param.none != false"
+                        
+                        :prependIconColor="param.prependIconColor" 
+                        :prependIcon="param.prependIcon"
+                        :text="param.text"
+                        :chip="param.chip"
+                        :chipIcon="param.chipIcon"
+                        :chipText="param.chipText"
+                        :fun="param.fun"
+                        :switchBtn="param.switchBtn"
+                        :classConfig="param.classConfig"
+                    />
+                </div>
             </div>
         </div>
     </div>

@@ -23,6 +23,9 @@ export default createStore({
             paths: [
                 'auth.provider',
                 'auth.registerDeviceToken',
+                'general.isNative',
+                'profil.notification',
+                'profil.modeDriver',
                 'profil.darkMode',
                 'profil.userUid',
                 'profil.userName',

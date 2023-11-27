@@ -134,9 +134,10 @@
                 </div> -->
 
                 <div 
+                    v-if="modeDriver"
                     class="btn hand"
                     @click="emit('drop-money')"
-                    >
+                >
                     <v-icon>mdi-hand-coin-outline</v-icon>
                 </div>
 
@@ -161,7 +162,7 @@
     export default {
         name: 'credit-card-comp',
         computed: {
-            ...mapState("profil", ["soldes", "credit_card"]),
+            ...mapState("profil", ["soldes", "credit_card", "modeDriver"]),
         },
         props: {
             

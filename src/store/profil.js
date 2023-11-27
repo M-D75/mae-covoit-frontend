@@ -10,6 +10,8 @@ import { dateConverter, groupByDate, mapToObject } from '@/utils/utils.js';
 export default {
     namespaced: true,
     state: {
+        notification: true,
+        modeDriver: true,
         darkMode: false,
         userId: null,
         userUid: "",
@@ -89,11 +91,17 @@ export default {
     getters: {
     },
     mutations: {
+        SET_NOTIFICATION(state, boolean){
+            state.notification = boolean;
+        },
+        SET_MODE_DRIVER(state, boolean){
+            state.modeDriver = boolean;
+        },
         SET_DARKMODE(state, boolean){
-            state.darkMode = boolean
+            state.darkMode = boolean;
         },
         SET_AVATAR_URL(state, url){
-            state.avatarUrl = url
+            state.avatarUrl = url;
         },
         SET_LOAD_GET_TRIP_PUBLISH(state, boolean){
             state.profil.loadGetTripPublish = boolean;

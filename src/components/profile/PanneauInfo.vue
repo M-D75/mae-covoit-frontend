@@ -89,8 +89,7 @@
                 :key="index"
                 :class="{btn : info.btn}"
                 @click="choiceFunctionBtnInfo(info.text)"
-                >
-                
+            >
                 <div v-if="info.label && ! info.icon" class="label text-body-2">{{ info.label }}</div>
                 <v-icon v-if="info.icon">
                     {{info.icon}}
@@ -108,7 +107,7 @@
 <script>
     import { defineComponent } from 'vue';
     import $ from 'jquery'
-import { mapMutations } from 'vuex';
+    import { mapMutations, mapState } from 'vuex';
 
     // Components
     // ...
@@ -116,6 +115,9 @@ import { mapMutations } from 'vuex';
     export default defineComponent({
         name: 'info-comp',
         emits: ["history"],
+        computed: {
+            ...mapState("profil", ['modeDriver']),
+        },
         components: {
         },
         props: {
@@ -146,10 +148,11 @@ import { mapMutations } from 'vuex';
         },
         data() {
             return {
+                //mdi-seat-passenger
             }
         },
         methods: {
-            ...mapMutations("profil", ["SET_DARKMODE"]),
+            ...mapMutations("profil", ["SET_DARKMODE", "SET_MODE_DRIVER"]),
             choiceFunctionBtnInfo(name){
                 switch (name.toLowerCase()) {
                     case 'mode':
@@ -158,8 +161,11 @@ import { mapMutations } from 'vuex';
                     case 'historique':
                         this.history();
                         break;
-                    case 'Papayas':
-                        console.log('Mangoes and papayas are $2.79 a pound.');
+                    case 'chauffeur':
+                        this.SET_MODE_DRIVER( ! this.modeDriver );
+                        break;
+                    case 'passager':
+                        this.SET_MODE_DRIVER( ! this.modeDriver );
                         break;
                     default:
                         console.log(`Sorry, we are out of ${name}.`);

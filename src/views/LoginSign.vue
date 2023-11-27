@@ -349,6 +349,7 @@
                 }
             },
             async signInEmailSupabase(){
+                this.overlayLoad = true;
                 let { data, error } = await this.supabase.auth.signInWithPassword({
                     email: this.email,
                     password: this.password
@@ -358,6 +359,7 @@
                     console.error('Erreur lors de la connexion:', error.message);
                     const translate = this.translateMessageAuth[error.message] ? this.translateMessageAuth[error.message] : "Une erreur s'est produite";
                     
+                    this.overlayLoad = false;
                     this.messageSnackbarError = `Erreur : ${translate}`;
                     this.showSnackbarError = true;
                     return;
@@ -365,15 +367,17 @@
 
                 const session = data.session;
 
-                this.sendNotification();
+                //this.sendNotification();
 
                 console.log('Connexion par mail réussie:', data, session);
                 this.SET_TOKEN({token: session.access_token, expiry: session.expires_at*1000})
-                
+                this.overlayLoad = false;
+
                 await this.checkSessionIn();
                 //this.$router.replace("/search");
             },
             async signUpEmailSupabase(){
+                this.overlayLoad = true;
                 let { error } = await this.supabase.auth.signUp({
                     email: this.email,
                     password: this.password
@@ -384,27 +388,32 @@
 
                     const translate = this.translateMessageAuth[error.message] ? this.translateMessageAuth[error.message] : "Une erreur s'est produite";
                     
+                    this.overlayLoad = false;
                     this.messageSnackbarError = `Erreur : ${translate}`;
                     this.showSnackbarError = true;
                     
                     return;
                 }
 
-                this.sendNotification();
+                //this.sendNotification();
 
                 this.email = "";
                 this.password = "";
 
+                this.overlayLoad = false;
                 this.messageSnackbar = "Inscription réussie! Vérifiez votre e-mail pour confirmer votre compte.";
                 this.showSnackbar = true;
             },
             async recoveryPasswordSupabase(){
+                this.overlayLoad = true;
                 let { error } = await this.supabase.auth.resetPasswordForEmail(this.email);
 
                 if (error) {
                     console.error('Erreur lors de la restauration du mot de passe:', error.message);
                     const translate = this.translateMessageAuth[error.message] ? this.translateMessageAuth[error.message] : "Une erreur s'est produite";
                     
+                    this.overlayLoad = false;
+                    
                     this.messageSnackbarError = `Erreur : ${translate}`;
                     this.showSnackbarError = true;
                     return;
@@ -412,6 +421,7 @@
 
                 this.email = "";
 
+                this.overlayLoad = false;
                 this.messageSnackbar = "Demande reçue. Vérifiez votre e-mail pour réinitialiser le mot de passe.";
                 this.showSnackbar = true;            
             },

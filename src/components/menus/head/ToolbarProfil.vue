@@ -68,11 +68,21 @@
             <v-btn 
                 icon
                 v-if="!needToComeBack"
+                :disabled="!isNative"
             >
                 <!-- without notif -->
                 <v-icon
+                    v-if="notification && isNative"
                     class="mr-0"
+                    @click="SET_NOTIFICATION(false)"
                 >mdi-bell</v-icon>
+
+                <v-icon
+                    v-else
+                    class="mr-0"
+                    @click="SET_NOTIFICATION(true)"
+                    
+                >mdi-bell-off</v-icon>
             </v-btn>
 
             <v-btn
@@ -111,9 +121,15 @@
     import { defineComponent } from 'vue';
     import { SafeAreaController, SafeArea } from '@aashu-dubey/capacitor-statusbar-safe-area';
 
+    import { mapState, mapMutations } from 'vuex';
+
 
     export default defineComponent({
         name: 'toolbar-comp',
+        computed: {
+            ...mapState("profil", [ "notification"]),
+            ...mapState("general", [ "isNative"]),
+        },
         components: {
         },
         props: {
@@ -134,6 +150,7 @@
             }
         },
         methods: {
+            ...mapMutations("profil", ["SET_NOTIFICATION"]),
             accessSetting() {
                 this.$router.currentRoute._rawValue.path == "/setting" ? this.$router.back() : this.$router.push("/setting");
             },

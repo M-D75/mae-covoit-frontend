@@ -132,7 +132,7 @@
             MobileOnly,
         },
         computed: {
-            ...mapState("profil", ["darkMode", "userUid"]),
+            ...mapState("profil", ["darkMode", "userUid", "notification"]),
             isMobileOrSmallScreen() {
                 return this.isMobile || this.isSmallScreen;
             },
@@ -152,8 +152,8 @@
             else
                 console.log("You are on Web");
 
-            
-            
+            this.SET_IS_NATIVE(isIOS || isAndroid);
+
             if( this.darkMode ){
                 $("#app .v-application").removeClass("ligth-mode");
                 $("#app .v-application").addClass("dark-mode");
@@ -185,7 +185,7 @@
                             console.info('Registration token: ', token.value);
                             this.SET_REGISTER_DEVICE_TOKEN(token.value);
                             
-                            const adresse = {local: "http://192.168.134.15:8090", online: "https://server-mae-covoit-notif.infinityinsights.fr"}
+                            const adresse = {local: "http://192.168.134.15:3001", online: "https://server-mae-covoit-notif.infinityinsights.fr"}
                             axios.post(`${adresse.online}/registerDeviceToken`, {
                                 registerDeviceToken: token.value,
                                 userId: this.userUid,
@@ -254,6 +254,7 @@
         methods: {
             ...mapMutations("profil", ["SET_DARKMODE"]),
             ...mapMutations("auth", ["SET_TOKEN", "SET_REGISTER_DEVICE_TOKEN"]),
+            ...mapMutations("general", ["SET_IS_NATIVE"]),
             updateIsSmallScreen() {
                 this.isSmallScreen = window.innerWidth <= 600;
             },
@@ -271,7 +272,7 @@
             async sendNotification(title, body, data) {
                 const permission = await LocalNotifications.requestPermissions();
                
-                if( permission ){
+                if( permission && this.notification ){
 
                     let option = {
                         id: 1,
