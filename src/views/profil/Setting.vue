@@ -113,7 +113,7 @@
 <!--  -->
 <template>
 
-    <ToolbarProfil ref="ToolbarProfilRef" :title="'Parametres'" v-on:back="backToolbar()"/>
+    <ToolbarProfil ref="ToolbarProfilRef" :title="'Paramètres'" v-on:back="backToolbar()"/>
 
     <!-- overlay -->
     <v-overlay 
