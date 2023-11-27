@@ -85,6 +85,7 @@
         <Avatar 
             :modeEdit="false" 
             :name="userName"
+            :subTitle="profil.infos_perso.adress.commune"
             v-on:avatar-touched="goToInfoPerso()"
         />
 
@@ -415,6 +416,8 @@
                 else{
                     this.infos_panneau[1].icon = "mdi-seat-passenger";
                     this.infos_panneau[1].text = "passager";
+                    if(this.onglet == "planning")
+                        this.onglet = "table-bord";
                 }
             },
         },

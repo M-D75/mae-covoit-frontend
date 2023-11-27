@@ -31,7 +31,7 @@
 <style lang="scss" scoped>
     .v-bottom-navigation {
         background-color: var(--bg-app-color);
-        
+        padding-bottom: 5px;
         .v-btn {
             color: var(--gray-icon-color);
             font-weight: bold;
@@ -54,7 +54,7 @@
     <v-bottom-navigation
         v-model="value"
         grow
-        height="75"
+        height="82"
     >
         <v-btn
             :active="false" 

@@ -334,7 +334,7 @@
     <v-footer
         app
         name="footer"
-        height="60"
+        height="80"
         permanent
     >
         <div

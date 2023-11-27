@@ -38,6 +38,9 @@
                     color: var(--font-color-label);
                     margin: auto;
                     text-align: center;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
                 }
             }
             .v-list {

@@ -178,7 +178,7 @@
         z-index: 0;
         cursor: pointer;
         // background-color: black;
-        // opacity: 0.05;
+        // opacity: 0.5;
         &.dragging, &.active {
             border: none;
         }
@@ -446,7 +446,7 @@
         v-model:y="y"
         :axis="'y'"
         v-model:active="active"
-        :draggable="true"
+        :draggable="draggableBar"
         :resizable="false"
         :disabledX="true"
         :disabledY="disabledY"
@@ -1023,6 +1023,7 @@
                 numericValues: ['', '', '', '', '', '', ''],
                 x: 0,
                 y: 0,
+                draggableBar: true,
                 notif: false,
                 active: true,
                 disabledY: false,
@@ -1103,15 +1104,28 @@
                 }
             },
             onDrag(pos) {
-                this.move = true;
-                this.active = false;
+                
+                const posOpenY = this.sizeScreen - ( this.subContHeigth + 50 );
+                console.log("pos", pos, posOpenY - 20);
+                if(pos.y > posOpenY - 20){
+                    this.move = true;
+                    this.active = false;
 
-                const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${Object.keys(this.className).join(".")}` : ".bottom-menu";
-                $(classBottomMenuNameJquery).css("top", `${pos.y}px`);
-                const classBottomMenuNameJqueryDraggable = this.className != "" && this.className != null ? `.draggable.${this.className.join(".")}` : ".draggable";
-                $(classBottomMenuNameJqueryDraggable).addClass("open");
-                if (pos.y >= this.sizeScreen - this.marge_bar) {
-                    this.close();
+                    const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${Object.keys(this.className).join(".")}` : ".bottom-menu";
+                    $(classBottomMenuNameJquery).css("top", `${pos.y}px`);
+                    const classBottomMenuNameJqueryDraggable = this.className != "" && this.className != null ? `.draggable.${this.className.join(".")}` : ".draggable";
+                    $(classBottomMenuNameJqueryDraggable).addClass("open");
+                    if (pos.y >= this.sizeScreen - this.marge_bar) {
+                        this.close();
+                    }
+                }
+                else{
+                    this.draggableBar = false;
+                    this.disabledY = true;
+                    // const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
+                    // $(classBottomMenuNameJquery).css("top", `${posOpenY}px`);
+                    // const classBottomMenuNameJqueryDraggable = this.className != "" && this.className != null ? `.draggable.${this.className.join(".")}` : ".draggable";
+                    // $(classBottomMenuNameJqueryDraggable).addClass("open");
                 }
             },
             onDragStop(pos) {
@@ -1146,8 +1160,22 @@
                     }, 100)
                 }
 
-               
-                
+                const posOpenY = this.sizeScreen - ( this.subContHeigth + 50 );
+                if(pos.y <= posOpenY - 20){
+                    _this.draggableBar = true;
+                    _this.disabledY = false;
+                    this.y = this.sizeScreen - ( this.subContHeigth + 50 );
+                    console.log("amnn---n", posOpenY, pos.y, posOpenY - 20);
+                    const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
+                    $(classBottomMenuNameJquery).animate({"top": `${_this.y}px`}, "fast", function(){
+                        // _this.draggableBar = true;
+                        // _this.disabledY = false;
+                        _this.y = parseInt($(this).css("top").replace("px", ""));
+                        _this.move = false;
+                        console.log("amnnn");
+                    });
+                }
+
                 this.move = false;
             },
             open(){

@@ -423,41 +423,50 @@
 
             this.groupInput = [
                 {
+                    id: "civilite",
                     typeInput: "select",
                     label: "Civilite",
                     value: this.profil.infos_perso.civilite,
                     items: ["Mr", "Mme", "Non binaire"],
                 },
                 {
+                    id: "nom",
                     label: "Nom",
                     value: this.profil.infos_perso.nom,
                 },
                 {
+                    id: "prenom",
                     label: "prénom",
                     value: this.profil.infos_perso.prenom,
                 },
                 {
+                    id: "email",
                     label: "email",
                     value: this.profil.infos_perso.email,
                     disabled: true,
                 },
                 {
+                    id: "tel",
                     label: "Téléphone",
                     value: this.profil.infos_perso.tel,
                 },
                 {
+                    id: "principal",
                     label: "Adresse",
                     value: this.profil.infos_perso.adress.principal,
                 },
                 {
+                    id: "complement",
                     label: "Complement",
                     value: this.profil.infos_perso.adress.complement,
                 },
                 {
+                    id: "code_postal",
                     label: "Code Postal",
                     value: this.profil.infos_perso.adress.code_postal,
                 },
                 {
+                    id: "commune",
                     label: "Commune",
                     value: this.profil.infos_perso.adress.commune,
                 },

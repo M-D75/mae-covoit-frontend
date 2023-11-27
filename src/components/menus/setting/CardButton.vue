@@ -11,6 +11,7 @@
         .v-list-item-title {
             font-weight: 450;
             max-width: 84%;
+            text-transform: capitalize;
         }
     }
 </style>
@@ -105,7 +106,6 @@
             <v-switch
                 v-if="switchBtn"
                 v-model="validation"
-                inset
                 color="info"
             />
             

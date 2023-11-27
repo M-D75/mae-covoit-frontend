@@ -25,7 +25,7 @@
     <ToolbarProfil :title="'Information personnelles'" v-on:back="back()"/>
     <v-main class="main">
         <!-- Avatar -->
-        <Avatar :name="userName"/>
+        <Avatar :name="userName" :sub-title="profil.infos_perso.adress.commune"/>
 
         <!-- ? -->
         <PanneauInfo v-if="modeDriver" :infos_panneau="infos_panneau"/>
@@ -76,7 +76,7 @@
     export default defineComponent({
         name: 'infos-profil-view',
         computed: {
-            ...mapState("profil", [ "profil", "userName", "modeDriver"]),
+            ...mapState("profil", ["profil", "userName", "modeDriver"]),
             ...mapState("profil", {
                 preferences: state => state.profil.infos_perso.preferences,
             }),

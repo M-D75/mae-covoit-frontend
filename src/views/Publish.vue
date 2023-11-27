@@ -72,7 +72,6 @@
                 v-model="modeWork" 
                 :label="modeLabel" 
                 color="blue" 
-                inset
             ></v-switch>
         </div>
 

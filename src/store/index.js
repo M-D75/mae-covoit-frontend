@@ -24,6 +24,7 @@ export default createStore({
                 'auth.provider',
                 'auth.registerDeviceToken',
                 'general.isNative',
+                'profil.profil',
                 'profil.notification',
                 'profil.modeDriver',
                 'profil.darkMode',

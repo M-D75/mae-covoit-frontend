@@ -1,6 +1,17 @@
 <!-- scoped -->
 <style lang="scss" model>
+    .group-card-comp {
 
+        .v-text-field {
+            .v-input__control{
+                .v-field {
+                    .v-field__outline{
+                        display: none;
+                    }
+                }
+            }
+        }
+    }
 </style>
 
 <!-- scoped -->
@@ -40,7 +51,7 @@
             <v-text-field 
                 v-if=" ! group.typeInput || group.typeInput == 'text-field'"
                 v-model="group.value" 
-                variant="solo-filled"
+                variant="outlined"
                 :disabled="'disabled' in group ? true : false"
                 hide-details
                 :persistent-placeholder="false"
@@ -49,9 +60,9 @@
 
             <v-select
                 v-if="group.typeInput == 'select'"
-                :label="group.label"
                 :items="group.items"
-                variant="solo-filled"
+                v-model="group.value"
+                variant="outlined"
             ></v-select>
         </div>
 
@@ -73,6 +84,7 @@
 
 <script>
     //import $ from 'jquery'
+    import { mapMutations } from 'vuex';
 
     // Components
 
@@ -85,38 +97,47 @@
                 type: Array,
                 default: () => [
                     {
+                        id: "civilite",
                         label: "Civilite",
                         value: "Mr",
                     },
                     {
+                        id: "nom",
                         label: "Nom",
                         value: "Ledou",
                     },
                     {
+                        id: "prenom",
                         label: "prénom",
                         value: "BGG",
                     },
                     {
+                        id: "email",
                         label: "email",
                         value: "mail@bg.com",
                     },
                     {
+                        id: "tel",
                         label: "Téléphone",
                         value: "0606060606",
                     },
                     {
+                        id: "principal",
                         label: "Adresse",
                         value: "1 rue des BG",
                     },
                     {
+                        id: "complement",
                         label: "Complement",
                         value: "",
                     },
                     {
+                        id: "code_postal",
                         label: "Code Postal",
                         value: "97680",
                     },
                     {
+                        id: "commune",
                         label: "Commune",
                         value: "Tsingoni",
                     },
@@ -125,10 +146,21 @@
         },
         data() {
             return {
-                
+
             };
         },
         methods: {
+            ...mapMutations("profil", ["SET_INFOS"]),
+            valid(){
+                console.log("goupInput", this.groupInput);
+                let data = {};
+                for (let index = 0; index < this.groupInput.length; index++) {
+                    const element = this.groupInput[index];
+                    data[element.id] = element.value;
+                }
+                console.log("data", data);
+                this.SET_INFOS(data);
+            }
         },
         mounted() {
         },

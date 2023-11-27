@@ -56,7 +56,7 @@
             v-if="fastSearch == true" 
             @click="reserve()"
             :infos="infos"
-            class="tj main" 
+            class="tj main fss" 
             style="z-index: 88; 
             position: absolute; 
             top:50%"

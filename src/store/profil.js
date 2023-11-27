@@ -34,7 +34,7 @@ export default {
                     principal: "",
                     complement: "",
                     code_postal: "",
-                    commune: "",
+                    commune: "Commune",
                 },
                 preferences: [
                     {
@@ -91,6 +91,16 @@ export default {
     getters: {
     },
     mutations: {
+        SET_INFOS(state, data){
+            state.profil.infos_perso.civilite = data.civilite;
+            state.profil.infos_perso.nom = data.nom;
+            state.profil.infos_perso.prenom = data.prenom;
+            state.profil.infos_perso.tel = data.tel;
+            state.profil.infos_perso.adress.principal = data.principal;
+            state.profil.infos_perso.adress.complement = data.complement;
+            state.profil.infos_perso.adress.code_postal = data.code_postal;
+            state.profil.infos_perso.adress.commune = data.commune;
+        },
         SET_NOTIFICATION(state, boolean){
             state.notification = boolean;
         },
