@@ -186,7 +186,7 @@
                             console.info('Registration token: ', token.value);
                             this.SET_REGISTER_DEVICE_TOKEN(token.value);
                             
-                            const adresse = {local: "http://192.168.134.15:3001", online: "https://server-mae-covoit-notif.infinityinsights.fr"}
+                            const adresse = {local: "http://192.168.134.15:3001", online: "http://server-mae-covoit-notif.infinityinsights.fr"}
                             axios.post(`${adresse.online}/registerDeviceToken`, {
                                 registerDeviceToken: token.value,
                                 userId: this.userUid,

@@ -496,14 +496,14 @@
                 this.scrollToBottom();
             }.bind(this), 500);
 
-            const adresse = {local: "http://localhost:3001", online: "https://server-mae-covoit-notif.infinityinsights.fr"}
+            const adresse = {local: "http://localhost:3001", online: "http://server-mae-covoit-notif.infinityinsights.fr"}
 
             if( Object.keys(this.tripSelected).length > 0 && this.userUid != this.tripSelected.driver_id ){//mode passager
                 this.mode_driver = false;
                 this.socket = io(adresse.online, {
                     reconnection: true,
                     reconnectionDelay: 1000,
-                    reconnectionAttempts: 100,
+                    reconnectionAttempts: 60,
                     query: {
                         userId: this.userUid,
                         chatIds: [[this.userUid, this.tripSelected.driver_id].sort((a, b) => {
@@ -531,7 +531,7 @@
                 this.socket = io(adresse.online, {
                     reconnection: true,
                     reconnectionDelay: 1000,
-                    reconnectionAttempts: 100,
+                    reconnectionAttempts: 60,
                     query: {
                         userId: this.userUid,
                         chatIds: chatIds,
@@ -549,30 +549,30 @@
                 const engine = this.socket.io.engine;
                 console.log(engine.transport.name); // in most cases, prints "polling"
 
-                engine.once("upgrade", () => {
-                    // called when the transport is upgraded (i.e. from HTTP long-polling to WebSocket)
-                    console.log(engine.transport.name); // in most cases, prints "websocket"
-                });
+                // engine.once("upgrade", () => {
+                //     // called when the transport is upgraded (i.e. from HTTP long-polling to WebSocket)
+                //     console.log(engine.transport.name); // in most cases, prints "websocket"
+                // });
 
-                engine.on("packet", ({ type, data }) => {
-                    // called for each packet received
-                    console.log("packet", type, data);
-                });
+                // engine.on("packet", ({ type, data }) => {
+                //     // called for each packet received
+                //     console.log("packet", type, data);
+                // });
 
-                engine.on("packetCreate", ({ type, data }) => {
-                    // called for each packet sent
-                    console.log("packetCreate", type, data);
-                });
+                // engine.on("packetCreate", ({ type, data }) => {
+                //     // called for each packet sent
+                //     console.log("packetCreate", type, data);
+                // });
 
-                engine.on("drain", () => {
-                    // called when the write buffer is drained
-                    console.log("drain");
-                });
+                // engine.on("drain", () => {
+                //     // called when the write buffer is drained
+                //     console.log("drain");
+                // });
 
-                engine.on("close", (reason) => {
-                    // called when the underlying connection is closed
-                    console.log("packet", reason);
-                });
+                // engine.on("close", (reason) => {
+                //     // called when the underlying connection is closed
+                //     console.log("packet", reason);
+                // });
             });
 
             this.socket.on('get messages', (data) => {
@@ -631,6 +631,10 @@
 
             this.socket.on('connected', (data) => {
                 console.log('data id:', data);
+            });
+
+            this.socket.on("connect_error", (err) => {
+                console.log(err.message); // prints the message associated with the error
             });
 
             console.log("nb-m", this.messages.length);
