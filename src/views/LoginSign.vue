@@ -431,34 +431,35 @@
             },
             async authServiceSupabse(service){
 
-                if(isAndroid){
+                let { data, error } = {data: null, error: null}
+                if( isAndroid ){
                     //Android
-                    let { data, error } = await this.supabase.auth.signInWithOAuth({
+                    ({ data, error } = await this.supabase.auth.signInWithOAuth({
                         provider: service,
                         options: {
                             skipBrowserRedirect: true,
                             redirectTo: "ekko-vi-shimago-app://callback",
                         },
-                    });
+                    }));
                 }
                 else if(window.location.host == "localhost:8080"){
                     // Test local
-                    let { data, error } = await this.supabase.auth.signInWithOAuth({
+                    ({ data, error } = await this.supabase.auth.signInWithOAuth({
                         provider: service,
                         options: {
                             skipBrowserRedirect: true,
                             redirectTo: "http://localhost:8080",
                         },
-                    });
+                    }));
                 }
                 else{
                     // Site Web App 
-                    let { data, error } = await this.supabase.auth.signInWithOAuth({
+                    ({ data, error } = await this.supabase.auth.signInWithOAuth({
                         provider: service,
                         options: {
                             skipBrowserRedirect: true,
                         },
-                    });
+                    }));
                 }
 
                 if ( error ) {
