@@ -267,8 +267,12 @@
 
     import { App } from '@capacitor/app';
     import { Plugins } from '@capacitor/core';
+    import { Capacitor } from '@capacitor/core';
 
     const { LocalNotifications } = Plugins;
+
+    const isAndroid = Capacitor.getPlatform() === 'android';
+    const isIOS = Capacitor.getPlatform() === 'ios';
 
     export default {
         setup() {
@@ -427,31 +431,35 @@
             },
             async authServiceSupabse(service){
 
-                // Android
-                // let { data, error } = await this.supabase.auth.signInWithOAuth({
-                //     provider: service,
-                //     options: {
-                //         skipBrowserRedirect: true,
-                //         redirectTo: "ekko-vi-shimago-app://callback",
-                //     },
-                // });
-
-                // Test local
-                let { data, error } = await this.supabase.auth.signInWithOAuth({
-                    provider: service,
-                    options: {
-                        skipBrowserRedirect: true,
-                        redirectTo: "http://localhost:8080",
-                    },
-                });
-
-                // Site Web App 
-                // let { data, error } = await this.supabase.auth.signInWithOAuth({
-                //     provider: service,
-                //     options: {
-                //         skipBrowserRedirect: true,
-                //     },
-                // });
+                if(isAndroid){
+                    //Android
+                    let { data, error } = await this.supabase.auth.signInWithOAuth({
+                        provider: service,
+                        options: {
+                            skipBrowserRedirect: true,
+                            redirectTo: "ekko-vi-shimago-app://callback",
+                        },
+                    });
+                }
+                else if(window.location.host == "localhost:8080"){
+                    // Test local
+                    let { data, error } = await this.supabase.auth.signInWithOAuth({
+                        provider: service,
+                        options: {
+                            skipBrowserRedirect: true,
+                            redirectTo: "http://localhost:8080",
+                        },
+                    });
+                }
+                else{
+                    // Site Web App 
+                    let { data, error } = await this.supabase.auth.signInWithOAuth({
+                        provider: service,
+                        options: {
+                            skipBrowserRedirect: true,
+                        },
+                    });
+                }
 
                 if ( error ) {
                     console.error("Erreur lors de l'authenfication:", error.message);

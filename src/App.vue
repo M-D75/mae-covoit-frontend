@@ -143,7 +143,8 @@
             isSmallScreen: window.innerWidth <= 600,
         }),
         mounted(){
-            console.log("isMobile:", this.isMobile);
+
+            console.log("isMobile:", this.isMobile, window.location);
             console.log("isSmallScreen:", this.isSmallScreen);
             if(isAndroid)
                 console.log("You are on Android");
