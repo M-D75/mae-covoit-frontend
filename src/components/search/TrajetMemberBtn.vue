@@ -145,7 +145,17 @@
             display: inline-flex;
             color: #484848;
             color: var(--font-color-label);
+            svg {
+                min-height: 50%;
+                align-items: center;
+                display: inline-flex;
+                color: #484848;
+                color: var(--font-color-label);
+            }
+
         }
+
+        
 
         .nothing {
             display: table;
@@ -181,7 +191,7 @@
     >
         <div class="empty-mask"></div>
         <div class="empty">
-            <v-icon icon="fa:fa-brands fa-searchengin" />
+            <v-icon><font-awesome-icon :icon="['fab', 'searchengin']" :fade="load" /></v-icon>
         </div>
         <v-list>
             <div class="part-list">
@@ -352,6 +362,10 @@
                 },
             },
             empty: {
+                type: Boolean,
+                default: false,
+            },
+            load: {
                 type: Boolean,
                 default: false,
             },

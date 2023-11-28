@@ -203,6 +203,14 @@
                 class="other-mode"
             />
         </div>
+
+        <!-- message -->
+        <v-snackbar
+            v-model="showSnackbar"
+            :timeout="4000"
+        >
+            <v-icon icon="$success"></v-icon> <span>{{ messageSnackbar }}</span>
+        </v-snackbar>
         
     </v-main>
 
@@ -267,6 +275,8 @@
                 },
                 overlay: false,
                 bottomOpened: "",
+                showSnackbar: false,
+                messageSnackbar: "",
             }
         },
         created() {
@@ -407,6 +417,8 @@
                     //Copie dans le presse-papiers
                     if( ! isAndroid && ! isIOS ){
                         await this.copyToClipboard(text);
+                        this.messageSnackbar = "lien copié !";
+                        this.showSnackbar = true;
                     }
 
                     if( isAndroid || isIOS ){

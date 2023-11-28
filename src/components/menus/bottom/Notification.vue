@@ -37,7 +37,7 @@
          .text-notif {
             // margin-top: 90px;
             font-size: 16px;
-            padding: 50px;
+            padding: 50px 15px;
             color: var(--font-color-label);
          }
 

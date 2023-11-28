@@ -77,6 +77,14 @@
             Valider
         </v-btn>
     </div>
+
+    <!-- message -->
+    <v-snackbar
+        v-model="showSnackbar"
+        :timeout="4000"
+    >
+        <v-icon icon="$success"></v-icon> <span>{{ messageSnackbar }}</span>
+    </v-snackbar>
  
  </template>
 
@@ -146,7 +154,8 @@
         },
         data() {
             return {
-
+                showSnackbar: false,
+                messageSnackbar: "",
             };
         },
         methods: {
@@ -160,6 +169,8 @@
                 }
                 console.log("data", data);
                 this.SET_INFOS(data);
+                this.messageSnackbar = "Mise à jour effectuée !";
+                this.showSnackbar = true;
             }
         },
         mounted() {

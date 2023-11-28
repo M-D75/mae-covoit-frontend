@@ -314,7 +314,7 @@
                         <span 
                             v-if="userUid == message.from"
                             class="status">
-                            <v-icon v-if="message.status=='send'">mdi-clock-time-eight-outline</v-icon>
+                            <v-icon v-if="message.status=='send'"><font-awesome-icon :icon="['fas', 'clock']" spin /></v-icon>
                             <v-icon v-if="message.status=='sended'">mdi-check</v-icon>
                             <v-icon v-if="message.status=='vue'">mdi-check-all</v-icon>
                         </span>
@@ -546,6 +546,33 @@
             this.socket.on('connect', () => {
                 console.log('Connecté au serveur Socket.IO!');
                 this.overlayLoad = false;
+                const engine = this.socket.io.engine;
+                console.log(engine.transport.name); // in most cases, prints "polling"
+
+                engine.once("upgrade", () => {
+                    // called when the transport is upgraded (i.e. from HTTP long-polling to WebSocket)
+                    console.log(engine.transport.name); // in most cases, prints "websocket"
+                });
+
+                engine.on("packet", ({ type, data }) => {
+                    // called for each packet received
+                    console.log("packet", type, data);
+                });
+
+                engine.on("packetCreate", ({ type, data }) => {
+                    // called for each packet sent
+                    console.log("packetCreate", type, data);
+                });
+
+                engine.on("drain", () => {
+                    // called when the write buffer is drained
+                    console.log("drain");
+                });
+
+                engine.on("close", (reason) => {
+                    // called when the underlying connection is closed
+                    console.log("packet", reason);
+                });
             });
 
             this.socket.on('get messages', (data) => {

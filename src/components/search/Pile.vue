@@ -51,7 +51,7 @@
 <!--  -->
 <template>
     <div class="blc-pile">
-        <TrajetMemberBtn v-if="fastSearch == false" @click="getFastSearch" :empty="empty" class="tj main" style="z-index: 88; position: absolute; top:50%"/>
+        <TrajetMemberBtn v-if="fastSearch == false" @click="getFastSearch" :load="load" :empty="empty" class="tj main" style="z-index: 88; position: absolute; top:50%"/>
         <TrajetMember
             v-if="fastSearch == true" 
             @click="reserve()"
@@ -102,6 +102,7 @@
                 fastSearch: false,
                 infos: {},
                 empty: false,
+                load: false,
             }
         },
         methods: {
@@ -111,16 +112,24 @@
                 this.$emit("reserve");
             },
             async getFastSearch(){
+                this.empty = false;
+                this.info = {};
+                this.load = true;
+
                 await this.getTrajets;
-                if( this.trajetFiltered.length > 0 ){
-                    this.infos = this.trajetFiltered[0];
-                    this.fastSearch = true;
-                    this.$emit("fast-get-trip");
-                }
-                else{
-                    this.infos = {};
-                    this.empty = true;
-                }
+                
+                setTimeout(function(){
+                    if( this.trajetFiltered.length > 0 ){
+                        this.infos = this.trajetFiltered[0];
+                        this.fastSearch = true;
+                        this.$emit("fast-get-trip");
+                    }
+                    else{
+                        this.infos = {};
+                        this.empty = true;
+                    }
+                    this.load = false;
+                }.bind(this), 1000);
             },
             isSameDay(date1, date2) {
                 return (

@@ -272,7 +272,7 @@
     const { LocalNotifications } = Plugins;
 
     const isAndroid = Capacitor.getPlatform() === 'android';
-    const isIOS = Capacitor.getPlatform() === 'ios';
+    //const isIOS = Capacitor.getPlatform() === 'ios';
 
     export default {
         setup() {

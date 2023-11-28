@@ -103,9 +103,9 @@
                 <div class="trajet">{{ numberTrajet }} {{numberTrajet > 1 ? 'trajets' : 'trajet'}}</div>
             </div>
             <div class="col-item mode">
-                <div>S</div>
-                <div class="active">M</div>
-                <div>A</div>
+                <div :class="{active: categorie=='week'}" @click="categorie='week'">S</div>
+                <div :class="{active: categorie=='month'}" @click="categorie='month'">M</div>
+                <div :class="{active: categorie=='year'}" @click="categorie='year'">A</div>
             </div>
         </div>
 
@@ -141,6 +141,7 @@
 
 
 <script>
+    //import $ from 'jquery'
 
     // Components
     export default {
@@ -150,6 +151,7 @@
         },
         data() {
             return {
+                categorie: "month",
                 stats: [
                     {
                         val: Math.floor(Math.random() * 101),
@@ -211,8 +213,149 @@
                 // vue.stats[0].val = Math.floor(Math.random() * 101);
                 vue.numberTrajet = Math.floor(Math.random() * 401)+1;
             }, 3000);
+
         },
         methods: {
+        },
+        watch: {
+            categorie(){
+                switch (this.categorie) {
+                    case 'week':
+                    this.stats = [
+                            {
+                                val: Math.floor(Math.random() * 101),
+                                month: "1",
+                            },
+                            {
+                                val: Math.floor(Math.random() * 101),
+                                month: "2",
+                            },
+                            {
+                                val: Math.floor(Math.random() * 101),
+                                month: "3",
+                            },
+                            {
+                                val: Math.floor(Math.random() * 101),
+                                month: "4",
+                            },
+                            {
+                                val: Math.floor(Math.random() * 101),
+                                month: "5",
+                            },
+                            {
+                                val: Math.floor(Math.random() * 101),
+                                month: "6",
+                            },
+                            {
+                                val: Math.floor(Math.random() * 101),
+                                month: "7",
+                            },
+                            {
+                                val: Math.floor(Math.random() * 101),
+                                month: "8",
+                            },
+                        ].slice(0, 7);
+                        
+                        break;
+                    case 'month':
+                        this.stats = [
+                            {
+                                val: Math.floor(Math.random() * 101),
+                                month: "Jan",
+                            },
+                            {
+                                val: Math.floor(Math.random() * 101),
+                                month: "Fév",
+                            },
+                            {
+                                val: Math.floor(Math.random() * 101),
+                                month: "Mar",
+                            },
+                            {
+                                val: Math.floor(Math.random() * 101),
+                                month: "Avr",
+                            },
+                            {
+                                val: Math.floor(Math.random() * 101),
+                                month: "Mai",
+                            },
+                            {
+                                val: Math.floor(Math.random() * 101),
+                                month: "Jui",
+                            },
+                            {
+                                val: Math.floor(Math.random() * 101),
+                                month: "Juil",
+                            },
+                            {
+                                val: Math.floor(Math.random() * 101),
+                                month: "Aoû",
+                            },
+                            {
+                                val: Math.floor(Math.random() * 101),
+                                month: "Sep",
+                            },
+                            {
+                                val: Math.floor(Math.random() * 101),
+                                month: "Oct",
+                            },
+                            {
+                                val: Math.floor(Math.random() * 101),
+                                month: "Nov",
+                            },
+                            {
+                                val: Math.floor(Math.random() * 101),
+                                month: "Déc",
+                            },
+                        ].slice(0, 7);
+                        break;
+
+                    case 'year':
+                        this.stats = [
+                            {
+                                val: Math.floor(Math.random() * 101),
+                                month: "2015",
+                            },
+                            {
+                                val: Math.floor(Math.random() * 101),
+                                month: "2016",
+                            },
+                            {
+                                val: Math.floor(Math.random() * 101),
+                                month: "2017",
+                            },
+                            {
+                                val: Math.floor(Math.random() * 101),
+                                month: "2018",
+                            },
+                            {
+                                val: Math.floor(Math.random() * 101),
+                                month: "2019",
+                            },
+                            {
+                                val: Math.floor(Math.random() * 101),
+                                month: "2020",
+                            },
+                            {
+                                val: Math.floor(Math.random() * 101),
+                                month: "2021",
+                            },
+                            {
+                                val: Math.floor(Math.random() * 101),
+                                month: "2022",
+                            },
+                        ].slice(0, 7);
+                        break;
+                
+                    default:
+                        break;
+     
+                }
+                
+                this.stats.map(d => d.val = Math.floor(Math.random() * 101) )
+                // vue.stats[0].val = Math.floor(Math.random() * 101);
+                this.numberTrajet = Math.floor(Math.random() * 401)+1;
+            },
         },
     };
 </script>

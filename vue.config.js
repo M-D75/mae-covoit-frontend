@@ -3,16 +3,16 @@ module.exports = defineConfig({
     transpileDependencies: true,
     pwa: {
         name: "Shima-GoGoGo",
-        themeColor: '#08A0EC',
+        themeColor: '#E5E5E5',
         msTileColor: '#000000',
         appleMobileWebAppCapable: 'yes',
         appleMobileWebAppStatusBarStyle: 'black',
         iconPaths: {
-            favicon32: 'src/assets/logo.png',
-            favicon16: 'src/assets/logo.png',
-            appleTouchIcon: 'src/assets/logo.png',
-            maskIcon: 'src/assets/logo.png',
-            msTileImage: 'src/assets/logo.png'
+            favicon32: './assets/logo.png',
+            favicon16: './assets/logo.png',
+            appleTouchIcon: './assets/logo.png',
+            maskIcon: './assets/logo.png',
+            msTileImage: './assets/logo.png'
         }
     },
     pluginOptions: {
