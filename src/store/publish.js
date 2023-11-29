@@ -18,36 +18,42 @@ export default {
 
     },
     actions: {
-        async newTrip({state}, playload){
+        async newTrip({state}, tripDriver){
             const sessionChecked = await store.dispatch("auth/checkSession");
-            if(!sessionChecked)
+            if( ! sessionChecked )
                 router.replace("/login");
-            console.log("playload", playload, state)
-            // const url = `${process.env.VUE_APP_API_MBABUF_URL}/trip`;
 
-            // const headers = {
-            //     'accept': 'application/json',
-            //     'Content-Type': 'application/json'
-            // };
+            console.log("tripDriver", tripDriver, state)
 
             let { data: trip, errorTrip } = await supabase
                 .from('trip')
                 .select('id')
 
-            console.log("Error", errorTrip, trip.length, playload.driverId);
+            console.log("Error : ", errorTrip, trip.length, tripDriver.driverId);
 
-            if( playload.driverId ){
+            if( errorTrip ){
+                console.error("Error : ", errorTrip)
+                return false;
+            }
+
+            const idMax = trip.reduce((max, objet) => {
+                    return objet.id > max ? objet.id : max;
+                }, 1);
+
+            if( tripDriver.driverId ){
 
                 var dataNewTrip =  {
-                    id: trip.length+1,
-                    village_departure_id: playload.villageDep,
-                    village_arrival_id: playload.villageDest,
-                    driver_id: playload.driverId,
-                    departure_time: playload.timeDep,
-                    max_seats: playload.maxSeats,
+                    id: idMax + 1,
+                    village_departure_id: tripDriver.villageDep,
+                    village_arrival_id: tripDriver.villageDest,
+                    driver_id: tripDriver.driverId,
+                    departure_time: tripDriver.timeDep,
+                    max_seats: tripDriver.maxSeats,
+                    price: tripDriver.price,
+                    route: tripDriver.route,
                 };
 
-                console.log("data=", dataNewTrip);
+                console.log("data : ", dataNewTrip);
 
                 const { data, error } = await supabase
                     .from('trip')
@@ -56,19 +62,15 @@ export default {
                     ])
                     .select()
 
+                console.log("new-trip-published : ", data, error);
 
-                console.log("new-trip published", data, error);
+                if( error ){
+                    console.error("Error : ", error);
+                    return false;
+                }
             }
 
-            // console.log("data-to-send:", data)
-
-            // await axios.post(url, data, { headers: headers })
-            //     .then(response => {
-            //         console.log(response.data);
-            //     })
-            //     .catch(error => {
-            //         console.error("There was an error!", error);
-            //     });
+            return true;
         }
     },
 }

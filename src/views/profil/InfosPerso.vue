@@ -25,7 +25,7 @@
     <ToolbarProfil :title="'Information personnelles'" v-on:back="back()"/>
     <v-main class="main">
         <!-- Avatar -->
-        <Avatar :name="userName" :sub-title="profil.infos_perso.adress.commune"/>
+        <Avatar :name="userName" :avatar="avatarUrl" :sub-title="profil.infos_perso.adress.commune"/>
 
         <!-- ? -->
         <PanneauInfo v-if="modeDriver" :infos_panneau="infos_panneau"/>
@@ -76,7 +76,7 @@
     export default defineComponent({
         name: 'infos-profil-view',
         computed: {
-            ...mapState("profil", ["profil", "userName", "modeDriver"]),
+            ...mapState("profil", ["profil", "userName", "modeDriver", "avatarUrl"]),
             ...mapState("profil", {
                 preferences: state => state.profil.infos_perso.preferences,
             }),
@@ -205,28 +205,6 @@
             this.switchModeDriverGroupParameters();
         },
         methods: {
-            choiceFunctionBtnInfo(name){
-                switch (name.toLowerCase()) {
-                    case 'mode':
-                        this.test2();
-                        break;
-                    case 'historique':
-                        this.test3();
-                        break;
-                    case 'Papayas':
-                        console.log('Mangoes and papayas are $2.79 a pound.');
-                        // Expected output: "Mangoes and papayas are $2.79 a pound."
-                        break;
-                    default:
-                        console.log(`Sorry, we are out of ${name}.`);
-                }
-            },
-            test2(){
-                console.log("text2")
-            },
-            test3(){
-                console.log("text3")
-            },
             selectModel(){
                 if( this.$refs.BottomMenuRef ){
                     this.overlay = this.$refs.BottomMenuRef.open();

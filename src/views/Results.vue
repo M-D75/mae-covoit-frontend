@@ -72,7 +72,7 @@
     <BottomMenu :class-name="['results']" ref="BottomMenuRef" mode="reserve" v-on:close="overlay = false;" :infos="infos" />
 
     <!-- loading -->
-    <v-overlay :model-value="overlayLoad" class="align-center justify-center">
+    <v-overlay disabled :model-value="overlayLoad" class="align-center justify-center">
         <v-progress-circular color="blue" indeterminate size="64"></v-progress-circular>
     </v-overlay>
 

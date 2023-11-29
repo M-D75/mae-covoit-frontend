@@ -83,6 +83,7 @@
     <v-main>
         <!-- Avatar -->
         <Avatar 
+            :avatar="avatarUrl"
             :modeEdit="false" 
             :name="userName"
             :subTitle="profil.infos_perso.adress.commune"
@@ -169,6 +170,7 @@
 <script>
     import { defineComponent } from 'vue';
     import { mapState, mapActions, mapMutations } from 'vuex';
+    import axios from 'axios';
 
     // Components
     import ToolbarProfil from '@/components/menus/head/ToolbarProfil.vue';
@@ -184,7 +186,8 @@
     export default defineComponent({
         name: 'profil-view',
         computed: {
-            ...mapState("profil", ["darkMode", "userName", "profil", "history", 'modeDriver']),
+            ...mapState("profil", ["darkMode", "userName", "profil", "history", 'modeDriver', "avatarUrl", "userUid"]),
+            ...mapState("trip", ["notMessageVue"]),
         },
         components: {
             ToolbarProfil,
@@ -308,11 +311,13 @@
         },
         mounted(){
             this.switchModeDriverPanneauInfos();
+            this.askNewMessage();
         },
         methods: {
             ...mapActions("profil", ["getTravels", "getPublish", "buildHistoriqueBooking"]),
             ...mapActions("auth", ["checkSession"]),
             ...mapMutations("profil", ["SET_LOAD_GET_TRIP_PUBLISH"]),
+            ...mapMutations("trip", ["SET_NOT_MESSAGE_VUE"]),
             async checkSessionIn(){
                 const sessionValided = await this.$store.dispatch("auth/checkSession");
                 if( ! sessionValided )
@@ -420,6 +425,41 @@
                         this.onglet = "table-bord";
                 }
             },
+            askNewMessage(){
+                const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
+
+                const typeUrl = "online";
+                axios.post(`${adresse[typeUrl]}/askNewMessage`, {
+                        userId: this.userUid,
+                    })
+                    .then(response => {
+                        console.log("askNewMessage", response.data);
+                        const data = response.data;
+
+                        this.SET_NOT_MESSAGE_VUE(data.idsTrip);
+                        if( this.infosTravels.length > 0){
+                            this.updateNotifMessage();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Il y a eu une erreur :', error);
+                    });
+            },
+            updateNotifMessage(){
+                console.log("updateNotifMessage");
+                for ( const key in this.infosTravels ) {
+                    //const infos = this.infosTravels[key].infos;
+                    for ( const keyInfo in this.infosTravels[key].infos ) {
+                        console.log(this.infosTravels[key].infos[keyInfo], this.notMessageVue.includes(this.infosTravels[key].infos[keyInfo].id + ""));
+                        if ( this.notMessageVue.includes(this.infosTravels[key].infos[keyInfo].id + "") ) {
+                            this.infosTravels[key].infos[keyInfo].notifMessage = true;
+                        }
+                        else{
+                            this.infosTravels[key].infos[keyInfo].notifMessage = false;
+                        }
+                    }
+                }
+            }
         },
         watch: {
             darkMode(){
@@ -454,6 +494,7 @@
                     this.infosTravels = this.profil.myPublish;
                 }
                 else{
+                    this.askNewMessage();
                     if( this.onglet == "trajets" ){
                         this.infosTravels = this.profil.myTravels;
                     }

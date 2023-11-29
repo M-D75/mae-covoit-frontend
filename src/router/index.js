@@ -17,6 +17,7 @@ import CreateAccount from '@/views/CreateAccount.vue'
 import CropperAvatar from '@/components/profile/CropperAvatar.vue'
 import Trip from '@/views/trip/Trip.vue'
 import Chat from '@/views/trip/Chat.vue'
+import ProfilMember from '@/views/profil/ProfilMember.vue'
 
 // import store from '../store'; // Chemin d'accès à votre fichier store
 
@@ -55,6 +56,11 @@ const routes = [
         path: '/account-info',
         name: 'account-info',
         component: CreateAccount,
+        meta: { requiresAuth: true },
+    },
+    {
+        path: '/member',
+        component: ProfilMember,
         meta: { requiresAuth: true },
     },
     {

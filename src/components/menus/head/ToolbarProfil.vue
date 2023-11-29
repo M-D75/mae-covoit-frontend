@@ -105,6 +105,7 @@
             <v-btn 
                 icon
                 @click="accessSetting()"
+                :disabled="!setting"
             >
                 <v-icon>mdi-tune</v-icon>
             </v-btn>
@@ -140,6 +141,10 @@
             date: {
                 type: String,
                 default: "Aujourd'hui",
+            },
+            setting: {
+                type:Boolean,
+                default: true,
             },
         },
         data() {

@@ -4,15 +4,40 @@
     /* avatar */
     .avatar-comp {
         margin-top: 30px;
-        .v-avatar {
-            cursor: pointer;
+        .contain-avatar{
+            width: fit-content;
+            margin: auto;
+            position: relative;
+            &.checked{
+                border-radius: 500px;
+                border: 2px solid #9fcb66;
+            }
+            .v-avatar {
+                cursor: pointer;
+                .v-icon {
+                    &.picture{
+                        // display: none;
+                        background-color: transparent;
+                        position: absolute;
+                        font-size: 3.97em;
+                        color: white;
+                        opacity: 0.7;
+                    }
+                }
+            }
+
             .v-icon {
-                // display: none;
-                background-color: transparent;
-                position: absolute;
-                font-size: 3.97em;
-                color: white;
-                opacity: 0.7;
+                &.badge-cerification{
+                    font-size: 1.2em;
+                    color: #9fcb66;
+                    position: absolute;
+                    bottom: -5px;
+                    right: 1px;
+                    border: 3px solid #9fcb66;
+                    border-radius: 100px;
+                    background: var(--bg-app-color);
+                    padding: 13px;
+                }
             }
         }
         .title {
@@ -33,6 +58,26 @@
         }
     }
 
+    //Animations
+    .zoom-bounce {
+        animation: zoomBounce 0.7s ease-out;
+    }
+
+    @keyframes zoomBounce {
+        0% {
+            transform: scale(0);
+        }
+        50% {
+            transform: scale(1.2);
+        }
+        70% {
+            transform: scale(0.9);
+        }
+        100% {
+            transform: scale(1);
+        }
+    }
+
 </style>
    
 <!-- Avatar -->
@@ -41,21 +86,34 @@
     <div
         class="avatar-comp text-center"
     >
-        <v-avatar 
-            size="108"
-            @click="avatarTouchedEmit()"
+        <div class="contain-avatar" :class="{checked: !modeEdit}">
+            <v-avatar 
+                size="108"
+                @click="avatarTouchedEmit()"
             >
-            <v-img
-                alt="Avatar"
-                :src="avatarUrl"
-            ></v-img>
-            <v-icon v-if="modeEdit" @click="triggerFileInput">
-                mdi-camera-plus
-            </v-icon>
+                <v-img
+                    alt="Avatar"
+                    :src="avatar"
+                ></v-img>
+                <v-icon class="picture" v-if="modeEdit" @click="triggerFileInput">
+                    mdi-camera-plus
+                </v-icon>
 
-            <!-- File input (caché) -->
-            <input type="file" ref="fileInput" accept="image/png, image/jpeg" style="display: none" @change="handleFileChange" />
-        </v-avatar>
+                <!-- File input (caché) -->
+                <input type="file" ref="fileInput" accept="image/png, image/jpeg" style="display: none" @change="handleFileChange" />
+
+                
+            </v-avatar>
+
+            <v-icon
+                v-if="!modeEdit"
+                class="badge-cerification zoom-bounce"
+            >
+                mdi-shield-check
+            </v-icon>
+        </div>
+
+        
 
         <div
             class="title text-center mx-auto"
@@ -75,7 +133,7 @@
 <!--  -->
 <script>
     import { defineComponent } from 'vue';
-    import { mapState, mapMutations } from 'vuex';
+    import { mapMutations } from 'vuex';
 
     // Components
     // ...
@@ -83,11 +141,14 @@
     export default defineComponent({
         name: 'avatar-profil-comp',
         computed: {
-            ...mapState('profil', ['avatarUrl']),
         },
         components: {
         },
         props: {
+            avatar: {
+                type: String,
+                default: "https://avataaars.io/?avatarStyle=Circle&topType=ShortHairDreads01&accessoriesType=Blank&hairColor=PastelPink&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Wink&eyebrowType=DefaultNatural&mouthType=Serious&skinColor=Tanned",
+            },
             name: {
                 type: String,
                 default: "Dr. Mourdas",

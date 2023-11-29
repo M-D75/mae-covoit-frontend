@@ -24,10 +24,11 @@ export default createStore({
                 'auth.provider',
                 'auth.registerDeviceToken',
                 'general.isNative',
-                'profil.profil',
+                'profil.profil.infos_perso',
                 'profil.notification',
                 'profil.modeDriver',
                 'profil.darkMode',
+                'profil.userId',
                 'profil.userUid',
                 'profil.userName',
                 'profil.autoValidation',
@@ -38,6 +39,7 @@ export default createStore({
                 'search.communesFrequency',
                 'trip.tripSelected',
                 'trip.chat',
+                'trip.member',
             ]
         })
     ],

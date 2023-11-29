@@ -81,7 +81,7 @@
             <div 
                 class="over"
             ></div>
-            <Map :itineraire="itineraire" v-on:trajet-selected="itineraireValided()"></Map>
+            <Map ref="MapRef" :itineraire="itineraire" v-on:trajet-selected="itineraireValided()"></Map>
         </div>
     </v-main>
 </template>
@@ -146,6 +146,7 @@
             return {
                 overlay: false,
                 labelSelectorTime: "",
+                routes: [],
             }
         },
         mounted(){
@@ -173,7 +174,8 @@
                 console.log("time-getting")
             },
             itineraireValided(){
-                console.log("itineraireValided")
+                console.log("itineraireValided", this.$refs.MapRef.routes)
+                this.routes = this.$refs.MapRef.routes;
                 this.$emit("itineraire-valided")
             },
         },

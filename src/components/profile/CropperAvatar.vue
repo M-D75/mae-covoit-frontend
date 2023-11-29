@@ -37,6 +37,7 @@
             previewClass: 'preview',
         }"
     />
+
     <v-btn
         class="btn-crop"
         color="blue"
@@ -45,6 +46,19 @@
     />
 
     <CircleStencil v-if="false"/>
+
+    <!-- Load -->
+    <v-overlay
+        :model-value="overlayLoad"
+        disabled
+        class="align-center justify-center"
+    >
+        <v-progress-circular
+            color="white"
+            indeterminate
+            size="64"
+        ></v-progress-circular>
+    </v-overlay>
     
 </template>
 
@@ -52,7 +66,7 @@
     import { defineComponent } from 'vue';
     import { CircleStencil, Cropper } from 'vue-advanced-cropper';
     import 'vue-advanced-cropper/dist/style.css';
-    import { mapState, mapMutations } from 'vuex';
+    import { mapState, mapMutations, mapActions } from 'vuex';
 
     export default defineComponent({
         name: 'profil-view',
@@ -73,6 +87,7 @@
                     left: 0,
                     top: 0,
                 },
+                overlayLoad: false,
             };
         },
         beforeMount(){
@@ -84,15 +99,21 @@
         },
         methods: {
             ...mapMutations("profil", ["SET_AVATAR_URL"]),
-            crop() {
+            ...mapActions("profil", ["updateAvatar"]),
+            async crop() {
                 const { coordinates, canvas } = this.$refs.cropper.getResult();
                 this.coordinates = coordinates;
                 console.log("coordinate", coordinates);
                 try {
+                    
                     this.image = canvas.toDataURL();
+                    this.overlayLoad = true;
                     this.SET_AVATAR_URL(this.image);
+                    await this.updateAvatar(this.image);
                     this.$router.replace("/profil");
-                } catch (e) {
+                    this.overlayLoad = false;
+                } 
+                catch (e) {
                     console.error('Erreur lors de la tentative de toDataURL', e);
                 }
                 

@@ -108,6 +108,7 @@
         <!-- itineraire -->
         <Itineraire 
             v-if="mode=='itineraire' || mode=='select-price' || mode=='notification'"
+            ref="ItineraireRef"
             :itineraire="itineraire"
             v-on:itineraire-valided="getSelected()" 
         />
@@ -195,7 +196,7 @@
 <script>
     import $ from 'jquery'
     import { defineComponent } from 'vue';
-    import { mapState, mapGetters, mapActions, mapMutations } from 'vuex';
+    import { mapState, mapGetters, mapActions } from 'vuex';
 
     // Components
     import BottomNav from '@/components/menus/BottomNav.vue';
@@ -206,7 +207,7 @@
     import HourProgram from '@/components/publish/HourProgram.vue';
     import HourDepOther from '@/components/publish/HourDepOther.vue';
 
-    import supabase from '@/utils/supabaseClient.js';
+    //import supabase from '@/utils/supabaseClient.js';
 
 
     export default defineComponent({
@@ -223,7 +224,6 @@
         computed: {
             ...mapState("search", ['villages', 'communesHistory']),
             ...mapGetters("search", ["getVillagesByName", "GET_ID_VILLAGE_BY_NAME"]),
-            ...mapMutations("publish", ["newTrip"]),
             villagesSortedFiltered(){
                 const typePath = this.modeWork ? "work" : "default";
 
@@ -296,6 +296,7 @@
                         nbPassager: 0,
                         hourDep: "",
                         price: 0,
+                        route: [],
                     },
                     work: {
                         depart: "",
@@ -373,13 +374,7 @@
         methods: {
             ...mapActions("search", ['ajouterAuHistorique', 'sauvegarderHistorique', 'chargerHistorique']),
             ...mapActions("search", ['getVillages']),
-            async test(){
-                let { data: trip, error } = await supabase
-                    .from('trip')
-                    .select('id')
-
-                console.log("test---", error, trip.length);
-            },
+            ...mapActions("publish", ["newTrip"]),
             getSaisi(){
                 $(".mode-publish").css("display", "none");
                 this.saisi = this.$refs.SearchRef.saisi;
@@ -400,7 +395,6 @@
                         _tmp_village = this.getVillagesByName(this.itineraire.origin.infos.village);
                         this.setItineraire("origin", _tmp_village[0]);
                         console.log("Name origin", this.itineraire.origin)
-
 
                         this.nextStepMode();
                         break;
@@ -446,6 +440,10 @@
                         break;
 
                     case "itineraire":
+                        //
+                        if( this.$refs.ItineraireRef ){
+                            this.infosPublish.default.route = this.$refs.ItineraireRef.routes[0];
+                        }
                         this.nextStepMode();
                         break;
 
@@ -462,6 +460,8 @@
                             driverId: this.$store.state.profil.userUid, 
                             timeDep: this.convertTimeString(this.infosPublish.default.hourDep), 
                             maxSeats: this.infosPublish.default.nbPassager,
+                            price: this.infosPublish.default.price,
+                            route: this.infosPublish.default.route,
                         };
 
                         console.log("infos", infos);

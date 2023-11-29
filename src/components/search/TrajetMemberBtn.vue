@@ -31,7 +31,7 @@
             width: 2px;
             height: 38px;
             position: absolute;
-            left: 26.5px;
+            left: 17px;
             top: 21px;
             z-index: 0;
             opacity: var(--v-medium-emphasis-opacity);
@@ -109,6 +109,11 @@
             &.v-list-item {
                 width: 73px;
                 padding-right: 0;
+            }
+        }
+        .localisation{
+            &.v-list-item {
+                padding-left: 7px;
             }
         }
     }
@@ -202,6 +207,7 @@
                             :title="infos.hour_start"
                         ></v-list-item>
                         <v-list-item
+                            class="localisation"
                             prepend-icon="mdi-navigation"
                             :title="infos.depart"
                         ><div class="line"></div></v-list-item>
@@ -214,6 +220,7 @@
                             :title="infos.hour_end"
                         ></v-list-item>
                         <v-list-item
+                            class="localisation"
                             prepend-icon="mdi-navigation"
                             :title="infos.destination"
                         ></v-list-item>
@@ -356,7 +363,7 @@
                         "hour_start": "X:XX",
                         "hour_end": "X:XX",
                         "price": 4,
-                        "name": "XXXXXXXXXXXXX",
+                        "name": "XXXXXXXXX",
                         "passenger_number": 2
                     };
                 },

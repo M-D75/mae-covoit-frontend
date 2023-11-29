@@ -224,7 +224,7 @@
                 v-slot:prepend
             >
                 <v-btn icon
-                    @click="$router.push('/profil')"
+                    @click="$router.replace('/profil')"
                 >
                     <v-icon>mdi-chevron-left</v-icon>
                 </v-btn>
@@ -232,6 +232,7 @@
 
             <v-avatar
                 size="47px"
+                @click="handlerAvatar()"
             >
                 <v-img
                     alt="Avatar"
@@ -240,6 +241,7 @@
             </v-avatar>
 
             <v-toolbar-title
+                @click="handlerAvatar()"
                 class="ml-5 mr-5"
             >
                 {{ currentContact.username }}
@@ -381,7 +383,7 @@
 <script>
     import $ from 'jquery'
     import { defineComponent } from 'vue';
-    import { mapState } from 'vuex';
+    import { mapState, mapActions } from 'vuex';
     // Importez la bibliothèque Socket.IO client
     import io from 'socket.io-client';
     import supabase from '@/utils/supabaseClient.js';
@@ -490,17 +492,16 @@
 
             this.messages = [];
 
-            //this.name = "Léa Duval";
-
             setTimeout(function(){
                 this.scrollToBottom();
             }.bind(this), 500);
 
             const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
 
+            const typeUrl = "online";
             if( Object.keys(this.tripSelected).length > 0 && this.userUid != this.tripSelected.driver_id ){//mode passager
                 this.mode_driver = false;
-                this.socket = io(adresse.online, {
+                this.socket = io(adresse[typeUrl], {
                     reconnection: true,
                     reconnectionDelay: 1000,
                     reconnectionAttempts: 60,
@@ -528,7 +529,7 @@
                             }).join(":"));
                 }
 
-                this.socket = io(adresse.online, {
+                this.socket = io(adresse[typeUrl], {
                     reconnection: true,
                     reconnectionDelay: 1000,
                     reconnectionAttempts: 60,
@@ -656,6 +657,24 @@
             next();
         },
         methods: {
+            ...mapActions("trip", ["getProfilMember"]),
+            async handlerAvatar(){
+                console.log("Avatar Touched");
+                let memberOk = false;
+                if( ! this.mode_driver ){
+                    memberOk = await this.getProfilMember({userUid: this.tripSelected.driver_id});   
+                }
+                else{
+                    memberOk = await this.getProfilMember({userUid: this.currentContact.userUid});
+                }
+
+                if( memberOk )
+                    this.$router.push('/member');
+                else{
+                    this.messageSnackbarError = "Nous n'avons pas pu récupérer les informations souhaité, désolé !";
+                    this.showSnackbarError = true;
+                }
+            },
             handleAppStateChange(state) {
                 if (state.isActive) {
                     console.log("L'application est au premier plan");
@@ -681,6 +700,7 @@
             sendMessage() {
                 if ( this.newMessage.trim() !== '' ) {
                     let newMsg = {
+                            idTrip: this.tripSelected.id,
                             from: this.userUid,
                             to: this.currentContact.userUid,
                             fromName: this.userName,

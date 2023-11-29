@@ -109,7 +109,7 @@
             <div class="solde">
                 <v-icon 
                     @click="emit('up-money')"
-                    >mdi-credit-card</v-icon>EUR {{ soldes }}
+                    >mdi-credit-card</v-icon>EUR {{ soldeWritable }}
             </div>
         </div>
 
@@ -171,17 +171,44 @@
             return {
                 solde: (new Intl.NumberFormat('de-DE').format(60000000)).replaceAll(".", " "),
                 eyeOff: true,
+                soldeWritable: 0,
+                interUidSolde: null,
             }
+        },
+        mounted(){
+            this.soldeWritable = this.soldes;
         },
         methods: {
             portefeuille(){
-                console.log("portefeuille");
+                // console.log("portefeuille");
                 this.solde = (new Intl.NumberFormat('de-DE').format(Math.floor(Math.random()*600000)+600)).replaceAll(".", " ");
                 this.$emit("add-credit");
             },
             emit(value){
                 this.$emit(value);
             },
+            animerNombre(nombreDepart, nombreObjectif, vitesse, time) {
+                const pas = (nombreObjectif - nombreDepart) / (time / vitesse);
+                let nombreActuel = nombreDepart;
+
+                if( nombreDepart != nombreObjectif ){
+                    const intervalId = setInterval(function () {
+                        this.soldeWritable = nombreActuel;
+                        nombreActuel += pas;
+                        nombreActuel = Math[pas > 0 ? 'ceil' : 'floor'](nombreActuel);
+
+                        if ((pas > 0 && nombreActuel >= nombreObjectif) || (pas < 0 && nombreActuel <= nombreObjectif)) {
+                            clearInterval(intervalId);
+                            this.soldeWritable = nombreObjectif;
+                        }
+                    }.bind(this), vitesse);
+                }
+            }
         },
+        watch:{
+            soldes(){
+                this.animerNombre(this.soldeWritable, this.soldes, 20, 1000);
+            },
+        }
     };
 </script>

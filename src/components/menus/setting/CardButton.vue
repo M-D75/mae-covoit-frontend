@@ -11,7 +11,9 @@
         .v-list-item-title {
             font-weight: 450;
             max-width: 84%;
-            text-transform: capitalize;
+            &::first-letter{
+                text-transform: capitalize;
+            }
         }
     }
 </style>

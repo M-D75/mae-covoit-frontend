@@ -21,6 +21,15 @@
                 margin: 7px 0;
                 background-color: var(--white-bg-color);
                 color: var(--font-color-label);
+                .notif-chat {
+                    background-color: red;
+                    border-radius: 50px;
+                    width: 10px;
+                    height: 10px;
+                    position: absolute;
+                    right: 3px;
+                    top: 0;
+                }
             }
         }
 
@@ -47,9 +56,12 @@
                 @click="swapRoute()"  
             />
             <v-btn 
-                icon="mdi-chat-processing-outline"
+                icon
                 @click="$router.push('/message')"
-            />
+            >
+                <v-icon>mdi-chat-processing-outline</v-icon>
+                <span v-if="notifChat" class="notif-chat"></span>
+            </v-btn>
         </div>
 
         <div class="menu left">
@@ -199,7 +211,8 @@
     import { defineComponent } from 'vue';
     import polyline from '@mapbox/polyline';
     import { Geolocation } from '@capacitor/geolocation';
-    import { mapActions, mapState, mapGetters } from 'vuex';
+    import { mapActions, mapState, mapGetters, mapMutations } from 'vuex';
+    import axios from 'axios';
 
     import L from "leaflet";
     
@@ -215,7 +228,8 @@
         name: 'results-view',
         emits: ["trajet-selected"],
         computed: {
-            ...mapState("trip", ["tripSelected"]),
+            ...mapState("profil", ["userUid"]),
+            ...mapState("trip", ["tripSelected", "notMessageVue"]),
             ...mapGetters("search", ["getVillagesByName", "GET_ID_VILLAGE_BY_NAME"]),
             center() {
                 const latitudes =  [this.itineraire.origin.location.latLng.latitude, this.itineraire.destination.location.latLng.latitude];
@@ -274,6 +288,7 @@
         },
         data() {
             return {
+                notifChat: false,
                 open_b: true, //open bottom menu
                 overlayLoad: false,
                 zoom: 10,
@@ -341,9 +356,7 @@
             console.log(this.itineraire);
         },
         mounted(){
-
-            
-
+            this.askNewMessage();
             SafeAreaController.injectCSSVariables();
             console.log("itineraire", this.itineraire);
             this.$refs.BottomMenuRef.open();
@@ -351,6 +364,25 @@
         },
         methods: {
             ...mapActions("search", ['getVillages']),
+            ...mapMutations("trip", ["SET_NOT_MESSAGE_VUE"]),
+            askNewMessage(){
+                const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
+
+                const typeUrl = "online";
+                axios.post(`${adresse[typeUrl]}/askNewMessage`, {
+                        userId: this.userUid,
+                    })
+                    .then(response => {
+                        console.log("askNewMessage==", response.data);
+                        const data = response.data;
+
+                        this.SET_NOT_MESSAGE_VUE(data.idsTrip);
+                        this.notifChat = this.notMessageVue.includes(this.tripSelected.id + "");
+                    })
+                    .catch(error => {
+                        console.error('Il y a eu une erreur :', error);
+                    });
+            },
             trajetSelected(index){
                 // console.log("trajetSelectd", index)
                 if(index == this.routes.length - 1){
@@ -577,7 +609,12 @@
                 //     });
                 // }
                 
-                await this.getRouteInfos();
+                //await this.getRouteInfos();
+                console.log(this.tripSelected);
+                this.routes = [this.tripSelected.route];
+                this.itin.duration = this.tripSelected.route.duration;
+                this.itin.distance = this.tripSelected.route.distance;
+                this.routeAvail = true;
                 this.updateLoc();
                             
                 // this.getRouteInfos();
@@ -635,9 +672,11 @@
                 //         // });
                 //     }
                 // }.bind(this), 10000); // Met à jour toutes les secondes, par exemple
-
+                
+                this.currentLocation.current = [-12.7897252, 45.1038055];
+                
                 // setTimeout(this.avancerSurItineraire, 1000);
-                this.simuleMovement.intervalId = setInterval(this.avancerSurItineraire, 50);
+                // this.simuleMovement.intervalId = setInterval(this.avancerSurItineraire, 50);
             },
             formatDate(date) {
                 function padTo2Digits(num) {
@@ -749,7 +788,7 @@
                     const { latitude, longitude } = coordinates.coords;
                     positionActuelle = [latitude, longitude];
                     //console.log("positionActuel--", positionActuelle);
-                    if (this.aAtteintPoint(positionActuelle, prochainPoint)) {
+                    if ( this.aAtteintPoint(positionActuelle, prochainPoint) ) {
                         //console.log("Next");
                         this.simuleMovement.segmentActuel++; // Passer au segment suivant
                     }

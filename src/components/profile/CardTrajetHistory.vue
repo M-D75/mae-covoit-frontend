@@ -10,6 +10,7 @@
         margin-left: 0px !important;
         margin: auto;
         margin-top: 20px;
+        margin-right: 10px;
         width: 280px;
         overflow: visible;
         color: var(--font-color-label);
@@ -46,6 +47,15 @@
             .v-list {
                 background-color: var(--white-bg-color);
                 color: var(--font-color-label);
+                overflow: visible;
+                .v-icon.chat-notif{
+                    position: absolute;
+                    right: 0;
+                    width: 5px;
+                    font-size: 20px;
+                    color: #f53939;
+                    color: var(--font-color-label);
+                }
                 > div {
                     margin-top: 10px;
                     margin-bottom: 10px;
@@ -81,29 +91,47 @@
         <v-card
             class="mx-auto"
             max-width="500"
-            @click="selectTrip()"
+            
         >
-            <div class="header">
+            <div @click="headerClick()" class="header">
                 <v-avatar>
                     <v-img
                         alt="Avatar"
-                        src="https://avataaars.io/?avatarStyle=Circle&topType=ShortHairDreads01&accessoriesType=Blank&hairColor=PastelPink&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Wink&eyebrowType=DefaultNatural&mouthType=Serious&skinColor=Tanned"
+                        :src="infos.avatar"
                     ></v-img>
                 </v-avatar>
                 <span class="name">{{ infos.name }}</span>
             </div>
             
-            <v-list>
+            <v-list
+                @click="selectTrip()"
+            >
+
+                <v-icon
+                    v-if="infos.notifMessage"
+                    class="chat-notif"
+                >
+                    <font-awesome-icon :icon="['far', 'comment-dots']" bounce />
+                </v-icon>
+
                 <div class="trajet">
                     <div>{{ infos.depart }}</div>
                     <v-icon>mdi-swap-horizontal</v-icon>
                     <div>{{ infos.destination }}</div>
                 </div>
+
                 <div class="infos">
+
                     <div style="display: flex; justify-content: space-between;">
                         <v-icon>mdi-clock</v-icon>
                         <div class="hour">{{ infos.hour_start }}</div>
                     </div>
+
+                    <div v-if="mode=='planning'" style="display: flex; justify-content: space-between;">
+                        <v-icon>mdi-seat-passenger</v-icon>
+                        <div class="nb-passenger">{{ infos.passenger_number }}</div>
+                    </div>
+
                     <v-chip
                         class=""
                         color="blue"
@@ -116,6 +144,15 @@
             </v-list>
         </v-card>
     </div>
+
+     <!-- message error -->
+     <v-snackbar
+        v-model="showSnackbarError"
+        :timeout="4000"
+        color="error"
+    >
+        <v-icon icon="mdi-alert-circle"></v-icon> <span>{{ messageSnackbarError }}</span>
+    </v-snackbar>
 
 </template>
 
@@ -135,6 +172,10 @@
                 type: String,
                 default: "",
             },
+            // notifMessage: {
+            //     type: Boolean,
+            //     default: false,
+            // },
             infos: {
                 type: Object,
                 default() {
@@ -150,9 +191,21 @@
                 },
             },
         },
+        data(){
+            return {
+                showSnackbarError: false,
+                messageSnackbarError: "",
+                // notifMessage: false,
+            };
+        },
+        mounted(){
+            // if( this.infos.notifMessage != undefined && this.infos.notifMessage ){
+            //     this.notifMessage = true;
+            // }
+        },
         methods: {
             ...mapMutations("trip", ["SET_TRIP_SELECTED"]),
-            ...mapActions("trip", ["getContacts"]),
+            ...mapActions("trip", ["getContacts", "getProfilMember"]),
             async selectTrip(){
                 this.SET_TRIP_SELECTED(this.infos);
                 if( this.mode == 'trajets' ){
@@ -161,8 +214,23 @@
                 else{
                     await this.getContacts();
                     console.log("contacts:", this.chat.contacts);
-                    if(this.chat.contacts.length > 0)
+                    if( this.chat.contacts.length > 0 )
                         this.$router.push('/message');
+                    else {
+                        this.messageSnackbarError = "Aucun passager n'a reserver ce trajet";
+                        this.showSnackbarError = true;
+                    }
+                }
+            },
+            async headerClick(){
+                console.log('headerClick');
+                this.SET_TRIP_SELECTED(this.infos);
+                const memberOk = await this.getProfilMember({userUid: this.infos.driver_id});
+                if( memberOk )
+                    this.$router.push('/member');
+                else{
+                    this.messageSnackbarError = "Nous n'avons pas pu récupérer les informations souhaité, désolé !";
+                    this.showSnackbarError = true;
                 }
             },
         }

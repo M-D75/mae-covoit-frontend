@@ -86,7 +86,6 @@ export default {
             historycalBooking: {},
             load: false,
         }
-        
     },
     getters: {
     },
@@ -119,10 +118,8 @@ export default {
         SET_PREFERENCE_ABOUT(state, pref){
             console.log("SET_PREFERENCE_ABOUT", pref);
             for(let i=0; i<state.profil.infos_perso.preferences.length; i++){
-                if(pref.about == state.profil.infos_perso.preferences[i].about){
-                    console.log("ppp", pref, state.profil.infos_perso.preferences[i]);
+                if( pref.about == state.profil.infos_perso.preferences[i].about ){
                     state.profil.infos_perso.preferences[i] = pref;
-                    console.log("ddd", state.profil.infos_perso.preferences[i]);
                 }
             }
         },
@@ -131,6 +128,29 @@ export default {
         }
     },
     actions: {
+        async updateAvatar({state}, avatar){
+            // update
+            await supabase
+                .from('account')
+                .update({ avatar: avatar })
+                .eq('user_id', state.userUid)
+                .select()
+        },
+        async updatePreference({state}){
+            
+            const { data, error } = await supabase
+                .from('settings')
+                .update({ prefer: state.profil.infos_perso.preferences.map( (pref) => pref.index ) })
+                .eq('account_id', state.userId)
+                .select()
+
+            if( error ){
+                console.error("Error update setting : ", error)
+            }
+
+            console.log("setting-update", data);
+
+        },
         async addCredit({state}, playload){
             console.log("add-credit", state, playload);
 
@@ -173,7 +193,7 @@ export default {
                 return false;
             }
 
-            if(booking.length==0){
+            if( booking.length == 0 ){
                 console.log("no booking");
                 return false
             }
@@ -185,13 +205,16 @@ export default {
             let _trips = [];
             for (let index = 0; index < booking.length; index++) {
                 const trip_id = booking[index].trip_id;
-                const trajets = store.state.search.trajets.filter(
-                            (trajet) => trajet.id == trip_id
-                            && new Date().getTime() < new Date(trajet.departure_time).getTime()
-                        );
+                const trajet = store.state.search.trajets.find(
+                        (trajet) => trajet.id == trip_id
+                        && new Date().getTime() < new Date(trajet.departure_time).getTime()
+                    );
 
-                if(trajets.length > 0)
-                    _trips.push(trajets[0]);
+                if( trajet ){
+                    if( store.state.trip.notMessageVue.includes(trajet.id + "") )
+                        trajet.notifMessage = true;
+                    _trips.push(trajet);
+                }
             }
 
             const groupedInfos = _trips.reduce((acc, info) => {
@@ -249,13 +272,16 @@ export default {
 
             await store.dispatch("search/getOwnTrajets");
 
-
             let _trips = [];
             for (let index = 0; index < db_trip.length; index++) {
                 const trip_id = db_trip[index].id;
-                const trajets = store.state.search.trajets.filter((trajet) => trajet.id == trip_id);
-                if(trajets.length > 0)
-                    _trips.push(trajets[0]);
+                const trajet = store.state.search.trajets.find((trajet) => trajet.id == trip_id);
+                if(trajet){
+                    trajet.name = "Vous";
+                    if( store.state.trip.notMessageVue.includes(trajet.id + "") )
+                        trajet.notifMessage = true;
+                    _trips.push(trajet);
+                }
             }
 
             const groupedInfos = _trips.reduce((acc, info) => {
@@ -328,12 +354,18 @@ export default {
                 if( booking[index].passenger_account_id == account[0].id ){
 
                     const trip_current = store.state.search.trajets.filter((trajet) => trajet.id == booking[index].trip_id)[0]
+
+                    let { data: account_driver } = await supabase
+                        .from('account')
+                        .select("*")
+                        .eq('user_id', trip_current.driver_id)
+
                     const data = {
                         depart: trip_current.depart,
                         destination: trip_current.destination,
                         departure_time: trip_current.departure_time,
-                        user: trip_current.username,
-                        price: (Math.ceil(Math.random()*4)+1),
+                        avatar: account_driver != null && account_driver.length > 0 && account_driver[0].avatar != null ? account_driver[0].avatar : "https://avataaars.io/?avatarStyle=Circle&topType=ShortHairDreads01&accessoriesType=Blank&hairColor=PastelPink&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Wink&eyebrowType=DefaultNatural&mouthType=Serious&skinColor=Tanned",
+                        price: trip_current.price,
                     }
                     _bookings.push(data);
                 }

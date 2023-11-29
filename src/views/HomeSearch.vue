@@ -147,6 +147,7 @@
     // import $ from 'jquery'
     import { defineComponent } from 'vue';
     import { mapMutations, mapState } from 'vuex';
+    import axios from 'axios';
 
     // Components
     import TrajetSearch from '@/components/search/TrajetSearch.vue';
@@ -159,6 +160,7 @@
         name: 'home-search-view',
         computed: {
             ...mapState("search", ['depart', "destination", "nbPassenger"]),
+            ...mapState("profil", ['userUid']),
         },
         components: {
             TrajetSearch,
@@ -189,6 +191,35 @@
             if(this.$refs.PaneGetValueRef){
                 this.date = this.$refs.PaneGetValueRef.getDate();
             }
+
+
+            const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
+
+            const typeUrl = "local";
+            // fetch(`${adresse[typeUrl]}/ask-new-message`, {
+            //         method: 'POST',
+            //         headers: {
+            //             'Content-Type': 'application/json',
+            //         },
+            //         body: JSON.stringify({
+            //             userUid: this.userUid,
+            //         })
+            //     })
+            //     .then(response => response.json())
+            //     .then(data => {
+            //         console.log("notVue", data);
+            //     })
+            //     .catch(error => console.error('Erreur:', error));
+
+            axios.post(`${adresse[typeUrl]}/askNewMessage`, {
+                    userId: this.userUid,
+                })
+                .then(response => {
+                    console.log(response.data);
+                })
+                .catch(error => {
+                    console.error('Il y a eu une erreur :', error);
+                });
         },
         methods: {
             ...mapMutations("search", ["SET_NB_PASSAGER"]),

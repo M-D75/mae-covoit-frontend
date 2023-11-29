@@ -224,35 +224,35 @@
                     this.stats = [
                             {
                                 val: Math.floor(Math.random() * 101),
-                                month: "1",
+                                month: "S1",
                             },
                             {
                                 val: Math.floor(Math.random() * 101),
-                                month: "2",
+                                month: "S2",
                             },
                             {
                                 val: Math.floor(Math.random() * 101),
-                                month: "3",
+                                month: "S3",
                             },
                             {
                                 val: Math.floor(Math.random() * 101),
-                                month: "4",
+                                month: "S4",
                             },
                             {
                                 val: Math.floor(Math.random() * 101),
-                                month: "5",
+                                month: "S5",
                             },
                             {
                                 val: Math.floor(Math.random() * 101),
-                                month: "6",
+                                month: "S6",
                             },
                             {
                                 val: Math.floor(Math.random() * 101),
-                                month: "7",
+                                month: "S7",
                             },
                             {
                                 val: Math.floor(Math.random() * 101),
-                                month: "8",
+                                month: "S8",
                             },
                         ].slice(0, 7);
                         

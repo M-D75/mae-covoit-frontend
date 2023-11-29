@@ -159,7 +159,7 @@
                     >
                         <v-img
                             alt="Avatar"
-                            src="https://avataaars.io/?avatarStyle=Circle&topType=ShortHairDreads01&accessoriesType=Blank&hairColor=PastelPink&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Wink&eyebrowType=DefaultNatural&mouthType=Serious&skinColor=Tanned"
+                            :src="infos.avatar"
                         ></v-img>
                     </v-avatar>
                     <!-- <v-avatar color="blue">

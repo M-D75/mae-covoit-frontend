@@ -260,6 +260,7 @@
             ...mapState("profil", ['profil']),
             ...mapState("general", ['cgu', 'dataProtection']),
             ...mapState("auth", ['provider']),
+            ...mapState("search", ['villages']),
             ...mapMutations("auth", ["CLEAR_TOKEN"]),
             ...mapActions("auth", ["logout"]),
         },
@@ -283,6 +284,7 @@
             this.initializeGroupeParameters();
         },
         methods: {
+            ...mapActions("search", ["getVillages"]),
             initializeGroupeParameters() {
                 this.groupeParameters = [
                     {
@@ -430,8 +432,14 @@
                 }
             },
         },
-        mounted() {
+        async mounted() {
             window.scrollTo(0, 0);
+
+            console.log("vvvvvv", this.villages);
+
+            if( this.villages.length == 0 ){
+                this.getVillages();
+            }
 
             this.groupInput = [
                 {
@@ -445,11 +453,13 @@
                     id: "nom",
                     label: "Nom",
                     value: this.profil.infos_perso.nom,
+                    disabled: true,
                 },
                 {
                     id: "prenom",
                     label: "prénom",
                     value: this.profil.infos_perso.prenom,
+                    disabled: true,
                 },
                 {
                     id: "email",
@@ -461,25 +471,32 @@
                     id: "tel",
                     label: "Téléphone",
                     value: this.profil.infos_perso.tel,
+                    fn: "checkNumericalValue",
+                    rules: {
+                        min: (v => v.length == 10 || v.length == 0) || '10 characters requis',
+                        passwordMatch: () => this.passwordChange.password == this.passwordChange.passwordComfirmed || `Vous devez entrer le même mot de passe`,
+                    },
                 },
-                {
-                    id: "principal",
-                    label: "Adresse",
-                    value: this.profil.infos_perso.adress.principal,
-                },
-                {
-                    id: "complement",
-                    label: "Complement",
-                    value: this.profil.infos_perso.adress.complement,
-                },
-                {
-                    id: "code_postal",
-                    label: "Code Postal",
-                    value: this.profil.infos_perso.adress.code_postal,
-                },
+                // {
+                //     id: "principal",
+                //     label: "Adresse",
+                //     value: this.profil.infos_perso.adress.principal,
+                // },
+                // {
+                //     id: "complement",
+                //     label: "Complement",
+                //     value: this.profil.infos_perso.adress.complement,
+                // },
+                // {
+                //     id: "code_postal",
+                //     label: "Code Postal",
+                //     value: this.profil.infos_perso.adress.code_postal,
+                // },
                 {
                     id: "commune",
                     label: "Commune",
+                    typeInput: "autocomplete",
+                    items: this.villages.map((village) => village.village),
                     value: this.profil.infos_perso.adress.commune,
                 },
             ];

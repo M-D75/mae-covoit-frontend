@@ -29,6 +29,7 @@
             border-radius: 10px;
             font-size: 16px;
             height: 50px;
+            color: var(--font-color-label);
         }
 
         .v-btn{
@@ -44,7 +45,7 @@
 
     <div class="group-card-comp mx-auto">
         <div 
-            v-for="(group, indexG) in groupInput"
+            v-for="(group, indexG) in groupInputWritable"
             :key="indexG"
         >
             <div class="label text-subtitle">{{ group.label }}</div>
@@ -54,6 +55,8 @@
                 variant="outlined"
                 :disabled="'disabled' in group ? true : false"
                 hide-details
+                @input="funInput($event, group.fn, group.id)"
+                :ref="group.id"
                 :persistent-placeholder="false"
                 :persistent-hint="false"
             ></v-text-field>
@@ -64,6 +67,14 @@
                 v-model="group.value"
                 variant="outlined"
             ></v-select>
+
+            <v-autocomplete
+                v-if="group.typeInput == 'autocomplete'"
+                :label="group.label"
+                :items="group.items"
+                v-model="group.value"
+                variant="outlined"
+            ></v-autocomplete>
         </div>
 
         <v-btn
@@ -156,6 +167,7 @@
             return {
                 showSnackbar: false,
                 messageSnackbar: "",
+                groupInputWritable: [],
             };
         },
         methods: {
@@ -171,9 +183,18 @@
                 this.SET_INFOS(data);
                 this.messageSnackbar = "Mise à jour effectuée !";
                 this.showSnackbar = true;
+            },
+            checkNumericalValue(event){
+                event.target.value = event.target.value.replace(/\D/g, '')
+            },
+            funInput(event, fn, ref){
+                if( fn == "checkNumericalValue"){
+                    this.checkNumericalValue(event, ref)
+                }
             }
         },
         mounted() {
+            this.groupInputWritable = this.groupInput;
         },
     };
 </script>

@@ -34,7 +34,7 @@
 <!--  -->
 <script>
     import { defineComponent } from 'vue';
-    import { mapState, mapMutations } from 'vuex';
+    import { mapState, mapMutations, mapActions } from 'vuex';
 
     // Components
     import GroupCard from '@/components/menus/setting/GroupCard.vue';
@@ -64,6 +64,7 @@
                 aboutPreference: {
                     discution: [
                         {
+                            index: 0,
                             about: "discution",
                             prependIconColor: "var(--blue-color)",
                             prependIcon:"mdi-forum",
@@ -75,6 +76,7 @@
                             fun: () => this.updatePref(1),
                         },
                         {
+                            index: 1,
                             about: "discution",
                             prependIconColor: "#ff5353",
                             prependIcon:"mdi-forum",
@@ -86,6 +88,7 @@
                             fun: () => this.updatePref(2),
                         },
                         {
+                            index: 2,
                             about: "discution",
                             prependIconColor: "#9fcb66",
                             prependIcon:"mdi-forum",
@@ -99,6 +102,7 @@
                     ],
                     smoke: [
                         {
+                            index: 0,
                             about: "smoke",
                             prependIconColor: "var(--blue-color)",
                             prependIcon:"mdi-smoking-off",
@@ -109,6 +113,7 @@
                             fun: () => this.updatePref(1),
                         },
                         {
+                            index: 1,
                             about: "smoke",
                             prependIconColor: "#ff5353",
                             prependIcon:"mdi-smoking-off",
@@ -119,6 +124,7 @@
                             fun: () => this.updatePref(2),
                         },
                         {
+                            index: 2,
                             about: "smoke",
                             prependIconColor: "#9fcb66",
                             prependIcon:"mdi-smoking-off",
@@ -131,6 +137,7 @@
                     ],
                     music: [
                         {
+                            index: 0,
                             about: "music",
                             prependIconColor: "var(--blue-color)",
                             prependIcon:"mdi-music",
@@ -141,6 +148,7 @@
                             fun: () => this.updatePref(1),
                         },
                         {
+                            index: 1,
                             about: "music",
                             prependIconColor: "#ff5353",
                             prependIcon:"mdi-music",
@@ -151,6 +159,7 @@
                             fun: () => this.updatePref(2),
                         },
                         {
+                            index: 2,
                             about: "music",
                             prependIconColor: "#9fcb66",
                             prependIcon:"mdi-music",
@@ -163,6 +172,7 @@
                     ],
                     animal: [
                         {
+                            index: 0,
                             about: "animal",
                             prependIconColor: "var(--blue-color)",
                             prependIcon:"mdi-paw",
@@ -173,6 +183,7 @@
                             fun: () => this.updatePref(1),
                         },
                         {
+                            index: 1,
                             about: "animal",
                             prependIconColor: "#ff9c00",
                             prependIcon:"mdi-paw",
@@ -183,6 +194,7 @@
                             fun: () => this.updatePref(2),
                         },
                         {
+                            index: 2,
                             about: "animal",
                             prependIconColor: "#9fcb66",
                             prependIcon:"mdi-paw",
@@ -247,8 +259,10 @@
         },
         methods: {
             ...mapMutations("profil", ["SET_PREFERENCE_ABOUT"]),
+            ...mapActions("profil", ["updatePreference"]),
             updatePref(index){
                 this.SET_PREFERENCE_ABOUT(_.cloneDeep(this.groupeParameters[0].parameters[index-1]));
+                this.updatePreference();
                 this.$emit('pref-selected');
             },
         },

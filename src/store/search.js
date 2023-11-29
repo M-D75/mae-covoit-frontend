@@ -194,6 +194,7 @@ export default {
                 })
                 .then(response => {
                     commit('SET_VILLAGES', response.data.result);
+                    console.log("village", response.data.result);
                 })
                 .catch(error => {
                     console.error(error);
@@ -211,7 +212,7 @@ export default {
                         jwt: store.state.auth.token,
                     }
                 })
-                .then(response => {
+                .then(async (response) => {
                     const trips = response.data.result;
                     var _trips = [];
             
@@ -232,19 +233,49 @@ export default {
 
                             const username = state.accounts.filter((acount) => (acount.user_id == trips[i_trip].driver_id))[0].firstname;
 
+                            let { data: current_trip, error: error_trip } = await supabase
+                                .from('trip')
+                                .select('*')
+                                .eq('id', trips[i_trip].id);
+
+                            if( error_trip ){
+                                console.log("ERROR:", error_trip);
+                            }
+
+                            let { data: account_driver } = await supabase
+                                .from('account')
+                                .select("*")
+                                .eq('user_id', trips[i_trip].driver_id);
+
+                            if( current_trip && current_trip.length > 0 && current_trip[0].route != null ){
+
+                                date = new Date((date.getTime() + (parseInt(current_trip[0].route.infosGoogle.duration.replace("s", "")) * 1000) ) - (offset * 60000));
+
+                                hours = date.getUTCHours().toString().padStart(2, '0');
+                                minutes = date.getUTCMinutes().toString().padStart(2, '0');
+                                //TODO GET arrival
+                                arrival_time = `${hours}:${minutes}`;
+                            }
+
+                            let driver_avatar = "https://avataaars.io/?avatarStyle=Circle&topType=ShortHairDreads01&accessoriesType=Blank&hairColor=PastelPink&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Wink&eyebrowType=DefaultNatural&mouthType=Serious&skinColor=Tanned";
+                            if( account_driver && account_driver.length > 0 && account_driver[0].avatar )
+                                driver_avatar = account_driver[0].avatar;
+
                             const _trip  = {
                                 id: trips[i_trip].id,
                                 driver_id: trips[i_trip].driver_id,
+                                avatar: driver_avatar,
                                 depart: trips[i_trip].village_departure.village,
                                 destination: trips[i_trip].village_arrival.village,
                                 departure_time: trips[i_trip].departure_time,
                                 hour_start: departure_time,
                                 hour_end: arrival_time,
-                                price: (Math.ceil(Math.random()*4)+1),
+                                price: current_trip ? current_trip[0].price : (Math.ceil(Math.random()*4)+1),
                                 name: username,
                                 passenger_number: trips[i_trip].bookings.length,
                                 bookings: trips[i_trip].bookings,
                                 max_seats: trips[i_trip].max_seats,
+                                route: current_trip ? current_trip[0].route : null,
                             };
                             _trips.push(_trip);
                         }
@@ -272,7 +303,7 @@ export default {
                         jwt: store.state.auth.token,
                     }
                 })
-                .then(response => {
+                .then(async (response) => {
                     const trips = response.data.result;
                     var _trips = [];
             
@@ -293,19 +324,39 @@ export default {
 
                             const username = state.accounts.filter((acount) => (acount.user_id == trips[i_trip].driver_id))[0].firstname;
 
+                            let { data: current_trip, error: error_trip } = await supabase
+                                .from('trip')
+                                .select('*')
+                                .eq('id', trips[i_trip].id);
+
+                            if( error_trip ){
+                                console.log("ERROR:", error_trip);
+                            }
+
+                            let { data: account_driver } = await supabase
+                                .from('account')
+                                .select("*")
+                                .eq('user_id', trips[i_trip].driver_id);
+
+                            let driver_avatar = "https://avataaars.io/?avatarStyle=Circle&topType=ShortHairDreads01&accessoriesType=Blank&hairColor=PastelPink&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Wink&eyebrowType=DefaultNatural&mouthType=Serious&skinColor=Tanned";
+                            if( account_driver && account_driver.length > 0 && account_driver[0].avatar )
+                                driver_avatar = account_driver[0].avatar;
+
                             const _trip  = {
                                 id: trips[i_trip].id,
                                 driver_id: trips[i_trip].driver_id,
+                                avatar: driver_avatar,
                                 depart: trips[i_trip].village_departure.village,
                                 destination: trips[i_trip].village_arrival.village,
                                 departure_time: trips[i_trip].departure_time,
                                 hour_start: departure_time,
                                 hour_end: arrival_time,
-                                price: (Math.ceil(Math.random()*4)+1),
+                                price: current_trip ? current_trip[0].price : (Math.ceil(Math.random()*4)+1),
                                 name: username,
                                 passenger_number: trips[i_trip].bookings.length,
                                 bookings: trips[i_trip].bookings,
                                 max_seats: trips[i_trip].max_seats,
+                                route: current_trip ? current_trip[0].route : null,
                             };
                             _trips.push(_trip);
                         }
@@ -339,10 +390,10 @@ export default {
         },
         async reserveTrajet({state}, playload){
             const sessionChecked = await store.dispatch("auth/checkSession");
-            if(!sessionChecked)
+            if( ! sessionChecked )
                 router.replace("/login");
 
-            if(state.nbPassenger + state.trajetSelected.passenger_number > state.trajetSelected.max_seats){
+            if( state.nbPassenger + state.trajetSelected.passenger_number > state.trajetSelected.max_seats ){
                 return { valided: false, message: "Pas assez place sur ce trajet !"};
             }
 

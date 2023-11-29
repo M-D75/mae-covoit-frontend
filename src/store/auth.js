@@ -41,7 +41,7 @@ export default {
             const { data: account_ins, error: err_account_ins } = await supabase
                 .from('account')
                 .insert([
-                    { username: 'new', lastname: info.name, firstname: info.firstname, user_id: user.id, credit: 0, email: user.email },
+                    { username: `${info.name} ${info.firstname}`, lastname: info.name, firstname: info.firstname, user_id: user.id, credit: 0, email: user.email },
                 ])
                 .select()
 
@@ -49,7 +49,18 @@ export default {
                 console.error("Erreur", err_account_ins)
             }
 
-            console.log(info, account_ins);
+            const { data: setting_ins, error: err_setting_ins } = await supabase
+                .from('setting')
+                .insert([
+                    { account_id: account_ins[0].id },
+                ])
+                .select()
+
+            if(err_setting_ins){
+                console.error("Erreur", err_setting_ins)
+            }
+
+            console.log("INS:", info, account_ins, setting_ins);
 
             //Check if account are created
             let { data: account, error: error_account } = await supabase
@@ -99,13 +110,14 @@ export default {
                     .select('*')
                     .eq('user_id', user.id)
 
-                if(error_account){
+                if( error_account ){
                     console.error("Erreur", error_account)
                     state.account_created = false;
                 }
                 else{
                     if(account.length > 0){
                         console.log("Welcome ! ", account[0].firstname);
+                        store.state.profil.userId = account[0].id;
                         state.account_created = true;
                     }
                     else{
@@ -114,8 +126,22 @@ export default {
                     }
                 }
                 
-                if(user.user_metadata.avatar_url && store.state.profil.avatarUrl == "https://avatars0.githubusercontent.com/u/9064066?v=4&s=460")
+                const current_account = account.length > 0 ? account[0] : null
+
+                if( ( current_account == null || current_account.avatar == null ) && user.user_metadata.avatar_url && store.state.profil.avatarUrl == "https://avataaars.io/?avatarStyle=Circle&topType=ShortHairDreads01&accessoriesType=Blank&hairColor=PastelPink&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Wink&eyebrowType=DefaultNatural&mouthType=Serious&skinColor=Tanned" )
                     store.state.profil.avatarUrl = user.user_metadata.avatar_url;
+                
+                if( current_account && current_account.avatar != null)
+                    store.state.profil.avatarUrl = current_account.avatar;
+
+                console.log("curreent-acout", current_account);
+                if( current_account && current_account.avatar == null ){
+                    await supabase
+                        .from('account')
+                        .update({ avatar: store.state.profil.avatarUrl })
+                        .eq('user_id', user.id)
+                        .select();
+                }
 
                 if( account.length > 0 ){
                     const current_account = account[0];

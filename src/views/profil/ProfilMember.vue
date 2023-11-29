@@ -22,10 +22,10 @@
         @click="overlay = false"
     ></v-overlay>
 
-    <ToolbarProfil :title="'Information personnelles'" v-on:back="back()"/>
+    <ToolbarProfil ref="ToolbarRef" :setting="false" :title="'Profil'" v-on:back="back()"/>
     <v-main class="main">
         <!-- Avatar -->
-        <Avatar :name="userName"/>
+        <Avatar :avatar="avatar" :modeEdit="false" :name="userName" :subTitle="location"/>
 
         <!-- ? -->
         <PanneauInfo :infos_panneau="infos_panneau"/>
@@ -34,7 +34,6 @@
         <GroupCard class="grouP" :groupeParameters="groupeParameters" />
 
     </v-main>
-    <BottomNav />
 </template>
 
 
@@ -49,15 +48,17 @@
     import Avatar from '@/components/profile/Avatar.vue';
     import PanneauInfo from '@/components/profile/PanneauInfo.vue';
     import GroupCard from '@/components/menus/setting/GroupCard.vue';
-    import BottomNav from '@/components/menus/BottomNav.vue';
-    import BottomMenu from '@/components/menus/BottomMenu.vue';
 
     export default defineComponent({
         name: 'profil-member-view',
         computed: {
-            ...mapState("profil", [ "profil", "userName"]),
-            ...mapState("profil", {
-                preferences: state => state.profil.infos_perso.preferences,
+            ...mapState("trip", {
+                avatar: state => state.member.avatar,
+                userName: state => state.member.userName,
+                location: state => state.member.location,
+            }),
+            ...mapState("trip", {
+                preferences: state => state.member.preferences,
             }),
         },
         components: {
@@ -65,8 +66,6 @@
             Avatar,
             PanneauInfo,
             GroupCard,
-            BottomNav,
-            BottomMenu,
         },
         data() {
             return {
@@ -154,6 +153,7 @@
         mounted() {
             //this.$refs.BottomMenuRefPreference.open();
             this.updateGrouparameterPreference();
+            this.$refs.ToolbarRef.needToComeBack = true;
         },
         methods: {
             choiceFunctionBtnInfo(name){
@@ -189,7 +189,7 @@
                 }
             },
             updateGrouparameterPreference(){
-                this.groupeParameters[2].parameters = this.groupeParameters[2].parameters.map(
+                this.groupeParameters[1].parameters = this.groupeParameters[1].parameters.map(
                     (pref) => { 
                         if('about' in pref){
                             console.log(this.preferences, this.preferences.filter((prefs) => prefs.about == pref.about)[0], pref);
