@@ -59,6 +59,7 @@
                 :ref="group.id"
                 :persistent-placeholder="false"
                 :persistent-hint="false"
+                :inputmode="group.inputmode ? group.inputmode : ''"
             ></v-text-field>
 
             <v-select

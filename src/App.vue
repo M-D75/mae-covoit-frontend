@@ -3,47 +3,10 @@
     // .v-app {
     //     height: 100dvh !important;
     // }
+
 </style>
 
 <style lang="scss">
-
-    .ligth-mode * {
-        --bg-app-color: #f5f5f5;
-        --white-bg-color: #FBFBFB;
-        --gray-bg-icon-color: #b1b1b1;
-        --blue-color: #2E8DFF;
-        --gray-icon-color: #B1B1B1;
-        
-        // font
-        --font-color-label: #1E1F26;
-        --font-size-h1: 24px;
-        --font-size-h1-toolbar: 16px;
-        --font-size-subtitle-toolbar: 8px;
-        --box-shadow-card: 0px 2px 24px rgba(17,17,17,0.04);
-        --box-shadow-card-v2: 0px 0px 16px rgba(17,17,17,0.16);
-    }
-
-    .dark-mode * {
-        --bg-app-color: #1a1a1a;
-        --white-bg-color: #333333;
-        --gray-bg-icon-color:  #b1b1b1;
-        --blue-color: #2E8DFF;
-        --gray-icon-color: #B1B1B1;
-
-        // font
-        --font-color-label: #FBFBFB;
-        --font-size-h1: 24px;
-        --font-size-h1-toolbar: 16px;
-        --font-size-subtitle-toolbar: 8px;
-        --box-shadow-card: 0px 2px 24px #111;
-        --box-shadow-card-v2: 0px 0px 16px #111;
-    }
-
-    * {
-        --safe-top: var(--safe-area-inset-top);
-        font-family: 'Rubik';
-        letter-spacing: 0;
-    }
     
     .v-application.v-theme--light.v-layout.v-layout--full-height.v-locale--is-ltr {
         background-color: var(--bg-app-color);
@@ -159,6 +122,8 @@
                 $("#app .v-application").removeClass("ligth-mode");
                 $("#app .v-application").addClass("dark-mode");
             }
+
+            console.log("-------vrrr,", this.$var_test, this.var_test);
 
             console.log("theme-mode:", $("#app .v-application").hasClass("dark-mode") ? "dark" : "ligth");
             

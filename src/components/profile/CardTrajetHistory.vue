@@ -93,7 +93,7 @@
             max-width="500"
             
         >
-            <div @click="headerClick()" class="header">
+            <div v-if="mode!='planning'" @click="headerClick()" class="header">
                 <v-avatar>
                     <v-img
                         alt="Avatar"

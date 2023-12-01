@@ -2,8 +2,12 @@
 
 <!-- scoped -->
 <style lang="scss" scoped>
+    @import "@/styles/mixins.scss";
     .group-card-comp {
         width: 82.5%;
+        @include respond-to('small') {
+            width: 90%;
+        }
         .label {
             margin-top: 14px;
             font-size: 12px;

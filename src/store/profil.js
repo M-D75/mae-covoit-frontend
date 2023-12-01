@@ -34,7 +34,7 @@ export default {
                     principal: "",
                     complement: "",
                     code_postal: "",
-                    commune: "Commune",
+                    commune: "",
                 },
                 preferences: [
                     {

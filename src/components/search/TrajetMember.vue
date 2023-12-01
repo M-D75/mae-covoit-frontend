@@ -1,8 +1,11 @@
 
 <style lang="scss" model>
+    @import "@/styles/mixins.scss";
+
     .card-trajet-member {
         color: var(--font-color-label) !important;
         .hour {
+            
             &.v-list-item {
                 overflow: visible;
                 .v-list-item__content {
@@ -34,6 +37,9 @@
             .comune {
                 .v-list-item {
                     padding: auto;
+                    @include respond-to('small') {
+                        padding: 7px;
+                    }
                 }
             }
         }
@@ -48,6 +54,9 @@
             height: 38px;
             position: absolute;
             left: 26.5px;
+            @include respond-to('small') {
+                left: 17.5px;
+            }
             top: 22px;
             z-index: 0;
             opacity: var(--v-medium-emphasis-opacity);
@@ -61,6 +70,9 @@
             &.avatar {
                 margin-top: 12px;
                 color: var(--font-color-label);
+                @include respond-to('small') {
+                    width: 60%;
+                }
             }
         }
         .v-chip {
@@ -69,17 +81,19 @@
             border-radius: 8px;
             text-align: center;
             display: grid;
+            right: 8px;
+            @include respond-to('small') {
+                right: 3px;
+            }
             
             &.prix {
                 position: absolute;
-                right: 8px;
                 top: 8px;
                 font-weight: bold;
                 font-size: 1.1em;
             }
             &.rapport {
                 position: absolute;
-                right: 8px;
                 bottom: 8px;
                 font-weight: bold;
                 font-size: 1.1em;

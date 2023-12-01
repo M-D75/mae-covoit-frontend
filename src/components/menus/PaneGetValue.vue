@@ -25,7 +25,6 @@
         position: fixed;
         padding: 0;
         padding-top: var(--safe-top);
-        background-color: white;
         background-color: var(--bg-app-color);
         width: 100%;
         max-width: 100%;
@@ -44,13 +43,14 @@
                 font-weight: bold;
                 width: 100%;
                 margin: 25px auto;
+                color: var(--font-color-label);
             }
         }
     }
 
-    .bg-white {
-        background-color: white;
-    }
+    // .bg-white {
+    //     background-color: white;
+    // }
 
 </style>
 
@@ -58,21 +58,26 @@
 
     <!--  -->
     <v-container
-        class="pan-get-value" :class="mode=='date' ? 'bg-white' : 'bg-gray'"
+        class="pan-get-value" 
     >
         <div class="sub-cont" :class="mode=='date' ? 'scrolling' : 'not-scroll'">
             <div
                 v-if="mode=='date'"
                 class="title text-center"
             >Quand partez vous ?</div>
-            <VDatePicker 
+
+            <VDatePickerIo
                 v-if="mode=='date'"
+                transparent 
+                borderless
+                mode="date"
                 class="vc-calendar-pi" 
                 v-model="date" 
-                :columns="columns"  
-                :expanded="expanded" 
-                :rows="12"
+                is-required
+                expanded 
                 :min-date="new Date()"
+                :rows="5"
+                :is-dark="darkMode"
             />
 
             <Search 
@@ -119,6 +124,7 @@
         name: 'pan-get-value-comp',
         emits: ["close", "date-selected"],
         computed: {
+            ...mapState("profil", ['darkMode']),
             ...mapGetters("search", ['historiqueTrie']),
             ...mapState("search", ['villages', 'communesHistory', 'depart', 'destination']),
             ...mapMutations("search", ["SET_DEPART"]),

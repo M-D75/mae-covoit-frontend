@@ -359,7 +359,8 @@
                 :color="darkMode ? 'white' : 'gray'"
                 style="opacity: 0.7"
             >
-                <v-icon>mdi-send-variant</v-icon>
+                <!-- <v-icon>mdi-send-variant</v-icon> -->
+                <v-icon style="transform: rotate(45deg);"><font-awesome-icon :icon="['fas', 'location-arrow']" /></v-icon>
             </v-btn >
 
             <v-btn
@@ -371,7 +372,8 @@
                 color="info"
                 @click="sendMessage"
             >
-                <v-icon>mdi-send-variant</v-icon>
+                <!-- <v-icon>mdi-send-variant</v-icon> -->
+                <v-icon style="transform: rotate(45deg);"><font-awesome-icon :icon="['fas', 'location-arrow']" /></v-icon>
             </v-btn >
         </div>
     </v-footer>
@@ -498,7 +500,7 @@
 
             const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
 
-            const typeUrl = "online";
+            const typeUrl = "local";
             if( Object.keys(this.tripSelected).length > 0 && this.userUid != this.tripSelected.driver_id ){//mode passager
                 this.mode_driver = false;
                 this.socket = io(adresse[typeUrl], {

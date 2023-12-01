@@ -91,6 +91,8 @@
             v-on:fast-get-trip="getFastInfo"
         />
 
+        
+
         <!-- <v-btn
             class="map-btn mr-4 text-none"
             rounded="xl" 

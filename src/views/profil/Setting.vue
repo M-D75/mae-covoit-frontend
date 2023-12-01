@@ -11,6 +11,8 @@
 
 <!-- scss -->
 <style lang="scss" scoped>
+    @import '@/styles/mixins.scss';
+    
     .v-main {
         .sub-main{
             display: inherit;
@@ -38,6 +40,9 @@
         .ctn {
             margin: 10px auto 10px auto;
             width: 82.5% !important;
+            @include respond-to('small') {
+                width: 90% !important;
+            }
             .label {
                 margin-top: 14px;
                 margin-bottom: 5px;
@@ -144,7 +149,7 @@
                             <v-col class="text">
                                 <div 
                                     class="text"
-                                >Partager à un amie</div>
+                                >Partager</div>
                             </v-col>
                             <v-col class="btn">
                                 <v-btn
@@ -314,7 +319,7 @@
                         parameters: [
                             {
                                 prependIcon: null,
-                                text:"Préference de virements",
+                                text:"Virements",
                                 chip:true,
                                 chipIcon: "mdi-chevron-right",
                                 chipText: "",
@@ -472,10 +477,7 @@
                     label: "Téléphone",
                     value: this.profil.infos_perso.tel,
                     fn: "checkNumericalValue",
-                    rules: {
-                        min: (v => v.length == 10 || v.length == 0) || '10 characters requis',
-                        passwordMatch: () => this.passwordChange.password == this.passwordChange.passwordComfirmed || `Vous devez entrer le même mot de passe`,
-                    },
+                    inputmode: "numeric",
                 },
                 // {
                 //     id: "principal",
@@ -496,7 +498,7 @@
                     id: "commune",
                     label: "Commune",
                     typeInput: "autocomplete",
-                    items: this.villages.map((village) => village.village),
+                    items: [""].concat(this.villages.map((village) => village.village) ),
                     value: this.profil.infos_perso.adress.commune,
                 },
             ];

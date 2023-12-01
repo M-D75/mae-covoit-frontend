@@ -129,6 +129,32 @@
             }
         }
     }
+
+    .mode-publish {
+            margin: auto;
+            // display: flex !important;
+            display: flex;
+            align-items: center;
+            width: fit-content;
+            .v-icon{
+                color: var(--font-color-label);
+                &.disabled_icon{
+                    opacity: 0.1;
+                }
+            }
+            .v-switch{
+                margin: auto 11px;
+                font-weight: bold;
+                color: var(--font-color-label);
+                padding-top: 8px;
+                .v-input__append {
+                    color: var(--gray-icon-color);
+                }
+                .v-input__details{
+                    display: none !important;
+                }
+            }
+        }
 </style>
    
 <!--  -->
@@ -193,8 +219,22 @@
                     :prepend-icon="history.includes(item) ? 'mdi-history' : 'mdi-magnify'"
                     @click="select(item)"
                 >{{ item }}</v-list-item> -->
+
+                <div v-if="switche" class="mode-publish">
+                    <v-icon class="uniq-car" :class="{disabled_icon: modeWork}">mdi-car</v-icon>
+                    <v-switch 
+                        dark 
+                        v-model="modeWork" 
+                        color="blue"
+                        @click="$emit('mode-work-switch')" 
+                    ></v-switch>
+                    <v-icon class="multiple-car" :class="{disabled_icon: !modeWork}">mdi-calendar-sync</v-icon>
+                </div>
             </v-list>
         </v-card>
+
+        
+
     </div>
 </template>
 
@@ -209,6 +249,7 @@
 
     export default defineComponent({
         name: 'search-publish-comp',
+        emits: ["mode-work-switch"],
         computed: {
         },
         props: {
@@ -231,11 +272,15 @@
             focus: {
                 type: Boolean,
                 default: false,
-            }
+            },
+            switche: {
+
+            },
         },
         data() {
             return {
                 saisi: "",
+                modeWork: false,
             }
         },
         mounted(){

@@ -17,6 +17,8 @@
 </style>
 
 <style lang="scss" scoped>
+    @import "@/styles/mixins.scss";
+    
     .scrollable-container {
         cursor: pointer;
         overflow-y: hidden !important;
@@ -41,6 +43,9 @@
                 padding-bottom: 5px;
                 padding-top: 5px;
                 padding-left: 35px;
+                @include respond-to('small') {
+                    padding-left: 15px;
+                }
                 div {
                     margin-right: 20px;
                 }

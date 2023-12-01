@@ -216,7 +216,7 @@ export default {
             if(settings && settings.length > 0){
                 state.member.avatar = account[0].avatar;
                 state.member.userName = account[0].username;
-                state.member.location = account[0].village != null && account[0].village != "" ? account[0].village : "Aucune localisation";
+                state.member.location = account[0].village != null && account[0].village != "" ? account[0].village : "";
 
                 let outPreferences = [];
                 

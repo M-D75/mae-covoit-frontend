@@ -1,17 +1,12 @@
 <!--  -->
 <style lang="scss" model>
-    .mode-publish {
-        margin: auto;
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translateX(-50%);
-        .v-switch{
-            margin: auto;
-            font-weight: bold;
-            color: var(--font-color-label);
-            .v-input__append {
-                color: var(--gray-icon-color);
+
+    .v-main {
+       .mode-publish {
+            .v-switch{
+                .v-input__details{
+                    display: none !important;
+                }
             }
         }
     }
@@ -22,6 +17,32 @@
 
     .v-main {
        padding-top: var(--safe-top);
+       .mode-publish {
+            margin: auto;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translateX(-50%);
+            // display: flex !important;
+            align-items: center;
+            .v-icon{
+                color: var(--font-color-label);
+                &.disabled_icon{
+                    opacity: 0.1;
+                }
+            }
+            .v-switch{
+                margin: auto 11px;
+                font-weight: bold;
+                color: var(--font-color-label);
+                .v-input__append {
+                    color: var(--gray-icon-color);
+                }
+                .v-input__details{
+                    display: none !important;
+                }
+            }
+        }
     }
     
 </style>
@@ -46,10 +67,12 @@
             ref="SearchRef"
             title="D'ou partez vous ?"
             label="Saisissez une commune"
+            :switche="true"
             :items="villagesSortedFiltered"
             :history="communesHistory"
             @selected="getSelected()" 
             @saisi="getSaisi()"
+            v-on:mode-work-switch="modeWork=!modeWork"
         />
 
         <!-- Destination -->
@@ -66,14 +89,15 @@
         />
 
         <!-- Mode Publish -->
-        <div class="mode-publish">
+        <!-- <div class="mode-publish">
+            <v-icon class="uniq-car" :class="{disabled_icon: modeWork}">mdi-car</v-icon>
             <v-switch 
                 dark 
                 v-model="modeWork" 
-                :label="modeLabel" 
                 color="blue" 
             ></v-switch>
-        </div>
+            <v-icon class="multiple-car" :class="{disabled_icon: !modeWork}">mdi-calendar-sync</v-icon>
+        </div> -->
 
         <!-- time : Hour Dep -->
         <BottomMenu
@@ -268,7 +292,6 @@
                 mode: "depart",
                 indexMode: 0,
                 modeWork: false,
-                modeLabel: "Unique",
                 modePublish: {
                     default: [
                         {mode: "depart"}, 
@@ -355,7 +378,7 @@
             }
         },
         mounted() {
-            $(".mode-publish").css("display", "initial");
+            $(".mode-publish").css("display", "flex");
 
             // this.test();
             let date = new Date();
@@ -377,6 +400,7 @@
             ...mapActions("publish", ["newTrip"]),
             getSaisi(){
                 $(".mode-publish").css("display", "none");
+                console.log("saiiiiiiiiiiiiii--");
                 this.saisi = this.$refs.SearchRef.saisi;
             },
             getSelected(){
@@ -510,7 +534,7 @@
 
                 //Reinit
                 if(this.mode == this.modePublish.default[0].mode || this.mode == this.modePublish.work[0].mode){
-                    $(".mode-publish").css("display", "initial");
+                    $(".mode-publish").css("display", "flex");
                 }
 
                 this.actionAfterNextStep()
@@ -618,11 +642,6 @@
             },
         },
         watch: {
-            modeWork(){
-                console.log("modeWork-changed:", this.modeWork)
-                this.modeLabel = this.modeWork ? "Planifier" : "Unique"
-                // this.modeWork ? $(".v-switch .v-input__append, .v-switch .v-input__control").css("color", "var(--blue-color)") : $(".v-switch .v-input__append, .v-switch .v-input__control").css("color", "")
-            },
         }
     });
     </script>

@@ -17,14 +17,19 @@ import { fab } from '@fortawesome/free-brands-svg-icons'
 import { far } from '@fortawesome/free-regular-svg-icons'
 
 // Calendar
-import VCalendar from 'v-calendar';
+//import VCalendar from 'v-calendar';
 import 'v-calendar/style.css';
+import { setupCalendar, Calendar, DatePicker } from 'v-calendar';
+
 
 // Vuetify
 import 'vuetify/styles'
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
+
+//Other
+import "@/styles/global.scss";
 
 const vuetify = createVuetify({
     components,
@@ -55,16 +60,21 @@ import './registerServiceWorker'
 
 
 createApp(App)
+    .component('VCalendarIo', Calendar)
+    .component('VDatePickerIo', DatePicker)
     .component('font-awesome-icon', FontAwesomeIcon)
     .provide('supabase', supabase)
-    .use(VCalendar)
+    //.use(VCalendar)
     .use(router)
     .use(store)
     .use(vuetify)
+    .use(setupCalendar, {})
     .use(VueGoogleMaps, {
             load: {
                 key: process.env.VUE_APP_API_VUE_GOOGLE_MAP,
             },
         })
     .mount('#app')
+
+
   

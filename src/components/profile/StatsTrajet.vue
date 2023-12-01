@@ -3,11 +3,15 @@
 </style>
 
 <style lang="scss" scoped>
+    @import '@/styles/mixins.scss';
     .stats-trajet-profil {
         background-color: var(--white-bg-color);
         margin-top: 20px;
         height: 242px;
         width: 82.7%;
+        @include respond-to('small') {
+            width: 90%;
+        }
         padding: 25px;
         padding-bottom: 50px;
         border-radius: 24px;
@@ -99,7 +103,7 @@
     >
         <div class="row-item infos">
             <div class="col-item">
-                <div class="label">Trajet mensuel</div>
+                <div class="label"> {{ typeStats[categorie] }} </div>
                 <div class="trajet">{{ numberTrajet }} {{numberTrajet > 1 ? 'trajets' : 'trajet'}}</div>
             </div>
             <div class="col-item mode">
@@ -151,6 +155,8 @@
         },
         data() {
             return {
+                numberBarStats: 7,
+                typeStats: {month: "mensuel", year:"annuel", week: "hebdomadaire"},
                 categorie: "month",
                 stats: [
                     {
@@ -214,6 +220,11 @@
                 vue.numberTrajet = Math.floor(Math.random() * 401)+1;
             }, 3000);
 
+            if(window.innerWidth < 340){
+                this.numberBarStats = 5;
+                this.categorie = "year";
+            }
+
         },
         methods: {
         },
@@ -254,7 +265,7 @@
                                 val: Math.floor(Math.random() * 101),
                                 month: "S8",
                             },
-                        ].slice(0, 7);
+                        ].slice(0, this.numberBarStats);
                         
                         break;
                     case 'month':
@@ -307,7 +318,7 @@
                                 val: Math.floor(Math.random() * 101),
                                 month: "Déc",
                             },
-                        ].slice(0, 7);
+                        ].slice(0, this.numberBarStats);
                         break;
 
                     case 'year':
@@ -344,7 +355,7 @@
                                 val: Math.floor(Math.random() * 101),
                                 month: "2022",
                             },
-                        ].slice(0, 7);
+                        ].slice(0, this.numberBarStats);
                         break;
                 
                     default:

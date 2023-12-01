@@ -110,7 +110,7 @@
                                 about: "discution",
                                 prependIconColor: "var(--blue-color)",
                                 prependIcon:"mdi-forum",
-                                text:"j'aime bien discuter--",
+                                text:"j'aime bien discuter",
                                 chip:false,
                                 chipIcon: null,
                                 switchBtn: false,
@@ -156,27 +156,6 @@
             this.$refs.ToolbarRef.needToComeBack = true;
         },
         methods: {
-            choiceFunctionBtnInfo(name){
-                switch (name.toLowerCase()) {
-                    case 'mode':
-                        this.test2();
-                        break;
-                    case 'historique':
-                        this.test3();
-                        break;
-                    case 'Papayas':
-                        console.log('Mangoes and papayas are $2.79 a pound.');
-                        break;
-                    default:
-                        console.log(`Sorry, we are out of ${name}.`);
-                }
-            },
-            test2(){
-                console.log("text2")
-            },
-            test3(){
-                console.log("text3")
-            },
             selectModel(){
                 if( this.$refs.BottomMenuRef ){
                     this.overlay = this.$refs.BottomMenuRef.open();
@@ -189,16 +168,18 @@
                 }
             },
             updateGrouparameterPreference(){
-                this.groupeParameters[1].parameters = this.groupeParameters[1].parameters.map(
-                    (pref) => { 
-                        if('about' in pref){
-                            console.log(this.preferences, this.preferences.filter((prefs) => prefs.about == pref.about)[0], pref);
-                            this.preferences.filter((prefs) => prefs.about == pref.about)[0].fun = () => this.selectPreference(pref.about);
-                            return this.preferences.filter((prefs) => prefs.about == pref.about)[0];
+                if(this.preferences[0] != undefined){
+                    this.groupeParameters[1].parameters = this.groupeParameters[1].parameters.map(
+                        (pref) => { 
+                            if('about' in pref){
+                                console.log("ppp", this.preferences, this.preferences.filter((prefs) => prefs && prefs["about"] != undefined && prefs.about == pref.about)[0], pref);
+                                this.preferences.filter((prefs) => prefs && prefs["about"] != undefined && prefs.about == pref.about)[0].fun = () => this.selectPreference(pref.about);
+                                return this.preferences.filter((prefs) => prefs && prefs["about"] != undefined && prefs.about == pref.about)[0];
+                            }
+                            return pref;
                         }
-                        return pref;
-                    }
-                )
+                    )
+                }
             },
             back(){
                 this.$router.push("/profil")

@@ -10,7 +10,8 @@
         }
         .v-list-item-title {
             font-weight: 450;
-            max-width: 84%;
+            max-width: 77%;
+            white-space: inherit;
             &::first-letter{
                 text-transform: capitalize;
             }
@@ -27,7 +28,8 @@
         color: var(--font-color-label);
         &.card-btn {
             box-shadow: var(--box-shadow-card);
-            height: 56px;
+            // height: 56px;
+            padding: 6px 1px;
             .v-list-item {
                 height: 100%;
                 i.v-icon {

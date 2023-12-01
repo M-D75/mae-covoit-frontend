@@ -3,6 +3,7 @@
 </style>
 
 <style lang="scss" scoped>
+    @import '@/styles/mixins.scss';
     .gray{
         color: gray;
     }
@@ -10,6 +11,9 @@
     .credit-card-profil {
         height: 207px;
         width: 82.7%;
+        @include respond-to('small') {
+            width: 90%;
+        }
         padding: 30px;
         border-radius: 12px;
         box-shadow: var(--box-shadow-card);
@@ -138,7 +142,8 @@
                     class="btn hand"
                     @click="emit('drop-money')"
                 >
-                    <v-icon>mdi-hand-coin-outline</v-icon>
+                    <v-icon><font-awesome-icon :icon="['fas', 'hand-holding-dollar']" /></v-icon>
+                    <!-- <v-icon>mdi-hand-coin-outline</v-icon> -->
                 </div>
 
                 <!-- Circles Card deco -->

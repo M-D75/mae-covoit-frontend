@@ -5,17 +5,19 @@
         overflow: visible;
         border-radius: 20px !important;
         
+        
         i.v-icon {
             font-size: 1.2em;
             margin: auto 0;
         }
 
         .v-list {
+            
             overflow: visible;
             border-radius: 20px !important;
             .part-list {
                 
-                padding: 10px 0 10px 16px !important;
+                padding: 10px 16px 10px 16px !important;
                 .v-list-item {
                     .v-list-item__prepend{
                         display: inherit !important;
@@ -33,52 +35,56 @@
 
                 //calendar
                 .container-calendar {
-                display: flex;
-                //height: 58px;
-                .calendar {
-                    .v-list-item-title, .v-list-item__content{
-                        font-weight: bold;
-                        color: var(--font-color-label);
-                    }
-                }
-
-                .nb-person.v-list-item {
-                    .v-list-item__content{
-                        color: var(--font-color-label);
-                    }
-                    i.v-icon {
-                        margin-right: 20px;
-                        color: gray !important;
-                    }
-                }
-                .mdi-account-plus.mdi.v-icon.notranslate.v-theme--light.v-icon--size-default {
-                    margin-right: 15px;
-                    font-size: 1.4em;
-                }
-
-                //swap
-                .cont-btn-switch{
-                    position: absolute;
-                    width: 100%;
-                    top: -78px;
-                    left: 9px;
-                    // swap
-                    .v-btn {
-                        position: relative;
-                        left: 47px;
-                        .v-icon {
-                            font-size: 27px;
-                            margin: 0 !important;
+                    display: flex;
+                    justify-content: space-between;
+                    //height: 58px;
+                    .calendar {
+                        .v-list-item-title, .v-list-item__content{
+                            font-weight: bold;
+                            color: var(--font-color-label);
                         }
-                        .mdi-swap-horizontal.mdi.v-icon.notranslate.v-theme--light.v-icon--size-default{
+                    }
+
+                    .nb-person.v-list-item {
+                        .v-list-item__content{
+                            color: var(--font-color-label);
+                        }
+                        i.v-icon {
+                            margin-right: 20px;
+                            color: gray !important;
+                        }
+                    }
+                    .mdi-account-plus.mdi.v-icon.notranslate.v-theme--light.v-icon--size-default {
+                        margin-right: 15px;
+                        font-size: 1.4em;
+                    }
+
+                    //swap
+                    .switch {
+                        position: absolute;
+                        .cont-btn-switch{
                             position: absolute;
-                            right: 0px;
-                            transform: rotate(90deg);
-                            font-size: 1.8em;
-                            color: gray;
+                            width: 100%;
+                            bottom: 110px;
+                            left: 0;
+                            // swap
+                            .v-btn {
+                                position: relative;
+                                right: 13px;
+                                .v-icon {
+                                    font-size: 27px;
+                                    margin: 0 !important;
+                                }
+                                .mdi-swap-horizontal.mdi.v-icon.notranslate.v-theme--light.v-icon--size-default{
+                                    position: absolute;
+                                    right: 0px;
+                                    transform: rotate(90deg);
+                                    font-size: 1.8em;
+                                    color: gray;
+                                }
+                            }
                         }
                     }
-                }
                 }
             }
         }
@@ -120,17 +126,18 @@
                     margin-right: 10px;
                 }
             }
-            &.switch{
-                padding: 0;
-                margin: 0;
-                width: 0;
-            }
+            
             &.nb-person {
                 .v-list-item__prepend {
-                .v-list-item i.v-icon {
-                    margin-right: 20px;
-                    color: gray !important;
+                    .v-list-item i.v-icon {
+                        margin-right: 20px;
+                        color: gray !important;
+                    }
                 }
+                &.switch{
+                    padding: 0;
+                    margin: 0;
+                    width: 0;
                 }
             }
 
@@ -173,6 +180,7 @@
                             v-if="(depart != null && depart != '')"
                             class="head-search-selected"
                         >Départ</div>
+                        
                         <v-btn
                             variant="text"
                             class="text-none"
@@ -221,23 +229,7 @@
                         <v-icon style="margin-right: 18px;">mdi-calendar-month-outline</v-icon>{{ dateString }}
                     </v-list-item>
 
-                    <!-- Swicth -->
-                    <v-list-item
-                        class="switch"
-                    >
-                        <div class="cont-btn-switch">
-                            <v-btn 
-                                icon
-                                variant="text"
-                                @click="switchCommuneEmit()"
-                            >
-                                <v-icon
-                                    class=""
-                                    variant="text"
-                                >mdi-repeat-variant</v-icon>
-                            </v-btn>
-                        </div>
-                    </v-list-item>
+                    
 
                     <!-- Nb passenger -->
                     <v-list-item
@@ -247,7 +239,25 @@
                         :active="false"
                         :ripple="false"
                         @click="$emit('open-nb-passenger')"
-                    ></v-list-item>
+                    >
+                        <!-- Swicth -->
+                        <v-list-item
+                            class="switch"
+                        >
+                            <div class="cont-btn-switch">
+                                <v-btn 
+                                    icon
+                                    variant="text"
+                                    @click="switchCommuneEmit()"
+                                >
+                                    <v-icon
+                                        class=""
+                                        variant="text"
+                                    >mdi-repeat-variant</v-icon>
+                                </v-btn>
+                            </div>
+                        </v-list-item>
+                    </v-list-item>
 
                 </div>
             </div>

@@ -1,107 +1,5 @@
 
 <style lang="scss" model>
-    .credit-card.card-contain {
-
-        .bloc-saisi {
-            background-color: var(--white-bg-color);
-            border-radius: 10px;
-            height: 56px;
-            margin: 30px auto;
-            box-shadow: var(--box-shadow-card);
-            .v-text-field {
-                .v-input__control {
-                    .v-field {
-                        .v-field__field{
-                            background-color: var(--white-bg-color);
-                            border-radius: 10px;
-                            .v-field__input{
-                                color: var(--font-color-label);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        .num-credit-card {
-            > div {
-                .v-text-field {
-                    .v-input__control {
-                        .v-field {
-                            .v-field__field{
-                                .v-field__input{
-                                    letter-spacing: 3px;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        .date-cvc {
-            > div {
-                &.date {
-                    .month, .year {
-                        .v-text-field {
-                            .v-input__control {
-                                .v-field {
-                                    .v-field__field{
-                                        .v-field__input{
-                                            letter-spacing: 3px;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    .slash {
-                        margin: auto 0;
-                    }
-                }
-                &.cvc {
-                    .v-text-field {
-                        .v-input__control {
-                            .v-field {
-                                .v-field__field{
-                                    .v-field__input{
-                                        text-align: center;
-                                        letter-spacing: 5px;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }   
-        }
-
-        
-    }
-
-    .password {
-        .contain-input{
-            .v-text-field {
-                .v-input__control {
-                    box-shadow: var(--box-shadow-card);
-                    .v-field.v-field--variant-solo{
-                        border-radius: 20px !important;
-                        overflow: hidden;
-                    }
-                    .v-field__field {
-                        background-color: white;
-                        .v-field__input {
-                            text-align: center;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-
- 
-
 
 </style>
 
@@ -406,6 +304,7 @@
                 width: 90%;
                 margin: 10px auto;
                 margin-bottom: 5px;
+                padding-bottom: 50px;
                 .v-card {
                     border-radius: 20px;
                     box-shadow: var(--box-shadow-card);
@@ -477,7 +376,7 @@
         </div>
 
         <!-- sub-cont-sup -->
-        <div class="sub-cont-sup">
+        <div class="sub-cont-sup" :class="className.join(' ')">
             <!-- Map -->
             <div
                 v-if="mode=='map'"
@@ -637,10 +536,17 @@
             
             const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
             $(classBottomMenuNameJquery).css("top", `${this.y}px`);
+            
             const classSubContNameJquery = this.className != "" && this.className != null ? `.sub-cont.${this.className.join(".")}` : ".sub-cont";
-            this.subContHeigth = $(classSubContNameJquery).outerHeight(true);
+            this.subContHeigth = $(classSubContNameJquery)[0].clientHeight;
 
             console.log("classe-name", this.className, "screen-height", this.sizeScreen, "subContHeigth", this.subContHeigth, "object", $(classSubContNameJquery));
+
+            const classSubContSupNameJquery = this.className != "" && this.className != null ? `.sub-cont-sup.${this.className.join(".")}` : ".sub-cont-sup";
+            this.subContSupHeigth = $(classSubContSupNameJquery)[0].clientHeight;
+
+            console.log("this.subContSupHeigth", this.subContSupHeigth, $(classSubContSupNameJquery));
+
             if( this.mode=="select-day-hour-domicile" || this.mode=="notification" ){
                 this.open();
             }
@@ -657,23 +563,40 @@
         },
         methods: {
             onDrag(pos) {
-                this.move = true;
-                this.active = false;
+                
+                const posOpenY = this.sizeScreen - ( (this.subContHeigth + this.subContSupHeigth ) + 50 );
+                // console.log("pos", pos, posOpenY - 20);
+                if(pos.y > posOpenY - 20){
+                    this.move = true;
+                    this.active = false;
 
-                const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${Object.keys(this.className).join(".")}` : ".bottom-menu";
-                $(classBottomMenuNameJquery).css("top", `${pos.y}px`);
-                if (pos.y >= this.sizeScreen - this.marge_bar) {
-                    this.close();
+                    const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${Object.keys(this.className).join(".")}` : ".bottom-menu";
+                    
+                    $(classBottomMenuNameJquery).css("top", `${pos.y}px`);
+                    const classBottomMenuNameJqueryDraggable = this.className != "" && this.className != null ? `.draggable.${this.className.join(".")}` : ".draggable";
+                    
+                    $(classBottomMenuNameJqueryDraggable).addClass("open");
+                    if (pos.y >= this.sizeScreen - this.marge_bar) {
+                        this.close();
+                    }
+                }
+                else{
+                    this.draggableBar = false;
+                    this.disabledY = true;
                 }
             },
             onDragStop(pos) {
 
-
+                const _this = this;
                 if ( ! this.move ) {
                     const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
 
                     if ( pos.y >= this.sizeScreen-this.marge_bar && !$(classBottomMenuNameJquery).hasClass("closed") ) {
                         this.open();
+                        setTimeout(function(){
+                            const classBottomMenuNameJqueryDraggable = _this.className != "" && _this.className != null ? `.draggable.${_this.className.join(".")}` : ".draggable";
+                            $(classBottomMenuNameJqueryDraggable).addClass("open")
+                        }, 100)
                     }
                     else if( ! $(classBottomMenuNameJquery).hasClass("closed") ){
                         console.log("onDragStop")
@@ -687,6 +610,27 @@
                         this.disabledY = false;
                         this.y = this.sizeScreen - this.marge_bar;
                     }
+                    setTimeout(function(){
+                        const classBottomMenuNameJqueryDraggable = _this.className != "" && _this.className != null ? `.draggable.${_this.className.join(".")}` : ".draggable";
+                        $(classBottomMenuNameJqueryDraggable).addClass("open")
+                    }, 100)
+                }
+
+                const posOpenY = this.sizeScreen - ( this.subContHeigth + this.subContSupHeigth + 50 );
+                if(pos.y <= posOpenY - 20){
+                    _this.draggableBar = true;
+                    _this.disabledY = false;
+                    this.y = this.sizeScreen - ( this.subContHeigth + this.subContSupHeigth + 50 );
+
+                    console.log("y", this.y, this.subContHeigth, this.subContSupHeigth);
+
+                    const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
+                    $(classBottomMenuNameJquery).animate({"top": `${_this.y}px`}, "fast", function(){
+                        // _this.draggableBar = true;
+                        // _this.disabledY = false;
+                        _this.y = parseInt($(this).css("top").replace("px", ""));
+                        _this.move = false;
+                    });
                 }
 
                 this.move = false;

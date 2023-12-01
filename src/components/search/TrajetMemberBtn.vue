@@ -1,5 +1,6 @@
 
 <style lang="scss" model>
+    @import "@/styles/mixins.scss";
 
     .card-trajet-member-btn {
         .v-list-item {
@@ -18,6 +19,9 @@
             .comune {
                 .v-list-item {
                     padding: auto;
+                    @include respond-to('tiny') {
+                        padding: 0;
+                    }
                 }
             }
         }
@@ -32,6 +36,9 @@
             height: 38px;
             position: absolute;
             left: 17px;
+            @include respond-to('tiny') {
+                left: 17px;
+            }
             top: 21px;
             z-index: 0;
             opacity: var(--v-medium-emphasis-opacity);
@@ -54,11 +61,14 @@
             background-color: #eee !important;
             color: #eee !important;
             border-radius: 5px;
+            right: 8px;
+            @include respond-to('tiny') {
+                right: 2px;
+            }
             &.prix {
                 background-color: #eee !important;
                 color: #eee !important;
                 position: absolute;
-                right: 8px;
                 top: 8px;
                 font-weight: bold;
                 font-size: 1.1em;
@@ -67,7 +77,6 @@
                 background-color: #eee !important;
                 color: #eee !important;
                 position: absolute;
-                right: 8px;
                 bottom: 8px;
                 font-weight: bold;
                 font-size: 1.1em;
@@ -90,6 +99,7 @@
 </style>
 
 <style lang="scss" scoped>
+    @import "@/styles/mixins.scss";
     .v-card {
         background-color: var(--white-bg-color);
         margin: 20px;
@@ -108,6 +118,9 @@
         .hour {
             &.v-list-item {
                 width: 73px;
+                @include respond-to('tiny') {
+                    width: 50px;
+                }
                 padding-right: 0;
             }
         }
@@ -190,13 +203,22 @@
 
 <template>
     <v-card
-        v-if="!empty"
+        
         class="card-trajet-member-btn mx-auto"
         max-width="500"
     >
         <div class="empty-mask"></div>
         <div class="empty">
-            <v-icon><font-awesome-icon :icon="['fab', 'searchengin']" :fade="load" /></v-icon>
+            <v-icon v-if="!empty"><font-awesome-icon :icon="['fab', 'searchengin']" :fade="load" /></v-icon>
+            <div
+                v-else
+                class="nothing label-filter text-caption mx-auto"
+            >
+                <div class="contenu">
+                    <!-- <v-icon icon="mdi-alert-circle-outline"></v-icon> -->
+                    <span>Aucun trajet trouvé !</span>
+                </div>
+            </div>
         </div>
         <v-list>
             <div class="part-list">
@@ -228,20 +250,20 @@
                 </div>
 
                 <div class="avatar flex">
-                <v-avatar
-                    size="47px"
-                >
-                    <v-img
-                        alt="Avatar"
-                        src="https://avataaars.io/?avatarStyle=Circle&topType=ShortHairDreads01&accessoriesType=Blank&hairColor=PastelPink&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Wink&eyebrowType=DefaultNatural&mouthType=Serious&skinColor=Tanned"
-                    ></v-img>
-                </v-avatar>
-                <!-- <v-avatar color="blue">
-                    <span class="text-h5">{{infos.name[0].toUpperCase()}}</span>
-                </v-avatar> -->
-                <v-list-item
-                    :title="infos.name"
-                ></v-list-item>
+                    <v-avatar
+                        size="47px"
+                    >
+                        <v-img
+                            alt="Avatar"
+                            src="https://avataaars.io/?avatarStyle=Circle&topType=ShortHairDreads01&accessoriesType=Blank&hairColor=PastelPink&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Wink&eyebrowType=DefaultNatural&mouthType=Serious&skinColor=Tanned"
+                        ></v-img>
+                    </v-avatar>
+                    <!-- <v-avatar color="blue">
+                        <span class="text-h5">{{infos.name[0].toUpperCase()}}</span>
+                    </v-avatar> -->
+                    <v-list-item
+                        :title="infos.name"
+                    ></v-list-item>
                 </div>
 
                 <v-chip
@@ -264,87 +286,6 @@
         </v-list>
     </v-card>
 
-    <!-- empty -->
-    <v-card
-        v-else
-        class="card-trajet-member-btn mx-auto"
-        max-width="500"
-    >
-        <div class="empty-mask"></div>
-        <div class="empty">
-            <div
-                class="nothing label-filter text-caption mx-auto"
-            >
-                <div class="contenu">
-                    <v-icon icon="mdi-alert-circle-outline"></v-icon>
-                    <span>Aucun trajet trouvé !</span>
-                </div>
-            </div>
-        </div>
-        <v-list>
-
-            <div class="part-list">
-                <div>
-                <div class="comune flex">
-                    <v-list-item
-                        class="hour"
-                        :title="infos.hour_start"
-                    ></v-list-item>
-                    <v-list-item
-                        prepend-icon="mdi-navigation"
-                        :title="infos.depart"
-                    ><div class="line"></div></v-list-item>
-                    
-                </div>
-
-                <div class="comune flex">
-                    <v-list-item
-                        class="hour"
-                        :title="infos.hour_end"
-                    ></v-list-item>
-                    <v-list-item
-                        prepend-icon="mdi-navigation"
-                        :title="infos.destination"
-                    ></v-list-item>
-                </div>
-                </div>
-
-                <div class="avatar flex">
-                <v-avatar
-                    size="47px"
-                >
-                    <v-img
-                        alt="Avatar"
-                        src="https://avataaars.io/?avatarStyle=Circle&topType=ShortHairDreads01&accessoriesType=Blank&hairColor=PastelPink&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Wink&eyebrowType=DefaultNatural&mouthType=Serious&skinColor=Tanned"
-                    ></v-img>
-                </v-avatar>
-                <!-- <v-avatar color="blue">
-                    <span class="text-h5">{{infos.name[0].toUpperCase()}}</span>
-                </v-avatar> -->
-                <v-list-item
-                    :title="infos.name"
-                ></v-list-item>
-                </div>
-
-                <v-chip
-                    class="ma-2 prix"
-                    color="blue"
-                    label
-                >
-                    {{infos.price}}€
-                </v-chip>
-
-                <v-chip
-                    class="ma-2 rapport"
-                    color="blue"
-                    label
-                >
-                    {{ infos.passenger_number }}/4
-                </v-chip>
-            </div>
-
-        </v-list>
-    </v-card>
 </template>
 
 

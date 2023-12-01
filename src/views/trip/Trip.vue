@@ -55,13 +55,12 @@
         </div>
 
         <!-- reserve fast -->
-        <BottomMenu 
+        <!-- <BottomMenu 
             ref="BottomMenuRefResults"
             :class-name="['reserve']" 
             mode="reserve"
             v-on:close="overlay = false" 
-            :infos="infos"
-        />
+        /> -->
         
     </v-main>
 
@@ -81,7 +80,7 @@
 
     // Components
     // import BottomNavTrip from '@/components/menus/trip/BottomNavTrip.vue';
-    import BottomMenu from '@/components/menus/BottomMenu.vue';
+    // import BottomMenu from '@/components/menus/BottomMenu.vue';
     import MapTrip from "@/components/trip/MapTrip.vue"
 
     export default defineComponent({
@@ -92,7 +91,7 @@
         components: {
             MapTrip,
             // BottomNavTrip,
-            BottomMenu,
+            // BottomMenu,
         },
         data() {
             return {

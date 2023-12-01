@@ -1,13 +1,13 @@
 
 <style lang="scss" model>
+    @import '@/styles/mixins.scss';
     .credit-card.card-contain {
-
         .bloc-saisi {
             background-color: var(--white-bg-color);
             border-radius: 10px;
             height: 56px;
             margin: 30px auto;
-            box-shadow: var(--box-shadow-card);
+            box-shadow: 0px 0px 1px;
             .v-text-field {
                 .v-input__control {
                     .v-field {
@@ -30,7 +30,13 @@
                         .v-field {
                             .v-field__field{
                                 .v-field__input{
+                                    // 
                                     letter-spacing: 3px;
+                                    text-align: center;
+                                    padding-right: 10px;
+                                    @include respond-to('tiny') {
+                                        padding-left: 10px;
+                                    }
                                 }
                             }
                         }
@@ -48,7 +54,13 @@
                                 .v-field {
                                     .v-field__field{
                                         .v-field__input{
+                                            padding-right: 10px;
                                             letter-spacing: 3px;
+                                            // padding-right: 5px;
+                                            text-align: center;
+                                            @include respond-to('tiny') {
+                                                padding-left: 10px;
+                                            }
                                         }
                                     }
                                 }
@@ -67,6 +79,7 @@
                                     .v-field__input{
                                         text-align: center;
                                         letter-spacing: 5px;
+                                        text-align: center;
                                     }
                                 }
                             }
@@ -75,8 +88,6 @@
                 }
             }   
         }
-
-        
     }
 
     .password {
@@ -106,6 +117,8 @@
 </style>
 
 <style lang="scss" scoped>
+    @import '@/styles/mixins.scss';
+
     //Animations
     /* The animation code */
     @keyframes warn-bad-to-good {
@@ -210,6 +223,9 @@
 
             .select-time, .select-number {
                 width: 85%;
+                @include respond-to('tiny') {
+                    width: 100%;
+                }
                 .label {
                     margin: 15px;
                     margin-top: 50px;
@@ -222,6 +238,9 @@
 
             .select-day-hour-domicile, .select-day{
                 width: 85%;
+                @include respond-to('tiny') {
+                    width: 90%;
+                }
                 .label {
                     margin: 35px;
                 }
@@ -411,6 +430,7 @@
                 width: 90%;
                 margin: 10px auto;
                 margin-bottom: 5px;
+                padding-bottom: 50px;
                 .v-card {
                     border-radius: 20px;
                     box-shadow: var(--box-shadow-card);
@@ -669,9 +689,12 @@
                             placeholder="1234"
                             maxLength="4"
                             @input="checkNumericalValue($event, 'input2')"
+                            @keydown="handleKeydown($event, '1')"
+                            ref="input1"
                             single-line
                             variant="solo"
                             role="number"
+                            inputmode="numeric"
                             ></v-text-field>
                     </div>
                     <div>
@@ -680,10 +703,12 @@
                             placeholder="1234"
                             maxLength="4"
                             @input="checkNumericalValue($event, 'input3')"
+                            @keydown="handleKeydown($event, '2')"
                             ref="input2"
                             single-line
                             variant="solo"
                             role="number"
+                            inputmode="numeric"
                             ></v-text-field>
                     </div>
                     <div>
@@ -692,10 +717,12 @@
                             placeholder="1234"
                             maxLength="4"
                             @input="checkNumericalValue($event, 'input4')"
+                            @keydown="handleKeydown($event, '3')"
                             ref="input3"
                             single-line
                             variant="solo"
                             role="number"
+                            inputmode="numeric"
                             ></v-text-field>
                     </div>
                     <div>
@@ -704,10 +731,12 @@
                             placeholder="1234"
                             maxLength="4"
                             @input="checkNumericalValue($event, 'input5')"
+                            @keydown="handleKeydown($event, '4')"
                             ref="input4"
                             single-line
                             variant="solo"
                             role="number"
+                            inputmode="numeric"
                             ></v-text-field>
                     </div>
                 </div>
@@ -719,24 +748,28 @@
                         <div class="month">
                             <v-text-field
                                 v-model="numericValues[4]"
-                                @input="checkNumericalValue($event, 'input6')" 
+                                @input="checkNumericalValue($event, 'input6')"
+                                @keydown="handleKeydown($event, '5')"
                                 ref="input5" 
                                 placeholder="MM" 
                                 maxLength="2" 
                                 variant="solo"
                                 role="number"
+                                inputmode="numeric"
                             ></v-text-field>
                         </div>
                         <div class="slash">/</div>
                         <div class="year">
                             <v-text-field
                                 v-model="numericValues[5]"
-                                @input="checkNumericalValue($event, 'input7')" 
+                                @input="checkNumericalValue($event, 'input7')"
+                                @keydown="handleKeydown($event, '6')"
                                 ref="input6" 
                                 placeholder="YY" 
                                 maxLength="2" 
                                 variant="solo"
                                 role="number"
+                                inputmode="numeric"
                             ></v-text-field>
                         </div>
                     </div>
@@ -746,11 +779,13 @@
                         <v-text-field
                             v-model="numericValues[6]"
                             @input="checkNumericalValue($event, 'input8')"
+                            @keydown="handleKeydown($event, '7')"
                             ref="input7"
                             placeholder="123" 
                             variant="solo"
                             maxLength="3"
                             role="number"
+                            inputmode="numeric"
                         ></v-text-field>
                     </div>
                 </div>
@@ -845,7 +880,7 @@
         </div>
 
         <!-- sub-cont-sup -->
-        <div class="sub-cont-sup">
+        <div class="sub-cont-sup" :class="className.join(' ')">
             <!-- Map -->
             <div
                 v-if="mode=='map'"
@@ -1031,6 +1066,7 @@
                 move: false,
                 marge_bar: 30,
                 subContHeigth: 0,
+                subContSupHeigth: 0,
                 open_b: false,
                 priceRecomended: {
                     min: 2,
@@ -1077,10 +1113,17 @@
             
             const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
             $(classBottomMenuNameJquery).css("top", `${this.y}px`);
+            
             const classSubContNameJquery = this.className != "" && this.className != null ? `.sub-cont.${this.className.join(".")}` : ".sub-cont";
-            this.subContHeigth = $(classSubContNameJquery).outerHeight(true);
+            this.subContHeigth = $(classSubContNameJquery)[0].clientHeight;
 
             console.log("classe-name", this.className, "screen-height", this.sizeScreen, "subContHeigth", this.subContHeigth, "object", $(classSubContNameJquery));
+
+            const classSubContSupNameJquery = this.className != "" && this.className != null ? `.sub-cont-sup.${this.className.join(".")}` : ".sub-cont-sup";
+            this.subContSupHeigth = $(classSubContSupNameJquery)[0].clientHeight;
+
+            console.log("this.subContSupHeigth", this.subContSupHeigth, $(classSubContSupNameJquery));
+
             if( this.mode=="select-day-hour-domicile" || this.mode=="notification" ){
                 this.open();
             }
@@ -1103,17 +1146,26 @@
                     this.$refs[nextInputRef].focus();
                 }
             },
+            handleKeydown(event, inputRef){
+                if( event.target.value.length == 0 && event.key == 'Backspace' ){
+                    if( this.$refs["input" + (inputRef-1)] ){
+                        this.$refs["input" + (inputRef-1)].focus();
+                    }
+                }
+            },
             onDrag(pos) {
                 
-                const posOpenY = this.sizeScreen - ( this.subContHeigth + 50 );
-                console.log("pos", pos, posOpenY - 20);
+                const posOpenY = this.sizeScreen - ( (this.subContHeigth + this.subContSupHeigth ) + 50 );
+                // console.log("pos", pos, posOpenY - 20);
                 if(pos.y > posOpenY - 20){
                     this.move = true;
                     this.active = false;
 
                     const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${Object.keys(this.className).join(".")}` : ".bottom-menu";
+                    
                     $(classBottomMenuNameJquery).css("top", `${pos.y}px`);
                     const classBottomMenuNameJqueryDraggable = this.className != "" && this.className != null ? `.draggable.${this.className.join(".")}` : ".draggable";
+                    
                     $(classBottomMenuNameJqueryDraggable).addClass("open");
                     if (pos.y >= this.sizeScreen - this.marge_bar) {
                         this.close();
@@ -1122,10 +1174,6 @@
                 else{
                     this.draggableBar = false;
                     this.disabledY = true;
-                    // const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
-                    // $(classBottomMenuNameJquery).css("top", `${posOpenY}px`);
-                    // const classBottomMenuNameJqueryDraggable = this.className != "" && this.className != null ? `.draggable.${this.className.join(".")}` : ".draggable";
-                    // $(classBottomMenuNameJqueryDraggable).addClass("open");
                 }
             },
             onDragStop(pos) {
@@ -1160,19 +1208,20 @@
                     }, 100)
                 }
 
-                const posOpenY = this.sizeScreen - ( this.subContHeigth + 50 );
+                const posOpenY = this.sizeScreen - ( this.subContHeigth + this.subContSupHeigth + 50 );
                 if(pos.y <= posOpenY - 20){
                     _this.draggableBar = true;
                     _this.disabledY = false;
-                    this.y = this.sizeScreen - ( this.subContHeigth + 50 );
-                    console.log("amnn---n", posOpenY, pos.y, posOpenY - 20);
+                    this.y = this.sizeScreen - ( this.subContHeigth + this.subContSupHeigth + 50 );
+
+                    console.log("y", this.y, this.subContHeigth, this.subContSupHeigth);
+
                     const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
                     $(classBottomMenuNameJquery).animate({"top": `${_this.y}px`}, "fast", function(){
                         // _this.draggableBar = true;
                         // _this.disabledY = false;
                         _this.y = parseInt($(this).css("top").replace("px", ""));
                         _this.move = false;
-                        console.log("amnnn");
                     });
                 }
 

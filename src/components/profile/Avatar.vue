@@ -8,10 +8,10 @@
             width: fit-content;
             margin: auto;
             position: relative;
-            &.checked{
-                border-radius: 500px;
-                border: 2px solid #9fcb66;
-            }
+            // &.checked{
+            //     border-radius: 500px;
+            //     border: 2px solid #9fcb66;
+            // }
             .v-avatar {
                 cursor: pointer;
                 .v-icon {
@@ -113,13 +113,12 @@
             </v-icon>
         </div>
 
-        
-
         <div
             class="title text-center mx-auto"
         >{{ name }}</div>
 
         <div
+            v-if="subTitle != '' && subTitle != null"
             class="sub-title text-center mx-auto"
         >
             <v-icon>{{ icon }}</v-icon>{{ subTitle }}
@@ -155,7 +154,7 @@
             },
             subTitle: {
                 type: String,
-                default: "NEW YORK",
+                default: "",
             },
             icon: {
                 type: String,

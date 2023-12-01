@@ -18,6 +18,8 @@
 
 <style lang="scss" scoped>
 
+    @import "@/styles/mixins.scss";
+
     .ligth-mode * {
         --border-color: white;
         --bg-color: #f5f5f5;
@@ -35,6 +37,10 @@
         margin-bottom: 15px;
         background-color: var(--white-bg-color);
         width: 82.7%;
+        @include respond-to('small') {
+            width: 90%;
+        }
+        
         height: 94px;
         .blc-btn {
             border-radius: 15px;

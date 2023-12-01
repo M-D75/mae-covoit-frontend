@@ -113,7 +113,7 @@
             div.sep-time {
                 text-align: center;
                 line-height: 1.37;
-                width: 30%;
+                width: 25%;
                 z-index: 51;
                 .sub {
                     position: relative;

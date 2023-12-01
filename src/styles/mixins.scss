@@ -1,0 +1,11 @@
+$breakpoints: (
+    'small': 366px,
+    'tiny': 320px,
+);
+
+// Mixin pour media queries
+@mixin respond-to($name) {
+    @media (max-width: map-get($breakpoints, $name)) {
+        @content;
+    }
+};

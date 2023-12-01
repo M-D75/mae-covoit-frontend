@@ -3,6 +3,10 @@
 <!-- scss -->
 <style lang="scss" model>
 
+    
+
+    
+
     .bottom-menu{
         z-index: 9999 !important;
     }
@@ -14,6 +18,9 @@
 </style>
 
 <style lang="scss" scoped>
+
+    @import "@/styles/mixins.scss";
+
     .ligth-mode * {
         --bg-color: #E5E5E5;
     }
@@ -25,6 +32,9 @@
         margin-bottom: 15px;
         div .label {
             width: 82.7%;
+            @include respond-to('small') {
+                width: 90%;
+            }
             text-transform: uppercase;
             font-size: 12px;
             font-weight: 450;
@@ -36,16 +46,27 @@
             margin-top: 20px;
             margin-bottom: 20px;
             width: 82.7%;
+            @include respond-to('small') {
+                width: 90%;
+            }
+
             display: flex;
             justify-content: space-between;
+
             .v-btn {
                 width: 138px;
+                @include respond-to('small') {
+                    width: 105px;
+                }
                 height: 32px;
                 box-shadow: none;
                 font-size: 12px;
                 font-weight: 700;
                 background-color: var(--bg-color);
                 color: var(--font-color-label);
+                &.dashboard{
+                    content: "nbonjo";
+                }
                 &.active {
                     background-color: var(--blue-color);
                     color: white;
@@ -99,9 +120,9 @@
         <div>
             <!-- <div class="label mx-auto">tableau de board</div> -->
             <div class="label-btn mx-auto">
-                <v-btn :class="{active: onglet=='table-bord'}" @click="onglet='table-bord'" rounded="xl">tableau de bord</v-btn>
+                <v-btn class="dashboard" :class="{active: onglet=='table-bord'}" @click="onglet='table-bord'" rounded="xl">{{ labelDashBoard }}</v-btn>
                 <v-btn v-if="modeDriver" :class="{active: onglet=='planning'}" class="calendar" @click="onglet='planning'" rounded="xl"><v-icon>mdi-calendar-month</v-icon></v-btn>
-                <v-btn :class="{active: onglet=='trajets'}" @click="onglet='trajets'" rounded="xl">mes trajets</v-btn>
+                <v-btn class="my_trip" :class="{active: onglet=='trajets'}" @click="onglet='trajets'" rounded="xl">mes trajets</v-btn>
             </div>
 
             <!-- Tableau de bord -->
@@ -116,7 +137,7 @@
             <!-- Graph -->
             <StatsTrajet v-if="onglet=='table-bord'"/>
 
-            <!-- Trajets -->
+            <!-- Trajets & publication -->
             <HistoryTrajets 
                 v-if="onglet=='trajets' || onglet=='planning'" 
                 :infos="infosTravels" 
@@ -202,6 +223,7 @@
         },
         data() {
             return {
+                labelDashBoard: "tableau de bord",
                 modeBottomMenu: "password",
                 modeEdit: false,
                 overlay: false,
@@ -312,6 +334,9 @@
         mounted(){
             this.switchModeDriverPanneauInfos();
             this.askNewMessage();
+            if( window.innerWidth <= 366 ){
+                this.labelDashBoard = "synthèse";
+            }
         },
         methods: {
             ...mapActions("profil", ["getTravels", "getPublish", "buildHistoriqueBooking"]),
@@ -428,7 +453,7 @@
             askNewMessage(){
                 const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
 
-                const typeUrl = "online";
+                const typeUrl = "local";
                 axios.post(`${adresse[typeUrl]}/askNewMessage`, {
                         userId: this.userUid,
                     })
