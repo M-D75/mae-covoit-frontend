@@ -63,15 +63,15 @@
 
         <!-- Depart -->
         <Search 
-            v-if="modePublish.default.slice(0, 2).some(item => item.mode == mode)"
+            v-if="mode=='depart' || mode=='time'"
             ref="SearchRef"
             title="D'ou partez vous ?"
             label="Saisissez une commune"
             :switche="true"
             :items="villagesSortedFiltered"
             :history="communesHistory"
-            @selected="getSelected()" 
-            @saisi="getSaisi()"
+            v-on:selected="getSelected()" 
+            v-on:saisi="getSaisi()"
             v-on:mode-work-switch="modeWork=!modeWork"
         />
 
@@ -84,8 +84,8 @@
             :focus="true"
             :items="villagesSortedFiltered"
             :history="communesHistory"
-            @selected="getSelected()"
-            @saisi="getSaisi()"
+            v-on:selected="getSelected()"
+            v-on:saisi="getSaisi()"
         />
 
         <!-- Mode Publish -->
@@ -102,7 +102,7 @@
         <!-- time : Hour Dep -->
         <BottomMenu
             v-if="mode=='time' || mode=='depart'"
-            ref="BottomMenuRef" 
+            ref="BottomMenuReftime" 
             :class-name="['time']"
             mode="time"
             labelSelectorN1="A quelle heure souhaitez-vous partir ?"
@@ -121,7 +121,7 @@
         <!-- number : nb-pessenger -->
         <BottomMenu
             v-if="mode=='nb-passenger' || mode=='select-car'"
-            ref="BottomMenuRef" 
+            ref="BottomMenuRefnb-passenger" 
             :class-name="['number']"
             mode="nb-passenger"
             labelSelectorN1="Combien de personnes pouvez-vous prendre à bord ?"
@@ -129,9 +129,10 @@
             v-on:time-valided="getSelected()"
         />
 
+
         <!-- itineraire -->
         <Itineraire 
-            v-if="mode=='itineraire' || mode=='select-price' || mode=='notification'"
+            v-if="mode=='itineraire' || mode=='select-week' || mode=='select-price' || mode=='notification' "
             ref="ItineraireRef"
             :itineraire="itineraire"
             v-on:itineraire-valided="getSelected()" 
@@ -139,8 +140,8 @@
 
         <!-- number : select-price -->
         <BottomMenu
-            v-if="mode=='select-price' || mode=='itineraire'"
-            ref="BottomMenuRef" 
+            v-if=" mode=='select-price' || mode=='itineraire'"
+            ref="BottomMenuRefselect-price" 
             :class-name="['select_price']"
             mode="select-price"
             labelSelectorN1="Précisez le prix unitaire des places"
@@ -150,15 +151,14 @@
 
         <!-- notification -->
         <BottomMenu
-            v-if="mode=='notification'"
-            ref="BottomMenuRef"
+            v-if="mode=='notification' || mode=='select-price' || mode=='select-week'"
+            ref="BottomMenuRefnotification"
             :class-name="['notification']"
             mode="notification"
             v-on:close="overlay = false; nextStepMode()"
             v-on:time-valided="getSelected()"
         />
 
-        
 
         <!-- *********
             Work
@@ -167,17 +167,19 @@
         <HourProgram 
             v-if="mode=='hour-program'"
             ref="HourProgramRef"
+            v-on:hour-edit="goToHourEdit()"
             v-on:hour-valided="getSelected()"
         />
 
         <HourDepOther 
             v-if="mode=='hour-day-program'"
+            ref="HourDepOtherRef"
             :hour="infosPublish.work.hour"
             v-on:hour-dep-other-valided="getSelected()"
         />
 
         <!-- time : hour domicile -->
-        <BottomMenu
+        <!-- <BottomMenu
             v-if="mode=='select-day-hour-domicile'"
             ref="BottomMenuRef"
             :class-name="['select_day_hour_domicile']"
@@ -186,10 +188,10 @@
             labelSelectorN2="Heur de depart du domicile"
             v-on:close="overlay = false"
             v-on:time-valided="getSelected()"
-        />
+        /> -->
 
         <!-- day -->
-        <BottomMenu
+        <!-- <BottomMenu
             v-if="mode=='select-day' || mode=='hour-day-program'"
             ref="BottomMenuRef"
             :class-name="['select_day']"
@@ -197,17 +199,19 @@
             labelSelectorN1="Repeter quelle jour ?"
             v-on:close="overlay = false"
             v-on:day-valided="getSelected()"
+        /> -->
+
+        <!-- select-week -->
+        <BottomMenu
+            v-if="mode=='select-week' || mode=='select-price' || mode=='itineraire'"
+            ref="BottomMenuRefselect-week"
+            :class-name="['select_week']"
+            mode="select-week"
+            labelSelectorN1="Repeter combien de semaine ?"
+            v-on:close="overlay = false"
+            v-on:week-valided="getSelected()"
         />
 
-        <!-- test -->
-        <BottomMenu
-            v-if="mode=='register-credit-card'"
-            ref="BottomMenuRef"
-            :class-name="['notification']"
-            mode="register-credit-card"
-            v-on:close="overlay = false"
-            v-on:time-valided="getSelected()"
-        />
 
     </v-main>
 
@@ -291,7 +295,7 @@
                 overlay: false,
                 mode: "depart",
                 indexMode: 0,
-                modeWork: false,
+                modeWork: true,
                 modePublish: {
                     default: [
                         {mode: "depart"}, 
@@ -305,9 +309,14 @@
                     ],
                     work: [
                         {mode: "depart"},
-                        {mode: "hour-program"},
-                        {mode: "hour-day-program"},
-                        {mode: "select-day"},
+                        {mode: "destination"},
+                        {mode: "hour-program", otherWay: [{mode: "hour-day-program" }]},
+                        {mode: "select-car"},
+                        {mode: "nb-passenger"},
+                        {mode: "itineraire"},
+                        {mode: "select-price"},
+                        {mode: "select-week"},
+                        {mode: "notification"},
                     ],
                 },
                 infosPublish: {
@@ -326,13 +335,16 @@
                         destination: "",
                         time: "",
                         hour: {
-                            "domicile":"08:00",
-                            "work":"17:00",
+                            home: "08:00",
+                            work: "17:00",
                         },
+                        daysHour: [],
+                        weeks: 1,
                         car: 0,
                         nbPassager: 0,
                         hourDep: "",
                         price: 0,
+                        weeksSelected: [],
                     },
                 },
                 itineraire: {
@@ -400,7 +412,6 @@
             ...mapActions("publish", ["newTrip"]),
             getSaisi(){
                 $(".mode-publish").css("display", "none");
-                console.log("saiiiiiiiiiiiiii--");
                 this.saisi = this.$refs.SearchRef.saisi;
             },
             getSelected(){
@@ -424,9 +435,10 @@
                         break;
 
                     case "time":
-                        if (this.$refs.BottomMenuRef) {
-                            this.infosPublish.default.hourDep = this.$refs.BottomMenuRef.time;
-                            this.itineraire.departureTime = this.convertTimeString(this.$refs.BottomMenuRef.time);
+                        this.$refs[`BottomMenuRef${this.mode}`]
+                        if ( this.$refs[`BottomMenuRef${this.mode}`] ) {
+                            this.infosPublish.default.hourDep = this.$refs[`BottomMenuRef${this.mode}`].time;
+                            this.itineraire.departureTime = this.convertTimeString(this.$refs[`BottomMenuRef${this.mode}`].time);
                             console.log("Time-selected:", this.infosPublish.default.hourDep, this.convertTimeString(this.infosPublish.default.hourDep));
                         }
                         
@@ -451,14 +463,14 @@
                     
                     case "select-car":
                         if (this.$refs.SelectCarRef) {
-                            this.infosPublish.default.car = this.$refs.SelectCarRef.car;
+                            this.infosPublish[typePath].car = this.$refs.SelectCarRef.car;
                         }
                         this.nextStepMode();
                         break;
 
                     case "nb-passenger":
-                        if (this.$refs.BottomMenuRef) {
-                            this.infosPublish.default.nbPassager = this.$refs.BottomMenuRef.numberSelected;
+                        if (this.$refs[`BottomMenuRef${this.mode}`]) {
+                            this.infosPublish[typePath].nbPassager = this.$refs[`BottomMenuRef${this.mode}`].numberSelected;
                         }
                         this.nextStepMode();
                         break;
@@ -466,46 +478,89 @@
                     case "itineraire":
                         //
                         if( this.$refs.ItineraireRef ){
-                            this.infosPublish.default.route = this.$refs.ItineraireRef.routes[0];
+                            this.infosPublish[typePath].route = this.$refs.ItineraireRef.routes[0];
                         }
                         this.nextStepMode();
                         break;
 
                     case "select-price":
-                        if (this.$refs.BottomMenuRef) {
-                            this.infosPublish.default.price = this.$refs.BottomMenuRef.numberSelected;
+                        if (this.$refs[`BottomMenuRef${this.mode}`]) {
+                            this.infosPublish[typePath].price = this.$refs[`BottomMenuRef${this.mode}`].numberSelected;
                         }
+                        // console.log("infosPusblish:", this.infosPublish);
+
+                        if( ! this.modeWork ){
+                            let infos = {
+                                villageDep: this.GET_ID_VILLAGE_BY_NAME(this.infosPublish.default.depart), 
+                                villageDest: this.GET_ID_VILLAGE_BY_NAME(this.infosPublish.default.destination), 
+                                driverId: this.$store.state.profil.userUid, 
+                                timeDep: this.convertTimeString(this.infosPublish.default.hourDep), 
+                                maxSeats: this.infosPublish.default.nbPassager,
+                                price: this.infosPublish.default.price,
+                                route: this.infosPublish.default.route,
+                            };
+
+                            console.log("infos", infos);
+
+                            //this.$store.dispatch('publish/newTrip', infos);
+                        }
+
+                        this.nextStepMode();
+                        this.overlay = true;
+                        break;
+
+                    case "select-week":
+                        
+                        if (this.$refs[`BottomMenuRef${this.mode}`]) {
+                            this.infosPublish[typePath].weeksSelected = this.$refs[`BottomMenuRef${this.mode}`].weeksSelected;
+                            //TODO:no week selected
+                            this.$refs[`BottomMenuRef${this.mode}`].close();
+                        }
+                        
                         console.log("infosPusblish:", this.infosPublish);
+                        if( this.modeWork ){
+                            
+                            let infos = {
+                                villageDep: this.GET_ID_VILLAGE_BY_NAME(this.infosPublish.work.depart), 
+                                villageDest: this.GET_ID_VILLAGE_BY_NAME(this.infosPublish.work.destination), 
+                                driverId: this.$store.state.profil.userUid, 
+                                timeDep: this.convertTimeString(this.infosPublish.work.hourDep), 
+                                maxSeats: this.infosPublish.work.nbPassager,
+                                price: this.infosPublish.work.price,
+                                route: this.infosPublish.work.route,
+                                hour: this.infosPublish.work.hour,
+                                daysHour: this.infosPublish.work.daysHour,
+                                weeksSelected: this.infosPublish.work.weeksSelected,
+                            };
 
+                            console.log("infos-work:", infos);
 
-                        var infos = {
-                            villageDep: this.GET_ID_VILLAGE_BY_NAME(this.infosPublish.default.depart), 
-                            villageDest: this.GET_ID_VILLAGE_BY_NAME(this.infosPublish.default.destination), 
-                            driverId: this.$store.state.profil.userUid, 
-                            timeDep: this.convertTimeString(this.infosPublish.default.hourDep), 
-                            maxSeats: this.infosPublish.default.nbPassager,
-                            price: this.infosPublish.default.price,
-                            route: this.infosPublish.default.route,
-                        };
-
-                        console.log("infos", infos);
-
-                        this.$store.dispatch('publish/newTrip', infos);
-
+                            this.$store.dispatch('publish/newTripMultple', infos);
+                        }
+                        
                         this.nextStepMode();
                         this.overlay = true;
                         break;
                     
                     case "select-day-hour-domicile":
-                        if (this.$refs.BottomMenuRef) {
-                            this.infosPublish.default.hourDep = this.$refs.BottomMenuRef.numberSelected;
+                        if ( this.$refs[`BottomMenuRef${this.mode}`] ) {
+                            this.infosPublish.default.hourDep = this.$refs[`BottomMenuRef${this.mode}`].numberSelected;
                         }
                         this.nextStepMode();
                         break;
 
                     case "hour-program":
                         this.infosPublish.work.hour = this.$refs.HourProgramRef.hour;
+                        this.itineraire.departureTime = this.convertTimeString(this.infosPublish.work.hour.home);
                         console.log("get hour", this.infosPublish.work.hour);
+                        this.nextStepMode();
+                        break;
+                    case "hour-day-program":
+                        if( this.$refs.HourDepOtherRef ){
+                            this.infosPublish.work.daysHour = this.$refs.HourDepOtherRef.daysHour;
+                            this.itineraire.departureTime = this.convertTimeString(this.infosPublish.work.daysHour[0].hour.home);
+                        }
+                        console.log(this.infosPublish.work.daysHour);
                         this.nextStepMode();
                         break;
                     case "select-day":
@@ -537,6 +592,8 @@
                     $(".mode-publish").css("display", "flex");
                 }
 
+                console.log("NEW-MODE", this.mode);
+
                 this.actionAfterNextStep()
             },
             actionAfterNextStep(){
@@ -546,8 +603,8 @@
 
                 case "time":
                     //open
-                    if (this.$refs.BottomMenuRef && !this.overlay && !this.modeWork) {
-                        this.overlay = this.$refs.BottomMenuRef.open();
+                    if (this.$refs[`BottomMenuRef${this.mode}`] && !this.overlay && !this.modeWork) {
+                        this.overlay = this.$refs[`BottomMenuRef${this.mode}`].open();
                     }
                     break;
 
@@ -557,15 +614,15 @@
                 
                 case "select-car":
                     //open
-                    if (this.$refs.BottomMenuRef && !this.overlay) {
-                        this.overlay = this.$refs.BottomMenuRef.open();
+                    if (this.$refs[`BottomMenuRef${this.mode}`] && !this.overlay) {
+                        this.overlay = this.$refs[`BottomMenuRef${this.mode}`].open();
                     }
                     break;
 
                 case "nb-passenger":
                     //open
-                    if (this.$refs.BottomMenuRef) {
-                        this.overlay = this.$refs.BottomMenuRef.open();
+                    if (this.$refs[`BottomMenuRef${this.mode}`]) {
+                        this.overlay = this.$refs[`BottomMenuRef${this.mode}`].open();
                     }
                     break;
 
@@ -576,8 +633,16 @@
                 case "select-price":
                     this.overlay = true;
                     //open
-                    if (this.$refs.BottomMenuRef) {
-                        this.overlay = this.$refs.BottomMenuRef.open();
+                    if ( this.$refs[`BottomMenuRef${this.mode}`] ) {
+                        this.overlay = this.$refs[`BottomMenuRef${this.mode}`].open();
+                    }  
+                    break;
+                
+                case "select-week":
+                    this.overlay = true;
+                    //open
+                    if ( this.$refs[`BottomMenuRef${this.mode}`] ) {
+                        this.overlay = this.$refs[`BottomMenuRef${this.mode}`].open();
                     }  
                     break;
                 
@@ -586,12 +651,18 @@
                     break;
 
                 case "hour-program":
-                    
+                    console.log("Hour-program");
                     break;
                 case "select-day":
                     //open
-                    if (this.$refs.BottomMenuRef) {
-                        this.overlay = this.$refs.BottomMenuRef.open();
+                    if (this.$refs[`BottomMenuRef${this.mode}`]) {
+                        this.overlay = this.$refs[`BottomMenuRef${this.mode}`].open();
+                    }
+                    break;
+                case "notification":
+                    //open
+                    if (this.$refs[`BottomMenuRef${this.mode}`]) {
+                        this.overlay = this.$refs[`BottomMenuRef${this.mode}`].open();
                     }
                     break;
                 default:
@@ -602,12 +673,18 @@
             close(){
                 if( this.overlay ){
                     this.overlay = false;
-                    if(this.$refs.BottomMenuRef){
-                        this.$refs.BottomMenuRef.close();
+                    if(this.$refs[`BottomMenuRef${this.mode}`]){
+                        this.$refs[`BottomMenuRef${this.mode}`].close();
                         this.indexMode = -1;
                         this.nextStepMode();
                     }
                 }
+            },
+            goToHourEdit(){
+                if( this.$refs.HourProgramRef ){
+                    this.infosPublish.work.hour = this.$refs.HourProgramRef.hour;
+                }
+                this.mode = this.modePublish.work[this.indexMode].otherWay[0].mode;
             },
             setItineraire(loc, infoVillage){
                 this.itineraire[loc].infos.village = infoVillage.village;
@@ -640,6 +717,7 @@
                 // Retourner l'objet Date résultant
                 return time;
             },
+            
         },
         watch: {
         }

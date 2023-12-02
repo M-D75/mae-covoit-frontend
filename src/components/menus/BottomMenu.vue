@@ -1,119 +1,118 @@
 
 <style lang="scss" model>
     @import '@/styles/mixins.scss';
-    .credit-card.card-contain {
-        .bloc-saisi {
-            background-color: var(--white-bg-color);
-            border-radius: 10px;
-            height: 56px;
-            margin: 30px auto;
-            box-shadow: 0px 0px 1px;
-            .v-text-field {
-                .v-input__control {
-                    .v-field {
-                        .v-field__field{
-                            background-color: var(--white-bg-color);
-                            border-radius: 10px;
-                            .v-field__input{
-                                color: var(--font-color-label);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        .num-credit-card {
-            > div {
+    .v-container.bottom-menu {
+        position: fixed;
+        left: 0;
+        .credit-card.card-contain {
+            .bloc-saisi {
+                background-color: var(--white-bg-color);
+                border-radius: 10px;
+                height: 56px;
+                margin: 30px auto;
+                box-shadow: 0px 0px 1px;
                 .v-text-field {
                     .v-input__control {
                         .v-field {
                             .v-field__field{
+                                background-color: var(--white-bg-color);
+                                border-radius: 10px;
                                 .v-field__input{
-                                    // 
-                                    letter-spacing: 3px;
-                                    text-align: center;
-                                    padding-right: 10px;
-                                    @include respond-to('tiny') {
-                                        padding-left: 10px;
-                                    }
+                                    color: var(--font-color-label);
                                 }
                             }
                         }
                     }
                 }
             }
-        }
 
-        .date-cvc {
-            > div {
-                &.date {
-                    .month, .year {
-                        .v-text-field {
-                            .v-input__control {
-                                .v-field {
-                                    .v-field__field{
-                                        .v-field__input{
-                                            padding-right: 10px;
-                                            letter-spacing: 3px;
-                                            // padding-right: 5px;
-                                            text-align: center;
-                                            @include respond-to('tiny') {
-                                                padding-left: 10px;
-                                            }
+            .num-credit-card {
+                > div {
+                    .v-text-field {
+                        .v-input__control {
+                            .v-field {
+                                .v-field__field{
+                                    .v-field__input{
+                                        // 
+                                        letter-spacing: 3px;
+                                        text-align: center;
+                                        padding-right: 10px;
+                                        @include respond-to('tiny') {
+                                            padding-left: 10px;
                                         }
                                     }
                                 }
                             }
                         }
                     }
-                    .slash {
-                        margin: auto 0;
-                    }
                 }
-                &.cvc {
-                    .v-text-field {
-                        .v-input__control {
-                            .v-field {
-                                .v-field__field{
-                                    .v-field__input{
-                                        text-align: center;
-                                        letter-spacing: 5px;
-                                        text-align: center;
+            }
+
+            .date-cvc {
+                > div {
+                    &.date {
+                        .month, .year {
+                            .v-text-field {
+                                .v-input__control {
+                                    .v-field {
+                                        .v-field__field{
+                                            .v-field__input{
+                                                padding-right: 10px;
+                                                letter-spacing: 3px;
+                                                // padding-right: 5px;
+                                                text-align: center;
+                                                @include respond-to('tiny') {
+                                                    padding-left: 10px;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        .slash {
+                            margin: auto 0;
+                        }
+                    }
+                    &.cvc {
+                        .v-text-field {
+                            .v-input__control {
+                                .v-field {
+                                    .v-field__field{
+                                        .v-field__input{
+                                            text-align: center;
+                                            letter-spacing: 5px;
+                                            text-align: center;
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
-            }   
+                }   
+            }
         }
-    }
 
-    .password {
-        .contain-input{
-            .v-text-field {
-                .v-input__control {
-                    box-shadow: var(--box-shadow-card);
-                    .v-field.v-field--variant-solo{
-                        border-radius: 20px !important;
-                        overflow: hidden;
-                    }
-                    .v-field__field {
-                        background-color: white;
-                        .v-field__input {
-                            text-align: center;
+        .password {
+            .contain-input{
+                .v-text-field {
+                    .v-input__control {
+                        box-shadow: var(--box-shadow-card);
+                        .v-field.v-field--variant-solo{
+                            border-radius: 20px !important;
+                            overflow: hidden;
+                        }
+                        .v-field__field {
+                            background-color: white;
+                            .v-field__input {
+                                text-align: center;
+                            }
                         }
                     }
                 }
             }
         }
     }
-
-
- 
-
-
 </style>
 
 <style lang="scss" scoped>
@@ -209,8 +208,11 @@
         color: var(--font-color-label);
         width: 100%;
         max-width: 100%;
+        
         .sub-cont {
             height: max-content;
+            max-height: 90vh;
+            overflow: auto;
             .bar-up {
                 cursor: pointer;
                 margin: auto;
@@ -249,8 +251,10 @@
                     margin: auto;
                     display: flex;
                     width: 100%;
-                    justify-content: space-around;
+                    justify-content: center;
+                    flex-wrap: wrap;
                     .day{
+                        margin: auto 2.5px;
                         cursor: pointer;
                         display: grid;
                         align-content: center;
@@ -549,7 +553,14 @@
                     >{{ day.day }}</div>
                 </div>
                 <div class="label text-center">{{ labelSelectorN2 }}</div>
-               <TimeCard ref="TimeCardRef"/>
+                <TimeCard
+                    v-if="timeCard"
+                    ref="TimeCardRef" 
+                    :class-name="className" 
+                    :hour-init="timeInit.hourInit" 
+                    :minute-init="timeInit.minuteInit" 
+                    :nb-pas-minutes="timeInit.nbPasMinutes"
+                />
                 
                 <v-btn 
                     class="text-none"
@@ -587,6 +598,31 @@
                 >Valider</v-btn>
             </div>
 
+            <!-- select week -->
+            <div
+                v-if="mode=='select-week'"
+                class="select-day mx-auto"
+            >
+                <div class="label text-center" >{{ labelSelectorN1 }}</div>
+                <div class="day-contain">
+                    <div
+                        v-for="(week, index) in weeksSelected"
+                        :key="index"
+                        class="day"
+                        :class="{selected: week.selected}"
+                        @click="selectWeek(index)"
+                    >{{ week.week }}</div>
+                </div>
+                
+                <v-btn 
+                    class="text-none"
+                    rounded="xl" 
+                    size="x-large"
+                    variant="outlined"
+                    block
+                    @click="emit('week-valided')"
+                >Valider</v-btn>
+            </div>
 
             <!-- price -->
             <div
@@ -954,6 +990,7 @@
     import { defineComponent } from 'vue';
     import $ from 'jquery';
     import supabase from '@/utils/supabaseClient';
+    import { getISOWeekNumber } from '@/utils/utils.js';
 
     // Components
     import Vue3DraggableResizable from 'vue3-draggable-resizable';
@@ -968,7 +1005,7 @@
 
     export default defineComponent({
         name: 'bottom-menu',
-        emits: ["close", "time-valided", "time-changed", "day-valided", "opened", "close", "select-price", "drop-money", "up-money"], // <--- add this line
+        emits: ["close", "time-valided", "time-changed", "day-valided", "opened", "close", "select-price", "drop-money", "up-money", "week-valided"],
         components: {
             Vue3DraggableResizable,
             TrajetMember,
@@ -1081,6 +1118,13 @@
                     {day: "S", selected: false},
                     {day: "D", selected: false},
                 ],
+                weeksSelected: [
+                    {week: "S45", selected: true},
+                    {week: "S46", selected: true},
+                    {week: "S47", selected: true},
+                    {week: "S48", selected: true},
+                ],
+                timeCard: true,
                 warn: 'low',
                 numberSelected: 0,
                 time: "",
@@ -1117,19 +1161,19 @@
             const classSubContNameJquery = this.className != "" && this.className != null ? `.sub-cont.${this.className.join(".")}` : ".sub-cont";
             this.subContHeigth = $(classSubContNameJquery)[0].clientHeight;
 
-            console.log("classe-name", this.className, "screen-height", this.sizeScreen, "subContHeigth", this.subContHeigth, "object", $(classSubContNameJquery));
+            console.log("Mounted BottomMenu : classe-name", this.className, "screen-height", this.sizeScreen, "subContHeigth", this.subContHeigth, "object", $(classSubContNameJquery));
 
             const classSubContSupNameJquery = this.className != "" && this.className != null ? `.sub-cont-sup.${this.className.join(".")}` : ".sub-cont-sup";
             this.subContSupHeigth = $(classSubContSupNameJquery)[0].clientHeight;
 
             console.log("this.subContSupHeigth", this.subContSupHeigth, $(classSubContSupNameJquery));
 
-            if( this.mode=="select-day-hour-domicile" || this.mode=="notification" ){
-                this.open();
-            }
-            else {
+            // if( this.mode=="notification" ){
+            //     this.open();
+            // }
+            // else {
                 $(classBottomMenuNameJquery).addClass("closed");
-            }
+            // }
             
             $("div.sub-label-color").addClass("warn-good-to-low");
             // if(this.mode=="password"){
@@ -1137,6 +1181,16 @@
             //     this.messageSnackbarError = "test";
             //     this.showSnackbarError = true;
             // }
+
+            //weeks
+            if( this.mode == 'select-week' ){
+                let numWeekCurrent = getISOWeekNumber(new Date())
+                for (let index = 0; index < 4; index++) {
+                    console.log(numWeekCurrent);
+                    this.weeksSelected[index].week = `S${numWeekCurrent}`;
+                    numWeekCurrent = (numWeekCurrent + 1) % 52 == 0 ? 52 : (numWeekCurrent + 1) % 52;
+                }
+            }
         },
         methods: {
             checkNumericalValue(event, nextInputRef){
@@ -1319,6 +1373,9 @@
             selectDay(index) {
                 this.daysSelected[index]["selected"] = !this.daysSelected[index]["selected"];
             },
+            selectWeek(index) {
+                this.weeksSelected[index]["selected"] = !this.weeksSelected[index]["selected"];
+            },
             selectNumber(){
                 if( this.$refs.SelectNumberRef ){
                     this.numberSelected = this.$refs.SelectNumberRef.number;
@@ -1400,6 +1457,13 @@
             y(){
                 const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
                 $(classBottomMenuNameJquery).css("top", `${this.y}px`);
+            },
+            timeInit(){
+                // console.log("timeInit-changed", this.timeInit);
+                this.timeCard = false;
+                setTimeout(function(){
+                    this.timeCard = true;
+                }.bind(this), 50);
             },
         }
    });

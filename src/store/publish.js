@@ -71,6 +71,28 @@ export default {
             }
 
             return true;
-        }
+        },
+        async newTripMultple({state}, tripDriver){
+            console.log("tripDriver", tripDriver, state)
+
+            if( ! tripDriver.daysHour || tripDriver.daysHour.length == 0){
+                const hourHome = tripDriver.hour.home;
+                const hourWork = tripDriver.hour.work;
+                console.log(hourHome, hourWork);
+                // var dataNewTrip =  {
+                //     id: idMax + 1,
+                //     village_departure_id: tripDriver.villageDep,
+                //     village_arrival_id: tripDriver.villageDest,
+                //     driver_id: tripDriver.driverId,
+                //     departure_time: tripDriver.timeDep,
+                //     max_seats: tripDriver.maxSeats,
+                //     price: tripDriver.price,
+                //     route: tripDriver.route,
+                // };
+
+            }
+
+            return true;
+        },
     },
 }

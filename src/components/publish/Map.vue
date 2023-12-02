@@ -521,7 +521,7 @@
                     });
                 }
       
-                this.getRouteInfos();
+                // this.getRouteInfos();
             },
             convertSecondsToHoursAndMinutes(seconds) {
                 const hours   = Math.floor(seconds / 3600);

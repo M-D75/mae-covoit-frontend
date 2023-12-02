@@ -228,7 +228,7 @@
                         color="blue"
                         @click="$emit('mode-work-switch')" 
                     ></v-switch>
-                    <v-icon class="multiple-car" :class="{disabled_icon: !modeWork}">mdi-calendar-sync</v-icon>
+                    <v-icon class="multiple-car" :class="{disabled_icon: !modeWork}">mdi-briefcase-clock-outline</v-icon>
                 </div>
             </v-list>
         </v-card>
@@ -249,7 +249,7 @@
 
     export default defineComponent({
         name: 'search-publish-comp',
-        emits: ["mode-work-switch"],
+        emits: ["mode-work-switch", "selected", "saisi"],
         computed: {
         },
         props: {

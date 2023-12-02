@@ -16,6 +16,13 @@
                 text-transform: capitalize;
             }
         }
+        .v-list-item {
+            .v-switch {
+                .v-input__details {
+                    display: none;
+                }
+            }
+        }
     }
 </style>
 
@@ -62,6 +69,11 @@
                     bottom: 0;
                     min-width: 50px;
                     text-align: center;
+                    margin: auto;
+                    align-content: center;
+                    .v-input__details {
+                        display: none;
+                    }
                 }
 
                 &.chip-rounded {
@@ -90,8 +102,8 @@
             class="card-btn"
             :class="classConfig.join(' ')"
             :prepend-icon="prependIcon"
-            :title="text"
         >
+            <v-list-item-title :style="{'max-width': ! chip && ! switchBtn ? '100%' : '77%'}" >{{ text }}</v-list-item-title>
             <v-chip
                 v-if="chip"
                 class="ma-2 info-plus text-center"

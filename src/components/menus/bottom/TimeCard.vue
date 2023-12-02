@@ -262,7 +262,6 @@
             }
         },
         mounted(){
-            
             this.$nextTick(function(){
 
                 var vue = this;

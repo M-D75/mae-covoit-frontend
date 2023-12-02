@@ -120,7 +120,7 @@
                         @click="selectHour('dom')"
                     >
                         <div class="sub-btn">
-                            {{ hour.domicile }}
+                            {{ hour.home }}
                         </div>
                     </div>
                 </div>
@@ -200,7 +200,7 @@
 
     export default defineComponent({
         name: 'hour-program-comp',
-        emits: ['hour-valided'],
+        emits: ['hour-valided', 'hour-edit'],
         computed: {
             ...mapState(["trajets"]),
         },
@@ -216,8 +216,8 @@
                 labelSelectorTime: "Heure",
                 modeHour: "dom",
                 hour: {
-                    "domicile":"07:00",
-                    "work":"17:00",
+                    home: "07:00",
+                    work: "17:00",
                 },
                 timeDomInit: {
                     hourInit: 7,
@@ -234,6 +234,7 @@
         methods: {
             hourEdit(){
                 console.log("hour-edit");
+                this.$emit("hour-edit");
             },
             selectHour(type) {
                 console.log(type);
@@ -255,18 +256,19 @@
             getTimeChanged(){
                 if( this.$refs.BottomMenuRef ){
                     if( this.modeHour == 'dom' ){
-                        this.hour.domicile = this.$refs.BottomMenuRefDom.time;
+                        this.hour.home = this.$refs.BottomMenuRefDom.time;
                     }
                     else {
                         this.hour.work = this.$refs.BottomMenuRefWork.time;
                     }
                 }
+                // this.$emit("time-changed")
             },
             getSelectedRef(){
                 if( this.modeHour == 'dom' ){
                     if( this.$refs.BottomMenuRefDom ){
                         console.log("time-getting-dom", this.$refs.BottomMenuRefDom.time);
-                        this.hour.domicile = this.$refs.BottomMenuRefDom.time;
+                        this.hour.home = this.$refs.BottomMenuRefDom.time;
                         this.overlay = this.$refs.BottomMenuRefDom.close();
                     }
                 }
