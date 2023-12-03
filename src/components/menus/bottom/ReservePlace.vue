@@ -129,6 +129,11 @@
     >
         <v-icon icon="mdi-alert-circle"></v-icon> <span>{{ messageSnackbarError }}</span>
     </v-snackbar>
+
+    <!-- loading -->
+    <v-overlay style="z-index: 9999;" disabled :model-value="overlayLoad" class="align-center justify-center">
+        <v-progress-circular color="blue" indeterminate size="64"></v-progress-circular>
+    </v-overlay>
 </template>
 
 
@@ -155,6 +160,7 @@
                 model_car: "VW-GOLF 7",
                 showSnackbarError: false,
                 messageSnackbarError: "",
+                overlayLoad: false,
             }
         },
         props: {
@@ -244,7 +250,9 @@
                 }
             },
             async tryReserve(){
+                this.overlayLoad = true;
                 const reserved = await this.$store.dispatch("search/reserveTrajet", { user_id: this.$store.state.profil.userUid });
+                this.overlayLoad = false;
                 if( ! reserved.valided ){
                     this.messageSnackbarError=reserved.message;
                     this.showSnackbarError=true;

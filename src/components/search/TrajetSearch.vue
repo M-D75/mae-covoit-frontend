@@ -64,13 +64,19 @@
                         position: absolute;
                         .cont-btn-switch{
                             position: absolute;
-                            width: 100%;
+                            width: 32px;
+                            height: 32px;
                             bottom: 110px;
                             left: 0;
                             // swap
                             .v-btn {
                                 position: relative;
                                 right: 13px;
+                                width: 32px;
+                                height: 32px;
+                                .v-btn__overlay{
+                                    display: none;
+                                }
                                 .v-icon {
                                     font-size: 27px;
                                     margin: 0 !important;
@@ -228,7 +234,6 @@
                     >
                         <v-icon style="margin-right: 18px;">mdi-calendar-month-outline</v-icon>{{ dateString }}
                     </v-list-item>
-
                     
 
                     <!-- Nb passenger -->
@@ -238,8 +243,14 @@
                         :title="nbPassenger"
                         :active="false"
                         :ripple="false"
-                        @click="$emit('open-nb-passenger')"
+                        
                     >
+                        <template v-slot:prepend-icon="{ prependIcon }">
+                            <v-icon :icon="prependIcon"
+                                @click="$emit('open-nb-passenger')"
+                            ></v-icon>
+                        </template>
+
                         <!-- Swicth -->
                         <v-list-item
                             class="switch"
@@ -249,6 +260,7 @@
                                     icon
                                     variant="text"
                                     @click="switchCommuneEmit()"
+                                    :ripple="false"
                                 >
                                     <v-icon
                                         class=""

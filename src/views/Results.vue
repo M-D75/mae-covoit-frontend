@@ -55,8 +55,13 @@
     <!--  -->
     <v-main class="container-trajet-member">
         <div class="label-filter text-caption text-uppercase mx-auto">{{ date.replaceAll("-", "/") }}</div>
-        <TrajetMember v-for="(infos, index) in trajetFiltered" :key="index" :infos="infos" :data-index="index"
-            @click="reserve($event, index)" />
+        <TrajetMember 
+            v-for="(infos, index) in trajetFiltered" 
+            :key="index" 
+            :infos="infos"
+            :data-index="index"
+            @click="reserve($event, index)" 
+        />
 
         <div v-if="nothing" class="nothing label-filter text-caption mx-auto">
             <div class="contenu">
@@ -112,8 +117,8 @@ export default defineComponent({
                 (trajet) => trajet.depart == this.depart
                     && trajet.destination == this.destination
                     //&& trajet.passenger_number + parseInt(this.nbPassenger) <= trajet.max_seats
-                    && this.getDate().getTime() < new Date(trajet.departure_time).getTime()
-                    && this.isSameDay(this.getDate(), new Date(trajet.departure_time))
+                    //&& this.getDate().getTime() < new Date(trajet.departure_time).getTime()
+                    //&& this.isSameDay(this.getDate(), new Date(trajet.departure_time))
             );
         },
     },
@@ -237,7 +242,7 @@ export default defineComponent({
     },
     watch: {
         overlay() {
-            if (!this.overlay) {
+            if ( ! this.overlay ) {
                 if (this.$refs.BottomMenuRef && this.$refs.BottomMenuRef.notif) {
                     this.$router.replace("/search")
                 }

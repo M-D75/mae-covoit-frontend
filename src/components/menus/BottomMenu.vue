@@ -113,6 +113,15 @@
             }
         }
     }
+
+    .msg-error{
+        color: red;
+        font-size: 11px;
+        text-align: center;
+        width: 100%;
+        display: inline-block;
+        visibility: hidden;
+    }
 </style>
 
 <style lang="scss" scoped>
@@ -587,6 +596,7 @@
                         @click="selectDay(index)"
                     >{{ day.day }}</div>
                 </div>
+                <div class="msg-error">Selectionnez au moins un jours de la semaine</div>
                 
                 <v-btn 
                     class="text-none"
@@ -594,14 +604,15 @@
                     size="x-large"
                     variant="outlined"
                     block
-                    @click="emit('day-valided')"
+                    :disabled="daysSelected.find((day) => day.selected == true) == undefined"
+                    @click="daysSelected.find((day) => day.selected == true) ? emit('day-valided') : emit('day-not-selected')"
                 >Valider</v-btn>
             </div>
 
             <!-- select week -->
             <div
                 v-if="mode=='select-week'"
-                class="select-day mx-auto"
+                class="select-day select-week mx-auto"
             >
                 <div class="label text-center" >{{ labelSelectorN1 }}</div>
                 <div class="day-contain">
@@ -613,6 +624,7 @@
                         @click="selectWeek(index)"
                     >{{ week.week }}</div>
                 </div>
+                <div class="msg-error">Selectionnez au moins une semaine</div>
                 
                 <v-btn 
                     class="text-none"
@@ -620,6 +632,7 @@
                     size="x-large"
                     variant="outlined"
                     block
+                    :disabled="weeksSelected.find((week) => week.selected == true) == undefined"
                     @click="emit('week-valided')"
                 >Valider</v-btn>
             </div>
@@ -644,7 +657,7 @@
             </div>
 
             
-            <Notification v-if="mode=='notification'" :message="'Votre trajet a bien été publé !'"  />
+            <Notification v-if="mode=='notification'" :color="notification.color" :icon="notification.icon" :message="message"  />
             <!-- End Publish -->
 
             <!-- ** Pofile ***
@@ -1005,7 +1018,9 @@
 
     export default defineComponent({
         name: 'bottom-menu',
-        emits: ["close", "time-valided", "time-changed", "day-valided", "opened", "close", "select-price", "drop-money", "up-money", "week-valided"],
+        emits: ["close", "time-valided", "time-changed", 
+            "day-valided", "day-not-selected",
+            "opened", "close", "select-price", "drop-money", "up-money", "week-valided"],
         components: {
             Vue3DraggableResizable,
             TrajetMember,
@@ -1025,6 +1040,7 @@
             },
         },
         props: {
+
             mode: {
                 type: String,
                 default: "history",
@@ -1036,6 +1052,10 @@
             labelSelectorN2: {
                 type: String,
                 default: "LABEL-SELECTOR-2",
+            },
+            message: {
+                type: String,
+                default: "",
             },
             infos: {
                 type: Object,
@@ -1089,6 +1109,16 @@
                 type: String,
                 default: "discution",
             },
+            notification: {
+                type: Object,
+                default() {
+                    return {
+                            color:  "mdi-check-circle",
+                            icon: "#9fcb66",
+                            message: "",
+                        };
+                },
+            },
         },
         data() {
             return {
@@ -1110,13 +1140,13 @@
                     max: 3,
                 },
                 daysSelected: [
-                    {day: "L", selected: true},
-                    {day: "M", selected: true},
-                    {day: "M", selected: true},
-                    {day: "J", selected: true},
-                    {day: "V", selected: true},
-                    {day: "S", selected: false},
-                    {day: "D", selected: false},
+                    {day: "L", dayName: "Lundi", selected: true},
+                    {day: "M", dayName: "Mardi", selected: true},
+                    {day: "M", dayName: "Mercredi", selected: true},
+                    {day: "J", dayName: "Jeudi", selected: true},
+                    {day: "V", dayName: "Vendredi", selected: true},
+                    {day: "S", dayName: "Samedi", selected: false},
+                    {day: "D", dayName: "Dimanche", selected: false},
                 ],
                 weeksSelected: [
                     {week: "S45", selected: true},
@@ -1372,9 +1402,24 @@
             },
             selectDay(index) {
                 this.daysSelected[index]["selected"] = !this.daysSelected[index]["selected"];
+                
+                if( this.daysSelected.find((day) => day.selected) == undefined ){
+                    $(".select-day .msg-error").css("visibility", "visible")
+                }
+                else{
+                    $(".select-day .msg-error").css("visibility", "hidden");
+                }
+                
             },
             selectWeek(index) {
                 this.weeksSelected[index]["selected"] = !this.weeksSelected[index]["selected"];
+
+                if( this.weeksSelected.find((week) => week.selected) == undefined ){
+                    $(".select-week .msg-error").css("visibility", "visible")
+                }
+                else{
+                    $(".select-week .msg-error").css("visibility", "hidden");
+                }
             },
             selectNumber(){
                 if( this.$refs.SelectNumberRef ){

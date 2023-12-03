@@ -174,7 +174,7 @@ export default {
                         .select("*")
                         .eq('id', passenger_account_id)
 
-                    if(error_account){
+                    if( error_account ){
                         console.error("Error:", error_account);
                     }
 

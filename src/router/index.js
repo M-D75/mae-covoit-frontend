@@ -18,10 +18,17 @@ import CropperAvatar from '@/components/profile/CropperAvatar.vue'
 import Trip from '@/views/trip/Trip.vue'
 import Chat from '@/views/trip/Chat.vue'
 import ProfilMember from '@/views/profil/ProfilMember.vue'
+import Test from '@/views/Test.vue'
 
 // import store from '../store'; // Chemin d'accès à votre fichier store
 
 const routes = [
+    {
+        path: '/test',
+        name: 'test',
+        component: Test,
+        meta: { requiresAuth: true },
+    },
     {
         path: '/trip',
         name: 'trip',

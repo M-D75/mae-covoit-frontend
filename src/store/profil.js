@@ -289,15 +289,12 @@ export default {
                 const formattedDate = dateConverter(departureDate);
                 
                 const existingGroup = acc.find(group => group.date === formattedDate);
-                //console.log("infooooooo:", info, JSON.stringify(existingGroup));
                 if ( existingGroup ) {
                     existingGroup.infos.push(info);
                     existingGroup.infos = existingGroup.infos.sort((a, b) => {
-                        // Convertir les chaînes de temps en objets Date
                         let dateA = new Date(a.departure_time);
                         let dateB = new Date(b.departure_time);
                       
-                        // Trier du plus récent au plus ancien
                         return dateB - dateA;
                     })
                 }
@@ -311,7 +308,7 @@ export default {
                 return acc;
             }, []).reverse();
             
-            console.log("groupedInfos", groupedInfos);
+            console.log("groupedInfos:", groupedInfos);
 
             state.profil.myPublish = groupedInfos;
             console.log("_trips:", _trips, state.profil.myPublish);

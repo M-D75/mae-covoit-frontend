@@ -93,14 +93,41 @@
             max-width="500"
             
         >
-            <div v-if="mode!='planning'" @click="headerClick()" class="header">
-                <v-avatar>
+            <div @click="headerClick()" class="header">
+                <v-avatar v-if="mode!='planning'">
                     <v-img
                         alt="Avatar"
                         :src="infos.avatar"
                     ></v-img>
                 </v-avatar>
-                <span class="name">{{ infos.name }}</span>
+
+                <v-avatar 
+                    v-if="mode=='planning'"
+                >
+                    <v-img
+                        alt="Avatar"
+                        :src="'https://cdn.vectorstock.com/i/preview-1x/76/28/unknown-person-user-icon-for-web-vector-34757628.jpg'"
+                    ></v-img>
+                </v-avatar>
+
+                <div
+                    v-for="(booking, index) in infos.bookings"
+                    :key="index"
+                >
+                    <v-avatar 
+                        v-if="mode=='planning'"
+                        style="position: relative; left: -30px;"    
+                    >
+                        <v-img
+                            alt="Avatar"
+                            :src="'https://cdn.vectorstock.com/i/preview-1x/76/28/unknown-person-user-icon-for-web-vector-34757628.jpg'"
+                        ></v-img>
+                    </v-avatar>
+                </div>
+
+                
+
+                <span v-if="mode!='planning'" class="name">{{ infos.name }}</span>
             </div>
             
             <v-list
@@ -163,7 +190,7 @@
    // Components
     export default {
         name: 'card-trajet-history-comp',
-        emits: ["card-touched"],
+        emits: ["card-touched", "open-contacts"],
         computed: {
             ...mapState("trip", ['driver', 'chat']),
         },
@@ -225,12 +252,17 @@
             async headerClick(){
                 console.log('headerClick');
                 this.SET_TRIP_SELECTED(this.infos);
-                const memberOk = await this.getProfilMember({userUid: this.infos.driver_id});
-                if( memberOk )
-                    this.$router.push('/member');
-                else{
-                    this.messageSnackbarError = "Nous n'avons pas pu récupérer les informations souhaité, désolé !";
-                    this.showSnackbarError = true;
+                if( this.mode == 'trajets' ){
+                    const memberOk = await this.getProfilMember({userUid: this.infos.driver_id});
+                    if( memberOk )
+                        this.$router.push('/member');
+                    else{
+                        this.messageSnackbarError = "Nous n'avons pas pu récupérer les informations souhaité, désolé !";
+                        this.showSnackbarError = true;
+                    }
+                }
+                else {
+                    this.$emit("open-contacts");
                 }
             },
         }

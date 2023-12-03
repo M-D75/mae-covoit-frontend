@@ -142,11 +142,14 @@
                 v-if="onglet=='trajets' || onglet=='planning'" 
                 :infos="infosTravels" 
                 :mode="onglet"
-                />
+                v-on:open-contacts="$refs.PaneApearRef.open()"
+            />
         </div>
     </v-main>
         
     <BottomNav />
+
+    <PaneApear ref="PaneApearRef" mode="contacts"/>
 
     <v-overlay 
         v-model="overlay"
@@ -202,7 +205,8 @@
     import StatsTrajet from '@/components/profile/StatsTrajet.vue';
     import HistoryTrajets from '@/components/profile/HistoryTrajets.vue';
     import BottomNav from '@/components/menus/BottomNav.vue';
-    import BottomMenu from '@/components/menus/BottomMenu.vue';    
+    import BottomMenu from '@/components/menus/BottomMenu.vue';
+    import PaneApear from '@/components/PaneApear.vue';    
 
     export default defineComponent({
         name: 'profil-view',
@@ -220,6 +224,7 @@
             HistoryTrajets,
             BottomNav,
             BottomMenu,
+            PaneApear,
         },
         data() {
             return {
@@ -453,7 +458,7 @@
             askNewMessage(){
                 const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
 
-                const typeUrl = "local";
+                const typeUrl = "online";
                 axios.post(`${adresse[typeUrl]}/askNewMessage`, {
                         userId: this.userUid,
                     })

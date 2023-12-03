@@ -520,8 +520,8 @@
                         padding: [18, 18] // padding en pixels autour des limites.
                     });
                 }
-      
-                // this.getRouteInfos();
+                
+                this.getRouteInfos();
             },
             convertSecondsToHoursAndMinutes(seconds) {
                 const hours   = Math.floor(seconds / 3600);

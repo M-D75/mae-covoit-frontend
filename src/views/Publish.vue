@@ -64,7 +64,7 @@
         <!-- Depart -->
         <Search 
             v-if="mode=='depart' || mode=='time'"
-            ref="SearchRef"
+            ref="SearchRefdepart"
             title="D'ou partez vous ?"
             label="Saisissez une commune"
             :switche="true"
@@ -78,7 +78,7 @@
         <!-- Destination -->
         <Search 
             v-if="mode=='destination'"
-            ref="SearchRef"
+            ref="SearchRefdestination"
             title="Où allez vous ?"
             label="Saisissez une commune"
             :focus="true"
@@ -132,7 +132,7 @@
 
         <!-- itineraire -->
         <Itineraire 
-            v-if="mode=='itineraire' || mode=='select-week' || mode=='select-price' || mode=='notification' "
+            v-if="mode=='itineraire' || mode=='select-day' || mode=='select-week' || mode=='select-price' || mode=='notification' "
             ref="ItineraireRef"
             :itineraire="itineraire"
             v-on:itineraire-valided="getSelected()" 
@@ -155,8 +155,9 @@
             ref="BottomMenuRefnotification"
             :class-name="['notification']"
             mode="notification"
+            :message="notification.message"
+            :notification="notification"
             v-on:close="overlay = false; nextStepMode()"
-            v-on:time-valided="getSelected()"
         />
 
 
@@ -191,19 +192,20 @@
         /> -->
 
         <!-- day -->
-        <!-- <BottomMenu
-            v-if="mode=='select-day' || mode=='hour-day-program'"
-            ref="BottomMenuRef"
+        <BottomMenu
+            v-if="mode=='select-day' || mode=='hour-day-program' || mode=='select-week' || mode=='select-price'"
+            ref="BottomMenuRefselect-day"
             :class-name="['select_day']"
             mode="select-day"
             labelSelectorN1="Repeter quelle jour ?"
             v-on:close="overlay = false"
             v-on:day-valided="getSelected()"
-        /> -->
+            v-on:day-not-selected="showError('Aucun jour n\'a été selectionné')"
+        />
 
         <!-- select-week -->
         <BottomMenu
-            v-if="mode=='select-week' || mode=='select-price' || mode=='itineraire'"
+            v-if="mode=='select-week' || mode=='select-day' || mode=='select-price' || mode=='itineraire'"
             ref="BottomMenuRefselect-week"
             :class-name="['select_week']"
             mode="select-week"
@@ -212,8 +214,30 @@
             v-on:week-valided="getSelected()"
         />
 
-
+        <!-- message error -->
+        <v-snackbar
+            v-model="showSnackbarError"
+            :timeout="4000"
+            color="error"
+            style="z-index: 9999;"
+        >
+            <v-icon icon="mdi-alert-circle"></v-icon> <span>{{ messageSnackbarError }}</span>
+        </v-snackbar>
     </v-main>
+
+    <!-- Load -->
+    <v-overlay
+        :model-value="overlayLoad"
+        disabled
+        class="align-center justify-center"
+        style="z-index: 9999;"
+    >
+        <v-progress-circular
+            color="black"
+            indeterminate
+            size="64"
+        ></v-progress-circular>
+    </v-overlay>
 
     <BottomNav />
 </template>
@@ -235,7 +259,9 @@
     import HourProgram from '@/components/publish/HourProgram.vue';
     import HourDepOther from '@/components/publish/HourDepOther.vue';
 
+
     //import supabase from '@/utils/supabaseClient.js';
+    import { getFirstDayOfWeek, findKeyOfNullOrUndefined } from '@/utils/utils.js'
 
 
     export default defineComponent({
@@ -259,7 +285,7 @@
                     if ( this.mode == "destination" ) {
                         return this.communesHistory.filter((commune) => this.saisi != commune && commune != this.infosPublish[typePath].depart && commune.toLowerCase().includes(this.saisi.toLocaleLowerCase())).slice(0, 3);
                     }
-                    else if(this.mode == "depart") {
+                    else if( this.mode == "depart" ) {
                         return this.communesHistory.slice(0, 3);
                     }
                 }
@@ -290,33 +316,40 @@
         },
         data() {
             return {
+                overlayLoad: false,
                 saisi: "",
                 open: true,
                 overlay: false,
                 mode: "depart",
                 indexMode: 0,
-                modeWork: true,
+                modeWork: false,
+                notification: {
+                    color:  "mdi-check-circle",
+                    icon: "#9fcb66",
+                    message: "Votre trajet à bien été publié !!!",
+                },
                 modePublish: {
                     default: [
-                        {mode: "depart"}, 
-                        {mode: "time"},
-                        {mode: "destination"}, 
-                        {mode: "select-car"},
-                        {mode: "nb-passenger"},
-                        {mode: "itineraire"},
-                        {mode: "select-price"},
-                        {mode: "notification"},
+                        {mode: "depart", go: true}, 
+                        {mode: "time", go: true},
+                        {mode: "destination", go: true}, 
+                        {mode: "select-car", go: true},
+                        {mode: "nb-passenger", go: true},
+                        {mode: "itineraire", go: true},
+                        {mode: "select-price", go: true},
+                        {mode: "notification", go: true},
                     ],
                     work: [
-                        {mode: "depart"},
-                        {mode: "destination"},
-                        {mode: "hour-program", otherWay: [{mode: "hour-day-program" }]},
-                        {mode: "select-car"},
-                        {mode: "nb-passenger"},
-                        {mode: "itineraire"},
-                        {mode: "select-price"},
-                        {mode: "select-week"},
-                        {mode: "notification"},
+                        {mode: "depart", go: true },
+                        {mode: "destination", go: true },
+                        {mode: "hour-program", go: true, otherWay: [{mode: "hour-day-program", go: true }]},
+                        {mode: "select-car", go: true },
+                        {mode: "nb-passenger", go: true },
+                        {mode: "itineraire", go: true },
+                        {mode: "select-price", go: true },
+                        {mode: "select-day", go: true },
+                        {mode: "select-week", go: true },
+                        {mode: "notification", go: true },
                     ],
                 },
                 infosPublish: {
@@ -334,10 +367,12 @@
                         depart: "",
                         destination: "",
                         time: "",
+                        sameHour: true,
                         hour: {
                             home: "08:00",
                             work: "17:00",
                         },
+                        daysSelected: [],
                         daysHour: [],
                         weeks: 1,
                         car: 0,
@@ -381,6 +416,8 @@
                     minuteInit: 30,
                     nbPasMinutes: 5,
                 },
+                showSnackbarError: false,
+                messageSnackbarError: "",
             }
         },
         created() {
@@ -401,9 +438,12 @@
             //let hours = date.getUTCHours().toString().padStart(2, '0');
             //let minutes = date.getUTCMinutes().toString().padStart(2, '0');
             this.timeInit.hourInit = date.getUTCHours()
-            this.timeInit.minuteInit = Math.ceil(date.getUTCMinutes()/this.timeInit.nbPasMinutes)*this.timeInit.nbPasMinutes
+            this.timeInit.minuteInit = (Math.ceil(date.getUTCMinutes()/this.timeInit.nbPasMinutes)*this.timeInit.nbPasMinutes)%60;
+            
 
-            console.log(this.$store.state.profil.userUid);
+            console.log(this.$store.state.profil.userUid, this.timeInit);
+
+            console.log("SSS", getFirstDayOfWeek("S50").getUTCDate());
 
         },
         methods: {
@@ -412,18 +452,27 @@
             ...mapActions("publish", ["newTrip"]),
             getSaisi(){
                 $(".mode-publish").css("display", "none");
-                this.saisi = this.$refs.SearchRef.saisi;
+                if(this.$refs[`SearchRef${this.mode}`])
+                    this.saisi = this.$refs[`SearchRef${this.mode}`].saisi;
             },
-            getSelected(){
+            async getSelected(){
                 const typePath = this.modeWork ? "work" : "default";
 
                 console.log("child-selected", this.infosPublish[typePath].depart, this.infosPublish[typePath].destination, this.mode)
                 $(".mode-publish").css("display", "none");
                 var _tmp_village = null; 
+                let selectDayObj = null;
+
                 switch (this.mode) {
                     case "depart":
+                        //reinit
+                        selectDayObj = this.modePublish.work.find((mode) => (mode.mode == "select-day"));
+                        if ( selectDayObj )
+                            selectDayObj.go = true;
+                        this.infosPublish.work.sameHour = true;
+
                         // get value
-                        this.infosPublish[typePath].depart = this.$refs.SearchRef.saisi;
+                        this.infosPublish[typePath].depart = this.$refs[`SearchRef${this.mode}`].saisi;
                         this.itineraire.origin.infos.village = this.infosPublish[typePath].depart;
                         this.ajouterAuHistorique(this.infosPublish[typePath].depart);
                         this.sauvegarderHistorique();
@@ -449,8 +498,8 @@
                         break;
 
                     case "destination":
-                        if (this.$refs.SearchRef) {
-                            this.infosPublish[typePath].destination = this.$refs.SearchRef.saisi;
+                        if ( this.$refs[`SearchRef${this.mode}`] ) {
+                            this.infosPublish[typePath].destination = this.$refs[`SearchRef${this.mode}`].saisi;
                             this.itineraire.destination.infos.village = this.infosPublish[typePath].destination;
                             this.ajouterAuHistorique(this.infosPublish[typePath].destination);
                             this.sauvegarderHistorique();
@@ -502,13 +551,49 @@
 
                             console.log("infos", infos);
 
-                            //this.$store.dispatch('publish/newTrip', infos);
+                            const keyNovalue = findKeyOfNullOrUndefined(infos)
+
+                            if(keyNovalue == null){
+                                console.log("infos-work:", infos);
+
+                                this.overlayLoad = true;
+                                const response = await this.$store.dispatch('publish/newTrip', infos);
+
+                                if( response.status == 0 ){
+                                    this.notification = {
+                                            message: "Votre trajet à bien était publié !",
+                                            icon: "mdi-check-circle",
+                                            color: "#9fcb66",
+                                        }
+                                }
+                                else{
+                                    this.notification = {
+                                            message: response.message,
+                                            icon: "mdi-alert-circle",
+                                            color: "red",
+                                        }
+                                }
+                            }
+                            else{
+                                this.showError(`Une valeur est manquante, veuillez réesayez plus tard (${keyNovalue})`)
+                                this.notification = {
+                                        message: "Une erreur s'est produite, veuillez réessayer plus tard !",
+                                        icon: "mdi-alert-circle",
+                                        color: "red",
+                                    };
+                            }
                         }
 
+                        this.overlayLoad = false;
                         this.nextStepMode();
                         this.overlay = true;
                         break;
-
+                    case "select-day":
+                        if (this.$refs[`BottomMenuRef${this.mode}`]) {
+                            this.infosPublish[typePath].daysSelected = this.$refs[`BottomMenuRef${this.mode}`].daysSelected;
+                        }
+                        this.nextStepMode();
+                        break;
                     case "select-week":
                         
                         if (this.$refs[`BottomMenuRef${this.mode}`]) {
@@ -519,25 +604,72 @@
                         
                         console.log("infosPusblish:", this.infosPublish);
                         if( this.modeWork ){
+
+                            if( this.infosPublish.work.sameHour ){
+                                //Build days Hour
+                                for (let index = 0; index < this.infosPublish[typePath].daysSelected.length; index++) {
+                                    const dayHour = {
+                                            day: this.infosPublish[typePath].daysSelected[index].dayName, 
+                                            hour: {
+                                                home: this.infosPublish.work.hour.home,
+                                                work: this.infosPublish.work.hour.work,
+                                            },
+                                            values: {
+                                                home: this.infosPublish[typePath].daysSelected[index].selected,
+                                                work: this.infosPublish[typePath].daysSelected[index].selected,
+                                            },
+                                        }
+                                    this.infosPublish.work.daysHour.push(dayHour);
+                                }
+                                console.log("sameHour", this.infosPublish.work.daysHour);
+                            }
+                            
                             
                             let infos = {
                                 villageDep: this.GET_ID_VILLAGE_BY_NAME(this.infosPublish.work.depart), 
                                 villageDest: this.GET_ID_VILLAGE_BY_NAME(this.infosPublish.work.destination), 
                                 driverId: this.$store.state.profil.userUid, 
-                                timeDep: this.convertTimeString(this.infosPublish.work.hourDep), 
                                 maxSeats: this.infosPublish.work.nbPassager,
                                 price: this.infosPublish.work.price,
                                 route: this.infosPublish.work.route,
-                                hour: this.infosPublish.work.hour,
                                 daysHour: this.infosPublish.work.daysHour,
                                 weeksSelected: this.infosPublish.work.weeksSelected,
                             };
 
-                            console.log("infos-work:", infos);
+                            const keyNovalue = findKeyOfNullOrUndefined(infos)
 
-                            this.$store.dispatch('publish/newTripMultple', infos);
+                            if(keyNovalue == null){
+                                console.log("infos-work:", infos);
+
+                                this.overlayLoad = true;
+                                const response = await this.$store.dispatch('publish/newTripMultple', infos);
+
+                                if( response.status == 0 ){
+                                    this.notification = {
+                                            message: "Vos trajets ont bien était publié !",
+                                            icon: "mdi-check-circle",
+                                            color: "#9fcb66",
+                                        }
+                                }
+                                else{
+                                    this.notification = {
+                                            message: response.message,
+                                            icon: "mdi-alert-circle",
+                                            color: "red",
+                                        }
+                                }
+                            }
+                            else{
+                                this.showError(`Une valeur est manquante, veuillez réesayez plus tard (${keyNovalue})`)
+                                this.notification = {
+                                        message: "Une erreur s'est produite, veuillez réessayer plus tard !",
+                                        icon: "mdi-alert-circle",
+                                        color: "red",
+                                    }
+                            }
                         }
                         
+                        this.overlayLoad = false;
                         this.nextStepMode();
                         this.overlay = true;
                         break;
@@ -563,9 +695,6 @@
                         console.log(this.infosPublish.work.daysHour);
                         this.nextStepMode();
                         break;
-                    case "select-day":
-                        this.nextStepMode();
-                        break;
 
                     default:
                         this.nextStepMode();
@@ -578,13 +707,14 @@
                     this.overlay = false;
                 }
 
-                if( ! this.modeWork ){
-                    this.indexMode = (this.indexMode + 1) % this.modePublish.default.length;
-                    this.mode = this.modePublish.default[this.indexMode].mode;
-                }
-                else{
-                    this.indexMode = (this.indexMode + 1) % this.modePublish.work.length;
-                    this.mode = this.modePublish.work[this.indexMode].mode;
+                const typePath = this.modeWork ? "work" : "default";
+                let found = false;
+                while( ! found ){
+                    this.indexMode = (this.indexMode + 1) % this.modePublish[typePath].length;
+                    if( this.modePublish[typePath][this.indexMode].go ){
+                        this.mode = this.modePublish[typePath][this.indexMode].mode;
+                        found = true;
+                    }
                 }
 
                 //Reinit
@@ -592,7 +722,7 @@
                     $(".mode-publish").css("display", "flex");
                 }
 
-                console.log("NEW-MODE", this.mode);
+                console.log("NEW-MODE:", this.mode);
 
                 this.actionAfterNextStep()
             },
@@ -655,7 +785,7 @@
                     break;
                 case "select-day":
                     //open
-                    if (this.$refs[`BottomMenuRef${this.mode}`]) {
+                    if ( this.$refs[`BottomMenuRef${this.mode}`] ) {
                         this.overlay = this.$refs[`BottomMenuRef${this.mode}`].open();
                     }
                     break;
@@ -673,7 +803,7 @@
             close(){
                 if( this.overlay ){
                     this.overlay = false;
-                    if(this.$refs[`BottomMenuRef${this.mode}`]){
+                    if( this.$refs[`BottomMenuRef${this.mode}`] ){
                         this.$refs[`BottomMenuRef${this.mode}`].close();
                         this.indexMode = -1;
                         this.nextStepMode();
@@ -684,6 +814,12 @@
                 if( this.$refs.HourProgramRef ){
                     this.infosPublish.work.hour = this.$refs.HourProgramRef.hour;
                 }
+                this.infosPublish.work.sameHour = false;
+                
+                let selectDayObj = this.modePublish.work.find(item => item.mode === "select-day");
+                if ( selectDayObj )
+                    selectDayObj.go = false;
+
                 this.mode = this.modePublish.work[this.indexMode].otherWay[0].mode;
             },
             setItineraire(loc, infoVillage){
@@ -717,7 +853,10 @@
                 // Retourner l'objet Date résultant
                 return time;
             },
-            
+            showError(message){
+                this.messageSnackbarError = message;
+                this.showSnackbarError = true;
+            },
         },
         watch: {
         }

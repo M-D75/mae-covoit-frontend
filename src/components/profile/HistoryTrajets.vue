@@ -104,7 +104,7 @@
                 :key="info.date"
             >
                 <div class="date">{{info.date}}</div>
-                <GroupCardsHistory :infos="info.infos" :mode="mode"/>
+                <GroupCardsHistory :infos="info.infos" :mode="mode" v-on:open-contacts="$emit('open-contacts')"/>
             </div>
         </div>
     </div>
@@ -123,6 +123,7 @@
 
     export default defineComponent({
         name: 'history-trajets-comp',
+        emits: ["open-contacts"],
         computed: {
             ...mapState("profil", ["profil"])
         },

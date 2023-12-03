@@ -121,6 +121,7 @@
                                 dark
                                 color="blue"
                                 v-model="day.values.home"
+                                @change="updateDayHour(index)"
                             ></v-switch>
                         </div>
                     </div>
@@ -134,6 +135,7 @@
                                 dark
                                 color="blue"
                                 v-model="day.values.work"
+                                @change="updateDayHour(index)"
                             ></v-switch>
                         </div>
                     </div>
@@ -411,12 +413,31 @@
                     const max = group[index].max;
                     const obj = group[index].obj;
                     if( group[index].min != group[index].max ){
-                        this.daysHourShow.push({ ...{day: `${this.daysHour[min].day} - ${this.daysHour[max].day}`}, ...obj });
+                        this.daysHourShow.push({ ...{day: `${this.daysHour[min].day} - ${this.daysHour[max].day}`
+                                ,min: min
+                                ,max: max
+                            }
+                            , ...obj });
                     }
                     else {
-                        this.daysHourShow.push({ ...{day: `${this.daysHour[min].day}`}, ...obj });
+                        this.daysHourShow.push({ ...{day: `${this.daysHour[min].day}`
+                                ,min: min
+                                ,max: max
+                            }
+                            , ...obj });
                     }
                 }
+            },
+            updateDayHour(indexDHS){
+                const min = this.daysHourShow[indexDHS].min;
+                const max = this.daysHourShow[indexDHS].max;
+                
+                for (let indexDH = min; indexDH <= max; indexDH++) {
+                    this.daysHour[indexDH].values.home = this.daysHourShow[indexDHS].values.home;
+                    this.daysHour[indexDH].values.work = this.daysHourShow[indexDHS].values.work;
+                }
+
+                console.log(this.daysHour, this.daysHourShow);
             },
             equalDayHour(dayHour1, dayHour2){
                 return dayHour1.hour.home == dayHour2.hour.home
@@ -455,7 +476,7 @@
                 }
 
                 this.updateHourShow();
-            }
+            },
         },
     });
 </script>

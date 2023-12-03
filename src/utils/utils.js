@@ -17,7 +17,7 @@ export function dateConverter(date){
         dateString = "Demain";
     }
     else {
-        dateString = date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+        dateString = date.toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
     }
 
     return dateString;
@@ -78,6 +78,15 @@ export function mapToObject(map) {
     return obj;
 }
 
+export function findKeyOfNullOrUndefined(obj) {
+    for (let key in obj) {
+        if (obj[key] === null || obj[key] === undefined) {
+            return key;
+        }
+    }
+    return null;
+}
+
 
 //convertion de date en numéro de semaine
 export function getISOWeekNumber(d) {
@@ -89,4 +98,60 @@ export function getISOWeekNumber(d) {
     const week1 = new Date(date.getFullYear(), 0, 4);
 
     return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+}
+
+
+// function getNextFourWeeks() {
+//     const today = new Date();
+//     const weeks = [];
+
+//     for (let i = 0; i < 5; i++) {
+//         let weekNumber = getISOWeekNumber(new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7 * i));
+//         weeks.push(`S${weekNumber}`);
+//     }
+
+//     return weeks;
+// }
+
+// 
+function getStartOfWeek(date) {
+    const day = date.getDay();
+    const diff = date.getDate() - day + (day === 0 ? -6 : 1); // ajuster si la semaine commence le dimanche
+    return new Date(date.getFullYear(), date.getMonth(), diff);
+}
+
+export function getNextFourWeeks() {
+    let currentDate = new Date();
+    let weeks = [];
+
+    for (let i = 0; i < 4; i++) {
+        // Obtenir le début de la semaine
+        let startOfWeek = getStartOfWeek(new Date(currentDate));
+        weeks.push(startOfWeek);
+
+        // la semaine suivante
+        currentDate.setDate(currentDate.getDate() + 7);
+    }
+
+    return weeks.map(date => date.toISOString().substring(0, 10)); // format YYYY-MM-DD
+}
+
+export function getFirstDayOfWeek(weekStr, year = new Date().getFullYear()) {
+    //ex: weekStr = "S1"
+    const weekNumber = parseInt(weekStr.replace("S", "")); 
+
+    // Trouver le premier jeudi de l'année ISO 8601
+    const firstThursday = new Date(year, 0, 1 + (11 - new Date(year, 0, 1).getDay()) % 7);
+
+    // Calculer la date de début de la semaine donnée
+    const startDate = new Date(firstThursday);
+    startDate.setDate(firstThursday.getDate() - 3 + (weekNumber - 1) * 7);
+
+    return startDate;
+}
+
+export function getDayOfWeek(date) {
+    const days = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
+    
+    return days[date.getDay()].toLocaleLowerCase();
 }
