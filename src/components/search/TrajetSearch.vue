@@ -37,6 +37,7 @@
                 .container-calendar {
                     display: flex;
                     justify-content: space-between;
+                    padding-right: 10px;
                     //height: 58px;
                     .calendar {
                         .v-list-item-title, .v-list-item__content{
@@ -66,8 +67,8 @@
                             position: absolute;
                             width: 32px;
                             height: 32px;
-                            bottom: 110px;
-                            left: 0;
+                            bottom: 120px;
+                            left: 37px;
                             // swap
                             .v-btn {
                                 position: relative;
@@ -239,17 +240,23 @@
                     <!-- Nb passenger -->
                     <v-list-item
                         class="nb-person"
-                        prepend-icon="mdi-account-plus"
-                        :title="nbPassenger"
                         :active="false"
                         :ripple="false"
                         
                     >
-                        <template v-slot:prepend-icon="{ prependIcon }">
-                            <v-icon :icon="prependIcon"
+                        <div style="display: flex;">
+                            <v-list-item__prepend
+                                style="display: grid;"
+                            >
+                                <v-icon icon="mdi-account-plus"
+                                    @click="$emit('open-nb-passenger')"
+                                ></v-icon>
+                            </v-list-item__prepend>
+
+                            <v-list-item-title
                                 @click="$emit('open-nb-passenger')"
-                            ></v-icon>
-                        </template>
+                            >{{ nbPassenger }}</v-list-item-title>
+                        </div>
 
                         <!-- Swicth -->
                         <v-list-item
@@ -269,6 +276,7 @@
                                 </v-btn>
                             </div>
                         </v-list-item>
+                        
                     </v-list-item>
 
                 </div>

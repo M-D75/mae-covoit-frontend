@@ -245,6 +245,8 @@ export default {
         async getPublish({state}){
             console.log("get-publish", state, state.userUid);
 
+            const currentDate = new Date();
+
             // get-account
             let { data: account, error: error_account } = await supabase
                 .from('account')
@@ -280,7 +282,9 @@ export default {
                     trajet.name = "Vous";
                     if( store.state.trip.notMessageVue.includes(trajet.id + "") )
                         trajet.notifMessage = true;
-                    _trips.push(trajet);
+
+                    if( currentDate.getTime() <= new Date(trajet.departure_time).getTime() )
+                        _trips.push(trajet);
                 }
             }
 
@@ -295,7 +299,7 @@ export default {
                         let dateA = new Date(a.departure_time);
                         let dateB = new Date(b.departure_time);
                       
-                        return dateB - dateA;
+                        return dateA.getTime() - dateB.getTime();
                     })
                 }
                 else {
@@ -306,7 +310,7 @@ export default {
                 }
                 
                 return acc;
-            }, []).reverse();
+            }, []);
             
             console.log("groupedInfos:", groupedInfos);
 

@@ -67,7 +67,7 @@
                 @click="$emit('go-back')"    
             ></v-btn>
 
-            <v-toolbar-title>Contacts</v-toolbar-title>
+            <v-toolbar-title>Passager</v-toolbar-title>
             <v-spacer></v-spacer>
         </v-toolbar>
 
@@ -102,7 +102,7 @@
             <div v-if="nothing" class="nothing label-filter text-caption mx-auto">
                 <div class="contenu">
                     <v-icon icon="mdi-alert-circle-outline"></v-icon>
-                    <span>Aucun contacts n'a été trouvé !</span>
+                    <span>Aucun passager n'a été trouvé !</span>
                 </div>
             </div>
         </v-list>

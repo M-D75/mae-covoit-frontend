@@ -224,7 +224,7 @@
                     <v-icon class="uniq-car" :class="{disabled_icon: modeWork}">mdi-car</v-icon>
                     <v-switch 
                         dark 
-                        v-model="modeWork" 
+                        v-model="modeWork"
                         color="blue"
                         @click="$emit('mode-work-switch')" 
                     ></v-switch>

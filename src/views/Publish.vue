@@ -193,7 +193,7 @@
 
         <!-- day -->
         <BottomMenu
-            v-if="mode=='select-day' || mode=='hour-day-program' || mode=='select-week' || mode=='select-price'"
+            v-if="mode=='select-day' || mode=='hour-day-program' || mode=='select-price'"
             ref="BottomMenuRefselect-day"
             :class-name="['select_day']"
             mode="select-day"

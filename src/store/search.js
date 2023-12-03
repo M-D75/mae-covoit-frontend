@@ -319,10 +319,11 @@ export default {
                             let hours = date.getUTCHours().toString().padStart(2, '0');
                             let minutes = date.getUTCMinutes().toString().padStart(2, '0');
                             let departure_time = `${hours}:${minutes}`;
-                            //TODO GET arrival
+                            //TODO: GET arrival
                             let arrival_time = `${hours}:${minutes}`;
 
-                            const username = state.accounts.filter((acount) => (acount.user_id == trips[i_trip].driver_id))[0].firstname;
+                            const account_h = state.accounts.find((acount) => (acount.user_id == trips[i_trip].driver_id));
+                            const username = `${account_h.firstname} ${account_h.lastname}`;
 
                             let { data: current_trip, error: error_trip } = await supabase
                                 .from('trip')
