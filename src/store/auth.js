@@ -107,8 +107,16 @@ export default {
                 //Check if account are created
                 let { data: account, error: error_account } = await supabase
                     .from('account')
-                    .select('*')
+                    .select(`
+                        *,
+                        settings (auto_accept_trip, prefer)
+                    `)
                     .eq('user_id', user.id)
+
+                if(account && account.length > 0)
+                    store.state.profil.auto_accept_trip = account[0].settings[0].auto_accept_trip;
+
+                console.log("Account", account);
 
                 if( error_account ){
                     console.error("Erreur", error_account)

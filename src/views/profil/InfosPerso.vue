@@ -63,7 +63,7 @@
 <!--  -->
 <script>
     import { defineComponent } from 'vue';
-    import { mapState } from 'vuex';
+    import { mapState, mapActions } from 'vuex';
 
     // Components
     import ToolbarProfil from '@/components/menus/head/ToolbarProfil.vue';
@@ -76,7 +76,7 @@
     export default defineComponent({
         name: 'infos-profil-view',
         computed: {
-            ...mapState("profil", ["profil", "userName", "modeDriver", "avatarUrl"]),
+            ...mapState("profil", ["profil", "userName", "modeDriver", "avatarUrl", "auto_accept_trip"]),
             ...mapState("profil", {
                 preferences: state => state.profil.infos_perso.preferences,
             }),
@@ -154,6 +154,7 @@
                                 chipIcon: null,
                                 switchBtn: true,
                                 chipText: "",
+                                value: this.auto_accept_trip,
                             },
                             {
                                 about: "discution",
@@ -205,6 +206,11 @@
             this.switchModeDriverGroupParameters();
         },
         methods: {
+            ...mapActions("profil", ["updateAutoValidation"]),
+            updateAutoValidation(){
+                console.log("updateAutoValidation==");
+                this.updateAutoValidation();
+            },
             selectModel(){
                 if( this.$refs.BottomMenuRef ){
                     this.overlay = this.$refs.BottomMenuRef.open();
@@ -217,7 +223,8 @@
                 }
             },
             updateGrouparameterPreference(){
-                this.groupeParameters[2].parameters = this.groupeParameters[2].parameters.map(
+                
+                let parameters = this.groupeParameters[2].parameters.map(
                     (pref) => { 
                         if('about' in pref){
                             console.log(this.preferences, this.preferences.filter((prefs) => prefs.about == pref.about)[0], pref);
@@ -227,6 +234,8 @@
                         return pref;
                     }
                 )
+
+                this.groupeParameters[2].parameters = parameters;
             },
             switchModeDriverGroupParameters(){
                 if( this.modeDriver ){

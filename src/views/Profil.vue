@@ -211,7 +211,7 @@
     export default defineComponent({
         name: 'profil-view',
         computed: {
-            ...mapState("profil", ["darkMode", "userName", "profil", "history", 'modeDriver', "avatarUrl", "userUid"]),
+            ...mapState("profil", ["darkMode", "userName", "profil", "history", 'modeDriver', "avatarUrl", "userUid", "modeCo"]),
             ...mapState("trip", ["notMessageVue"]),
         },
         components: {
@@ -458,7 +458,7 @@
             askNewMessage(){
                 const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
 
-                const typeUrl = "online";
+                const typeUrl = this.modeCo;
                 axios.post(`${adresse[typeUrl]}/askNewMessage`, {
                         userId: this.userUid,
                     })

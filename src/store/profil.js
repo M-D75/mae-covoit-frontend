@@ -10,6 +10,14 @@ import { dateConverter, groupByDate, mapToObject } from '@/utils/utils.js';
 export default {
     namespaced: true,
     state: {
+        aboutPrefs: {
+            discution: "disscution",
+            smoke: "fumer",
+            music: "musique",
+            animal: "animal",
+        },
+        auto_accept_trip: true,
+        modeCo: "online",
         notification: true,
         modeDriver: true,
         darkMode: false,
@@ -18,7 +26,6 @@ export default {
         userName: "",
         avatarUrl: 'https://avataaars.io/?avatarStyle=Circle&topType=ShortHairDreads01&accessoriesType=Blank&hairColor=PastelPink&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Wink&eyebrowType=DefaultNatural&mouthType=Serious&skinColor=Tanned',
         soldes: 0,
-        autoValidation: true,
         credit_card: {
             num_end_credit_card: "0000",
             available: false,
@@ -124,10 +131,31 @@ export default {
             }
         },
         SET_AUTO_VALIDATION(state, bool){
-            state.autoValidation = bool;
+            state.auto_accept_trip = bool;
         }
     },
     actions: {
+        async updateAutoValidation({ state }){
+            const { data, error } = await supabase
+                .from('settings')
+                .update({ auto_accept_trip: state.auto_accept_trip })
+                .eq('account_id', state.userId)
+                .select();
+
+            if(error){
+                console.error("Error", error)
+                state.auto_accept_trip = !state.auto_accept_trip;
+                return {status: 1, message: "Une erreur s'est produite, veuillez réessayer plus tard !"};
+            }
+
+            if( data ){
+                // console.log("data auto_accept_trip : ", data);
+                state.auto_accept_trip = data[0].auto_accept_trip;
+            }
+
+            console.log("autovalidation", state.auto_accept_trip ? "activated" : "desactivated");
+            return {status: 0, message: ""};
+        },
         async updateAvatar({state}, avatar){
             // update
             await supabase
@@ -173,48 +201,36 @@ export default {
             console.log("update-credit", data_update, error_update);
         },
         async getTravels({state}){
-            console.log("get-travel", state, state.userUid);
+
+            state.profil.myTravels = [];
             
-            // get-account
-            let { data: account, error: error_account } = await supabase
-                .from('account')
-                .select("*")
-                .eq('user_id', state.userUid)
+            const currentDate = new Date();
 
-            console.log("account:", account, error_account);
+            await store.dispatch("search/getBookings");
 
-            let { data: booking, error: error_booking } = await supabase
-                .from('booking')
-                .select('*')
-                .eq('passenger_account_id', account[0].id)
-
-            if( error_booking ){
-                console.error("Error booking", error_booking)
-                return false;
+            if( ! store.state.search.trajets ){
+                console.error("Error getTravels 1")
+                return {status: 1, message: "Aucun trajet"};
             }
 
-            if( booking.length == 0 ){
-                console.log("no booking");
-                return false
-            }
-
-            console.log("booking:", booking.length, error_booking, booking[0].trip_id);
-
-            await store.dispatch("search/getTrajets");
+            let bokings = store.state.search.trajets;
 
             let _trips = [];
-            for (let index = 0; index < booking.length; index++) {
-                const trip_id = booking[index].trip_id;
-                const trajet = store.state.search.trajets.find(
-                        (trajet) => trajet.id == trip_id
-                        && new Date().getTime() < new Date(trajet.departure_time).getTime()
-                    );
+            for (let index = 0; index < bokings.length; index++) {
+                const booking = bokings[index]; 
 
-                if( trajet ){
-                    if( store.state.trip.notMessageVue.includes(trajet.id + "") )
-                        trajet.notifMessage = true;
-                    _trips.push(trajet);
+                if( booking ){
+                    if( store.state.trip.notMessageVue.includes(booking.id + "") )
+                        booking.notifMessage = true;
+
+                    if( currentDate.getTime() <= new Date(booking.departure_time).getTime() )
+                        _trips.push(booking);
                 }
+            }
+
+            if( _trips.length == 0 ){
+                console.error("Error getTravels 2")
+                return {status: 2, message: "Aucun trajets"};
             }
 
             const groupedInfos = _trips.reduce((acc, info) => {
@@ -240,52 +256,38 @@ export default {
             state.profil.myTravels = groupedInfos;
             console.log("_trips:", _trips, state.profil.myTravels);
 
-            return true;
+            return {status: 0, message: "success"};
         },
         async getPublish({state}){
-            console.log("get-publish", state, state.userUid);
-
             const currentDate = new Date();
 
-            // get-account
-            let { data: account, error: error_account } = await supabase
-                .from('account')
-                .select("*")
-                .eq('user_id', state.userUid)
+            state.profil.myPublish = [];
 
-            console.log("account:", account, error_account);
+            await store.dispatch("search/getOwnTrip");
 
-            let { data: db_trip, error: error_trips } = await supabase
-                .from('trip')
-                .select('*')
-                .eq('driver_id', state.userUid)
-
-            if( error_trips ){
-                console.error("Error booking", error_trips)
-                return false;
+            if( ! store.state.search.trajets ){
+                console.error("Error getPush 1")
+                return {status: 1, message: "Aucun trajet"};
             }
 
-            if(db_trip.length==0){
-                console.log("no trips");
-                return false
-            }
-
-            console.log("trips::", db_trip.length, db_trip[0].id);
-
-            await store.dispatch("search/getOwnTrajets");
+            let publish = store.state.search.trajets;
 
             let _trips = [];
-            for (let index = 0; index < db_trip.length; index++) {
-                const trip_id = db_trip[index].id;
-                const trajet = store.state.search.trajets.find((trajet) => trajet.id == trip_id);
+            for (let index = 0; index < publish.length; index++) {
+                const trajet = publish[index]
                 if(trajet){
-                    trajet.name = "Vous";
+                    // trajet.name = "Vous";
                     if( store.state.trip.notMessageVue.includes(trajet.id + "") )
                         trajet.notifMessage = true;
 
                     if( currentDate.getTime() <= new Date(trajet.departure_time).getTime() )
                         _trips.push(trajet);
                 }
+            }
+
+            if( _trips.length == 0 ){
+                console.error("Error getPush 2")
+                return {status: 2, message: "Aucun trajets"};
             }
 
             const groupedInfos = _trips.reduce((acc, info) => {
@@ -317,59 +319,35 @@ export default {
             state.profil.myPublish = groupedInfos;
             console.log("_trips:", _trips, state.profil.myPublish);
 
-            return _trips.length > 0;
+            return {status: 0, message: "success"};
         },
         async buildHistoriqueBooking({state}){
 
             state.history.load = true;
-            // get-account
-            let { data: account, error: error_account } = await supabase
-                .from('account')
-                .select("*")
-                .eq('user_id', state.userUid)
 
-            console.log("account:", account, error_account);
+            await store.dispatch("search/getBookings");
 
-            let { data: booking, error: error_booking } = await supabase
-                .from('booking')
-                .select('*')
-                .eq('passenger_account_id', account[0].id)
-
-            if( error_booking ){
-                console.error("Error booking", error_booking)
-                state.history.load = false;
-                return false;
+            if( ! store.state.search.trajets ){
+                console.error("Error getTravels 1")
+                return {status: 1, message: "Aucun trajet"};
             }
 
-            if(booking.length==0){
-                console.log("no booking");
-                state.history.load = false;
-                return false
-            }
-
-            await store.dispatch("search/getTrajets");
+            let bookings = store.state.search.trajets;
 
             let _bookings = [];
             //let ensemble = [];
-            for (let index = 0; index < booking.length; index++) {
-                if( booking[index].passenger_account_id == account[0].id ){
+            for (let index = 0; index < bookings.length; index++) {
 
-                    const trip_current = store.state.search.trajets.filter((trajet) => trajet.id == booking[index].trip_id)[0]
+                const trip_current = bookings[index];
 
-                    let { data: account_driver } = await supabase
-                        .from('account')
-                        .select("*")
-                        .eq('user_id', trip_current.driver_id)
-
-                    const data = {
-                        depart: trip_current.depart,
-                        destination: trip_current.destination,
-                        departure_time: trip_current.departure_time,
-                        avatar: account_driver != null && account_driver.length > 0 && account_driver[0].avatar != null ? account_driver[0].avatar : "https://avataaars.io/?avatarStyle=Circle&topType=ShortHairDreads01&accessoriesType=Blank&hairColor=PastelPink&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Wink&eyebrowType=DefaultNatural&mouthType=Serious&skinColor=Tanned",
-                        price: trip_current.price,
-                    }
-                    _bookings.push(data);
+                const data = {
+                    depart: trip_current.depart,
+                    destination: trip_current.destination,
+                    departure_time: trip_current.departure_time,
+                    avatar: trip_current.avatar != null ? trip_current.avatar : "https://avataaars.io/?avatarStyle=Circle&topType=ShortHairDreads01&accessoriesType=Blank&hairColor=PastelPink&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Wink&eyebrowType=DefaultNatural&mouthType=Serious&skinColor=Tanned",
+                    price: trip_current.price,
                 }
+                _bookings.push(data);
             }
 
             console.log("_bookings", _bookings);

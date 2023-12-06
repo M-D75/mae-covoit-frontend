@@ -109,16 +109,26 @@
       class="credit-card-profil mx-auto"
     >
         <div class="row-item infos">
-            <div class="label">Solde Disponible</div>
+            <div class="label"> {{ modeDriver ? 'Gain' : 'Solde' }} Disponible</div>
             <div class="solde">
                 <v-icon 
+                    v-if="!modeDriver"
                     @click="emit('up-money')"
-                    >mdi-credit-card</v-icon>EUR {{ soldeWritable }}
+                >mdi-wallet-bifold</v-icon>
+
+                <v-icon 
+                    v-else
+                    style="opacity: 0.3;"
+                >mdi-wallet-bifold</v-icon>
+                
+                EUR {{ soldeWritable }}
             </div>
         </div>
 
         <div class="row-item code-card">
-            <v-icon v-if="!credit_card.available" icon="mdi-alert-circle-outline"></v-icon> <span :class="{ gray: !credit_card.available }">•••• {{ credit_card.num_end_credit_card }}</span>
+            <div v-if="!modeDriver">
+                <v-icon v-if="!credit_card.available" icon="mdi-alert-circle-outline"></v-icon> <span :class="{ gray: !credit_card.available }">•••• {{ credit_card.num_end_credit_card }}</span>
+            </div>
         </div>
 
         <div class="row-item btn">
@@ -127,10 +137,10 @@
             >
                 <div 
                     class="btn eye"
-                    @click="emit('add-card')"
                 >
-                    <v-icon v-if="eyeOff">mdi-eye-off</v-icon>
-                    <v-icon v-else>mdi-eye</v-icon>
+                    <v-icon class="zoom-bounce" v-if="eyeOff && !modeDriver" @click="emit('add-card')">mdi-eye-off</v-icon>
+                    <!-- <v-icon v-else>mdi-eye</v-icon> -->
+                    <v-icon class="zoom-bounce" v-if="modeDriver">mdi-transfer</v-icon>
                 </div>
 
                 <!-- <div class="btn card">
@@ -142,7 +152,7 @@
                     class="btn hand"
                     @click="emit('drop-money')"
                 >
-                    <v-icon><font-awesome-icon :icon="['fas', 'hand-holding-dollar']" /></v-icon>
+                    <v-icon class="zoom-bounce"><font-awesome-icon :icon="['fas', 'hand-holding-dollar']" /></v-icon>
                     <!-- <v-icon>mdi-hand-coin-outline</v-icon> -->
                 </div>
 

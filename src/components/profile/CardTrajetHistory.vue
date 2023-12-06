@@ -102,7 +102,7 @@
                 </v-avatar>
 
                 <v-avatar 
-                    v-if="mode=='planning'"
+                    v-if="mode=='planning' && infos.bookings.length == 0"
                 >
                     <v-img
                         alt="Avatar"
@@ -115,12 +115,22 @@
                     :key="index"
                 >
                     <v-avatar 
-                        v-if="mode=='planning'"
+                        v-if="mode=='planning' && index==0"
+                        style="position: relative; left:0px;"    
+                    >
+                        <v-img
+                            alt="Avatar"
+                            :src="booking.account.avatar"
+                        ></v-img>
+                    </v-avatar>
+
+                    <v-avatar 
+                        v-if="mode=='planning' && index > 0"
                         style="position: relative; left: -30px;"    
                     >
                         <v-img
                             alt="Avatar"
-                            :src="'https://cdn.vectorstock.com/i/preview-1x/76/28/unknown-person-user-icon-for-web-vector-34757628.jpg'"
+                            :src="booking.account.avatar"
                         ></v-img>
                     </v-avatar>
                 </div>

@@ -228,6 +228,7 @@
         name: 'results-view',
         emits: ["trajet-selected"],
         computed: {
+            ...mapState("profil", ["modeCo"]),
             ...mapState("trip", ["tripSelected", "notMessageVue"]),
             ...mapGetters("search", ["getVillagesByName", "GET_ID_VILLAGE_BY_NAME"]),
             center() {
@@ -367,7 +368,7 @@
             askNewMessage(){
                 const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
 
-                const typeUrl = "local";
+                const typeUrl = this.modeCo;
                 axios.post(`${adresse[typeUrl]}/askNewMessage`, {
                         userId: this.userUid,
                     })

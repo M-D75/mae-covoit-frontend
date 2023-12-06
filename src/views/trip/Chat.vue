@@ -399,7 +399,7 @@
     export default defineComponent({
         name: 'chat-view',
         computed: {
-            ...mapState("profil", ['userUid', 'darkMode', "userName"]),
+            ...mapState("profil", ['userUid', 'darkMode', "userName", "modeCo"]),
             ...mapState("auth", ['registerDeviceToken']),
             ...mapState("trip", ['tripSelected', 'chat']),
         },
@@ -500,7 +500,7 @@
 
             const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
 
-            const typeUrl = "online";
+            const typeUrl = this.modeCo;
             if( Object.keys(this.tripSelected).length > 0 && this.userUid != this.tripSelected.driver_id ){//mode passager
                 this.mode_driver = false;
                 this.socket = io(adresse[typeUrl], {

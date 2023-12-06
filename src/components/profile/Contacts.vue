@@ -86,13 +86,30 @@
 
                 <v-list-item 
                     v-if="item.type == undefined"
-                    :prepend-avatar="item.prependAvatar"
                     :title="item.title"
                     :subtitle="item.subtitle"
-                    @click="goToProfil(item.userUid)"
                 >
+                    <template v-slot:prepend>
+                        <v-avatar @click="goToProfil(item.userUid)">
+                            <v-img v-if="item.prependAvatar"
+                                :src="item.prependAvatar"
+                            >
+                            </v-img>
+                            <v-icon v-else style="color: var(--font-color-label); font-size: 2em;">mdi-account-circle</v-icon>
+                        </v-avatar>
+                    </template>
+
                     <template v-slot:subtitle="{ subtitle }">
-                        <div v-html="subtitle"></div>
+                        <div @click="goToProfil(item.userUid)" v-html="subtitle"></div>
+                    </template>
+
+                    <template v-slot:append>
+                        <v-btn
+                            :color=" !item.isAccepted ? 'grey-lighten-1' : 'green'"
+                            icon="mdi-check-decagram"
+                            variant="text"
+                            @click="acceptBooking(item.index)"
+                        ></v-btn>
                     </template>
                 </v-list-item>
 
@@ -118,8 +135,19 @@
         v-model="showSnackbarError"
         :timeout="4000"
         color="error"
+        style="z-index: 9999;"
     >
         <v-icon icon="mdi-alert-circle"></v-icon> <span>{{ messageSnackbarError }}</span>
+    </v-snackbar>
+
+    <!-- message succes -->
+    <v-snackbar
+        v-model="showSnackbarSuccess"
+        :timeout="4000"
+        color="success"
+        style="z-index: 9999;"
+    >
+        <v-icon icon="mdi-alert-circle"></v-icon> <span>{{ messageSnackbarSuccess }}</span>
     </v-snackbar>
 
 </template>
@@ -146,10 +174,12 @@
                 for (let index = 0; index < contacts.length; index++) {
                     items.push(
                         {
+                            index: index,
                             userUid: contacts[index].user_id,
                             prependAvatar: contacts[index].avatar, 
                             title: contacts[index].username,
                             subtitle: "Aucune localisation",
+                            isAccepted: contacts[index].booking && contacts[index].booking.length > 0 && contacts[index].booking[0].is_accepted ? contacts[index].booking[0].is_accepted : false,
                         }
                     )
                     items.push({type: "divider", inset: true})
@@ -206,18 +236,38 @@
                 overlayLoad: false,
                 showSnackbarError: false,
                 messageSnackbarError: "",
+                messageSnackbarSuccess: "",
+                showSnackbarSuccess: false,
             }
         },
         mounted() {
         },
         methods: {
-            ...mapActions("trip", ["getContacts", "getProfilMember"]),
+            ...mapActions("trip", ["getContacts", "getProfilMember", "updateAccepteBooking"]),
             async goToProfil(userUid){
                 const memberOk = await this.getProfilMember({userUid: userUid});
                 if( memberOk )
                     this.$router.push('/member');
                 else{
                     this.messageSnackbarError = "Nous avons pas pu récupérer ce profil";
+                    this.showSnackbarError = true;
+                }
+            },
+            async acceptBooking(index){
+                console.log("index", index, this.chat.contacts);
+                if( !this.chat.contacts[index].booking[0].is_accepted ){
+                    const response = await this.updateAccepteBooking(index);
+                    if(response.status != 0){
+                        this.messageSnackbarError = response.message;
+                        this.showSnackbarError = true;
+                    }
+                    else{
+                        this.messageSnackbarSuccess = "La réservation de ce passager, à bien était validé !";
+                        this.showSnackbarSuccess = true;
+                    }
+                }
+                else{
+                    this.messageSnackbarError = "Ce trajet à déjà était accepté";
                     this.showSnackbarError = true;
                 }
             },

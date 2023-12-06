@@ -171,7 +171,10 @@ export default {
 
                     let { data: account, error: error_account } = await supabase
                         .from('account')
-                        .select("*")
+                        .select(`
+                            *,
+                            booking (*)
+                        `)
                         .eq('id', passenger_account_id)
 
                     if( error_account ){
@@ -182,6 +185,7 @@ export default {
                     // contact.avatar = "https://avataaars.io/?avatarStyle=Circle&topType=ShortHairDreads01&accessoriesType=Blank&hairColor=PastelPink&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Wink&eyebrowType=DefaultNatural&mouthType=Serious&skinColor=Tanned";
                     contact.messageNumber = 0;
                     
+                    console.log("contact", contact);
                     contacts.push(contact);
                     accounts_id.push(passenger_account_id);
 
@@ -233,6 +237,28 @@ export default {
 
             return true;
 
-        }
+        },
+        async updateAccepteBooking({state}, index){
+            const bookings = state.chat.contacts[index].booking;
+            for (let indexB = 0; indexB < bookings.length; indexB++) {
+                const id_bk = bookings[indexB].id;
+                const { data, error } = await supabase
+                    .from('booking')
+                    .update({ is_accepted: true })
+                    .eq('id', id_bk)
+                    .select();
+
+                if(error){
+                    console.error("Error", error)
+                    return {status: 1, message: "Une erreur s'est produite, veuillez réessayer plus tard !"};
+                }
+
+                if( data ){
+                    state.chat.contacts[index].booking[indexB].is_accepted = true;
+                }
+            }
+
+            return {status: 0, message: "success"};
+        },
     },
 }

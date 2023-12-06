@@ -174,7 +174,7 @@
             async sendNotification() {
                 const permission = await LocalNotifications.requestPermissions();
             
-                if( permission && this.notification ){
+                if( permission != undefined && permission && this.notification ){
                     await LocalNotifications.schedule({
                         notifications: [{
                             id: 1,

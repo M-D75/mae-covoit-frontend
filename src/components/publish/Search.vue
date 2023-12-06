@@ -223,7 +223,8 @@
                 <div v-if="switche" class="mode-publish">
                     <v-icon class="uniq-car" :class="{disabled_icon: modeWork}">mdi-car</v-icon>
                     <v-switch 
-                        dark 
+                        dark
+                        inset
                         v-model="modeWork"
                         color="blue"
                         @click="$emit('mode-work-switch')" 
@@ -259,7 +260,7 @@
             },
             label: {
                 type: String,
-                default: "Choisissez une commune de depart",
+                default: "Choisissez un village de depart",
             },
             items: {
                 type: Array,

@@ -121,12 +121,26 @@
             
             <v-switch
                 v-if="switchBtn"
+                inset
                 v-model="validation"
+                @change="updateValidation()"
                 color="info"
             />
+
+            <!-- message error -->
+            <v-snackbar
+                v-if="switchBtn"
+                v-model="showSnackbarError"
+                :timeout="4000"
+                color="error"
+            >
+                <v-icon icon="mdi-alert-circle"></v-icon> <span>{{ messageSnackbarError }}</span>
+            </v-snackbar>
             
         </v-list-item>
     </v-card>
+
+    
  
  </template>
 
@@ -134,17 +148,19 @@
 
 <script>
     // import $ from 'jquery'
-    import { mapState, mapMutations } from 'vuex';
+    import { mapState, mapMutations, mapActions } from 'vuex';
 
     // Components
     export default {
         name: 'card-btn-menu-comp',
         computed:{
-            ...mapState("profil", ["autoValidation"]),
+            ...mapState("profil", ["auto_accept_trip"]),
         },
         data() {
             return {
                 validation: false,
+                showSnackbarError: false,
+                messageSnackbarError: "",
             }
         },
         props: {
@@ -158,7 +174,7 @@
             },
             chip: {
                 type: Boolean,
-                default: true,
+                default: false,
             },
             switchBtn: {
                 type: Boolean,
@@ -186,17 +202,27 @@
             }
         },
         mounted (){
-            this.validation = this.autoValidation;
+            if( this.switchBtn )
+                this.validation = this.auto_accept_trip;
         },
         methods: {
             ...mapMutations("profil", ["SET_AUTO_VALIDATION"]),
+            ...mapActions("profil", ["updateAutoValidation"]),
             invokFun(){
                 this.fun();
             },
+            async updateValidation(){
+                this.SET_AUTO_VALIDATION(this.validation);
+                const response = await this.updateAutoValidation();
+                if(response.status != 0){
+                    this.messageSnackbarError = response.message;
+                    this.showSnackbarError = true;
+                }
+            },
         },
         watch: {
-            validation(){
-                this.SET_AUTO_VALIDATION(this.validation);
+            auto_accept_trip(){
+                this.validation = this.auto_accept_trip;
             }
         }
     };

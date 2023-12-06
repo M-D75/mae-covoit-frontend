@@ -44,6 +44,7 @@
                         :chip="param.chip"
                         :chipIcon="param.chipIcon"
                         :chipText="param.chipText"
+                        :value="param.value"
                         :fun="param.fun"
                         :switchBtn="param.switchBtn"
                         :classConfig="param.classConfig"

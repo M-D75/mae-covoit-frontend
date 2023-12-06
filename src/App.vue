@@ -87,7 +87,7 @@
 
     //Component
     import MobileOnly from './views/MobileOnly.vue';
-    import { mapMutations, mapState } from 'vuex';
+    import { mapMutations, mapState, mapActions } from 'vuex';
 
     export default {
         name: 'App',
@@ -95,6 +95,7 @@
             MobileOnly,
         },
         computed: {
+            
             ...mapState("profil", ["darkMode", "userUid", "notification"]),
             isMobileOrSmallScreen() {
                 return this.isMobile || this.isSmallScreen;
@@ -106,7 +107,7 @@
             isSmallScreen: window.innerWidth <= 600,
         }),
         mounted(){
-
+            
             console.log("isMobile:", this.isMobile, window.location);
             console.log("isSmallScreen:", this.isSmallScreen);
             if(isAndroid)
@@ -124,7 +125,6 @@
             }
 
             console.log("-------vrrr,", this.$var_test, this.var_test);
-
             console.log("theme-mode:", $("#app .v-application").hasClass("dark-mode") ? "dark" : "ligth");
             
             window.addEventListener('resize', this.updateIsSmallScreen); 
@@ -218,6 +218,7 @@
             //$("link[rel*='icon']").attr("href", "/favicon-old.ico");
         },
         methods: {
+            ...mapActions("search", ["getOwnTrajetsEk", "getTrajetsEk"]),
             ...mapMutations("profil", ["SET_DARKMODE"]),
             ...mapMutations("auth", ["SET_TOKEN", "SET_REGISTER_DEVICE_TOKEN"]),
             ...mapMutations("general", ["SET_IS_NATIVE"]),

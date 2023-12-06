@@ -4,6 +4,19 @@
     .v-container.bottom-menu {
         position: fixed;
         left: 0;
+
+        .select-time {
+            .auto-validation.v-card.card-btn {
+                box-shadow: none !important;
+                .v-card__overlay {
+                    display: none;
+                }
+                .v-ripple__container {
+                    display: none;
+                }
+            }
+        }
+
         .credit-card.card-contain {
             .bloc-saisi {
                 background-color: var(--white-bg-color);
@@ -234,6 +247,7 @@
 
             .select-time, .select-number {
                 width: 85%;
+                min-width: 270px;
                 @include respond-to('tiny') {
                     width: 100%;
                 }
@@ -245,6 +259,8 @@
                 .v-btn {
                     margin: 30px auto;
                 }
+
+                
             }
 
             .select-day-hour-domicile, .select-day{
@@ -519,6 +535,13 @@
                 <div class="label text-center">{{ labelSelectorN1 }}</div>
                 <TimeCard ref="TimeCardRef" :class-name="className" :hour-init="timeInit.hourInit" :minute-init="timeInit.minuteInit" :nb-pas-minutes="
                 timeInit.nbPasMinutes" v-on:time-changed="emit('time-changed')"/>
+                <CardButton 
+                    class="auto-validation"
+                    prependIconColor="#bc62ff"
+                    prepend-icon="mdi-auto-fix"
+                    :text="'Validation automatique'"
+                    :switchBtn="true"
+                />
                 <v-btn 
                     class="text-none"
                     rounded="xl" 
@@ -906,6 +929,7 @@
             <PreferenceChoice
                 v-if="mode=='preference-choice'"
                 :about="about"
+                :label-about="aboutPrefs[about]"
                 v-on:pref-selected="$emit('close')"
             ></PreferenceChoice>
 
@@ -1004,6 +1028,7 @@
     import $ from 'jquery';
     import supabase from '@/utils/supabaseClient';
     import { getISOWeekNumber } from '@/utils/utils.js';
+    import { mapState } from 'vuex';
 
     // Components
     import Vue3DraggableResizable from 'vue3-draggable-resizable';
@@ -1014,6 +1039,7 @@
     import TimeCard from './bottom/TimeCard.vue';
     import SelectNumber from './bottom/SelectNumber.vue';
     import PreferenceChoice from '@/components/menus/bottom/bottom_menu/PreferenceChoice.vue';
+    import CardButton from './setting/CardButton.vue';
    
 
     export default defineComponent({
@@ -1030,8 +1056,10 @@
             TimeCard,
             SelectNumber,
             PreferenceChoice,
+            CardButton,
         },
         computed: {
+            ...mapState("profil", ["aboutPrefs"]),
             numericRule() {
                 return (value) => /^\d*$/.test(value) || 'Veuillez entrer uniquement des chiffres';
             },

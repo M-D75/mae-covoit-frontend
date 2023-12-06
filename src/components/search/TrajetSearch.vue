@@ -244,18 +244,15 @@
                         :ripple="false"
                         
                     >
-                        <div style="display: flex;">
+                        <div @click="$emit('open-nb-passenger')" style="display: flex;">
                             <v-list-item__prepend
                                 style="display: grid;"
                             >
                                 <v-icon icon="mdi-account-plus"
-                                    @click="$emit('open-nb-passenger')"
                                 ></v-icon>
                             </v-list-item__prepend>
 
-                            <v-list-item-title
-                                @click="$emit('open-nb-passenger')"
-                            >{{ nbPassenger }}</v-list-item-title>
+                            <v-list-item-title>{{ nbPassenger }}</v-list-item-title>
                         </div>
 
                         <!-- Swicth -->

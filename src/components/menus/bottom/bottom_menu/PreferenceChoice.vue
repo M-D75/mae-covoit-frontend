@@ -44,7 +44,7 @@
     export default defineComponent({
         name: 'preference-choice-comp',
         computed: {
-            ...mapState("profil", [ "profil"]),
+            ...mapState("profil", [ "profil" ]),
             ...mapState("profil", {
                 preferences: state => state.profil.infos_perso.preferences,
             }),
@@ -53,6 +53,10 @@
             GroupCard,
         },
         props: {
+            labelAbout: {
+                type: String,
+                default: "disscution",
+            },
             about: {
                 type: String,
                 default: "discution",
@@ -254,7 +258,7 @@
             }
         },
         mounted() {
-            this.groupeParameters[0].label = this.about;
+            this.groupeParameters[0].label = this.labelAbout;
             this.groupeParameters[0].parameters = this.aboutPreference[this.about].slice();
         },
         methods: {
@@ -269,7 +273,7 @@
         watch: {
             about(){
                 //rebuild parameter when about changing
-                this.groupeParameters[0].label = this.about;
+                this.groupeParameters[0].label = this.labelAbout;
                 this.groupeParameters[0].parameters = this.aboutPreference[this.about].slice();
             }
         }
