@@ -223,7 +223,7 @@ export default {
                     if( store.state.trip.notMessageVue.includes(booking.id + "") )
                         booking.notifMessage = true;
 
-                    if( currentDate.getTime() <= new Date(booking.departure_time).getTime() )
+                    if( currentDate.getTime() <= new Date(booking.departure_time).getTime() && booking.is_accepted )
                         _trips.push(booking);
                 }
             }

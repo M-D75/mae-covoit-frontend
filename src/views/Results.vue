@@ -117,8 +117,8 @@ export default defineComponent({
                 (trajet) => trajet.depart == this.depart
                     && trajet.destination == this.destination
                     //&& trajet.passenger_number + parseInt(this.nbPassenger) <= trajet.max_seats
-                    //&& this.getDate().getTime() < new Date(trajet.departure_time).getTime()
-                    //&& this.isSameDay(this.getDate(), new Date(trajet.departure_time))
+                    && this.getDate().getTime() < new Date(trajet.departure_time).getTime()
+                    && this.isSameDay(this.getDate(), new Date(trajet.departure_time))
             );
         },
     },

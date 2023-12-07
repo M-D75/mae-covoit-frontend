@@ -142,9 +142,13 @@
     import axios from 'axios';
     
     import { mapActions, mapState } from 'vuex';
-    import { Plugins } from '@capacitor/core';
+    import { Plugins, Capacitor } from '@capacitor/core';
 
     const { LocalNotifications } = Plugins;
+
+    const isAndroid = Capacitor.getPlatform() === 'android';
+    const isIOS = Capacitor.getPlatform() === 'ios';
+
 
     // Components
     export default {
@@ -161,6 +165,8 @@
                 showSnackbarError: false,
                 messageSnackbarError: "",
                 overlayLoad: false,
+                message: "",
+                accepted: false,
             }
         },
         props: {
@@ -258,7 +264,11 @@
                     this.showSnackbarError=true;
                 }
                 else{
-                    this.sendNotification();
+                    if(isAndroid || isIOS)
+                        this.sendNotification();
+
+                    this.message = reserved.message;
+                    this.accepted = reserved.accepted;
                     this.$emit('test-notif-success');
                 }
             },

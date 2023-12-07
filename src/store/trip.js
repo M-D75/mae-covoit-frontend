@@ -173,7 +173,10 @@ export default {
                         .from('account')
                         .select(`
                             *,
-                            booking (*)
+                            booking (
+                                *,
+                                trip (max_seats)
+                            )
                         `)
                         .eq('id', passenger_account_id)
 

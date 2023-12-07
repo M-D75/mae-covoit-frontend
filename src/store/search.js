@@ -203,94 +203,174 @@ export default {
                     console.error(error);
                 });
         },
-        async getTrajets({ commit, state, dispatch }) {
-            const sessionChecked = await store.dispatch("auth/checkSession");
-            if(!sessionChecked)
-                router.replace("/login");
+        // async getTrajets({ commit, state, dispatch }) {
+        //     const sessionChecked = await store.dispatch("auth/checkSession");
+        //     if(!sessionChecked)
+        //         router.replace("/login");
 
-            await dispatch("getAccounts");
+        //     await dispatch("getAccounts");
 
-            await axios.get(`${process.env.VUE_APP_API_MBABUF_URL}/trips`, {
-                    params:{
-                        jwt: store.state.auth.token,
-                    }
-                })
-                .then(async (response) => {
-                    const trips = response.data.result;
-                    var _trips = [];
+        //     await axios.get(`${process.env.VUE_APP_API_MBABUF_URL}/trips`, {
+        //             params:{
+        //                 jwt: store.state.auth.token,
+        //             }
+        //         })
+        //         .then(async (response) => {
+        //             const trips = response.data.result;
+        //             var _trips = [];
             
-                    for(const i_trip in trips){
-                        console.log("driver,", trips[i_trip].driver_id, store.state.profil.userUid);
-                        if( trips[i_trip].driver_id != store.state.profil.userUid ){
-                            let isoDate = trips[i_trip].departure_time;
-                            let date = new Date(isoDate);
+        //             for(const i_trip in trips){
+        //                 console.log("driver,", trips[i_trip].driver_id, store.state.profil.userUid);
+        //                 if( trips[i_trip].driver_id != store.state.profil.userUid ){
+        //                     let isoDate = trips[i_trip].departure_time;
+        //                     let date = new Date(isoDate);
 
-                            let offset = date.getTimezoneOffset();
-                            date = new Date(date.getTime() - (offset * 60000));
+        //                     let offset = date.getTimezoneOffset();
+        //                     date = new Date(date.getTime() - (offset * 60000));
 
-                            let hours = date.getUTCHours().toString().padStart(2, '0');
-                            let minutes = date.getUTCMinutes().toString().padStart(2, '0');
-                            let departure_time = `${hours}:${minutes}`;
-                            //TODO GET arrival
-                            let arrival_time = `${hours}:${minutes}`;
+        //                     let hours = date.getUTCHours().toString().padStart(2, '0');
+        //                     let minutes = date.getUTCMinutes().toString().padStart(2, '0');
+        //                     let departure_time = `${hours}:${minutes}`;
+        //                     //TODO GET arrival
+        //                     let arrival_time = `${hours}:${minutes}`;
 
-                            const username = state.accounts.filter((acount) => (acount.user_id == trips[i_trip].driver_id))[0].firstname;
+        //                     const username = state.accounts.filter((acount) => (acount.user_id == trips[i_trip].driver_id))[0].firstname;
 
-                            let { data: current_trip, error: error_trip } = await supabase
-                                .from('trip')
-                                .select('*')
-                                .eq('id', trips[i_trip].id);
+        //                     let { data: current_trip, error: error_trip } = await supabase
+        //                         .from('trip')
+        //                         .select('*')
+        //                         .eq('id', trips[i_trip].id);
 
-                            if( error_trip ){
-                                console.log("ERROR:", error_trip);
-                            }
+        //                     if( error_trip ){
+        //                         console.log("ERROR:", error_trip);
+        //                     }
 
-                            let { data: account_driver } = await supabase
-                                .from('account')
-                                .select("*")
-                                .eq('user_id', trips[i_trip].driver_id);
+        //                     let { data: account_driver } = await supabase
+        //                         .from('account')
+        //                         .select("*")
+        //                         .eq('user_id', trips[i_trip].driver_id);
 
-                            if( current_trip && current_trip.length > 0 && current_trip[0].route != null ){
+        //                     if( current_trip && current_trip.length > 0 && current_trip[0].route != null ){
 
-                                date = new Date((date.getTime() + (parseInt(current_trip[0].route.infosGoogle.duration.replace("s", "")) * 1000) ) - (offset * 60000));
+        //                         date = new Date((date.getTime() + (parseInt(current_trip[0].route.infosGoogle.duration.replace("s", "")) * 1000) ) - (offset * 60000));
 
-                                hours = date.getUTCHours().toString().padStart(2, '0');
-                                minutes = date.getUTCMinutes().toString().padStart(2, '0');
-                                //TODO GET arrival
-                                arrival_time = `${hours}:${minutes}`;
-                            }
+        //                         hours = date.getUTCHours().toString().padStart(2, '0');
+        //                         minutes = date.getUTCMinutes().toString().padStart(2, '0');
+        //                         //TODO GET arrival
+        //                         arrival_time = `${hours}:${minutes}`;
+        //                     }
 
-                            let driver_avatar = "https://avataaars.io/?avatarStyle=Circle&topType=ShortHairDreads01&accessoriesType=Blank&hairColor=PastelPink&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Wink&eyebrowType=DefaultNatural&mouthType=Serious&skinColor=Tanned";
-                            if( account_driver && account_driver.length > 0 && account_driver[0].avatar )
-                                driver_avatar = account_driver[0].avatar;
+        //                     let driver_avatar = "https://avataaars.io/?avatarStyle=Circle&topType=ShortHairDreads01&accessoriesType=Blank&hairColor=PastelPink&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Wink&eyebrowType=DefaultNatural&mouthType=Serious&skinColor=Tanned";
+        //                     if( account_driver && account_driver.length > 0 && account_driver[0].avatar )
+        //                         driver_avatar = account_driver[0].avatar;
 
-                            const _trip  = {
-                                id: trips[i_trip].id,
-                                driver_id: trips[i_trip].driver_id,
-                                avatar: driver_avatar,
-                                depart: trips[i_trip].village_departure.village,
-                                destination: trips[i_trip].village_arrival.village,
-                                departure_time: trips[i_trip].departure_time,
-                                hour_start: departure_time,
-                                hour_end: arrival_time,
-                                price: current_trip ? current_trip[0].price : (Math.ceil(Math.random()*4)+1),
-                                name: username,
-                                passenger_number: trips[i_trip].bookings.length,
-                                bookings: trips[i_trip].bookings,
-                                max_seats: trips[i_trip].max_seats,
-                                route: current_trip ? current_trip[0].route : null,
-                            };
-                            _trips.push(_trip);
-                        }
-                    }
+        //                     const _trip  = {
+        //                         id: trips[i_trip].id,
+        //                         driver_id: trips[i_trip].driver_id,
+        //                         avatar: driver_avatar,
+        //                         depart: trips[i_trip].village_departure.village,
+        //                         destination: trips[i_trip].village_arrival.village,
+        //                         departure_time: trips[i_trip].departure_time,
+        //                         hour_start: departure_time,
+        //                         hour_end: arrival_time,
+        //                         price: current_trip ? current_trip[0].price : (Math.ceil(Math.random()*4)+1),
+        //                         name: username,
+        //                         passenger_number: trips[i_trip].bookings.length,
+        //                         bookings: trips[i_trip].bookings,
+        //                         max_seats: trips[i_trip].max_seats,
+        //                         route: current_trip ? current_trip[0].route : null,
+        //                     };
+        //                     _trips.push(_trip);
+        //                 }
+        //             }
 
-                    console.log("trips-search:", _trips)
+        //             console.log("trips-search:", _trips)
                     
-                    commit('SET_TRAJETS', _trips);
-                })
-                .catch(error => {
-                    console.error(error);
-                });
+        //             commit('SET_TRAJETS', _trips);
+        //         })
+        //         .catch(error => {
+        //             console.error(error);
+        //         });
+
+        //     return true
+        // },
+        async getTrajets({ commit, getters }) {
+            // const sessionChecked = await store.dispatch("auth/checkSession");
+            // if(!sessionChecked)
+            //     router.replace("/login");
+
+            // await dispatch("getAccounts");
+
+            const { data: trips, error } = await supabase
+                .from('trip')
+                .select(`
+                    id, 
+                    driver_id,
+                    village_departure_id,
+                    village_arrival_id,
+                    departure_time,
+                    max_seats,
+                    price,
+                    route,
+                    account (*),
+                    booking (
+                        passenger_account_id,
+                        is_accepted,
+                        account (*)
+                    )`
+                )
+                .neq('driver_id', store.state.profil.userUid)
+
+            if ( error ) {
+                console.error(error);
+                return;
+            }
+
+            console.log("Joneess", trips);
+            
+            let _trips = [];
+            for (let index = 0; index < trips.length; index++) {
+                const trip = trips[index];
+
+                let isoDate = trip.departure_time;
+                let date = new Date(isoDate);
+
+                let offset = date.getTimezoneOffset();
+                date = new Date(date.getTime() - (offset * 60000));
+
+                let hours = date.getUTCHours().toString().padStart(2, '0');
+                let minutes = date.getUTCMinutes().toString().padStart(2, '0');
+                let departure_time = `${hours}:${minutes}`;
+
+                date = new Date((date.getTime() + (parseInt(trip.route.infosGoogle.duration.replace("s", "")) * 1000) ) - (offset * 60000));
+
+                hours = date.getUTCHours().toString().padStart(2, '0');
+                minutes = date.getUTCMinutes().toString().padStart(2, '0');
+
+                const arrival_time = `${hours}:${minutes}`;
+                // jointure : account,trip,booking
+                const _trip  = {
+                    id: trip.id,
+                    driver_id: trip.driver_id,
+                    name: trip.account.firstname,
+                    avatar: trip.account.avatar,
+                    depart: getters.GET_VILLAGE_BY_ID(trip.village_departure_id),
+                    destination: getters.GET_VILLAGE_BY_ID(trip.village_arrival_id),
+                    departure_time: trip.departure_time,
+                    hour_start: departure_time,
+                    hour_end: arrival_time,
+                    price: trip.price ? trip.price : (Math.ceil(Math.random()*4)+1),
+                    passenger_number: trip.booking.filter((booking) => booking.is_accepted).length,
+                    bookings: trip.booking,
+                    max_seats: trip.max_seats,
+                    route: trip.route,
+                };
+                _trips.push(_trip);
+            }
+
+            console.log("trips-search:", _trips)
+            
+            commit('SET_TRAJETS', _trips);
 
             return true
         },
@@ -306,6 +386,7 @@ export default {
                 .select(`
                     trip_id,
                     passenger_account_id,
+                    is_accepted,
                     trip (
                         id, 
                         driver_id,
@@ -328,7 +409,7 @@ export default {
             let _trips = [];
             for (let index = 0; index < trips.length; index++) {
                 const trip = trips[index].trip;
-                //const booking = trips[index];
+                const booking = trips[index];
 
                 let isoDate = trip.departure_time;
                 let date = new Date(isoDate);
@@ -350,6 +431,7 @@ export default {
                 // jointure : account,trip,booking
                 const _trip  = {
                     id: trip.id,
+                    is_accepted: booking.is_accepted,
                     driver_id: trip.driver_id,
                     avatar: trip.account.avatar,
                     name: trip.account.username,
@@ -439,7 +521,7 @@ export default {
                 _trips.push(_trip);
             }
 
-            console.log("SET_TRAJETS EKKO", _trips); 
+            console.log("Get OWN SET_TRAJETS EKKO", _trips); 
             commit('SET_TRAJETS', _trips);   
             
             return {status: 0, message: "publish ok"}
@@ -504,17 +586,18 @@ export default {
             }
 
             // get all booking id
-            let { data: booking, error: error_booking } = await supabase
-                .from('booking')
-                .select('id')
+            // let { data: booking, error: error_booking } = await supabase
+            //     .from('booking')
+            //     .select('id')
 
-            if ( error_booking ) {
-                console.error('Erreur lors de la requête :', error_booking);
-                return { valided: false, message: "Une erreur est survenue !"};
-            }
+            // if ( error_booking ) {
+            //     console.error('Erreur lors de la requête :', error_booking);
+            //     return { valided: false, message: "Une erreur est survenue !"};
+            // }
+
 
             // new id = last_id+1
-            const newBookingId = booking.length+1;
+            // const newBookingId = booking.length+1;
             
             // debit le montant
             let { data: account_update, error: error_update } = await supabase
@@ -548,7 +631,7 @@ export default {
 
             let list_ins_passenger = [];
             for(let index_passenger=0; index_passenger < state.nbPassenger; index_passenger++){
-                list_ins_passenger.push({ id: newBookingId+index_passenger, trip_id: state.trajetSelected.id, passenger_account_id: user_id, is_accepted: auto_accept_trip })
+                list_ins_passenger.push({ trip_id: state.trajetSelected.id, passenger_account_id: user_id, is_accepted: auto_accept_trip })
             }
 
             //add +1 reserve
@@ -564,7 +647,7 @@ export default {
 
             console.log("reserveTrajet:", data_booking);
             const message_success = auto_accept_trip ? "Votre réservation à été effectué avec succès" : "Votre demande est en attente de validation par le chauffeur !";
-            return {valided: true, message: message_success};
+            return {valided: true, message: message_success, accepted: auto_accept_trip };
         },
     },
 }

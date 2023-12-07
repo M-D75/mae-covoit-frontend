@@ -5,6 +5,7 @@
         .v-list {
             .v-list-subheader__text {
                 color: var(--font-color-label);
+                white-space: inherit;
             }
         }
     }
@@ -29,6 +30,7 @@
             background-color: var(--bg-app-color);
             .v-list-subheader__text {
                 color: var(--font-color-label);
+                
             }
         }
 
@@ -100,10 +102,27 @@
                     </template>
 
                     <template v-slot:subtitle="{ subtitle }">
-                        <div @click="goToProfil(item.userUid)" v-html="subtitle"></div>
+                        <div style="display: flex;">
+                            <div @click="goToProfil(item.userUid)" v-html="subtitle"></div>
+                        </div>
+
+                        <div style="display: flex;">
+                            <v-icon
+                                v-for="n in item.seats"
+                                :key="n"
+                                :color=" !item.isAccepted ? 'grey-lighten-1' : 'green'"
+                            >mdi-seat-passenger</v-icon>
+                        </div>
                     </template>
 
                     <template v-slot:append>
+                        <v-btn
+                            color="white"
+                            icon="mdi-chat-processing-outline"
+                            variant="text"
+                            @click="$router.push('/message')"
+                        ></v-btn>
+
                         <v-btn
                             :color=" !item.isAccepted ? 'grey-lighten-1' : 'green'"
                             icon="mdi-check-decagram"
@@ -170,7 +189,9 @@
                 // console.log(this.tripSelected, this.chat.contacts);
                 let items = [];
                 const contacts = this.chat.contacts;
-                items.push({type: "subheader", title: `${this.tripSelected.depart} - ${this.tripSelected.destination} à ${this.tripSelected.hour_start}`})
+                console.log("contacts-items", contacts);
+                let seats = 0;
+                items.push({type: "subheader", title: `${this.tripSelected.depart} - ${this.tripSelected.destination} à ${this.tripSelected.hour_start}`});
                 for (let index = 0; index < contacts.length; index++) {
                     items.push(
                         {
@@ -178,12 +199,17 @@
                             userUid: contacts[index].user_id,
                             prependAvatar: contacts[index].avatar, 
                             title: contacts[index].username,
-                            subtitle: "Aucune localisation",
-                            isAccepted: contacts[index].booking && contacts[index].booking.length > 0 && contacts[index].booking[0].is_accepted ? contacts[index].booking[0].is_accepted : false,
+                            subtitle: `Aucune localisation`,
+                            seats: contacts[index].booking != undefined ? contacts[index].booking.filter((booking) => booking.trip_id == this.tripSelected.id).length : 0,
+                            isAccepted: contacts[index].booking && contacts[index].booking.filter((booking) => booking.trip_id == this.tripSelected.id).length > 0 && contacts[index].booking.filter((booking) => booking.trip_id == this.tripSelected.id)[0].is_accepted ? contacts[index].booking.filter((booking) => booking.trip_id == this.tripSelected.id)[0].is_accepted : false,
                         }
                     )
                     items.push({type: "divider", inset: true})
+                    seats += contacts[index].booking && contacts[index].booking.filter((booking) => booking.trip_id == this.tripSelected.id).length > 0 && contacts[index].booking.filter((booking) => booking.trip_id == this.tripSelected.id)[0].is_accepted ? contacts[index].booking.filter((booking) => booking.trip_id == this.tripSelected.id).length : 0;
                 }
+
+                if( contacts.length > 0 && contacts[0].booking != undefined && contacts[0].booking.filter((booking) => booking.trip_id == this.tripSelected.id).length > 0 )
+                    items[0].title = `${items[0].title} places ${seats}/${contacts[0].booking.filter((booking) => booking.trip_id == this.tripSelected.id)[0].trip.max_seats}`;
 
                 return items;
             }

@@ -519,9 +519,9 @@
                 **************
             -->
             <TrajetMember v-if="!notif && mode=='reserve'" :infos="infos"/>
-            <ReservePlace v-if="!notif && mode=='reserve'" v-on:test-notif-success="notif = !notif"/>
+            <ReservePlace ref="ReservePlaceRef" v-if="!notif && mode=='reserve'" v-on:test-notif-success="reserveNotif()"/>
 
-            <Notification v-if="notif && mode=='reserve'" :message="'Votre commande a été comfirmé par le chauffeur !'" />
+            <Notification v-if="notif && mode=='reserve'" :icon="reserve.icon" :message="reserve.message" />
             <!-- End Results -->
 
             <!-- ** Publish **
@@ -1163,6 +1163,10 @@
                 subContHeigth: 0,
                 subContSupHeigth: 0,
                 open_b: false,
+                reserve: {
+                    message: "",
+                    icon: "mdi-check-circle",
+                },
                 priceRecomended: {
                     min: 2,
                     max: 3,
@@ -1524,6 +1528,15 @@
                         await this.$store.dispatch("auth/logout");
                     }.bind(this), 4000);
                 }
+            },
+            reserveNotif(){
+                this.reserve.message = this.$refs.ReservePlaceRef.message;
+                if( this.$refs.ReservePlaceRef.accepted )
+                    this.reserve.icon = "mdi-check-circle";
+                else
+                    this.reserve.icon = "mdi-clock-time-eight-outline";
+
+                this.notif = !this.notif;
             },
         },
         watch:{
