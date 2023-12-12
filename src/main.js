@@ -55,6 +55,8 @@ library.add(far)
 // supabase
 import supabase from '@/utils/supabaseClient.js';
 
+import stripe from '@/utils/stripe.js';
+
 import VueGoogleMaps from '@fawmi/vue-google-maps'
 import './registerServiceWorker'
 
@@ -64,6 +66,7 @@ createApp(App)
     .component('VDatePickerIo', DatePicker)
     .component('font-awesome-icon', FontAwesomeIcon)
     .provide('supabase', supabase)
+    .provide('stripe', stripe)
     //.use(VCalendar)
     .use(router)
     .use(store)

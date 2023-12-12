@@ -533,8 +533,12 @@
                 class="select-time mx-auto"
             >
                 <div class="label text-center">{{ labelSelectorN1 }}</div>
-                <TimeCard ref="TimeCardRef" :class-name="className" :hour-init="timeInit.hourInit" :minute-init="timeInit.minuteInit" :nb-pas-minutes="
+                <TimeCard v-if="!isIOS" ref="TimeCardRef" :class-name="className" :hour-init="timeInit.hourInit" :minute-init="timeInit.minuteInit" :nb-pas-minutes="
                 timeInit.nbPasMinutes" v-on:time-changed="emit('time-changed')"/>
+
+                <TimeCardIOS v-else ref="TimeCardRef" :class-name="className" :hour-init="timeInit.hourInit" :minute-init="timeInit.minuteInit" :nb-pas-minutes="
+                timeInit.nbPasMinutes" v-on:time-changed="emit('time-changed')"/>
+
                 <CardButton 
                     class="auto-validation"
                     prependIconColor="#bc62ff"
@@ -586,7 +590,16 @@
                 </div>
                 <div class="label text-center">{{ labelSelectorN2 }}</div>
                 <TimeCard
-                    v-if="timeCard"
+                    v-if="timeCard && !isIOS"
+                    ref="TimeCardRef" 
+                    :class-name="className" 
+                    :hour-init="timeInit.hourInit" 
+                    :minute-init="timeInit.minuteInit" 
+                    :nb-pas-minutes="timeInit.nbPasMinutes"
+                />
+
+                <TimeCardIOS
+                    v-if="timeCard && isIOS"
                     ref="TimeCardRef" 
                     :class-name="className" 
                     :hour-init="timeInit.hourInit" 
@@ -867,7 +880,7 @@
                     <v-text-field ref="input8" placeholder="Eddine Omar" variant="solo"></v-text-field>
                 </div>
 
-                <v-btn 
+                <v-btn
                     class="text-none"
                     rounded="xl" 
                     size="x-large"
@@ -933,6 +946,11 @@
                 v-on:pref-selected="$emit('close')"
             ></PreferenceChoice>
 
+            <!-- Select Model Vehicul -->
+
+            <SelectModelVehicul
+                v-if="mode=='select-model-vehicul'"
+            />
 
             <!-- End Pofile -->
 
@@ -1037,9 +1055,15 @@
     import Notification from '@/components/menus/bottom/Notification.vue';
     import GroupListCardsHistory from '@/components/menus/bottom/GroupListCardsHistory.vue';
     import TimeCard from './bottom/TimeCard.vue';
+    import TimeCardIOS from './bottom/TimeCardIOS.vue';
     import SelectNumber from './bottom/SelectNumber.vue';
     import PreferenceChoice from '@/components/menus/bottom/bottom_menu/PreferenceChoice.vue';
     import CardButton from './setting/CardButton.vue';
+    import SelectModelVehicul from '@/components/menus/bottom/SelectModelVehicul.vue';
+
+    import { Capacitor } from '@capacitor/core';
+
+    const isIOS = Capacitor.getPlatform() === 'ios';
    
 
     export default defineComponent({
@@ -1054,9 +1078,11 @@
             Notification,
             GroupListCardsHistory,
             TimeCard,
+            TimeCardIOS,
             SelectNumber,
             PreferenceChoice,
             CardButton,
+            SelectModelVehicul,
         },
         computed: {
             ...mapState("profil", ["aboutPrefs"]),
@@ -1210,10 +1236,11 @@
                 messageSnackbarError: "",
                 showSnackbarSuccess: false,
                 messageSnackbarSuccess: "",
+                isIOS: false,
             }
         },
         mounted() {
-
+            this.isIOS = isIOS;
             this.sizeScreen = $(window).innerHeight();
             this.y = this.sizeScreen;
             
@@ -1223,12 +1250,12 @@
             const classSubContNameJquery = this.className != "" && this.className != null ? `.sub-cont.${this.className.join(".")}` : ".sub-cont";
             this.subContHeigth = $(classSubContNameJquery)[0].clientHeight;
 
-            console.log("Mounted BottomMenu : classe-name", this.className, "screen-height", this.sizeScreen, "subContHeigth", this.subContHeigth, "object", $(classSubContNameJquery));
+            // console.log("Mounted BottomMenu : classe-name", this.className, "screen-height", this.sizeScreen, "subContHeigth", this.subContHeigth, "object", $(classSubContNameJquery));
 
             const classSubContSupNameJquery = this.className != "" && this.className != null ? `.sub-cont-sup.${this.className.join(".")}` : ".sub-cont-sup";
             this.subContSupHeigth = $(classSubContSupNameJquery)[0].clientHeight;
 
-            console.log("this.subContSupHeigth", this.subContSupHeigth, $(classSubContSupNameJquery));
+            // console.log("this.subContSupHeigth", this.subContSupHeigth, $(classSubContSupNameJquery));
 
             // if( this.mode=="notification" ){
             //     this.open();
@@ -1421,7 +1448,7 @@
                         if( _this.mode == "reserve" && _this.notif ){
                             _this.$router.replace("/")
                         }
-                        console.log("vclose");
+
                         const classBottomMenuNameJqueryDraggable = _this.className != "" && _this.className != null ? `.draggable.${_this.className.join(".")}` : ".draggable";
                         $(classBottomMenuNameJqueryDraggable).removeClass("open")
                         _this.$emit('close');

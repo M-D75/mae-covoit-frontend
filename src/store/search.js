@@ -5,6 +5,7 @@ import store from '../store';
 
 import supabase from '@/utils/supabaseClient.js';
 import router from '@/router';
+import { formaterDateUTC } from '@/utils/utils.js'
 
 export default {
     namespaced: true,
@@ -17,7 +18,7 @@ export default {
         trajetSelected: {},
         // serveur
         villages: [],
-        communesHistory: ["Tsingoni", "Mamoudzou", "Dzaoudzi"],
+        communesHistory: [],
         communesFrequency: {},
         trajets: [
             // {
@@ -189,19 +190,23 @@ export default {
         sauvegarderHistorique({ state }) {
             localStorage.setItem('communesFrequency', JSON.stringify(state.communesFrequency));
         },
-        async getVillages({ commit }) {
-            axios.get(`${process.env.VUE_APP_API_MBABUF_URL}/villages`, {
-                    params:{
-                        jwt: store.state.auth.token,
-                    }
-                })
-                .then(response => {
-                    commit('SET_VILLAGES', response.data.result);
-                    console.log("village", response.data.result);
-                })
-                .catch(error => {
-                    console.error(error);
-                });
+        async getVillages({ state, commit }) {
+            
+            if(state.villages.length == 0)
+                axios.get(`${process.env.VUE_APP_API_MBABUF_URL}/villages`, {
+                        params:{
+                            jwt: store.state.auth.token,
+                        }
+                    })
+                    .then(response => {
+                        commit('SET_VILLAGES', response.data.result);
+                        console.log("village", response.data.result);
+                    })
+                    .catch(error => {
+                        console.error(error);
+                    });
+            else
+                console.log("Village Alreadyyyyy done");
         },
         // async getTrajets({ commit, state, dispatch }) {
         //     const sessionChecked = await store.dispatch("auth/checkSession");
@@ -295,11 +300,11 @@ export default {
         //     return true
         // },
         async getTrajets({ commit, getters }) {
-            // const sessionChecked = await store.dispatch("auth/checkSession");
-            // if(!sessionChecked)
-            //     router.replace("/login");
-
-            // await dispatch("getAccounts");
+            const sessionChecked = await store.dispatch("auth/checkSessionOnly");
+            if(!sessionChecked){
+                router.replace("/login");
+                return;
+            }
 
             const { data: trips, error } = await supabase
                 .from('trip')
@@ -375,11 +380,11 @@ export default {
             return true
         },
         async getBookings({ getters, commit }) {
-            const sessionChecked = await store.dispatch("auth/checkSession");
-            if(!sessionChecked)
+            const sessionChecked = await store.dispatch("auth/checkSessionOnly");
+            if( ! sessionChecked ){
                 router.replace("/login");
-
-            // await dispatch("getAccounts");
+                return;
+            }
 
             const { data: trips, error } = await supabase
                 .from('booking')
@@ -454,9 +459,13 @@ export default {
             return {status: 0, message: "publish ok"}
         },
         async getOwnTrip({ getters, commit }) {
-            const sessionChecked = await store.dispatch("auth/checkSession");
-            if(!sessionChecked)
+            const sessionChecked = await store.dispatch("auth/checkSessionOnly");
+            if(!sessionChecked){
                 router.replace("/login");
+                return;
+            }
+
+            const currentDate = new Date();
 
             const { data: trips, error } = await supabase
                 .from('trip')
@@ -474,6 +483,7 @@ export default {
                         account (*)
                     )`)
                 .eq('driver_id', store.state.profil.userUid)
+                .gt("departure_time", formaterDateUTC(currentDate))
 
             if ( error ) {
                 console.error(error);
@@ -544,9 +554,11 @@ export default {
                 });
         },
         async reserveTrajet({state}, playload){
-            const sessionChecked = await store.dispatch("auth/checkSession");
-            if( ! sessionChecked )
+            const sessionChecked = await store.dispatch("auth/checkSessionOnly");
+            if( ! sessionChecked ){
                 router.replace("/login");
+                return;
+            }
 
             if( state.nbPassenger + state.trajetSelected.passenger_number > state.trajetSelected.max_seats ){
                 return { valided: false, message: "Pas assez place sur ce trajet !"};
@@ -617,7 +629,7 @@ export default {
             //credité driver
             let { data: account_update_driver, error: error_update_driver } = await supabase
                 .from('account')
-                .update({ credit: (account_driver[0].credit + state.trajetSelected.price) })
+                .update({ gain: (account_driver[0].gain + state.trajetSelected.price) })
                 .eq('user_id', state.trajetSelected.driver_id)
                 .select()
 

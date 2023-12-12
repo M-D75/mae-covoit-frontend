@@ -26,6 +26,7 @@ export default {
         userName: "",
         avatarUrl: 'https://avataaars.io/?avatarStyle=Circle&topType=ShortHairDreads01&accessoriesType=Blank&hairColor=PastelPink&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Wink&eyebrowType=DefaultNatural&mouthType=Serious&skinColor=Tanned',
         soldes: 0,
+        gain: 0,
         credit_card: {
             num_end_credit_card: "0000",
             available: false,
@@ -206,7 +207,7 @@ export default {
             
             const currentDate = new Date();
 
-            await store.dispatch("search/getBookings");
+            await store.dispatch("search/getBookings", false);
 
             if( ! store.state.search.trajets ){
                 console.error("Error getTravels 1")
@@ -286,7 +287,7 @@ export default {
             }
 
             if( _trips.length == 0 ){
-                console.error("Error getPush 2")
+                console.error("Error getPush 2, Aucune publication")
                 return {status: 2, message: "Aucun trajets"};
             }
 
@@ -325,7 +326,7 @@ export default {
 
             state.history.load = true;
 
-            await store.dispatch("search/getBookings");
+            await store.dispatch("search/getBookings", true);
 
             if( ! store.state.search.trajets ){
                 console.error("Error getTravels 1")

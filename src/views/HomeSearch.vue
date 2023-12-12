@@ -138,8 +138,6 @@
     <!-- Menu -->
     <BottomNav />
 
-    
-
 </template>
 
 

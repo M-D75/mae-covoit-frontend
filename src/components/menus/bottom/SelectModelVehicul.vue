@@ -1,6 +1,6 @@
 
 <style lang="scss" model>
-    .select-car-view {
+    .select-model-vehicul-comp {
         .model.scrollable-container {
             cursor: pointer;
             overflow-x: auto;
@@ -29,8 +29,7 @@
 
 <!-- scss -->
 <style lang="scss" scoped>
-    .v-container.select-car-view{
-        height: 100vh;
+    .v-container.select-model-vehicul-comp{
         .title {
             font-size: var(--font-size-h1);
             font-weight: bold;
@@ -83,7 +82,7 @@
                     }
                     .color {
                         margin: auto 0;
-                        border: 4px solid #eeecec ;
+                        border: 6px solid #eeecec ;
                         border-radius: 200px;
                         height: 32px;
                         width: 32px;
@@ -96,32 +95,30 @@
    
 <!--  -->
 <template>
-    <v-main>
-        <v-container 
-            class="select-car-view"
-        >
-            <div
-                class="title text-center"
-            >Quelle voiture comptez-vous prendre ?</div>
+    <v-container 
+        class="select-model-vehicul-comp"
+    >
+        <div
+            class="title text-center"
+        >Selectionnez un type de véhicul !</div>
 
-            <div 
-                class="card-contain"
+        <div 
+            class="card-contain"
+        >
+            <v-card
+                v-for="(info, index) in infos.slice(0, 6)"
+                :key="index"
+                class="car mx-auto"
+                @click="selectCar(index, info)"
             >
-                <v-card
-                    v-for="(info, index) in infos.slice(0, 6)"
-                    :key="index"
-                    class="car mx-auto"
-                    @click="selectCar(index, info)"
-                >
-                    <v-list>
-                        <div class="icon-container"><v-icon >{{ info.icon }}</v-icon></div>
-                        <div class="model scrollable-container" ><div class="text">{{ info.model }}</div></div>
-                        <div class="color" :style="'background-color: ' + info.color"></div>
-                    </v-list>
-                </v-card>
-            </div>
-        </v-container>
-    </v-main>
+                <v-list>
+                    <div class="icon-container"><v-icon>{{ info.icon }}</v-icon></div>
+                    <div class="model scrollable-container" ><div class="text">{{ info.model }}</div></div>
+                    <!-- <div class="color" :style="'background-color: ' + info.color"></div> -->
+                </v-list>
+            </v-card>
+        </div>
+    </v-container>
 </template>
 
 
@@ -134,24 +131,18 @@
     // Components
 
     export default defineComponent({
-        name: 'select-car-view',
-
+        name: 'select-model-vehicul-comp',
         components: {
         },
         data() {
             return {
                 color: "red",
                 infos: [
-                    {model: "Ferrari - F8 Tributo", color: "silver", icon:"mdi-car-sports"},
-                    {model: "Tesla - Model 3", color: "white", icon:"mdi-car"},
-                    {model: "Lamborghini - Aventador", color: "red", icon:"mdi-car-sports"},
-                    {model: "Ford - Mustang GT", color: "navy", icon:"mdi-car-sports"},
-                    {model: "Mercedes-Benz - Classe A", color: "gray", icon:"mdi-car-sports"},
-                    {model: "Toyota - Camry", color: "cornflowerblue", icon:"mdi-car"},
-                    {model: "Porsche - 911 Carrera", color: "lime", icon:"mdi-car-sports"},
-                    {model: "Audi - Q5", color: "teal", icon:"mdi-car-estate"},
-                    {model: "Renault - Clio", color: "fuchsia", icon:"mdi-car-estate"},
-                    {model: "Nissan - Juke", color: "maroon", icon:"mdi-car-estate"},
+                    {model: "Moto", color: "silver", icon:"mdi-motorbike"},
+                    {model: "Compact", color: "white", icon:"mdi-car-hatchback"},
+                    {model: "Berline", color: "red", icon:"mdi-car-sports"},
+                    {model: "SUV", color: "navy", icon:"mdi-car-estate"},
+                    {model: "Monospace", color: "gray", icon:"mdi-car-estate"},
                 ],
                 car: 0,
             };
@@ -186,11 +177,11 @@
             });
         },
         methods: {
-            selectCar(index, info){
-                console.log("selected", index, info);
-                this.car = index;
-                this.$emit("car-selected");
-            },
+            // selectCar(index, info){
+            //     console.log("selected", index, info);
+            //     this.car = index;
+            //     this.$emit("car-selected");
+            // },
         },
         watch: {
         },

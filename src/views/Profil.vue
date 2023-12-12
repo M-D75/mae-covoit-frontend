@@ -56,7 +56,7 @@
             .v-btn {
                 width: 138px;
                 @include respond-to('small') {
-                    width: 105px;
+                    width: 40%;
                 }
                 height: 32px;
                 box-shadow: none;
@@ -129,9 +129,11 @@
             <!-- Credit Card -->
             <CreditCard 
                 v-if="onglet=='table-bord'"
+                :load="loadCreaditCard"
                 v-on:up-money="onUpMoney()"
                 v-on:add-card="onAddCard()"
                 v-on:drop-money="onDropMoney()"
+                v-on:transfert-gain="showLedou()"
             />
 
             <!-- Graph -->
@@ -145,6 +147,15 @@
                 v-on:open-contacts="$refs.PaneApearRef.open()"
             />
         </div>
+
+        <!-- message error -->
+        <v-snackbar
+            v-model="showSnackbarError"
+            :timeout="4000"
+            color="error"
+        >
+            <v-icon icon="mdi-alert-circle"></v-icon> <span>{{ messageSnackbarError }}</span>
+        </v-snackbar>
     </v-main>
         
     <BottomNav />
@@ -185,6 +196,9 @@
         v-on:drop-money="onDropMoney()"
         v-on:up-money="onUpMoney()"
         />
+
+    
+
 
 </template>
 
@@ -331,6 +345,9 @@
                         ],
                 },
                 infosTravels: [],
+                loadCreaditCard: false,
+                showSnackbarError: false,
+                messageSnackbarError: "",
             }
         },
         beforeMount(){
@@ -349,9 +366,12 @@
             ...mapMutations("profil", ["SET_LOAD_GET_TRIP_PUBLISH"]),
             ...mapMutations("trip", ["SET_NOT_MESSAGE_VUE"]),
             async checkSessionIn(){
+                this.loadCreaditCard = true
                 const sessionValided = await this.$store.dispatch("auth/checkSession");
                 if( ! sessionValided )
                     this.$router.replace("/");
+                else
+                    this.loadCreaditCard = false;
             },
             goToInfoPerso(){
                 this.$router.push("/profil/perso")
@@ -489,7 +509,11 @@
                         }
                     }
                 }
-            }
+            },
+            showLedou(){
+                this.messageSnackbarError = "Désolè Ledou, cette action n'est pas possible pour le moment ! :p"
+                this.showSnackbarError = true;
+            },
         },
         watch: {
             darkMode(){

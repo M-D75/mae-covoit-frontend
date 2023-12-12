@@ -54,7 +54,7 @@
     <v-bottom-navigation
         v-model="value"
         grow
-        height="82"
+        :height="82+barBottom"
     >
         <v-btn
             :active="false" 
@@ -88,6 +88,11 @@
 
 <script>
     // import $ from 'jquery'
+    import { SafeAreaController, SafeArea } from '@aashu-dubey/capacitor-statusbar-safe-area';
+    import { Capacitor } from '@capacitor/core';
+
+    // const isAndroid = Capacitor.getPlatform() === 'android';
+    const isIOS = Capacitor.getPlatform() === 'ios';
 
     // Components
     export default {
@@ -95,6 +100,8 @@
         data() {
             return {
                 value: 0,
+                barHeight: 0,
+                barBottom: 0,
             }
         },
         beforeMount (){
@@ -111,9 +118,15 @@
                 default:
                     this.value=2;
             }
+
+            if(isIOS)
+                this.barBottom = 10;
         },
         mounted (){
             console.log("Menu BootomNav:", this.value);
+            SafeAreaController.injectCSSVariables();
+
+            // this.initStatusBarHeight();
         },
         methods: {
             keep_menu_selected(){
@@ -134,7 +147,17 @@
                             this.value=2;
                     }
                 }
-            }
+            },
+            async initStatusBarHeight(){
+                const insets = await this.getSafeAreaInsets();
+                console.log('NavBar insets:', insets);
+                this.barHeight = insets["top"];
+                this.barBottom = insets["bottom"];
+            },
+            async getSafeAreaInsets () {
+                const insets = await SafeArea.getSafeAreaInsets();
+                return insets; // Ex. { "bottom":34, "top":47, "right":0, "left":0 }
+            },
         },
         watch:{
             value(){

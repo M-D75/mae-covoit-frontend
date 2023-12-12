@@ -5,7 +5,7 @@
         background-color: white !important;
     }*/
 
-    .ligth-mode * {
+    .login-sign.ligth-mode * {
         --bg-app-color: #f5f5f5;
         --white-bg-color: #FBFBFB;
         --gray-bg-icon-color: #b1b1b1;
@@ -113,7 +113,7 @@
     
 <!--  -->
 <template>
-    <v-app class="ligth-mode">
+    <v-app class="ligth-mode login-sign">
         <v-container >
             <!-- From Sign/Connexion -->
             <v-row class="bloc-part">
@@ -272,7 +272,7 @@
     const { LocalNotifications } = Plugins;
 
     const isAndroid = Capacitor.getPlatform() === 'android';
-    //const isIOS = Capacitor.getPlatform() === 'ios';
+    const isIOS = Capacitor.getPlatform() === 'ios';
 
     export default {
         setup() {
@@ -432,7 +432,7 @@
             async authServiceSupabse(service){
 
                 let { data, error } = {data: null, error: null}
-                if( isAndroid ){
+                if( isAndroid || isIOS ){
                     //Android
                     ({ data, error } = await this.supabase.auth.signInWithOAuth({
                         provider: service,

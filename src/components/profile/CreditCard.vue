@@ -122,6 +122,13 @@
                 >mdi-wallet-bifold</v-icon>
                 
                 EUR {{ soldeWritable }}
+
+                <v-icon
+                    v-if="load && soldeWritable==0"
+                >
+                    <!-- <font-awesome-icon :icon="['fas', 'spinner']" spin-pulse /> -->
+                    <font-awesome-icon :icon="['fas', 'rotate']" spin />
+                </v-icon>
             </div>
         </div>
 
@@ -140,7 +147,7 @@
                 >
                     <v-icon class="zoom-bounce" v-if="eyeOff && !modeDriver" @click="emit('add-card')">mdi-eye-off</v-icon>
                     <!-- <v-icon v-else>mdi-eye</v-icon> -->
-                    <v-icon class="zoom-bounce" v-if="modeDriver">mdi-transfer</v-icon>
+                    <v-icon class="zoom-bounce" v-if="modeDriver" @click="emit('transfert-gain')">mdi-transfer</v-icon>
                 </div>
 
                 <!-- <div class="btn card">
@@ -176,11 +183,15 @@
     // Components
     export default {
         name: 'credit-card-comp',
+        emits: ["transfert-gain", "add-card"],
         computed: {
-            ...mapState("profil", ["soldes", "credit_card", "modeDriver"]),
+            ...mapState("profil", ["soldes", "gain", "credit_card", "modeDriver"]),
         },
         props: {
-            
+            load: {
+                type:Boolean,
+                default: false,
+            }
         },
         data() {
             return {
@@ -191,7 +202,7 @@
             }
         },
         mounted(){
-            this.soldeWritable = this.soldes;
+            this.updateSolde();
         },
         methods: {
             portefeuille(){
@@ -218,12 +229,21 @@
                         }
                     }.bind(this), vitesse);
                 }
+            },
+            updateSolde(){
+                if(this.modeDriver)
+                    this.animerNombre(this.soldeWritable, this.gain, 20, 1000);
+                else
+                    this.animerNombre(this.soldeWritable, this.soldes, 20, 1000);
             }
         },
         watch:{
             soldes(){
-                this.animerNombre(this.soldeWritable, this.soldes, 20, 1000);
+                this.updateSolde()
             },
+            modeDriver(){
+                this.updateSolde()
+            }
         }
     };
 </script>

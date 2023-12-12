@@ -90,16 +90,13 @@
         background-color: #eee;
         .v-container {
             margin: auto;
-            .bloc-part{
-                margin: 50px auto;
-            }
-
-            .v-row{
-                margin: 30px auto;
-                v.btn{
-                    color: var(--font-color-label);
-                }
-            }
+            height: 100vh;
+            display: grid;
+            // .v-img{
+            //     position: relative;
+            //     top: 50%;
+            //     transform: translateY(-50%);
+            // }
         }
     }
    
@@ -110,40 +107,14 @@
   
     <v-main class="ligth-mode home">
         <v-container >
-
-            <!-- From Sign/Connexion -->
-            <v-row class="bloc-part">
-                <v-col>
-
-                <v-row>
-                    <v-col>
-                        <v-img
-                            style="margin: auto;"
-                            :width="173"
-                            aspect-ratio="16/9"
-                            cover
-                            src="../assets/logo.png"
-                        ></v-img>
-                    </v-col>
-                </v-row>
-
-                <v-row>
-                    <v-col>
-                        <v-btn
-                            class="mr-4 text-none"
-                            @click="goToLoginSign"
-                            rounded="xl" 
-                            size="x-large"
-                            variant="outlined"
-                            block
-                        >
-                            S'inscrire - Se connecter
-                        </v-btn>
-                    </v-col>
-                </v-row>
-                </v-col>
-            </v-row>
-
+            <v-img
+                class="zoom-bounce"
+                style="margin: auto;"
+                :width="173"
+                aspect-ratio="16/9"
+                cover
+                src="../assets/logo.png"
+            ></v-img>
         </v-container>
 
         <!-- <div class="mask display">
@@ -202,6 +173,11 @@
                 this.overlayLoad = false;
                 if(this.logged_in)
                     this.$router.replace("/search");
+                else{
+                    setTimeout(function(){
+                        this.$router.push("/login")
+                    }.bind(this), 2000);
+                }
             },
         },
         created() {

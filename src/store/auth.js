@@ -155,6 +155,7 @@ export default {
                     const current_account = account[0];
                     if(current_account){
                         store.state.profil.soldes = current_account.credit;
+                        store.state.profil.gain = current_account.gain;
 
                         //store.state.profil.userName = ! user.user_metadata.full_name ? current_account.username : user.user_metadata.full_name;
                         store.state.profil.userName = `${current_account.lastname} ${current_account.firstname}`;
@@ -177,6 +178,21 @@ export default {
                 }
 
                 state.logged_in = true;
+                return true;
+            }
+            else{
+                console.log("Error cheking session:", error)
+                return false;
+            }
+        },
+        async checkSessionOnly(){
+            let { data, error } = await supabase.auth.getSession();
+
+            if(error)
+                return false;
+
+            console.log("checkSession--data.session:", data.session)
+            if( data.session ){
                 return true;
             }
             else{

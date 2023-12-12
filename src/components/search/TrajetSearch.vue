@@ -245,12 +245,12 @@
                         
                     >
                         <div @click="$emit('open-nb-passenger')" style="display: flex;">
-                            <v-list-item__prepend
+                            <div
                                 style="display: grid;"
                             >
                                 <v-icon icon="mdi-account-plus"
                                 ></v-icon>
-                            </v-list-item__prepend>
+                            </div>
 
                             <v-list-item-title>{{ nbPassenger }}</v-list-item-title>
                         </div>

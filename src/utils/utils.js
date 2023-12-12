@@ -155,3 +155,21 @@ export function getDayOfWeek(date) {
     
     return days[date.getDay()].toLocaleLowerCase();
 }
+
+
+export function formaterDateUTC(date) {
+    const pad = (num) => (num < 10 ? '0' + num : num);
+
+    const year = date.getUTCFullYear();
+    const month = pad(date.getUTCMonth() + 1); // Les mois commencent à 0
+    const day = pad(date.getUTCDate());
+    const hours = pad(date.getUTCHours());
+    const minutes = pad(date.getUTCMinutes());
+    const seconds = pad(date.getUTCSeconds());
+
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}+00`;
+}
+
+// Utilisation
+const maintenant = new Date();
+console.log("test:,", formaterDateUTC(maintenant));

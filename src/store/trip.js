@@ -166,7 +166,8 @@ export default {
             for (let index = 0; index < state.tripSelected.bookings.length; index++) {
 
                 const passenger_account_id = state.tripSelected.bookings[index].passenger_account_id;
-
+                const trip_id = state.tripSelected.id;
+                console.log("trip_id-----", trip_id);
                 if( ! accounts_id.includes(passenger_account_id) ){
 
                     let { data: account, error: error_account } = await supabase
@@ -179,6 +180,7 @@ export default {
                             )
                         `)
                         .eq('id', passenger_account_id)
+                        .eq('booking.trip_id', trip_id)
 
                     if( error_account ){
                         console.error("Error:", error_account);

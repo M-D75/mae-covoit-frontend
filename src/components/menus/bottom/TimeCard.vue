@@ -14,26 +14,6 @@
         --bg-mask: rgba(53, 53, 53, 0.77);
     }
 
-    .scrollable-container {
-        cursor: pointer;
-        overflow-y: scroll;
-        scrollbar-width: thin;
-        scrollbar-color: transparent transparent;
-    }
-
-    .scrollable-container::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    .scrollable-container::-webkit-scrollbar-track {
-        background: transparent;
-    }
-
-    .scrollable-container::-webkit-scrollbar-thumb {
-        background-color: transparent;
-    }
-
-
     div.hour-list {  
         div {
             span {
@@ -41,7 +21,6 @@
             }
         }
     }
-
 
 </style>
 
@@ -62,21 +41,6 @@
             font-size: 4.5em;
             font-weight: 700;
             user-select: none;
-
-            .mask-top, .mask-bottom {
-                height: 100px;
-                width: 100%;
-                background-color: var(--bg-mask);
-                z-index: 50;
-                pointer-events: none;
-            }
-
-            .mask-top {
-                position: absolute;
-                top: 0;
-                left: 0;
-            }
-
             div.hour-list {
                 width: 100%;
                 overflow-y: scroll;
@@ -141,8 +105,8 @@
                         height: 100px;
                         max-height: 100px;
                         min-height: 100px;
-                        position: relative;
-                        text-align: left;
+                        // position: relative;
+                        text-align: center;
                         span {
                             display: inline-block;
                             opacity: 0.5;
@@ -153,12 +117,6 @@
                         }
                     }
                 }
-            }
-
-            .mask-bottom {
-                position: absolute;
-                bottom: 0;
-                left: 0;
             }
         }
     }
@@ -175,7 +133,6 @@
             class="time"
             :class="className.join(' ')"
         >
-            <!-- <div class="mask-top"></div> -->
             <div class="hour-list mx-auto scrollable-container" :class="className.join(' ')">
                 <div class="sub-hour">
                     <div 
@@ -192,8 +149,8 @@
                 </div>
             </div>
 
-            <div class="minute-list mx-auto scrollable-container" :class="className.join(' ')">
-                <div class="sub-minute" :style="'height:' + `${(minutesValue.length)*100}px`">
+            <div class="minute-list mx-auto scrollable-container" :class="className.join(' ')" @scroll="handleScroll">
+                <div class="sub-minute" :style="`height: ${(minuteLength)*100}px`" >
                     <div 
                         v-for="minute in minutesValue" 
                         :key="minute"
@@ -201,7 +158,6 @@
                     ><span>{{ minute.replaceAll("0", "O") }}</span></div>
                 </div>
             </div>
-            <!-- <div class="mask-bottom"></div> -->
         </div>
     </v-card>
 </template>
@@ -259,10 +215,14 @@
                 minuteCanTaked: true,
                 in_minutes_ev: false,
                 in_hour_ev: false,
+                minuteLength: 0,
+                minAnime: false,
+                scrollPosition: 0,
             }
         },
         mounted(){
             this.$nextTick(function(){
+                this.minuteLength = this.minutes.length;
 
                 var vue = this;
 
@@ -275,38 +235,72 @@
 
                 const prefixClassMinute = `.scrollable-container.minute-list${vue.className.length != 0 ? "." + vue.className.join(".") : ""}`;
 
-                if(this.minuteInit > 0){
-                    this.minutes = this.shiftLeftMulti(this.minutes, ((this.minuteInit)/this.nbPasMinutes)-1);
-                }
-                else{
-                    this.minutes = this.shiftRightMulti(this.minutes, ((this.minuteInit)/this.nbPasMinutes)+1);
-                }
+                // if(this.minuteInit > 0){
+                //     this.minutes = this.shiftLeftMulti(this.minutes, ((this.minuteInit)/this.nbPasMinutes)-1);
+                // }
+                // else{
+                //     this.minutes = this.shiftRightMulti(this.minutes, ((this.minuteInit)/this.nbPasMinutes)+1);
+                // }
+
+                const initScroll = 600;
+                setTimeout(function() {
+                    vue.minuteCanTaked = false;
+                    console.log("can-init", false, initScroll);
+                    const currentIndexMinutes = (Math.ceil(Math.abs(initScroll-50)/100));
+                    const val = (currentIndexMinutes*100);
+                    
+                    //console.log("Haven't scrolled in 250ms!", val, currentIndexMinutes);
+                    $(prefixClassMinute).animate({scrollTop: val}, 180, function(){
+                        
+                        console.log("currentIndexMinutes", middleIndexMinutes, currentIndexMinutes)
+                        if( middleIndexMinutes > currentIndexMinutes ){
+                            console.log("rigth", middleIndexMinutes-currentIndexMinutes)
+                            vue.minutes = vue.shiftRightMulti(vue.minutes, Math.abs(middleIndexMinutes-currentIndexMinutes));
+                            // vue.minutes = vue.shiftRightMulti(vue.minutes, 1);
+                        }
+                        else if(middleIndexMinutes < currentIndexMinutes){
+                            console.log("left", middleIndexMinutes-currentIndexMinutes)
+                            vue.minutes = vue.shiftLeftMulti(vue.minutes, Math.abs(middleIndexMinutes-currentIndexMinutes));
+                        }
+                        // $(`${prefixClassMinute} .m-${minuteC.toString().padStart(2, '0')} span`).css("opacity", 1);
+                        console.log("Mminute:", vue.minutes[middleIndexMinutes+1]);
+                        vue.minuteCanTaked = true;
+                        console.log("can-takkkkk", true);
+                        vue.minAnime = false;
+                    });
+   
+                }, 190);
 
                 //console.log("prefixClassMinute", prefixClassMinute);
                 $(`${prefixClassMinute} .m-${this.minuteInit.toString().padStart(2, '0')} span`).css("opacity", 1);
                 $(`${prefixClassMinute} .m-${this.minuteInit.toString().padStart(2, '0')} span`).css("transform", `perspective(100px) translateZ(0px)`);
                     
-                var lastOffset = $(prefixClassMinute).scrollTop();
+                var lastOffset = $(prefixClassMinute).scrollTop().toFixed(0);
                 var lastDate = new Date().getTime();
 
                 
-                //console.log("lastOffset:", lastOffset)
+                console.log("lastOffset:", lastOffset)
                 
                 this.in_minutes_ev = false;
                 var slow = true;
+                this.minAnime = false;
+                console.log("El", $(prefixClassMinute));
                 $(prefixClassMinute).on("scroll", function(e){
                     vue.in_minutes_ev = true;
                     const _this = $(this);
                     // console.log("change----")
 
+                    const currentScrollTop = e.target.scrollTop;
                     var delayInMs = e.timeStamp - lastDate;
-                    var offset = e.target.scrollTop - lastOffset;
+                    var offset = currentScrollTop - lastOffset;
                     var speedInpxPerMs = offset / delayInMs;
 
-                    lastDate = e.timeStamp;
-                    lastOffset = e.target.scrollTop;
+                    //console.log("scroll", currentScrollTop, lastOffset, offset);
 
-                    const currentIndexMinutes = (Math.ceil(Math.abs(_this.scrollTop()-50)/100));
+                    lastDate = e.timeStamp;
+                    lastOffset = currentScrollTop;
+
+                    var currentIndexMinutes = (Math.ceil(Math.abs(currentScrollTop-50)/100));
 
                     // const minuteBB = vue.minutes[middleIndexMinutes-1];
                     const minuteB = vue.minutes[middleIndexMinutes+0];
@@ -314,9 +308,9 @@
                     const minuteA = vue.minutes[middleIndexMinutes+2];
                     // const minuteAA = vue.minutes[middleIndexMinutes+3];
 
-                    const ecart = ((vue.minutes.length/2)*100) - _this.scrollTop();
+                    const ecart = ((vue.minutes.length/2)*100) - currentScrollTop;
 
-                    // console.log("hour-----", minuteB, minuteC, minuteA, ecart, ecart/100, (100-ecart)/100, offset, delayInMs, minuteB.toString().padStart(2, '0'), minuteA.toString().padStart(2, '0'));
+                    // console.log("miniiii-----", minuteB, minuteC, minuteA, ecart, ecart/100, (100-ecart)/100, offset, delayInMs, minuteB.toString().padStart(2, '0'), minuteA.toString().padStart(2, '0'));
                     
                     // const ecartDegree = Math.abs(ecart) <= 30 ? Math.abs(ecart) : 30;
 
@@ -362,29 +356,38 @@
                         }
 
                         // Animation replace
-                        clearTimeout($.data(this, 'scrollTimer'));
-                        $.data(this, 'scrollTimer', setTimeout(function() {
-                            
-                            const currentIndexMinutes = (Math.ceil(Math.abs(_this.scrollTop()-50)/100));
-                            const val = (currentIndexMinutes*100);
-
+                        clearTimeout($.data(this, `scrollTimer${prefixClassMinute}`));
+                        $.data(this, `scrollTimer${prefixClassMinute}`, setTimeout(function() {
                             vue.minuteCanTaked = false;
+                            console.log("can-taked", false, currentScrollTop);
+                            // const currentIndexMinutes = (Math.ceil(Math.abs(currentScrollTop-50)/100));
+                            const val = (currentIndexMinutes*100);
                             
                             //console.log("Haven't scrolled in 250ms!", val, currentIndexMinutes);
-                            _this.animate({scrollTop: val}, 180, function(){
-                                // console.log("currentIndexMinutes", middleIndexMinutes, currentIndexMinutes)
-                                if( middleIndexMinutes > currentIndexMinutes ){
-                                    //console.log("rigth", middleIndexMinutes-currentIndexMinutes)
-                                    vue.minutes = vue.shiftRightMulti(vue.minutes, Math.abs(middleIndexMinutes-currentIndexMinutes));
-                                }
-                                else{
-                                    //console.log("left", middleIndexMinutes-currentIndexMinutes)
-                                    vue.minutes = vue.shiftLeftMulti(vue.minutes, Math.abs(middleIndexMinutes-currentIndexMinutes));
-                                }
-                                $(`${prefixClassMinute} .m-${minuteC.toString().padStart(2, '0')} span`).css("opacity", 1);
-                                console.log("Mminute:", vue.minutes[middleIndexMinutes+1]);
+                            if( ! vue.minAnime  ){
+                                vue.minAnime = true;
+                                _this.animate({scrollTop: val}, 180, function(){
+                                    
+                                    console.log("currentIndexMinutes", middleIndexMinutes, currentIndexMinutes)
+                                    if( middleIndexMinutes > currentIndexMinutes ){
+                                        console.log("rigth", middleIndexMinutes-currentIndexMinutes)
+                                        vue.minutes = vue.shiftRightMulti(vue.minutes, Math.abs(middleIndexMinutes-currentIndexMinutes));
+                                        // vue.minutes = vue.shiftRightMulti(vue.minutes, 5);
+                                    }
+                                    else if(middleIndexMinutes <= currentIndexMinutes){
+                                        console.log("left", middleIndexMinutes-currentIndexMinutes)
+                                        vue.minutes = vue.shiftLeftMulti(vue.minutes, Math.abs(middleIndexMinutes-currentIndexMinutes));
+                                    }
+                                    $(`${prefixClassMinute} .m-${minuteC.toString().padStart(2, '0')} span`).css("opacity", 1);
+                                    console.log("Mminute:", vue.minutes[middleIndexMinutes+1]);
+                                    vue.minuteCanTaked = true;
+                                    console.log("can-takkkkk", true);
+                                    vue.minAnime = false;
+                                });
+                            }
+                            else{
                                 vue.minuteCanTaked = true;
-                            });
+                            }
                         }, 190));
                     }
                     else {
@@ -556,13 +559,19 @@
             });
         },
         methods: {
+            handleScroll(event) {
+                // Vous pouvez accéder aux propriétés de défilement de l'événement
+                this.scrollPosition = event.target.scrollTop.toFixed(3);
+                // console.log("Scrooooollll:", this.scrollPosition, event.target.scrollTop);
+            },
             shiftRight(arr) {
                 
                 if (arr.length === 0) {
                     return arr;
                 }
-
+                
                 let copy_arr = arr.slice();
+                console.log("r:", this.minutes, copy_arr);
                 let lastElement = copy_arr.pop();
                 copy_arr.unshift(lastElement);
                 return copy_arr;
@@ -573,12 +582,13 @@
                 }
 
                 let copy_arr = arr.slice();
+                console.log("l:", this.minutes, copy_arr);
                 let firstElement = copy_arr.shift();
                 copy_arr.push(firstElement);
                 return copy_arr;
             },
             shiftRightMulti(arr, nb){
-                console.log("rigth", nb, arr.length);
+                console.log("shiftRightMulti rigth", nb, arr.length);
                 let copy_arr = arr.slice();
                 for (let index = 0; index < nb; index++) {
                     copy_arr = this.shiftRight(copy_arr);
@@ -586,7 +596,7 @@
                 return copy_arr;
             },
             shiftLeftMulti(arr, nb){
-                console.log("Left", nb, arr.length);
+                console.log("shiftLeftMulti Left", nb, arr.length);
                 let copy_arr = arr.slice();
                 for (let index = 0; index < nb; index++) {
                     copy_arr = this.shiftLeft(copy_arr);

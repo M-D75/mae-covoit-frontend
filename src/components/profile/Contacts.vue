@@ -84,7 +84,23 @@
                 <v-list-subheader
                     v-if="item.type == 'subheader'"
                     :title="item.title"
-                ></v-list-subheader>
+                >
+                    <div>{{ item.title }}</div>
+
+                    <div style="display: flex;" >
+                        <v-icon
+                            v-for="n in item.seats"
+                            :key="n"
+                            :color="'green'"
+                        >mdi-seat-passenger</v-icon>
+
+                        <v-icon
+                            v-for="n in (item.max_seats - item.seats)"
+                            :key="n"
+                            :color="'grey-lighten-1'"
+                        >mdi-car-seat</v-icon>
+                    </div>
+                </v-list-subheader>
 
                 <v-list-item 
                     v-if="item.type == undefined"
@@ -189,9 +205,11 @@
                 // console.log(this.tripSelected, this.chat.contacts);
                 let items = [];
                 const contacts = this.chat.contacts;
-                console.log("contacts-items", contacts);
+                // console.log("contacts-items", contacts, this.tripSelected);
+                
                 let seats = 0;
-                items.push({type: "subheader", title: `${this.tripSelected.depart} - ${this.tripSelected.destination} à ${this.tripSelected.hour_start}`});
+                items.push({type: "subheader", title: `${this.tripSelected.depart} - ${this.tripSelected.destination} à ${this.tripSelected.hour_start}`, seats: 0, max_seats:0});
+                
                 for (let index = 0; index < contacts.length; index++) {
                     items.push(
                         {
@@ -200,16 +218,20 @@
                             prependAvatar: contacts[index].avatar, 
                             title: contacts[index].username,
                             subtitle: `Aucune localisation`,
-                            seats: contacts[index].booking != undefined ? contacts[index].booking.filter((booking) => booking.trip_id == this.tripSelected.id).length : 0,
-                            isAccepted: contacts[index].booking && contacts[index].booking.filter((booking) => booking.trip_id == this.tripSelected.id).length > 0 && contacts[index].booking.filter((booking) => booking.trip_id == this.tripSelected.id)[0].is_accepted ? contacts[index].booking.filter((booking) => booking.trip_id == this.tripSelected.id)[0].is_accepted : false,
+                            max_seats: contacts.length > 0 && contacts[0].booking != undefined && contacts[0].booking.length > 0 ? contacts[0].booking[0].max_seats : 0,
+                            seats: contacts[index].booking != undefined ? contacts[index].booking.length : 0,
+                            isAccepted: contacts[index].booking && contacts[index].booking.length > 0 && contacts[index].booking[0].is_accepted ? contacts[index].booking[0].is_accepted : false,
                         }
                     )
                     items.push({type: "divider", inset: true})
-                    seats += contacts[index].booking && contacts[index].booking.filter((booking) => booking.trip_id == this.tripSelected.id).length > 0 && contacts[index].booking.filter((booking) => booking.trip_id == this.tripSelected.id)[0].is_accepted ? contacts[index].booking.filter((booking) => booking.trip_id == this.tripSelected.id).length : 0;
+                    seats += contacts[index].booking && contacts[index].booking.length > 0 && contacts[index].booking[0].is_accepted ? contacts[index].booking.length : 0;
                 }
 
-                if( contacts.length > 0 && contacts[0].booking != undefined && contacts[0].booking.filter((booking) => booking.trip_id == this.tripSelected.id).length > 0 )
-                    items[0].title = `${items[0].title} places ${seats}/${contacts[0].booking.filter((booking) => booking.trip_id == this.tripSelected.id)[0].trip.max_seats}`;
+                if( contacts.length > 0 && contacts[0].booking != undefined && contacts[0].booking.length > 0 ){
+                    // items[0].title = `${items[0].title} places ${seats}/${contacts[0].booking.filter((booking) => booking.trip_id == this.tripSelected.id)[0].trip.max_seats}`;
+                    items[0].max_seats = contacts[0].booking[0].trip.max_seats;
+                    items[0].seats = seats;
+                }
 
                 return items;
             }

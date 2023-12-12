@@ -41,14 +41,14 @@
 
     <!-- Car model -->
     <BottomMenu
-        v-if="modeBottomMenu=='select-model-car'"
+        v-if="modeBottomMenu=='select-model-vehicul'"
         ref="BottomMenuRef"
-        :class-name="['notification']"
-        :mode="modeBottomMenu"
+        :class-name="['select-model-vehicul']"
+        :mode="'select-model-vehicul'"
         v-on:close="overlay = false"
     />
 
-    <!-- Car model -->
+    <!-- Select Preference -->
     <BottomMenu
         ref="BottomMenuRefPreference"
         :class-name="['preference-choice']"
@@ -93,7 +93,7 @@
             return {
                 overlay: false,
                 about: "discution",
-                modeBottomMenu: "select-model-car",
+                modeBottomMenu: "select-model-vehicul",
                 infos_panneau: [
                     {
                         btn:false,
@@ -138,6 +138,7 @@
                                 classConfig: ["chip-rounded"],
                                 switchBtn: false,
                                 chipText: "",
+                                fun: () => {this.modeBottomMenu='select-model-vehicul'; this.$refs.BottomMenuRef.open();},
                             },
                         ],
                         fun: this.selectModel,

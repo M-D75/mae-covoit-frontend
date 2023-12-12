@@ -422,8 +422,12 @@
         },
         created() {
             this.chargerHistorique();
+            console.log("Histooooooooooooooo------------");
             if( this.villages == undefined || this.villages == null || this.villages.length == 0 ){
-                this.getVillages;
+                this.getVillages();
+            }
+            else{
+                console.log("OKkkkkkkkkkkkkkkkkkkkkkkkkk");
             }
         },
         mounted() {

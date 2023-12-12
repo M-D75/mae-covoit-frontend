@@ -155,7 +155,7 @@
             },
             name: {
                 type: String,
-                default: "Dr. Mourdas",
+                default: "User Name",
             },
             subTitle: {
                 type: String,

@@ -1,9 +1,6 @@
 
 <style lang="scss" model>
-    // .v-app {
-    //     height: 100dvh !important;
-    // }
-
+    
 </style>
 
 <style lang="scss">
@@ -41,46 +38,11 @@
     import { Capacitor } from '@capacitor/core';
     import { Plugins } from '@capacitor/core';
 
+    // import stripe from '@/utils/stripe.js'
+
     const { LocalNotifications } = Plugins;
 
     import axios from 'axios';
-
-    // const addListeners = async () => {
-    //     await PushNotifications.addListener('registration', token => {
-    //         console.info('Registration token: ', token.value);
-    //     });
-
-    //     await PushNotifications.addListener('registrationError', err => {
-    //         console.error('Registration error: ', err.error);
-    //     });
-
-    //     await PushNotifications.addListener('pushNotificationReceived', notification => {
-    //         console.log('Push notification received: ', notification);
-    //     });
-
-    //     await PushNotifications.addListener('pushNotificationActionPerformed', notification => {
-    //         console.log('Push notification action performed', notification.actionId, notification.inputValue);
-    //     });
-    // }
-
-    // const registerNotifications = async () => {
-    //     let permStatus = await PushNotifications.checkPermissions();
-
-    //     if (permStatus.receive === 'prompt') {
-    //         permStatus = await PushNotifications.requestPermissions();
-    //     }
-
-    //     if (permStatus.receive !== 'granted') {
-    //         throw new Error('User denied permissions!');
-    //     }
-
-    //     await PushNotifications.register();
-    // }
-
-    // const getDeliveredNotifications = async () => {
-    //     const notificationList = await PushNotifications.getDeliveredNotifications();
-    //     console.log('delivered notifications', notificationList);
-    // }
 
     const isAndroid = Capacitor.getPlatform() === 'android';
     const isIOS = Capacitor.getPlatform() === 'ios';
@@ -102,11 +64,35 @@
             },
         },
         data: () => ({
-            // supabase: inject('supabase'),
             isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
             isSmallScreen: window.innerWidth <= 600,
         }),
-        mounted(){
+        async mounted(){
+            
+            // cus_P9EoaH2vfbFG6a
+
+            // const card = await stripe.customers.createSource(
+            //     'cus_P9EoaH2vfbFG6a',
+            //     {
+            //         source: 'tok_mastercard',
+            //     }
+            // );
+
+            // const customers = await stripe.customers.list({
+            //     limit: 10,
+            // });
+
+            // const token = await stripe.tokens.create({
+            // card: {
+            //     number: '4242424242424242',
+            //     exp_month: 12,
+            //     exp_year: 2024,
+            //     cvc: '314',
+            // },
+            // });
+
+
+            // console.log("customer", customers, card);
             
             console.log("isMobile:", this.isMobile, window.location);
             console.log("isSmallScreen:", this.isSmallScreen);
@@ -124,7 +110,6 @@
                 $("#app .v-application").addClass("dark-mode");
             }
 
-            console.log("-------vrrr,", this.$var_test, this.var_test);
             console.log("theme-mode:", $("#app .v-application").hasClass("dark-mode") ? "dark" : "ligth");
             
             window.addEventListener('resize', this.updateIsSmallScreen); 
@@ -172,16 +157,12 @@
                         console.log("Autoriasation failed:");
                     }
                 });
-
-                // registerNotifications();
-                // addListeners();
-                // getDeliveredNotifications();
             }
 
             if(isAndroid || isIOS)
                 StatusBar.setOverlaysWebView({ overlay: true });
 
-            console.log("platform", isAndroid, isIOS);
+            console.log("Platforme", isAndroid, isIOS);
 
             // cordova.plugins.notification.local.schedule([
             //     { id: 1, title: 'My first notification' },
