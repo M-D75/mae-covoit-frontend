@@ -24,6 +24,39 @@
         .scrollable-container::-webkit-scrollbar-thumb {
             background-color: transparent;
         }
+
+        .select-number {
+            .v-text-field {
+                .v-input__control {
+                    .v-field--variant-solo-inverted {
+                        box-shadow: none;
+                    }
+                    .v-field {
+                        background: var(--bg-app-color);
+                        .v-field__overlay, .v-field__loader {
+                            display: none;
+                        }
+                    }
+
+                    label {
+                        display: none;
+                    }
+
+                    input {
+                        height: 52px !important;
+                        padding: 10px 10px;
+                        font-size: 25px;
+                        text-transform: uppercase;
+                        text-align: center;
+                        color: var(--font-color-label);
+                        border: none;
+                    }
+                }
+            }
+            .select-nb-seat{
+                margin: 20px auto;
+            }
+        }
     }
 </style>
 
@@ -31,10 +64,10 @@
 <style lang="scss" scoped>
     .v-container.select-model-vehicul-comp{
         .title {
-            font-size: var(--font-size-h1);
+            font-size: 16px;
             font-weight: bold;
             width: 90%;
-            margin: 30px auto;
+            margin: 5px auto;
             color: var(--font-color-label);
         }
 
@@ -69,7 +102,7 @@
                     .model {
                         //max-width: 170px;
                         margin: auto 15px !important;
-                        width: 65%;
+                        width: 75%;
                         overflow-x: auto;
                         .text{
                             width: fit-content;
@@ -90,6 +123,38 @@
                 }
             }
         }
+
+        .select-number {
+            .v-text-field {
+                .v-input__control {
+                    .v-field--variant-solo-inverted {
+                        box-shadow: none;
+                    }
+                    .v-field {
+                        .v-field__overlay, .v-field__loader {
+                            display: none;
+                        }
+                    }
+
+                    label {
+                        display: none;
+                    }
+
+                    input {
+                        height: 52px !important;
+                        padding: 10px 10px;
+                        font-size: 25px;
+                        text-transform: uppercase;
+                        text-align: center;
+                        color: var(--font-color-label);
+                        border: none;
+                    }
+                }
+            }
+            .select-nb-seat{
+                margin: 20px auto;
+            }
+        }
     }
 </style>
    
@@ -98,26 +163,47 @@
     <v-container 
         class="select-model-vehicul-comp"
     >
-        <div
-            class="title text-center"
-        >Selectionnez un type de véhicul !</div>
+        <div v-if="mode=='select-model'">
+            <div
+                class="title text-center"
+            >Selectionnez un type de véhicul !</div>
 
-        <div 
-            class="card-contain"
-        >
-            <v-card
-                v-for="(info, index) in infos.slice(0, 6)"
-                :key="index"
-                class="car mx-auto"
-                @click="selectCar(index, info)"
+            <div 
+                
+                class="card-contain"
             >
-                <v-list>
-                    <div class="icon-container"><v-icon>{{ info.icon }}</v-icon></div>
-                    <div class="model scrollable-container" ><div class="text">{{ info.model }}</div></div>
-                    <!-- <div class="color" :style="'background-color: ' + info.color"></div> -->
-                </v-list>
-            </v-card>
+                <v-card
+                    v-for="(info, index) in infos.slice(0, 6)"
+                    :key="index"
+                    class="car mx-auto"
+                    @click="mode='identity-car'"
+                >
+                    <v-list>
+                        <div class="icon-container"><v-icon>{{ info.icon }}</v-icon></div>
+                        <div class="model scrollable-container" ><div class="text">{{ info.model }}</div></div>
+                        <!-- <div class="color" :style="'background-color: ' + info.color"></div> -->
+                    </v-list>
+                </v-card>
+            </div>
         </div>
+
+        <div
+            v-else
+            class="select-number mx-auto"
+        >
+            <div class="label text-center">Saisissez votre plaque d'immatriculation, ainsi que le nombre de place que vous pouvez prendre</div>
+            <v-text-field label="Label" maxLength="9" variant="solo-inverted" ref="input" @input="checkPlaque($event)"></v-text-field>
+            <SelectNumber class="select-nb-seat" :min="1" :max="8" ref="SelectNumberRef" v-on:number-changed="console.log('ok')" />
+            <v-btn 
+                class="text-none"
+                rounded="xl" 
+                size="x-large"
+                variant="outlined"
+                block
+                @click="valided()"
+            >Valider</v-btn>
+        </div>
+
     </v-container>
 </template>
 
@@ -129,13 +215,23 @@
     import { defineComponent } from 'vue';
 
     // Components
+    import SelectNumber from '@/components/menus/bottom/SelectNumber.vue';
 
     export default defineComponent({
         name: 'select-model-vehicul-comp',
+        emits: ["place-valided"],
         components: {
+            SelectNumber,
+        },
+        props: {
+            // mode: {
+            //     type: String,
+            //     default: "select-model",
+            // },
         },
         data() {
             return {
+                mode: "select-model",
                 color: "red",
                 infos: [
                     {model: "Moto", color: "silver", icon:"mdi-motorbike"},
@@ -182,6 +278,26 @@
             //     this.car = index;
             //     this.$emit("car-selected");
             // },
+            checkPlaque(e){
+                e.target.value = e.target.value.replace(/[^a-zA-Z0-9-]/g, '');
+                const text = e.target.value;
+                if( text.length == 3 && text.replaceAll("-", "").length == 3 ){
+                    e.target.value = text.slice(0, 2) + "-" + text.slice(2);
+                }
+                else if(text.length == 3 && text.replaceAll("-", "").length == 2){
+                    e.target.value = text.replace("-", "")
+                }
+                else if( text.length == 7 && text.replaceAll("-", "").length == 6 ){
+                    e.target.value = text.slice(0, 6) + "-" + text.slice(6);
+                }
+                else if( text.length == 7 && text.replaceAll("-", "").length == 5 ){
+                    e.target.value = text.slice(0, 6);
+                }
+            },
+            valided(){
+                
+                this.$emit('place-valided');
+            }
         },
         watch: {
         },

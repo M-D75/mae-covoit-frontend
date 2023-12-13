@@ -21,4 +21,9 @@ module.exports = defineConfig({
     //         }
     //     }
     // }
+    devServer: {
+        host: '0.0.0.0',
+        allowedHosts: 'all',
+        /* your settings */
+    },
 })

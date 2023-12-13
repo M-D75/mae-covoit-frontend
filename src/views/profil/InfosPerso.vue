@@ -35,27 +35,28 @@
 
         <!-- Credit Card -->
 
+        <!-- Car model -->
+        <BottomMenu
+            ref="BottomMenuRef"
+            :class-name="['select-model-vehicul']"
+            mode="select-model-vehicul"
+            v-on:close="overlay = false"
+        />
+
+        <!-- Select Preference -->
+        <BottomMenu
+            ref="BottomMenuRefPreference"
+            :class-name="['preference-choice']"
+            :about="about"
+            mode="preference-choice"
+            v-on:close="overlay = false"
+        />
+
         <!--  -->
     </v-main>
     <BottomNav />
 
-    <!-- Car model -->
-    <BottomMenu
-        v-if="modeBottomMenu=='select-model-vehicul'"
-        ref="BottomMenuRef"
-        :class-name="['select-model-vehicul']"
-        :mode="'select-model-vehicul'"
-        v-on:close="overlay = false"
-    />
-
-    <!-- Select Preference -->
-    <BottomMenu
-        ref="BottomMenuRefPreference"
-        :class-name="['preference-choice']"
-        :about="about"
-        mode="preference-choice"
-        v-on:close="overlay = false"
-    />
+    
 </template>
 
 
@@ -138,7 +139,7 @@
                                 classConfig: ["chip-rounded"],
                                 switchBtn: false,
                                 chipText: "",
-                                fun: () => {this.modeBottomMenu='select-model-vehicul'; this.$refs.BottomMenuRef.open();},
+                                fun: () => {this.modeBottomMenu='select-model-vehicul'; this.overlay = this.$refs.BottomMenuRef.open();},
                             },
                         ],
                         fun: this.selectModel,

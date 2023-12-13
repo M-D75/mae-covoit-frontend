@@ -125,7 +125,7 @@ export default {
     },
     getters: {
         getVillagesByName: (state) => (name) => {
-            return state.villages.filter(infoVillage => infoVillage.village.toLowerCase() == name.toLowerCase());
+            return state.villages.find(infoVillage => infoVillage.village.toLowerCase() == name.toLowerCase());
         },
         GET_ID_VILLAGE_BY_NAME: (state) => (name) => {
             return state.villages.find(infoVillage => infoVillage.village.toLowerCase() == name.toLowerCase()).id;

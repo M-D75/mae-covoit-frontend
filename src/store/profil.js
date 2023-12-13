@@ -180,6 +180,9 @@ export default {
             console.log("setting-update", data);
 
         },
+        async registerVehicul(){
+            
+        },
         async addCredit({state}, playload){
             console.log("add-credit", state, playload);
 

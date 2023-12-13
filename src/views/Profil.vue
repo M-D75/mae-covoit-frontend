@@ -3,10 +3,6 @@
 <!-- scss -->
 <style lang="scss" model>
 
-    
-
-    
-
     .bottom-menu{
         z-index: 9999 !important;
     }
@@ -154,7 +150,12 @@
             :timeout="4000"
             color="error"
         >
-            <v-icon icon="mdi-alert-circle"></v-icon> <span>{{ messageSnackbarError }}</span>
+            <div class="contain-ico">
+                <v-icon icon="mdi-alert-circle"></v-icon> 
+            </div>
+            <div>
+                <span>{{ messageSnackbarError }}</span>
+            </div>
         </v-snackbar>
     </v-main>
         

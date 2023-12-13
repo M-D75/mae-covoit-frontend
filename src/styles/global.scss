@@ -40,3 +40,18 @@
     transform: none !important;
     transform: scale(0.8) !important;
 }
+
+// snack-bar
+.v-overlay__content {
+    min-width: 200px;
+    width: 98%;
+    .v-snackbar__content{
+        .contain-ico {
+            display: flex;
+            margin-right: 5px;
+            .v-icon {
+                margin: auto;
+            }
+        }
+    }
+}

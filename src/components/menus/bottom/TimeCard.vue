@@ -235,41 +235,41 @@
 
                 const prefixClassMinute = `.scrollable-container.minute-list${vue.className.length != 0 ? "." + vue.className.join(".") : ""}`;
 
-                // if(this.minuteInit > 0){
-                //     this.minutes = this.shiftLeftMulti(this.minutes, ((this.minuteInit)/this.nbPasMinutes)-1);
-                // }
-                // else{
-                //     this.minutes = this.shiftRightMulti(this.minutes, ((this.minuteInit)/this.nbPasMinutes)+1);
-                // }
+                if(this.minuteInit > 0){
+                    this.minutes = this.shiftLeftMulti(this.minutes, ((this.minuteInit)/this.nbPasMinutes)-1);
+                }
+                else{
+                    this.minutes = this.shiftRightMulti(this.minutes, ((this.minuteInit)/this.nbPasMinutes)+1);
+                }
 
-                const initScroll = 600;
-                setTimeout(function() {
-                    vue.minuteCanTaked = false;
-                    console.log("can-init", false, initScroll);
-                    const currentIndexMinutes = (Math.ceil(Math.abs(initScroll-50)/100));
-                    const val = (currentIndexMinutes*100);
+                // const initScroll = 600;
+                // setTimeout(function() {
+                //     vue.minuteCanTaked = false;
+                //     console.log("can-init", false, initScroll);
+                //     const currentIndexMinutes = (Math.ceil(Math.abs(initScroll-50)/100));
+                //     const val = (currentIndexMinutes*100);
                     
-                    //console.log("Haven't scrolled in 250ms!", val, currentIndexMinutes);
-                    $(prefixClassMinute).animate({scrollTop: val}, 180, function(){
+                //     //console.log("Haven't scrolled in 250ms!", val, currentIndexMinutes);
+                //     $(prefixClassMinute).animate({scrollTop: val}, 180, function(){
                         
-                        console.log("currentIndexMinutes", middleIndexMinutes, currentIndexMinutes)
-                        if( middleIndexMinutes > currentIndexMinutes ){
-                            console.log("rigth", middleIndexMinutes-currentIndexMinutes)
-                            vue.minutes = vue.shiftRightMulti(vue.minutes, Math.abs(middleIndexMinutes-currentIndexMinutes));
-                            // vue.minutes = vue.shiftRightMulti(vue.minutes, 1);
-                        }
-                        else if(middleIndexMinutes < currentIndexMinutes){
-                            console.log("left", middleIndexMinutes-currentIndexMinutes)
-                            vue.minutes = vue.shiftLeftMulti(vue.minutes, Math.abs(middleIndexMinutes-currentIndexMinutes));
-                        }
-                        // $(`${prefixClassMinute} .m-${minuteC.toString().padStart(2, '0')} span`).css("opacity", 1);
-                        console.log("Mminute:", vue.minutes[middleIndexMinutes+1]);
-                        vue.minuteCanTaked = true;
-                        console.log("can-takkkkk", true);
-                        vue.minAnime = false;
-                    });
+                //         console.log("currentIndexMinutes", middleIndexMinutes, currentIndexMinutes)
+                //         if( middleIndexMinutes > currentIndexMinutes ){
+                //             console.log("rigth", middleIndexMinutes-currentIndexMinutes)
+                //             vue.minutes = vue.shiftRightMulti(vue.minutes, Math.abs(middleIndexMinutes-currentIndexMinutes));
+                //             // vue.minutes = vue.shiftRightMulti(vue.minutes, 1);
+                //         }
+                //         else if(middleIndexMinutes < currentIndexMinutes){
+                //             console.log("left", middleIndexMinutes-currentIndexMinutes)
+                //             vue.minutes = vue.shiftLeftMulti(vue.minutes, Math.abs(middleIndexMinutes-currentIndexMinutes));
+                //         }
+                //         // $(`${prefixClassMinute} .m-${minuteC.toString().padStart(2, '0')} span`).css("opacity", 1);
+                //         console.log("Mminute:", vue.minutes[middleIndexMinutes+1]);
+                //         vue.minuteCanTaked = true;
+                //         console.log("can-takkkkk", true);
+                //         vue.minAnime = false;
+                //     });
    
-                }, 190);
+                // }, 190);
 
                 //console.log("prefixClassMinute", prefixClassMinute);
                 $(`${prefixClassMinute} .m-${this.minuteInit.toString().padStart(2, '0')} span`).css("opacity", 1);
@@ -582,7 +582,7 @@
                 }
 
                 let copy_arr = arr.slice();
-                console.log("l:", this.minutes, copy_arr);
+                // console.log("l:", this.minutes, copy_arr);
                 let firstElement = copy_arr.shift();
                 copy_arr.push(firstElement);
                 return copy_arr;

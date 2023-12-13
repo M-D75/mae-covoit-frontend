@@ -95,7 +95,12 @@
         v-model="showSnackbar"
         :timeout="4000"
     >
-        <v-icon icon="$success"></v-icon> <span>{{ messageSnackbar }}</span>
+        <div class="contain-ico">
+            <v-icon icon="$success"></v-icon> 
+        </div>
+        <div>
+            <span>{{ messageSnackbar }}</span>
+        </div>
     </v-snackbar>
  
  </template>

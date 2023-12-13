@@ -170,6 +170,15 @@ export function formaterDateUTC(date) {
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}+00`;
 }
 
-// Utilisation
-const maintenant = new Date();
-console.log("test:,", formaterDateUTC(maintenant));
+export function arrondirSpecial(nombre) {
+    const partieEntiere = Math.floor(nombre);
+    const partieDecimale = nombre - partieEntiere;
+  
+    if (partieDecimale >= 0.5) {
+      return partieEntiere + 1;
+    } 
+    else {
+      return partieEntiere;
+    }
+}
+  

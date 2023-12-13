@@ -680,7 +680,7 @@
             >
                 <div class="label text-center">{{ labelSelectorN1 }}</div>
                 <!-- <div class="sub-label-color" :class="{warning_yellow: warn=='low', warning_red: warn=='bad'}">prix recommandé : 2 à 3 €</div> -->
-                <div class="sub-label-color">prix recommandé : 2 à 3 €</div>
+                <div class="sub-label-color">prix recommandé : {{ priceRecomended.min }} à {{ priceRecomended.max }} €</div>
                 <SelectNumber ref="SelectNumberRef" icon="mdi-currency-eur" :min="1" :max="8" v-on:number-changed="selectNumber()" />
                 <v-btn 
                     class="text-none"
@@ -1020,9 +1020,13 @@
         v-model="showSnackbarError"
         :timeout="4000"
         color="error"
-        style="z-index: 99999;"
     >
-        <v-icon icon="mdi-alert-circle"></v-icon> <span>{{ messageSnackbarError }}</span>
+        <div class="contain-ico">
+            <v-icon icon="mdi-alert-circle"></v-icon> 
+        </div>
+        <div>
+            <span>{{ messageSnackbarError }}</span>
+        </div>
     </v-snackbar>
 
 
@@ -1033,7 +1037,12 @@
         color="success"
         style="z-index: 99999;"
     >
-        <v-icon icon="mdi-alert-circle"></v-icon> <span>{{ messageSnackbarSuccess }}</span>
+        <div class="contain-ico">
+            <v-icon icon="mdi-alert-circle"></v-icon> 
+        </div>
+        <div>
+            <span>{{ messageSnackbarSuccess }}</span>
+        </div>
     </v-snackbar>
 
 
@@ -1045,7 +1054,7 @@
     import { defineComponent } from 'vue';
     import $ from 'jquery';
     import supabase from '@/utils/supabaseClient';
-    import { getISOWeekNumber } from '@/utils/utils.js';
+    import { getISOWeekNumber, arrondirSpecial } from '@/utils/utils.js';
     import { mapState } from 'vuex';
 
     // Components
@@ -1086,6 +1095,7 @@
         },
         computed: {
             ...mapState("profil", ["aboutPrefs"]),
+            ...mapState("publish", ["priceRecommended"]),
             numericRule() {
                 return (value) => /^\d*$/.test(value) || 'Veuillez entrer uniquement des chiffres';
             },
@@ -1243,6 +1253,10 @@
             this.isIOS = isIOS;
             this.sizeScreen = $(window).innerHeight();
             this.y = this.sizeScreen;
+
+            //init price recomended
+            this.priceRecomended.min = arrondirSpecial(this.priceRecommended);
+            this.priceRecomended.max = arrondirSpecial(this.priceRecommended)+1;
             
             const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
             $(classBottomMenuNameJquery).css("top", `${this.y}px`);
@@ -1578,6 +1592,11 @@
                     this.timeCard = true;
                 }.bind(this), 50);
             },
+            priceRecommended(){
+                console.log("priceRecommended::", this.priceRecommended);
+                this.priceRecomended.min = arrondirSpecial(this.priceRecommended);
+                this.priceRecomended.max = arrondirSpecial(this.priceRecommended)+1;
+            }
         }
    });
 </script>

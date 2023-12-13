@@ -11,7 +11,7 @@ const _ = require('lodash');
 export default {
     namespaced: true,
     state: {
-       
+       priceRecommended: 4,
     },
     getters: {
         
@@ -20,10 +20,30 @@ export default {
 
     },
     actions: {
+        async getPriceRecommended({ state }, params){
+            // get price recommended
+            let { data, error } = await supabase
+                .from('village_distance_price')
+                .select("price")
+                .eq('orig_id', params.orig_id)
+                .eq('dest_id', params.dest_id)
+
+
+            if(error){
+                console.error("Error :", error);
+                return {status: 1, message: "Une erreur s'est produite !"}
+            }
+
+            console.log("data.price.recommended", data[0].price);
+            state.priceRecommended = data[0].price;
+            return {status: 0, message: `Prix recommandé :${data[0].price}`}
+        },
         async newTrip({state}, tripDriver){
-            const sessionChecked = await store.dispatch("auth/checkSession");
-            if( ! sessionChecked )
+            const sessionChecked = await store.dispatch("auth/checkSessionOnly");
+            if( ! sessionChecked ){
                 router.replace("/login");
+                return ;
+            }
 
             console.log("tripDriver", tripDriver, state)
 
@@ -74,9 +94,11 @@ export default {
             return {status: 0, message: "Votre trajet à bien été publié !"}
         },
         async newTripMultple({state}, tripDriver){
-            const sessionChecked = await store.dispatch("auth/checkSession");
-            if( ! sessionChecked )
+            const sessionChecked = await store.dispatch("auth/checkSessionOnly");
+            if( ! sessionChecked ){
                 router.replace("/login");
+                return;
+            }
 
             console.log("tripDriver", tripDriver, state)
             const currentDate = new Date();

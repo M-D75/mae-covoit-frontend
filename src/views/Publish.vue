@@ -219,9 +219,13 @@
             v-model="showSnackbarError"
             :timeout="4000"
             color="error"
-            style="z-index: 9999;"
         >
-            <v-icon icon="mdi-alert-circle"></v-icon> <span>{{ messageSnackbarError }}</span>
+            <div class="contain-ico">
+                <v-icon icon="mdi-alert-circle"></v-icon> 
+            </div>
+            <div>
+                <span>{{ messageSnackbarError }}</span>
+            </div>
         </v-snackbar>
     </v-main>
 
@@ -422,12 +426,8 @@
         },
         created() {
             this.chargerHistorique();
-            console.log("Histooooooooooooooo------------");
             if( this.villages == undefined || this.villages == null || this.villages.length == 0 ){
                 this.getVillages();
-            }
-            else{
-                console.log("OKkkkkkkkkkkkkkkkkkkkkkkkkk");
             }
         },
         mounted() {
@@ -437,7 +437,7 @@
             let date = new Date();
 
             let offset = date.getTimezoneOffset();
-            date = new Date(((date.getTime()+(60000*10)) - (offset * 60000)));
+            date = new Date(((date.getTime()+(60000*15)) - (offset * 60000)));
 
             //let hours = date.getUTCHours().toString().padStart(2, '0');
             //let minutes = date.getUTCMinutes().toString().padStart(2, '0');
@@ -447,13 +447,13 @@
 
             console.log(this.$store.state.profil.userUid, this.timeInit);
 
-            console.log("SSS", getFirstDayOfWeek("S50").getUTCDate());
+            console.log("getFirstDayOfWeek:", getFirstDayOfWeek("S50").getUTCDate());
 
         },
         methods: {
             ...mapActions("search", ['ajouterAuHistorique', 'sauvegarderHistorique', 'chargerHistorique']),
             ...mapActions("search", ['getVillages']),
-            ...mapActions("publish", ["newTrip"]),
+            ...mapActions("publish", ["newTrip", "getPriceRecommended"]),
             getSaisi(){
                 $(".mode-publish").css("display", "none");
                 if(this.$refs[`SearchRef${this.mode}`])
@@ -465,7 +465,9 @@
                 console.log("child-selected", this.infosPublish[typePath].depart, this.infosPublish[typePath].destination, this.mode)
                 $(".mode-publish").css("display", "none");
                 var _tmp_village = null; 
+                var _tmp_village_orig = null;
                 let selectDayObj = null;
+                var result = null;
 
                 switch (this.mode) {
                     case "depart":
@@ -481,7 +483,7 @@
                         this.ajouterAuHistorique(this.infosPublish[typePath].depart);
                         this.sauvegarderHistorique();
                         _tmp_village = this.getVillagesByName(this.itineraire.origin.infos.village);
-                        this.setItineraire("origin", _tmp_village[0]);
+                        this.setItineraire("origin", _tmp_village);
                         console.log("Name origin", this.itineraire.origin)
 
                         this.nextStepMode();
@@ -508,8 +510,19 @@
                             this.ajouterAuHistorique(this.infosPublish[typePath].destination);
                             this.sauvegarderHistorique();
                             _tmp_village = this.getVillagesByName(this.itineraire.destination.infos.village);
-                            this.setItineraire("destination", _tmp_village[0]);
+                            this.setItineraire("destination", _tmp_village);
                             console.log("Name dest", this.itineraire.destination)
+                            //ici--
+                            _tmp_village_orig = this.getVillagesByName(this.itineraire.origin.infos.village);
+                            result = await this.getPriceRecommended({orig_id: _tmp_village_orig.id, dest_id: _tmp_village.id});
+                            if( result.status != 0 ){
+                                this.messageSnackbarError = result.message;
+                                this.showSnackbarError = true;
+                                setTimeout(this.$router.go(), 4000);
+                                // this.mode = "depart";
+                                return;
+                            }
+
                         }
                         this.nextStepMode();
                         break;

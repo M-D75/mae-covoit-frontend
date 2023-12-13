@@ -170,9 +170,13 @@
         v-model="showSnackbarError"
         :timeout="4000"
         color="error"
-        style="z-index: 9999;"
     >
-        <v-icon icon="mdi-alert-circle"></v-icon> <span>{{ messageSnackbarError }}</span>
+        <div class="contain-ico">
+            <v-icon icon="mdi-alert-circle"></v-icon> 
+        </div>
+        <div>
+            <span>{{ messageSnackbarError }}</span>
+        </div>
     </v-snackbar>
 
     <!-- message succes -->
@@ -182,7 +186,12 @@
         color="success"
         style="z-index: 9999;"
     >
-        <v-icon icon="mdi-alert-circle"></v-icon> <span>{{ messageSnackbarSuccess }}</span>
+        <div class="contain-ico">
+            <v-icon icon="mdi-alert-circle"></v-icon> 
+        </div>
+        <div>
+            <span>{{ messageSnackbarSuccess }}</span>
+        </div>
     </v-snackbar>
 
 </template>
