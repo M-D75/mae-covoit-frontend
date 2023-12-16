@@ -950,6 +950,7 @@
 
             <SelectModelVehicul
                 v-if="mode=='select-model-vehicul'"
+                v-on:switch-identity-car="reOpenB()"
             />
 
             <!-- End Pofile -->
@@ -1390,33 +1391,31 @@
                 
                 //console.log("open_b", this.open_b);
                 if ( ! this.open_b ) {
-                    if ( this.y >= this.sizeScreen - this.marge_bar ) {
-                        if( ! this.move ){
-                            //console.log("will-open")
-                            const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
-                            $(classBottomMenuNameJquery).removeClass("closed");
+                    if( ! this.move ){
+                        //console.log("will-open")
+                        const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
+                        $(classBottomMenuNameJquery).removeClass("closed");
 
-                            // open
-                            this.move = true;
-                            this.disabledY = false;
-                            this.y = this.sizeScreen - ( this.subContHeigth + 50 );
-                            const _this = this;
-                            
-                           
-                            $(classBottomMenuNameJquery).animate({"top": `${_this.y}px`}, "fast", function(){
-                                // $(this).animate({"top": "auto"}, 1000);
-                                _this.y = parseInt($(this).css("top").replace("px", ""));
-                                _this.move = false;
-                                _this.$emit('opened');
-                                const classBottomMenuNameJqueryDraggable = _this.className != "" && _this.className != null ? `.draggable.${_this.className.join(".")}` : ".draggable";
-                                $(classBottomMenuNameJqueryDraggable).addClass("open")
-                            });
+                        // open
+                        this.move = true;
+                        this.disabledY = false;
+                        this.y = this.sizeScreen - ( this.subContHeigth + 50 );
+                        const _this = this;
+                        
+                        
+                        $(classBottomMenuNameJquery).animate({"top": `${_this.y}px`}, "fast", function(){
+                            // $(this).animate({"top": "auto"}, 1000);
+                            _this.y = parseInt($(this).css("top").replace("px", ""));
+                            _this.move = false;
+                            _this.$emit('opened');
+                            const classBottomMenuNameJqueryDraggable = _this.className != "" && _this.className != null ? `.draggable.${_this.className.join(".")}` : ".draggable";
+                            $(classBottomMenuNameJqueryDraggable).addClass("open")
+                        });
 
-                            this.open_b = true;
-                        }
-                        else{
-                            this.open_b = false;
-                        }
+                        this.open_b = true;
+                    }
+                    else{
+                        this.open_b = false;
                     }
                 }
 
@@ -1579,6 +1578,16 @@
 
                 this.notif = !this.notif;
             },
+            reOpenB(){
+                console.log("reOpen");
+                
+                setTimeout(function(){
+                    console.log("oppp");
+                    this.open_b = false;
+                    this.open();
+                }.bind(this), 20)
+                
+            }
         },
         watch:{
             y(){
@@ -1596,6 +1605,13 @@
                 console.log("priceRecommended::", this.priceRecommended);
                 this.priceRecomended.min = arrondirSpecial(this.priceRecommended);
                 this.priceRecomended.max = arrondirSpecial(this.priceRecommended)+1;
+            },
+            mode(){
+                console.log("changed mode");
+                if(this.open_b){
+                    this.close();
+                    this.open();
+                }
             }
         }
    });

@@ -360,6 +360,7 @@
             if( window.innerWidth <= 366 ){
                 this.labelDashBoard = "synthèse";
             }
+            // this.$refs.PaneApearRef.open()
         },
         methods: {
             ...mapActions("profil", ["getTravels", "getPublish", "buildHistoriqueBooking"]),

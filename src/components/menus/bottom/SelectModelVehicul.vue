@@ -125,6 +125,9 @@
         }
 
         .select-number {
+            .label{
+                margin: 0 auto 10px auto;
+            }
             .v-text-field {
                 .v-input__control {
                     .v-field--variant-solo-inverted {
@@ -219,7 +222,7 @@
 
     export default defineComponent({
         name: 'select-model-vehicul-comp',
-        emits: ["place-valided"],
+        emits: ["place-valided", "switch-identity-car"],
         components: {
             SelectNumber,
         },
@@ -295,11 +298,15 @@
                 }
             },
             valided(){
-                
                 this.$emit('place-valided');
             }
         },
         watch: {
+            mode(){
+                if( this.mode == 'identity-car' ){
+                    this.$emit("switch-identity-car");
+                }
+            }
         },
     });
 </script>

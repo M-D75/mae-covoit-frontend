@@ -58,7 +58,6 @@
             :center="center"
             :zoom="11"
             :options="mapOptions"
-            
             style="width: 100vw; height: 100vh"
             @tilesloaded="isLoaded()"
             @click="touch($event)"
@@ -67,6 +66,11 @@
             <GMapMarker
                 :position="itineraire.origin.location.latLng.latLngTab"
                 :clickable="true"
+                :icon= '{
+                        url: require("@/assets/icon-only.png"),
+                        scaledSize: {width: 50, height: 50},
+                        labelOrigin: {x: -5, y: -5},
+                    }'
             >
                 <GMapInfoWindow>
                     {{ itineraire.origin.infos.village }}, ({{ itineraire.origin.infos.commune }})
@@ -126,7 +130,7 @@
                     :clickable="true"
                     :anchorPoint="{x: -10, y: 100}"
                     :icon= '{
-                        url: require("@/assets/group.svg"),
+                        url: require("@/assets/icon-only.png"),
                         scaledSize: {width: 50, height: 50},
                         labelOrigin: {x: -5, y: -5},
                     }'
@@ -265,7 +269,6 @@
                 },
                 alert: {
                     groupMark: [
-                        {lat:-12.7243245, lng:45.0589372},
                     ],
                 }
             }
@@ -275,9 +278,8 @@
         },
         methods: {
             touch(e){
-                console.log("e", e, e.latLng.lat());
+                console.log("e", e, e.latLng);
                 this.alert.groupMark.push({lat:e.latLng.lat(), lng:e.latLng.lng()})
-
             },
             trajetSelected(index){
                 // console.log("trajetSelectd", index)

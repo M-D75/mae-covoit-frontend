@@ -116,6 +116,9 @@
     import $ from 'jquery';
 
     import { useScreens } from 'vue-screen-utils';
+    import { Capacitor } from '@capacitor/core';
+
+    const isIOS = Capacitor.getPlatform() === 'ios';
 
     //Component
     import Search from '../publish/Search.vue';
@@ -141,7 +144,10 @@
                         )
                         .map((dataVillage) => dataVillage.village)
                         .sort((a, b) => {
-                            return this.matchValue(b.replaceAll("'", ""), this.saisi) - this.matchValue(a.replaceAll("'", ""), this.saisi);
+                            if( isIOS )
+                                return this.matchValue(a.replaceAll("'", ""), this.saisi) - this.matchValue(b.replaceAll("'", ""), this.saisi);
+                            else
+                                return this.matchValue(b.replaceAll("'", ""), this.saisi) - this.matchValue(a.replaceAll("'", ""), this.saisi);
                         });
                 }
             },

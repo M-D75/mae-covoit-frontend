@@ -266,6 +266,9 @@
 
     //import supabase from '@/utils/supabaseClient.js';
     import { getFirstDayOfWeek, findKeyOfNullOrUndefined } from '@/utils/utils.js'
+    import { Capacitor } from '@capacitor/core';
+
+    const isIOS = Capacitor.getPlatform() === 'ios';
 
 
     export default defineComponent({
@@ -301,7 +304,10 @@
                                 && dataVillage.village.toLowerCase().replaceAll("'", "").includes(this.saisi.toLocaleLowerCase().replaceAll("'", "")))
                             .map((dataVillage) => dataVillage.village)
                             .sort((a, b) => {
-                                return this.matchValue(b.replaceAll("'", ""), this.saisi) - this.matchValue(a.replaceAll("'", ""), this.saisi);
+                                if( isIOS )
+                                    return this.matchValue(a.replaceAll("'", ""), this.saisi) - this.matchValue(b.replaceAll("'", ""), this.saisi);
+                                else
+                                    return this.matchValue(b.replaceAll("'", ""), this.saisi) - this.matchValue(a.replaceAll("'", ""), this.saisi);
                             });
                     }
                     else if( this.mode == "depart" ) {
@@ -311,7 +317,10 @@
                             )
                             .map((dataVillage) => dataVillage.village)
                             .sort((a, b) => {
-                                return this.matchValue(b.replaceAll("'", ""), this.saisi) - this.matchValue(a.replaceAll("'", ""), this.saisi);
+                                if( isIOS )
+                                    return this.matchValue(a.replaceAll("'", ""), this.saisi) - this.matchValue(b.replaceAll("'", ""), this.saisi);
+                                else
+                                    return this.matchValue(b.replaceAll("'", ""), this.saisi) - this.matchValue(a.replaceAll("'", ""), this.saisi);
                             });
                     }
                 }

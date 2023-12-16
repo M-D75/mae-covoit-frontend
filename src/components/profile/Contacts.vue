@@ -23,6 +23,7 @@
         .v-toolbar{
             color: var(--font-color-label);
             background-color: var(--bg-app-color);
+            padding-top: var(--safe-area-inset-top);
         }
 
         .v-list {
@@ -187,7 +188,7 @@
         style="z-index: 9999;"
     >
         <div class="contain-ico">
-            <v-icon icon="mdi-alert-circle"></v-icon> 
+            <v-icon icon="$success"></v-icon> 
         </div>
         <div>
             <span>{{ messageSnackbarSuccess }}</span>
@@ -203,6 +204,7 @@
     //import $ from 'jquery';
     import { defineComponent } from 'vue';
     import { mapState, mapActions } from 'vuex';
+    import { SafeAreaController, SafeArea } from '@aashu-dubey/capacitor-statusbar-safe-area';
 
     // Components
     export default defineComponent({
@@ -298,6 +300,8 @@
             }
         },
         mounted() {
+            SafeAreaController.injectCSSVariables();
+            this.initStatusBarHeight();
         },
         methods: {
             ...mapActions("trip", ["getContacts", "getProfilMember", "updateAccepteBooking"]),
@@ -327,6 +331,14 @@
                     this.messageSnackbarError = "Ce trajet à déjà était accepté";
                     this.showSnackbarError = true;
                 }
+            },
+            async initStatusBarHeight(){
+                const insets = await this.getSafeAreaInsets();
+                this.barHeight = insets["top"];
+            },
+            async getSafeAreaInsets () {
+                const insets = await SafeArea.getSafeAreaInsets();
+                return insets; // Ex. { "bottom":34, "top":47, "right":0, "left":0 }
             },
         },
         watch: {

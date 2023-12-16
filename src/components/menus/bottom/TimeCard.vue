@@ -61,8 +61,9 @@
                         display: block;
                         // border: 1px dotted black;
                         span {
-                            display: none;
-                            display: inline-block;
+                            display: flex;
+                            line-height: 1.4;
+                            padding-left: 9px;
                             // opacity: 0.5;
                             //transform: perspective(100px) translateZ(-30px);
                             font-family: 'Roboto Mono', 'WW Digital', 'Digital Dismay', 'Helvetica', sans-serif;
@@ -77,7 +78,7 @@
             div.sep-time {
                 text-align: center;
                 line-height: 1.37;
-                width: 25%;
+                width: 13%;
                 z-index: 51;
                 .sub {
                     position: relative;
@@ -108,7 +109,9 @@
                         // position: relative;
                         text-align: center;
                         span {
-                            display: inline-block;
+                            display: flex;
+                            line-height: 1.4;
+                            padding-left: 6px;
                             // opacity: 0.5;
                             //transform: perspective(100px) translateZ(-30px);
                             font-family: 'Roboto Mono', 'WW Digital', 'Digital Dismay', 'Helvetica', sans-serif;

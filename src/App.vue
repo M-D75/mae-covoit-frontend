@@ -19,6 +19,30 @@
         font-size: 26px !important;
     }
 
+    * {
+        -ms-overflow-style: none !important; /* pour Internet Explorer 10+ */
+        scrollbar-width: none !important; /* Firefox */
+        overflow: -moz-scrollbars-none m !important; // Firefox
+    }
+
+    /* Pour Chrome, Safari */
+    *::-webkit-scrollbar {
+        // display: none !important;
+        width: 0;  /* Masquer la barre de défilement verticale */
+        height: 0; /* Masquer la barre de défilement horizontale */
+    }
+
+    *::-webkit-scrollbar-track {
+        background: transparent;
+        display: none !important;
+    }
+
+    *::-webkit-scrollbar-thumb {
+        background-color: transparent;
+        display: none !important;
+    }
+
+
 </style>
 
 <template>
@@ -68,6 +92,11 @@
             isSmallScreen: window.innerWidth <= 600,
         }),
         async mounted(){
+
+            $(document).ready(function() {
+                $("<style type='text/css'> ::-webkit-scrollbar {display: none;} </style>").appendTo("head");
+            });
+
             
             // cus_P9EoaH2vfbFG6a
 
