@@ -61,6 +61,7 @@
             
             style="width: 100vw; height: 100vh"
             @tilesloaded="isLoaded()"
+            @click="touch($event)"
         >
             <!-- origin -->
             <GMapMarker
@@ -102,7 +103,7 @@
                 />
 
                 <!-- point-destination -->
-                <GMapMarker
+                <!-- <GMapMarker
                     :position="itineraire.destination.location.latLng.latLngTab"
                     :clickable="true"
                     :anchorPoint="{x: -10, y: 100}"
@@ -115,7 +116,26 @@
                     <GMapInfoWindow>
                         <span style="font-weight: bold;"> {{ itineraire.destination.infos.village }} </span>, ({{ itineraire.destination.infos.commune }})
                     </GMapInfoWindow>
+                    <v-icon color="orange">mdi-message-alert</v-icon>
+                </GMapMarker> -->
+
+                <GMapMarker
+                    v-for="(marker, index) in alert.groupMark"
+                    :key="index"
+                    :position="marker"
+                    :clickable="true"
+                    :anchorPoint="{x: -10, y: 100}"
+                    :icon= '{
+                        url: require("@/assets/group.svg"),
+                        scaledSize: {width: 50, height: 50},
+                        labelOrigin: {x: -5, y: -5},
+                    }'
+                >
+                    <!-- <GMapInfoWindow>
+                        <span style="font-weight: bold;"> {{ itineraire.destination.infos.village }} </span>, ({{ itineraire.destination.infos.commune }})
+                    </GMapInfoWindow> -->
                 </GMapMarker>
+                
             </div>
 
         </GMapMap>
@@ -159,6 +179,7 @@
     
     // Components
     import BottomMenu from '@/components/menus/BottomMenu.vue';
+    // import GmapCustomMarker from 'vue3-gmap-custom-marker';
 
     export default {
         name: 'App',
@@ -179,6 +200,7 @@
         },
         components: {
             BottomMenu,
+            // 'gmap-custom-marker': GmapCustomMarker,
         },
         props: {
             itineraire: {
@@ -241,12 +263,22 @@
                     current: [],
                     passedPoints: [],
                 },
+                alert: {
+                    groupMark: [
+                        {lat:-12.7243245, lng:45.0589372},
+                    ],
+                }
             }
         },
         mounted(){
             this.$refs.BottomMenuRef.open();
         },
         methods: {
+            touch(e){
+                console.log("e", e, e.latLng.lat());
+                this.alert.groupMark.push({lat:e.latLng.lat(), lng:e.latLng.lng()})
+
+            },
             trajetSelected(index){
                 // console.log("trajetSelectd", index)
                 if(index == this.routes.length - 1){

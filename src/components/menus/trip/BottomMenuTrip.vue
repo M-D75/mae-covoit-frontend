@@ -296,6 +296,35 @@
                     color: gray;
                 }
             }
+
+            .alert{
+                padding: 10px;
+                .v-divider{
+                    margin: 5px auto;
+                }
+                .title{
+                    text-align: center;
+                    text-transform: capitalize;
+                }
+                .group-btn{
+                    display: flex;
+                    justify-content: space-around;
+                    margin: 10px auto;
+                    .descente-btn{
+                        font-size: 12px;
+                    }
+                    
+                    .v-btn {
+                        &.last {
+                            width: 35%;
+                        }
+                        height: 48px;
+                        margin: 7px 0;
+                        background-color: var(--white-bg-color);
+                        color: var(--font-color-label);
+                    }
+                }
+            }
         }
 
         .sub-cont-sup {
@@ -373,6 +402,64 @@
             </div>
 
             <!-- End Map -->
+
+            <!-- Signalement -->
+
+            <div 
+                v-if="mode=='alert'"
+                class="alert"
+            >
+                <div class="contain-btn">
+                    <div class="group-btn">
+                        <v-btn
+                            class="descente-btn text-none"
+                            prepend-icon="mdi-hand-back-left"
+                            rounded="xl" 
+                            size="x-large"
+                            variant="outlined"
+                        >
+                            Je descend ici !
+                        </v-btn>
+                        <v-btn
+                            icon="mdi-message-alert"
+                            variant="outlined"
+                        >
+                            <v-icon color="orange">mdi-message-alert</v-icon>
+                        </v-btn>
+                        <v-btn
+                            icon
+                            variant="outlined"
+                        >
+                            <font-awesome-icon :icon="['fas', 'location-dot']" />
+                        </v-btn>
+                        
+                    </div>
+                </div>
+
+                <v-divider inset></v-divider>
+
+                <div class="title">Infos Trafic</div>
+                <div class="contain-btn">
+                    <div
+                        v-for="(floor, index) in alert.groupBtn"
+                        :key="index" 
+                        class="group-btn group-1"
+                    >
+                            <v-btn
+                                v-for="(btn, indexB) in floor"
+                                :key="indexB"
+                                :icon="indexB != 3 ? btn.icon : false"
+                                :rounded="indexB == 3 ? 'xl' : undefined" 
+                                :size="indexB == 3 ? 'x-large' : 'default'"
+                                :class="indexB == 3 ? 'last' : ''"
+                                variant="outlined"
+                            >
+                                <v-icon>{{ btn.icon }}</v-icon>
+                            </v-btn>
+                    </div>
+                </div>
+            </div>
+            
         </div>
 
         <!-- sub-cont-sup -->
@@ -527,6 +614,71 @@
                 messageSnackbarError: "",
                 showSnackbarSuccess: false,
                 messageSnackbarSuccess: "",
+                // alert
+                alert: {
+                    groupBtn :
+                    [
+                        [
+                            {
+                                icon: "mdi-emoticon-dead", 
+                                fun: ()=>console.log("click"),
+                            },
+                            {
+                                icon: "mdi-alert-octagon", 
+                                fun: ()=>console.log("click"),
+                            },
+                            {
+                                icon: "mdi-map-marker-alert", 
+                                fun: ()=>console.log("click"),
+                            
+                            },
+                            {
+                                icon: "mdi-train-car-flatbed-tank", 
+                                fun: ()=>console.log("click"),
+                            },
+                        ],
+                        [
+                            {
+                                icon: "mdi-halloween", 
+                                fun: ()=>console.log("click"),
+                            },
+                            {
+                                icon: "mdi-ocarina", 
+                                fun: ()=>console.log("click"),
+                            },
+                            {
+                                icon: "mdi-coach-lamp-variant", 
+                                fun: ()=>console.log("click"),
+                            
+                            },
+                            {
+                                icon: "mdi-chemical-weapon", 
+                                fun: ()=>console.log("click"),
+                            },
+                        ],
+                        [
+                            {
+                                icon: "mdi-skull-crossbones", 
+                                fun: ()=>console.log("click"),
+                            },
+                            {
+                                icon: "mdi-bone", 
+                                fun: ()=>console.log("click"),
+                            },
+                            {
+                                icon: "mdi-account-cowboy-hat", 
+                                fun: ()=>console.log("click"),
+                            
+                            },
+                            {
+                                icon: "mdi-drama-masks", 
+                                fun: ()=>console.log("click"),
+                            },
+                        ],
+                    ]
+                    
+                }
+                
             }
         },
         mounted() {
@@ -547,12 +699,8 @@
 
             console.log("this.subContSupHeigth", this.subContSupHeigth, $(classSubContSupNameJquery));
 
-            if( this.mode=="select-day-hour-domicile" || this.mode=="notification" ){
-                this.open();
-            }
-            else {
-                $(classBottomMenuNameJquery).addClass("closed");
-            }
+            
+            $(classBottomMenuNameJquery).addClass("closed");
             
             $("div.sub-label-color").addClass("warn-good-to-low");
             // if(this.mode=="password"){

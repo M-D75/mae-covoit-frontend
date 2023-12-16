@@ -177,7 +177,7 @@
         </l-map>
     </div>
 
-    <BottomMenuTrip
+    <!-- <BottomMenuTrip
         mode="map"
         :class-name="['map']"
         :map-infos="{
@@ -187,6 +187,14 @@
                 depart: itineraire.origin.infos.village,
                 destination: itineraire.destination.infos.village,
             }"
+        ref="BottomMenuRef"
+        v-on:close="open_b = false"
+        v-on:opened="open_b = true"
+    /> -->
+
+    <BottomMenuTrip
+        mode="alert"
+        :class-name="['alert']"
         ref="BottomMenuRef"
         v-on:close="open_b = false"
         v-on:opened="open_b = true"
@@ -347,16 +355,16 @@
             }
         },
         beforeMount(){
-            let _tmp_village = this.getVillagesByName(this.tripSelected.depart);
-            this.setItineraire("origin", _tmp_village[0]);
+            // let _tmp_village = this.getVillagesByName(this.tripSelected.depart);
+            // this.setItineraire("origin", _tmp_village[0]);
 
-            _tmp_village = this.getVillagesByName(this.tripSelected.destination);
-            this.setItineraire("destination", _tmp_village[0]);
+            // _tmp_village = this.getVillagesByName(this.tripSelected.destination);
+            // this.setItineraire("destination", _tmp_village[0]);
 
-            console.log(this.itineraire);
+            // console.log(this.itineraire);
         },
         mounted(){
-            this.askNewMessage();
+            // this.askNewMessage();
             SafeAreaController.injectCSSVariables();
             console.log("itineraire", this.itineraire);
             this.$refs.BottomMenuRef.open();
@@ -610,12 +618,12 @@
                 // }
                 
                 //await this.getRouteInfos();
-                console.log(this.tripSelected);
-                this.routes = [this.tripSelected.route];
-                this.itin.duration = this.tripSelected.route.duration;
-                this.itin.distance = this.tripSelected.route.distance;
-                this.routeAvail = true;
-                this.updateLoc();
+                // console.log(this.tripSelected);
+                // this.routes = [this.tripSelected.route];
+                // this.itin.duration = this.tripSelected.route.duration;
+                // this.itin.distance = this.tripSelected.route.distance;
+                // this.routeAvail = true;
+                // this.updateLoc();
                             
                 // this.getRouteInfos();
             },

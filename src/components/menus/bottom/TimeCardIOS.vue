@@ -38,7 +38,7 @@
             position: relative;
             display: flex;
             overflow: hidden;
-            height: 300px;
+            height: 100px;
             font-size: 4.5em;
             font-weight: 700;
             user-select: none;
@@ -47,7 +47,7 @@
                 width: 100%;
                 overflow-y: scroll;
                 font-weight: 305;
-                height: 300px;
+                height: 100px;
                 margin: 0 auto;
                 .sub-hour{
                     height: 2400px;
@@ -66,7 +66,7 @@
                             span {
                                 display: none;
                                 display: inline-block;
-                                opacity: 0.5;
+                                // opacity: 0.5;
                                 //transform: perspective(100px) translateZ(-30px);
                                 font-family: 'Roboto Mono', 'WW Digital', 'Digital Dismay', 'Helvetica', sans-serif;
                                 max-height: 100px;
@@ -100,7 +100,7 @@
                 overflow-y: scroll;
                 width: 100%;
                 font-weight: 305;
-                height: 300px;
+                height: 100px;
                 margin: 0 auto;
                 .sub-minute{
                     overflow: hidden;
@@ -114,7 +114,7 @@
                             text-align: center;
                             span {
                                 display: inline-block;
-                                opacity: 0.5;
+                                // opacity: 0.5;
                                 //transform: perspective(100px) translateZ(-30px);
                                 font-family: 'Roboto Mono', 'WW Digital', 'Digital Dismay', 'Helvetica', sans-serif;
                                 max-height: 100px;
@@ -256,7 +256,7 @@
                 console.log("Init minute Index", currentIndexMinutes,  val);
                 
                 $(prefixClassMinute).animate({scrollTop: val}, 180, function(){
-                    console.log("MinuteInitied:", vue.minutes[currentIndexMinutes+1]);
+                    console.log("MinuteInitied:", vue.minutes[currentIndexMinutes]);
                 });
    
                 //console.log("prefixClassMinute", prefixClassMinute);
@@ -284,12 +284,12 @@
                     var currentIndexMinutes = (Math.ceil(Math.abs(currentScrollTop-50)/100));
 
                     // const minuteBB = vue.minutes[(currentIndexMinutes-1)%vue.minutes.length];
-                    const minuteB = vue.minutes[(currentIndexMinutes+0)%vue.minutes.length];
-                    const minuteC = vue.minutes[(currentIndexMinutes+1)%vue.minutes.length];
-                    const minuteA = vue.minutes[(currentIndexMinutes+2)%vue.minutes.length];
-                    // const minuteAA = vue.minutes[(currentIndexMinutes+3)%vue.minutes.length];
+                    // const minuteB = vue.minutes[(currentIndexMinutes+0)%vue.minutes.length];
+                    // const minuteC = vue.minutes[(currentIndexMinutes+1)%vue.minutes.length];
+                    // const minuteA = vue.minutes[(currentIndexMinutes+2)%vue.minutes.length];
+                    // // const minuteAA = vue.minutes[(currentIndexMinutes+3)%vue.minutes.length];
 
-                    const ecart = ((currentIndexMinutes%vue.minutes.length)*100) - (currentScrollTop%(vue.minutes.length*100));
+                    // const ecart = ((currentIndexMinutes%vue.minutes.length)*100) - (currentScrollTop%(vue.minutes.length*100));
 
                     // console.log("miniiii-----", minuteB, minuteC, minuteA, ecart, ecart/100, (100-ecart)/100, offset, delayInMs, minuteB.toString().padStart(2, '0'), minuteA.toString().padStart(2, '0'));
                     
@@ -299,8 +299,7 @@
                         if( predIndexMinutes != currentIndexMinutes ){
                             predIndexMinutes = currentIndexMinutes;
                             vue.$emit("time-changed");
-                            vue.vibratePhone();
-                            
+                            vue.vibratePhone(); 
                         }
 
                         // if(ecart >= 0){
@@ -316,9 +315,9 @@
                         // }
                         // $(`.m-${minuteAA.toString().padStart(2, '0')}`).css("transform", `rotateX(33deg)`);
 
-                        $(`${prefixClassMinute} .m-${minuteB.toString().padStart(2, '0')} span`).css("opacity", 0.3);
-                        $(`${prefixClassMinute} .m-${minuteC.toString().padStart(2, '0')} span`).css("opacity", 1-Math.abs(ecart/100));
-                        $(`${prefixClassMinute} .m-${minuteA.toString().padStart(2, '0')} span`).css("opacity", 0.3);
+                        // $(`${prefixClassMinute} .m-${minuteB.toString().padStart(2, '0')} span`).css("opacity", 0.3);
+                        // $(`${prefixClassMinute} .m-${minuteC.toString().padStart(2, '0')} span`).css("opacity", 1-Math.abs(ecart/100));
+                        // $(`${prefixClassMinute} .m-${minuteA.toString().padStart(2, '0')} span`).css("opacity", 0.3);
                         
                         if ( slow && Math.abs(speedInpxPerMs) >= 0.50 ) {
                             slow = false;
@@ -342,8 +341,8 @@
                                     if( predIndexMinutes != currentIndexMinutes ){
                                         predIndexMinutes = currentIndexMinutes;
                                     }
-                                    $(`${prefixClassMinute} .m-${minuteC.toString().padStart(2, '0')} span`).css("opacity", 1);
-                                    console.log("Mminute:", vue.minutes[((currentIndexMinutes + 1 ) % vue.minutes.length)]);
+                                    // $(`${prefixClassMinute} .m-${minuteC.toString().padStart(2, '0')} span`).css("opacity", 1);
+                                    console.log("Mminute:", vue.minutes[((currentIndexMinutes) % vue.minutes.length)]);
                                     vue.minuteCanTaked = true;
                                     vue.minAnime = false;
                                 });
@@ -380,7 +379,7 @@
                 });
 
                 // Init opacity currrent hour
-                $(`${prefixClassHour} .h-${this.hourInit.toString().padStart(2, '0')} span`).css("opacity", 1);
+                // $(`${prefixClassHour} .h-${this.hourInit.toString().padStart(2, '0')} span`).css("opacity", 1);
                 // $(`${prefixClassHour} .h-${this.hourInit.toString().padStart(2, '0')} span`).css("transform", `perspective(100px) translateZ(0px)`);
 
                 var predIndexHour = currentIndexHours;
@@ -392,12 +391,12 @@
                     var currentIndexHours = (Math.ceil(Math.abs(currentScrollTop-50)/100));
                     
                     // const hourBB = vue.heures[middleIndexHours-1];
-                    const hourB = vue.heures[(currentIndexHours+0)%vue.heures.length];
-                    const hourC = vue.heures[(currentIndexHours+1)%vue.heures.length];
-                    const hourA = vue.heures[(currentIndexHours+2)%vue.heures.length];
+                    // const hourB = vue.heures[(currentIndexHours+0)%vue.heures.length];
+                    // const hourC = vue.heures[(currentIndexHours+1)%vue.heures.length];
+                    // const hourA = vue.heures[(currentIndexHours+2)%vue.heures.length];
                     // const hourAA = vue.heures[middleIndexHours+3];
 
-                    const ecart = ((currentIndexHours%vue.heures.length)*100) - (currentScrollTop%(vue.heures.length*100));
+                    // const ecart = ((currentIndexHours%vue.heures.length)*100) - (currentScrollTop%(vue.heures.length*100));
 
                     if(vue.hourCanTaked){
                         if( predIndexHour != currentIndexHours ){
@@ -406,9 +405,9 @@
                             vue.vibratePhone();
                         }
                         
-                        $(`${prefixClassHour} .h-${hourB.toString().padStart(2, '0')} span`).css("opacity", 0.3);
-                        $(`${prefixClassHour} .h-${hourC.toString().padStart(2, '0')} span`).css("opacity", 1-Math.abs(ecart/100));
-                        $(`${prefixClassHour} .h-${hourA.toString().padStart(2, '0')} span`).css("opacity", 0.3);
+                        // $(`${prefixClassHour} .h-${hourB.toString().padStart(2, '0')} span`).css("opacity", 0.3);
+                        // $(`${prefixClassHour} .h-${hourC.toString().padStart(2, '0')} span`).css("opacity", 1-Math.abs(ecart/100));
+                        // $(`${prefixClassHour} .h-${hourA.toString().padStart(2, '0')} span`).css("opacity", 0.3);
                     
                         // Animation replace
                         clearTimeout($.data(this, 'scrollTimer'));
@@ -420,8 +419,8 @@
                                 if( predIndexHour != currentIndexHours ){
                                     predIndexHour = currentIndexHours;
                                 }
-                                $(`${prefixClassHour} .h-${hourC.toString().padStart(2, '0')} span`).css("opacity", 1);
-                                console.log("Hhour:", vue.heures[((currentIndexHours + 1 ) % vue.heures.length)]);
+                                // $(`${prefixClassHour} .h-${hourC.toString().padStart(2, '0')} span`).css("opacity", 1);
+                                console.log("Hhour:", vue.heures[((currentIndexHours) % vue.heures.length)]);
                                 vue.hourCanTaked = true;
                             });
                         }, 190));
@@ -443,7 +442,7 @@
 
                 var currentIndexHours = (Math.ceil(Math.abs(currentScrollTopH-50)/100));
                 
-                return `${( this.heures[((currentIndexHours + 1 ) % this.heures.length)])}:${( this.minutes[((currentIndexMinutes + 1 ) % this.minutes.length)])}`;
+                return `${( this.heures[((currentIndexHours) % this.heures.length)])}:${( this.minutes[((currentIndexMinutes) % this.minutes.length)])}`;
             },
             vibratePhone() {
                 if (navigator.vibrate) {

@@ -43,8 +43,9 @@
 
 // snack-bar
 .v-overlay__content {
-    min-width: 200px;
-    width: 98%;
+    // min-width: 200px;
+    // width: 98%;
+    // display: flex;
     .v-snackbar__content{
         .contain-ico {
             display: flex;

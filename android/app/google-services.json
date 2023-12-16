@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "142464616385",
+    "firebase_url": "https://mae-covoit-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "mae-covoit",
+    "storage_bucket": "mae-covoit.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:142464616385:android:5f845acd3e965ffcfb9140",
+        "android_client_info": {
+          "package_name": "com.maecovoit.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "142464616385-4iqokoq7veq9bvsa535v28stmlqut9jn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCENDgTa80qyN9pWETOnsm-ky8542X4yLk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "142464616385-4iqokoq7veq9bvsa535v28stmlqut9jn.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "142464616385-r7gqneiqh0fd393qk4fv88oeud54gv2p.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.maecovoit.app"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

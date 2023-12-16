@@ -49,6 +49,7 @@
     "vue-leaflet": "^0.1.0",
     "vue-router": "^4.0.3",
     "vue3-draggable-resizable": "^1.6.5",
+    "vue3-gmap-custom-marker": "^1.0.0",
     "vuetify": "^3.4.4",
     "vuex": "^4.0.0",
     "vuex-persistedstate": "^4.1.0",

@@ -119,7 +119,9 @@
 
             if( isIOS || isAndroid ){
                 PushNotifications.requestPermissions().then(result => {
+                    console.log("grandteeed");
                     if (result.receive === 'granted') {
+                        console.log("in-register");
                         PushNotifications.register();
                         PushNotifications.addListener('pushNotificationReceived', (notification) => {
                             // Gérer la réception de la notification
@@ -132,6 +134,7 @@
                             console.log("Notification action user", JSON.stringify(notification));
                         });
 
+                        console.log("reg---");
                         PushNotifications.addListener('registration', token => {
                             console.info('Registration token: ', token.value);
                             this.SET_REGISTER_DEVICE_TOKEN(token.value);
