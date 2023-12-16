@@ -25,5 +25,5 @@ pnpm-debug.log*
 dist.zip
 
 # android ios
-android
-ios
+# android
+# ios
