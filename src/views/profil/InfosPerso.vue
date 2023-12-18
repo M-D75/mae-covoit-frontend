@@ -1,7 +1,6 @@
 <!-- scss -->
 <style lang="scss" scoped>
     .main {
-        height: 100%;
         margin-bottom: 13px;
     }
 

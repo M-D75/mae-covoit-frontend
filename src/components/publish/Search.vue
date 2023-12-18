@@ -8,6 +8,21 @@
       transform: inherit;
    }
 
+   .blc-text.publish {
+        > .v-input {
+            padding: 10px 0;
+            .v-input__control {
+                .v-field {
+                    .v-field__field {
+                        .v-field__input {
+                            margin-left: 17px !important;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
 
    .v-card {
         > .v-list {
@@ -81,6 +96,18 @@
         
         .blc-text {
             width: 85%;
+            > .v-input {
+                padding: 10px 0;
+                .v-input__control {
+                    .v-field {
+                        .v-field__field {
+                            .v-field__input {
+                                margin-left: 17px !important;
+                            }
+                        }
+                    }
+                }
+            }
         }
         .v-card {
             width: 90%;
@@ -174,7 +201,8 @@
                 <div class="publish blc-text mx-auto">
                     <v-text-field
                         v-model="saisi"
-                        :label="label"
+                        label=""
+                        :placeholder="label"
                         :focused="false"
                         :active="false"
                         :autofocus="focus"

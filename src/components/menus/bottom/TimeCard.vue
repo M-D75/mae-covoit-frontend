@@ -63,7 +63,7 @@
                         span {
                             display: flex;
                             line-height: 1.4;
-                            padding-left: 9px;
+                            padding-left: 18px;
                             // opacity: 0.5;
                             //transform: perspective(100px) translateZ(-30px);
                             font-family: 'Roboto Mono', 'WW Digital', 'Digital Dismay', 'Helvetica', sans-serif;
@@ -111,7 +111,7 @@
                         span {
                             display: flex;
                             line-height: 1.4;
-                            padding-left: 6px;
+                            padding-left: 10px;
                             // opacity: 0.5;
                             //transform: perspective(100px) translateZ(-30px);
                             font-family: 'Roboto Mono', 'WW Digital', 'Digital Dismay', 'Helvetica', sans-serif;

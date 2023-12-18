@@ -195,7 +195,7 @@
             class="select-number mx-auto"
         >
             <div class="label text-center">Saisissez votre plaque d'immatriculation, ainsi que le nombre de place que vous pouvez prendre</div>
-            <v-text-field label="Label" maxLength="9" variant="solo-inverted" ref="input" @input="checkPlaque($event)"></v-text-field>
+            <v-text-field placeholder="XX-000-XX" maxLength="9" variant="solo-inverted" ref="input" @input="checkPlaque($event)"></v-text-field>
             <SelectNumber class="select-nb-seat" :min="1" :max="8" ref="SelectNumberRef" v-on:number-changed="console.log('ok')" />
             <v-btn 
                 class="text-none"
