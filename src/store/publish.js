@@ -72,6 +72,7 @@ export default {
                     max_seats: tripDriver.maxSeats,
                     price: tripDriver.price,
                     route: tripDriver.route,
+                    car_id: tripDriver.car_id,
                 };
 
                 console.log("data : ", dataNewTrip);
@@ -171,6 +172,7 @@ export default {
                                         max_seats: tripDriver.maxSeats,
                                         price: tripDriver.price,
                                         route: route,
+                                        car_id: tripDriver.car,
                                     };
 
                                     datasNewTrips.push(dataNewTrip);

@@ -6,6 +6,9 @@
 import store from '../store';
 import supabase from '@/utils/supabaseClient.js';
 import { dateConverter, groupByDate, mapToObject } from '@/utils/utils.js';
+import router from '@/router';
+
+import stripe from '@/utils/stripe.js'
 
 export default {
     namespaced: true,
@@ -30,6 +33,7 @@ export default {
         credit_card: {
             num_end_credit_card: "0000",
             available: false,
+            brand: "",
         },
         profil: {
             infos_perso: {
@@ -93,7 +97,9 @@ export default {
         history: {
             historycalBooking: {},
             load: false,
-        }
+        },
+        preferenceVirementMode: 0,
+        cars: [],
     },
     getters: {
     },
@@ -133,9 +139,63 @@ export default {
         },
         SET_AUTO_VALIDATION(state, bool){
             state.auto_accept_trip = bool;
+        },
+        SET_PREFERENCE_VIREMENT_MODE(state, choice){
+            state.preferenceVirementMode = choice;
+        },
+        SET_CREDIT_CARD(state, infos){
+            console.log("infos----", infos);
+            state.credit_card = {num_end_credit_card: infos.last4, available: infos.available, brand: infos.brand};
         }
     },
     actions: {
+        async addCar({state}, infos){
+
+            const sessionChecked = await store.dispatch("auth/checkSessionOnly");
+            if( ! sessionChecked ){
+                router.replace("/login");
+                return;
+            }
+
+            const { data, error } = await supabase
+                .from('car')
+                .insert([
+                    { driver_id: state.userUid, model: infos.model, license_plate: infos.licence_plate, brand: infos.brand, color: infos.color, seats: infos.seats }
+                ])
+                .select()
+
+            if(error){
+                console.log("Error add car:", error);
+                return {status: 1, message: "Une erreur s'est produite, veuillez réessayer plus tard !"};
+            }
+        
+            console.log("data-add-car:", data);
+            return {status: 0, message: "Votre véhicule à bien été ajouté."};
+        },
+        async getCars({state}){
+            const sessionChecked = await store.dispatch("auth/checkSessionOnly");
+            if( ! sessionChecked ){
+                router.replace("/login");
+                return;
+            }
+
+            
+            let { data: cars, error } = await supabase
+                .from('car')
+                .select("*")
+                .eq('driver_id', state.userUid);
+                    
+
+            if(error){
+                console.log("Error add car:", error);
+                return {status: 1, message: "Une erreur s'est produite, veuillez réessayer plus tard !"};
+            }
+        
+            state.cars = cars;
+            console.log("data-get-car:", cars);
+            return {status: 0, message: "Votre véhicule à bien été ajouté."};
+
+        },
         async updateAutoValidation({ state }){
             const { data, error } = await supabase
                 .from('settings')
@@ -183,26 +243,102 @@ export default {
         async registerVehicul(){
             
         },
-        async addCredit({state}, playload){
-            console.log("add-credit", state, playload);
+        async addCredit({state}, infosLoad){
+            const sessionChecked = await store.dispatch("auth/checkSessionOnly");
+            if( ! sessionChecked ){
+                router.replace("/login");
+                return;
+            }
 
             // get-credit
             let { data: account, error: error_account } = await supabase
                 .from('account')
-                .select("*")
-                .eq('user_id', playload.userId)
+                .select("credit, customer_id")
+                .eq('user_id', state.userUid)
+            
+            if(error_account){
+                console.log("Error2:", error_account);
+                return {status: 2, message: "Une erreur s'est produite lors de la récupératioin de votre solde."};
+            }
 
-            console.log("account:", account, error_account, account[0].credit+playload.credit);
+            console.log("account:", account, error_account, account[0].credit+infosLoad.credit);
+
+            const customerId = account[0].customer_id;
+            //get card
+            const customer = await stripe.customers.retrieve(account[0].customer_id);
+            console.log("retrieve customer:", customer);
+            if( customer.default_source ){
+                const cardId = customer.default_source;
+                try {
+                    const obj = {
+                        amount: infosLoad.credit*100,
+                        currency: 'eur',
+                        customer: customerId,
+                        payment_method: cardId,
+                        confirm: true,
+                        description: `rechargement de credits pour ${state.userName}; userUid : ${state.userUid};`,
+                        // return_url: 'http://localhost:8080/profil',
+                        automatic_payment_methods: {
+                            enabled: true,
+                            allow_redirects: 'never'
+                        },
+                    };
+                    console.log("build-payment-intent", obj);
+                    const paymentIntent = await stripe.paymentIntents.create(obj);
+            
+                    console.log("paymentIntent [OK]", paymentIntent);
+                } 
+                catch (error) {
+                    console.error("Erreur lors de la création de l'intention de paiement:", error);
+                    return {status: 2, message: "Une erreur s'est produite lors du prélevement sur votre card de credit, veuillez réessayer plus tard."};
+                }
+            }
+            else {
+                return {status: 4, message: "Carte de crédit non detecté"};
+            }
 
             // update
             let { data: data_update, error: error_update } = await supabase
                 .from('account')
-                .update({ credit: (account[0].credit + playload.credit) })
-                .eq('user_id', playload.userId)
+                .update({ credit: (account[0].credit + infosLoad.credit) })
+                .eq('user_id', state.userUid)
                 .select()
+            
+            if( error_update ){
+                return {status: 3, message: "Une erreur s'est produite lors, un remboursement vous sera envoyé."};
+            }
 
             state.soldes = data_update[0].credit;
             console.log("update-credit", data_update, error_update);
+            return {status: 0, message: "Votre compte à bien était crédité !"};
+        },
+        async transfertGain({state}, data){
+            // get-credit
+            let { data: account, error: error_account } = await supabase
+                .from('account')
+                .select("*")
+                .eq('user_id', state.userUid);
+
+            if( error_account ){
+                console.error("Error acount:", error_account);
+                return {status: 1, message: "Une erreur s'est produite veulliez réessayez plus tard !"}
+            }
+
+            let { data: data_update, error: error_update } = await supabase
+                .from('account')
+                .update({ credit: (account[0].credit + data.credit), gain: account[0].gain - data.credit })
+                .eq('user_id', state.userUid)
+                .select()
+
+            if( error_update ){
+                console.error("Error update:", error_update);
+                return {status: 2, message: "Une erreur s'est produite veulliez réessayez plus tard !"}
+            }
+
+            state.soldes = data_update[0].credit;
+            state.gain = data_update[0].gain;
+            
+            return {status: 0, message: "Votre transfert à bien été effectué !"};
         },
         async getTravels({state}){
 

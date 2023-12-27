@@ -107,7 +107,7 @@
             <v-chip
                 v-if="chip"
                 class="ma-2 info-plus text-center"
-                color="blue"
+                :color="optionChip != undefined && optionChip.color != undefined ? optionChip.color : 'blue'"
                 label
             >
                 <v-icon
@@ -187,6 +187,10 @@
             chipText: {
                 type: String,
                 default: "",
+            },
+            optionChip: {
+                type: Object,
+                default: ()=>({}),
             },
             classConfig: {
                 type:Array,

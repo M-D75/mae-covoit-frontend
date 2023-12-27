@@ -124,6 +124,12 @@
             v-on:time-valided="getSelected()"
         />
 
+        <PaneApear
+            mode="profil-member"
+            :class-name="['profil-member']"
+            ref="PaneApearProfilMemberRef"
+        />
+
         <!-- reserve fast -->
         <BottomMenu 
             ref="BottomMenuRefResults"
@@ -147,13 +153,14 @@
     // import $ from 'jquery'
     import { defineComponent } from 'vue';
     import { mapMutations, mapState } from 'vuex';
-    import axios from 'axios';
+    // import axios from 'axios';
 
     // Components
     import TrajetSearch from '@/components/search/TrajetSearch.vue';
     import Pile from '@/components/search/Pile.vue'
     import BottomNav from '@/components/menus/BottomNav.vue';
     import PaneGetValue from '@/components/menus/PaneGetValue.vue';
+    import PaneApear from '@/components/PaneApear.vue'; 
     import BottomMenu from '@/components/menus/BottomMenu.vue';
 
     export default defineComponent({
@@ -167,6 +174,7 @@
             Pile,
             BottomNav,
             PaneGetValue,
+            PaneApear,
             BottomMenu,
         },
         data() {
@@ -192,10 +200,11 @@
                 this.date = this.$refs.PaneGetValueRef.getDate();
             }
 
+            // this.$refs.PaneApearProfilMemberRef.open()
 
-            const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
+            // const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
 
-            const typeUrl = "local";
+            // const typeUrl = "local";
             // fetch(`${adresse[typeUrl]}/ask-new-message`, {
             //         method: 'POST',
             //         headers: {
@@ -211,15 +220,15 @@
             //     })
             //     .catch(error => console.error('Erreur:', error));
 
-            axios.post(`${adresse[typeUrl]}/askNewMessage`, {
-                    userId: this.userUid,
-                })
-                .then(response => {
-                    console.log(response.data);
-                })
-                .catch(error => {
-                    console.error('Il y a eu une erreur :', error);
-                });
+            // axios.post(`${adresse[typeUrl]}/askNewMessage`, {
+            //         userId: this.userUid,
+            //     })
+            //     .then(response => {
+            //         console.log(response.data);
+            //     })
+            //     .catch(error => {
+            //         console.error('Il y a eu une erreur :', error);
+            //     });
         },
         methods: {
             ...mapMutations("search", ["SET_NB_PASSAGER"]),

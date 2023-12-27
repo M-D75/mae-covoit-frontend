@@ -18,6 +18,7 @@
         }
 
         .credit-card.card-contain {
+            display: block !important;
             .bloc-saisi {
                 background-color: var(--white-bg-color);
                 border-radius: 10px;
@@ -724,7 +725,7 @@
                 class="select-number mx-auto"
             >
                 <div class="label text-center">{{ labelSelectorN1 }}</div>
-                <SelectNumber ref="SelectNumberRef" :min="1" :max="200" icon="mdi-currency-eur" />
+                <SelectNumber ref="SelectNumberRef" :min="1" :max="paramsNumber.max" icon="mdi-currency-eur" />
                 <v-btn 
                     class="text-none"
                     rounded="xl" 
@@ -732,7 +733,7 @@
                     variant="outlined"
                     block
                     @click="recharger()"
-                >Recharger</v-btn>
+                >{{ upMoneyObj.btn }}</v-btn>
             </div>
             <Notification 
                 v-if="mode=='confirme-up-money'"
@@ -877,7 +878,7 @@
 
                 <!-- name card -->
                 <div class="bloc-saisi name">
-                    <v-text-field ref="input8" placeholder="Eddine Omar" variant="solo"></v-text-field>
+                    <v-text-field v-model="nameCreditCard" @input="checkNameValue($event)" ref="input8" placeholder="Eddine Omar" variant="solo"></v-text-field>
                 </div>
 
                 <v-btn
@@ -886,7 +887,7 @@
                     size="x-large"
                     variant="outlined"
                     block
-                    @click="recharger()"
+                    @click="registerCreditCard()"
                 >Enregistrer</v-btn>
             </div>
 
@@ -951,6 +952,7 @@
             <SelectModelVehicul
                 v-if="mode=='select-model-vehicul'"
                 v-on:switch-identity-car="reOpenB()"
+                v-on:car-valided="close()"
             />
 
             <!-- End Pofile -->
@@ -1021,6 +1023,7 @@
         v-model="showSnackbarError"
         :timeout="4000"
         color="error"
+        style="z-index: 99999;"
     >
         <div class="contain-ico">
             <v-icon icon="mdi-alert-circle"></v-icon> 
@@ -1031,7 +1034,7 @@
     </v-snackbar>
 
 
-    <!-- message succes -->
+    <!-- message success -->
     <v-snackbar
         v-model="showSnackbarSuccess"
         :timeout="4000"
@@ -1056,7 +1059,8 @@
     import $ from 'jquery';
     import supabase from '@/utils/supabaseClient';
     import { getISOWeekNumber, arrondirSpecial } from '@/utils/utils.js';
-    import { mapState } from 'vuex';
+    import { mapState, mapActions, mapMutations } from 'vuex';
+    import stripe from '@/utils/stripe.js'
 
     // Components
     import Vue3DraggableResizable from 'vue3-draggable-resizable';
@@ -1095,8 +1099,9 @@
             SelectModelVehicul,
         },
         computed: {
-            ...mapState("profil", ["aboutPrefs"]),
+            ...mapState("profil", ["aboutPrefs", "modeDriver"]),
             ...mapState("publish", ["priceRecommended"]),
+            ...mapState("auth", ["customer_id"]),
             numericRule() {
                 return (value) => /^\d*$/.test(value) || 'Veuillez entrer uniquement des chiffres';
             },
@@ -1105,7 +1110,6 @@
             },
         },
         props: {
-
             mode: {
                 type: String,
                 default: "history",
@@ -1170,6 +1174,14 @@
                     };
                 },
             },
+            upMoneyObj: {
+                type: Object,
+                default() {
+                    return {
+                        btn: "Recharger",
+                    };
+                },
+            },
             about: {
                 type: String,
                 default: "discution",
@@ -1224,6 +1236,7 @@
                     {week: "S48", selected: true},
                 ],
                 timeCard: true,
+                nameCreditCard: "",
                 warn: 'low',
                 numberSelected: 0,
                 time: "",
@@ -1297,12 +1310,18 @@
             }
         },
         methods: {
+            ...mapActions("profil", ["addCredit", "transfertGain"]),
+            ...mapMutations("profil", ["SET_CREDIT_CARD"]),
             checkNumericalValue(event, nextInputRef){
                 this.numericValues = this.numericValues.map(nums => nums.replace(/\D/g, ''));
                 event.target.value = event.target.value.replace(/\D/g, '')
                 if ( event.target.value.length == event.target.maxLength && nextInputRef != "") {
                     this.$refs[nextInputRef].focus();
                 }
+            },
+            checkNameValue(event){
+                this.nameCreditCard = this.nameCreditCard.replace(/[^A-Za-z ]/g, '');
+                event.target.value = event.target.value.replace(/[^A-Za-z ]/g, '');
             },
             handleKeydown(event, inputRef){
                 if( event.target.value.length == 0 && event.key == 'Backspace' ){
@@ -1389,7 +1408,7 @@
                 
                 this.subContHeigth = this.$refs.subCont.clientHeight;
                 
-                //console.log("open_b", this.open_b);
+                console.log("open_b", this.open_b, this.subContHeigth);
                 if ( ! this.open_b ) {
                     if( ! this.move ){
                         //console.log("will-open")
@@ -1530,11 +1549,62 @@
                     }
                 }
             },
-            recharger(){
+            async recharger(){
                 console.log("number-up", this.$refs.SelectNumberRef.number);
                 // TODO : get value
-                this.$store.dispatch('profil/addCredit', {userId: this.$store.state.profil.userUid, credit: this.$refs.SelectNumberRef.number});
-                this.$emit("up-money");
+                if(!this.modeDriver){
+                    const result = await this.addCredit({credit: this.$refs.SelectNumberRef.number});
+                    if(result.status == 0){
+                        this.messageSnackbarSuccess = result.message;
+                        this.showSnackbarSuccess = true;
+                        this.$emit("close");
+                    }
+                    else{
+                        this.messageSnackbarError = result.message;
+                        this.showSnackbarError = true;
+                    }
+                }
+                else{
+                    const result = await this.transfertGain({credit: this.$refs.SelectNumberRef.number});
+                    if(result.status == 0){
+                        this.messageSnackbarSuccess = result.message;
+                        this.showSnackbarSuccess = true;
+                        this.$emit("up-money");
+                    }
+                    else{
+                        this.messageSnackbarError = result.message;
+                        this.showSnackbarError = true;
+                    }
+                }
+            },
+            async registerCreditCard(){
+                console.log("register-credit-card");
+                
+                const card = await stripe.customers.createSource(
+                    this.customer_id,
+                    {
+                        source: 'tok_mastercard',
+                    }
+                );
+
+                if(card){
+                    console.log("card", card);
+                    const infos = {last4: card.last4, available: true, brand: card.brand};
+                    this.SET_CREDIT_CARD(infos);
+                }
+
+                // const customers = await stripe.customers.list({
+                //     limit: 10,
+                // });
+
+                // const token = await stripe.tokens.create({
+                // card: {
+                //     number: '4242424242424242',
+                //     exp_month: 12,
+                //     exp_year: 2024,
+                //     cvc: '314',
+                // },
+                // });
             },
             emit(value){
                 if( value == "time-valided" ){

@@ -28,18 +28,19 @@
             .v-list-item {
                 height: 100%;
                 i.v-icon {
-                font-weight: bold;
-                color: #2e8dff;
+                    font-weight: bold;
+                    color: #2e8dff;
                 }
                 .v-list-item-title {
-                font-weight: bold;
+                    font-weight: bold;
                 }
 
                 .v-chip {
-                position: absolute;
-                right: 15px;
-                top: 7px;
-                min-width: 50px;
+                    position: absolute;
+                    right: 15px;
+                    top: 7px;
+                    width: 32px;
+                    border-radius: 100px;
                 }
             }
         }
@@ -73,12 +74,12 @@
     >
         <v-list-item
             class="car"
-            prepend-icon="mdi-car"
-            :title="model_car"
+            :prepend-icon="car.icon"
+            :title="car.model"
         >
             <v-chip
                 class="ma-2 prix"
-                color="blue"
+                :color="car.color"
                 label
             >
             
@@ -143,7 +144,6 @@
 
 
 <script>
-    import $ from 'jquery'
     import axios from 'axios';
     
     import { mapActions, mapState } from 'vuex';
@@ -166,22 +166,39 @@
         },
         data() {
             return {
-                model_car: "VW-GOLF 7",
                 showSnackbarError: false,
                 messageSnackbarError: "",
                 overlayLoad: false,
                 message: "",
                 accepted: false,
+                car: {
+                    model: "VW-GOLF 7",
+                    color: 'blue',
+                    icon: "mdi-car",
+                },
+                infosModelVehicul: [
+                    {model: "Moto", color: "silver", icon:"mdi-motorbike", maxSeats:1},
+                    {model: "Compact", color: "white", icon:"mdi-car-hatchback", maxSeats:4},
+                    {model: "Berline", color: "red", icon:"mdi-car-sports", maxSeats:4},
+                    {model: "SUV", color: "navy", icon:"mdi-car-estate", maxSeats:8},
+                    {model: "Monospace", color: "gray", icon:"mdi-car-estate", maxSeats:8},
+                ],
             }
         },
         props: {
         },
         mounted (){
             // const vue = this;
-            $(document).ready(function() {
-            });
+            this.updateCar();
         },
         methods: {
+            updateCar(){
+                if ( Object.keys(this.trajetSelected).length > 0 ) {
+                    this.car.model = this.trajetSelected.car.license_plate;
+                    this.car.color = this.trajetSelected.car.color;
+                    this.car.icon = this.infosModelVehicul.find((car) => car.model == this.trajetSelected.car.model).icon;
+                }
+            },
             async sendNotification() {
                 const permission = await LocalNotifications.requestPermissions();
             
@@ -262,6 +279,7 @@
             },
             async tryReserve(){
                 this.overlayLoad = true;
+                this.updateCar();
                 const reserved = await this.$store.dispatch("search/reserveTrajet", { user_id: this.$store.state.profil.userUid });
                 this.overlayLoad = false;
                 if( ! reserved.valided ){
@@ -276,6 +294,12 @@
                     this.accepted = reserved.accepted;
                     this.$emit('test-notif-success');
                 }
+            },
+        },
+        watch: {
+            trajetSelected(){
+                console.log("trajet-selected:", this.trajetSelected);
+                this.updateCar();
             },
         },
     };

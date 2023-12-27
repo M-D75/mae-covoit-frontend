@@ -161,7 +161,9 @@
         
     <BottomNav />
 
-    <PaneApear ref="PaneApearRef" mode="contacts"/>
+    <PaneApear ref="PaneApearRef" :class-name="['pan-apear-contact']" mode="contacts"/>
+
+    <PaneApear ref="PaneApearProfilMemberRef" :class-name="['pan-apear-profil-member']" mode="profil-member"/>
 
     <v-overlay 
         v-model="overlay"
@@ -195,11 +197,20 @@
         ref="BottomMenuRefMoney"
         v-on:close="overlay = false"
         v-on:drop-money="onDropMoney()"
-        v-on:up-money="onUpMoney()"
         />
 
-    
-
+    <!-- money driver to passenger -->
+    <BottomMenu
+        :class-name="['money-driver']"
+        mode="up-money"
+        labelSelectorN1="Quel montant souhaitez-vous transferer sur votre compte passager ?"
+        ref="BottomMenuRefMoneyDriver"
+        :params-number="{min:1, max: Math.floor(gain)}"
+        :upMoneyObj="{btn: 'Transferer'}"
+        v-on:close="overlay = false"
+        v-on:drop-money="onDropMoney()"
+        v-on:up-money="overlay = false; $refs.BottomMenuRefMoneyDriver.close()"
+        />
 
 </template>
 
@@ -226,7 +237,7 @@
     export default defineComponent({
         name: 'profil-view',
         computed: {
-            ...mapState("profil", ["darkMode", "userName", "profil", "history", 'modeDriver', "avatarUrl", "userUid", "modeCo"]),
+            ...mapState("profil", ["darkMode", "userName", "profil", "history", 'modeDriver', "avatarUrl", "userUid", "modeCo", "gain"]),
             ...mapState("trip", ["notMessageVue"]),
         },
         components: {
@@ -356,10 +367,12 @@
         },
         mounted(){
             this.switchModeDriverPanneauInfos();
-            this.askNewMessage();
+            // this.askNewMessage();
             if( window.innerWidth <= 366 ){
                 this.labelDashBoard = "synthèse";
             }
+
+            // this.$refs.PaneApearProfilMemberRef.open()
             // this.$refs.PaneApearRef.open()
         },
         methods: {
@@ -513,8 +526,14 @@
                 }
             },
             showLedou(){
-                this.messageSnackbarError = "Désolè Ledou, cette action n'est pas possible pour le moment ! :p"
-                this.showSnackbarError = true;
+                if( this.gain == 0 ){
+                    this.messageSnackbarError = "Désolè vous ne possédé actuellement aucun gain pour effectué cette action."
+                    this.showSnackbarError = true;
+                }
+                else{
+                    this.overlay = true;
+                    this.$refs.BottomMenuRefMoneyDriver.open();
+                }
             },
         },
         watch: {
@@ -533,6 +552,10 @@
 
                     if ( this.$refs.BottomMenuRefAddCard ) {
                         this.$refs.BottomMenuRefAddCard.close();
+                    }
+
+                    if ( this.$refs.BottomMenuRefMoneyDriver ) {
+                        this.$refs.BottomMenuRefMoneyDriver.close();
                     }
                     this.indexModeNavigation = -1;
                     this.modePathNavigation = "";

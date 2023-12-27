@@ -31,7 +31,7 @@
         height: 100vh;
         z-index: 9999;
         .sub-cont {
-            height: 90%;
+            height: 100vh;
             &.scrolling {
                 overflow: scroll;
             }
@@ -53,12 +53,20 @@
 <template>
     <v-container
         class="pan-apear-value" 
+        :class="className.join(' ')"
     >
-        <div class="sub-cont" :class="mode=='date' ? 'scrolling' : 'not-scroll'">
+        <div class="sub-cont" 
+            :class="mode=='date' ? 'scrolling' : 'not-scroll'"
+        >
             <Contacts 
                 v-if="mode=='contacts'"
                 :nothing="contacts.nothing"
                 v-on:go-back="close()" 
+            />
+
+            <ProfilMemberComp 
+                v-if="mode=='profil-member'"
+                v-on:go-back="close()"
             />
         </div>
 
@@ -81,6 +89,8 @@
 
     //Component
     import Contacts from '@/components/profile/Contacts.vue';
+    // import ProfilMember from '@/views/profil/ProfilMember.vue';
+    import ProfilMemberComp from './profile/ProfilMemberComp.vue';
     
     export default defineComponent({
         name: 'pan-apear-comp',
@@ -90,6 +100,8 @@
         },
         components: {
             Contacts,
+            // ProfilMember,
+            ProfilMemberComp,
         },
         props: {
             openP: {
@@ -99,6 +111,10 @@
             mode: {
                 type: String,
                 default: "contacts",
+            },
+            className: {
+                type: Array,
+                default: () => ([]),
             },
         },
         data() {
@@ -122,12 +138,14 @@
         },
         methods: {
             async open(){
+                const classPaneApearNameJquery = this.className != "" && this.className != null ? `.pan-apear-value.${this.className.join(".")}` : ".pan-apear-value";
+                $(classPaneApearNameJquery).removeClass("closed");
+
                 console.log("bar-hei-", this.barHeight);
-                $(".pan-apear-value").removeClass("closed");
                 const vue = this;
                 
 
-                $(".pan-apear-value").animate({left: `0px`}, 'fast', 
+                $(classPaneApearNameJquery).animate({left: `0px`}, 'fast', 
                                 function(){
                                     $(this).css("top", `0px`);
                                     vue.opened = true;
@@ -149,10 +167,11 @@
                 }
             },
             close(){
+                const classPaneApearNameJquery = this.className != "" && this.className != null ? `.pan-apear-value.${this.className.join(".")}` : ".pan-apear-value";
                 const vue = this;
-                $(".pan-apear-value").animate({left: `${this.sizeScreen}px`}, "fast", function(){
+                $(classPaneApearNameJquery).animate({left: `${this.sizeScreen}px`}, "fast", function(){
                     $(this).addClass("closed");
-                    $(".pan-apear-value").css("left", `${this.sizeScreen}px`);
+                    $(this).css("left", `${this.sizeScreen}px`);
                     vue.opened = false;
                 });
             },

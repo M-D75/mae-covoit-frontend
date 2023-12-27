@@ -46,6 +46,7 @@
                 user-select: none;
                 width: 100%;
                 height: 100%;
+                max-width: 142px;
                 box-shadow: var(--box-shadow-card);
                 z-index: 10;
                 .v-icon {
@@ -155,6 +156,10 @@
                 type: String,
                 default: "mdi-account-multiple-plus",
             },
+            initNumber: {
+                type: Number,
+                default: 1,
+            },
             // numbers: {
             //     type: Array,
             //     default: () => Array.from({ length: 8 }, (_, i) => (parseInt(i+1))),
@@ -167,19 +172,43 @@
             }
         },
         mounted(){
-            this.numbers = Array.from({ length: parseInt(this.max) }, (_, i) => (parseInt(i+parseInt(this.min)) )),
-            this.number = this.numbers[0];
+            this.numbers = Array.from({ length: parseInt(this.max) }, (_, i) => (parseInt(i+parseInt(this.min)) ))
+            
+            if( this.initNumber >= this.numbers[0] )
+                this.number = this.initNumber;
+            else
+                this.number = this.numbers[0];
+
+            this.initPos();
         },
         methods: {
+            initPos(){
+                const height = parseInt($(".v-card.select-number").css("height").replace("px", ""));
+                const goalTop = (this.number-1)*height;
+                // console.log("goalTop:", goalTop);
+                $(".number-list").animate({
+                    top: `-${goalTop}px`,
+                }, 'fast', function() {
+                    // console.log("=");
+                });
+
+                if( this.number >= this.numbers[this.numbers.length-1] ){
+                    $(".plus .v-btn").removeClass("active");
+                }
+
+                if( this.number > this.numbers[0] && ! $(".minus .v-btn").hasClass("active")){
+                    $(".minus .v-btn").addClass("active")
+                }
+            },
             plus(){
                 if( this.number < this.numbers[this.numbers.length-1] ){
                     this.number += 1;
                     const height = parseInt($(".v-card.select-number").css("height").replace("px", ""));
-                    console.log("heigth:", height, $(".select-number").css("height"));
+                    // console.log("heigth:", height, $(".select-number").css("height"));
                     $(".number-list").animate({
                         top: `-=${height}`,
                     }, 'fast', function() {
-                        console.log("+");
+                        console.log("+", this.number);
                     });
                 }
 
@@ -187,20 +216,20 @@
                     $(".plus .v-btn").removeClass("active");
                 }
 
-                console.log($(".minus .v-btn").hasClass("active"))
+                // console.log($(".minus .v-btn").hasClass("active"))
                 if( this.number > this.numbers[0] && ! $(".minus .v-btn").hasClass("active")){
                     $(".minus .v-btn").addClass("active")
                 }
             },
             moin(){
-                console.log(this.numbers[0], this.number)
+                // console.log(this.numbers[0], this.number)
                 if( this.number > this.numbers[0] ){
                     this.number -= 1;
                     const height = parseInt($(".v-card.select-number").css("height").replace("px", ""));
                     $(".number-list").animate({
                         top: `+=${height}`,
                     }, 'fast', function() {
-                        console.log("-");
+                        console.log("-", this.number);
                     });
                 }
 
@@ -218,6 +247,21 @@
             number(){
                 this.$emit("number-changed");
             },
+            initNumber(){
+                // console.log("initNumber:", this.initNumber);
+                if( this.initNumber >= this.numbers[0] )
+                    this.number = this.initNumber;
+                
+                this.initPos();
+            },
+            max(){
+                this.numbers = Array.from({ length: parseInt(this.max) }, (_, i) => (parseInt(i+parseInt(this.min)) ))
+            
+                if( this.initNumber >= this.numbers[0] )
+                    this.number = this.initNumber;
+                else
+                    this.number = this.numbers[0];
+            }
         }
     });
 </script>

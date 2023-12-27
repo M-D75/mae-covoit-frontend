@@ -26,6 +26,24 @@
         }
 
         .select-number {
+            .v-container {
+                .v-color-picker {
+                    .v-color-picker__controls {
+                        .v-color-picker-preview {
+                            .v-color-picker-preview__eye-dropper {
+                                display: none;
+                            }
+                            .v-color-picker-preview__sliders {
+                                .v-color-picker-preview__alpha {
+                                    display: none;
+                                }
+                            }
+                        }
+                    }
+                    // background-color: var(--bg-app-color);
+                }
+            }
+
             .v-text-field {
                 .v-input__control {
                     .v-field--variant-solo-inverted {
@@ -73,10 +91,8 @@
 
         div.card-contain{
             margin: auto;
-            height: 85%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
+            // min-height: 280px;
+            display: block;
             //margin-top: 20px;
             .v-card.car {
                 margin: 10px auto;
@@ -179,7 +195,7 @@
                     v-for="(info, index) in infos.slice(0, 6)"
                     :key="index"
                     class="car mx-auto"
-                    @click="mode='identity-car'"
+                    @click="modelV=info.model; max=info.maxSeats; mode='identity-car'"
                 >
                     <v-list>
                         <div class="icon-container"><v-icon>{{ info.icon }}</v-icon></div>
@@ -195,17 +211,58 @@
             class="select-number mx-auto"
         >
             <div class="label text-center">Saisissez votre plaque d'immatriculation, ainsi que le nombre de place que vous pouvez prendre</div>
-            <v-text-field placeholder="XX-000-XX" maxLength="9" variant="solo-inverted" ref="input" @input="checkPlaque($event)"></v-text-field>
-            <SelectNumber class="select-nb-seat" :min="1" :max="8" ref="SelectNumberRef" v-on:number-changed="console.log('ok')" />
+            <v-text-field v-model="matricul" placeholder="XX-000-XX" maxLength="9" variant="solo-inverted" ref="input" @input="checkPlaque($event)"></v-text-field>
+            <v-container>
+                <v-color-picker 
+                    :model-value="color"
+                    @update:model-value="getColor($event)"
+                    style="max-width: none; width: inherit;" 
+                    hide-canvas 
+                    hide-inputs 
+                    show-swatches
+                ></v-color-picker>
+            </v-container>
+            <SelectNumber v-if="max>1" class="select-nb-seat" :initNumber="max" :min="1" :max="max" ref="SelectNumberRef" v-on:number-changed="console.log('ok')" />
             <v-btn 
                 class="text-none"
                 rounded="xl" 
                 size="x-large"
                 variant="outlined"
                 block
+                :disabled="matricul.length<9"
                 @click="valided()"
             >Valider</v-btn>
         </div>
+
+        <!-- message succes -->
+        <v-snackbar
+            v-model="showSnackbarSuccess"
+            :timeout="4000"
+            color="success"
+            style="z-index: 99999;"
+        >
+            <div class="contain-ico">
+                <v-icon icon="mdi-alert-circle"></v-icon> 
+            </div>
+            <div>
+                <span>{{ messageSnackbarSuccess }}</span>
+            </div>
+        </v-snackbar>
+
+        <!-- message error -->
+        <v-snackbar
+            v-model="showSnackbarError"
+            :timeout="4000"
+            color="error"
+            style="z-index: 99999;"
+        >
+            <div class="contain-ico">
+                <v-icon icon="mdi-alert-circle"></v-icon> 
+            </div>
+            <div>
+                <span>{{ messageSnackbarError }}</span>
+            </div>
+        </v-snackbar>
 
     </v-container>
 </template>
@@ -214,15 +271,15 @@
 
 <!--  -->
 <script>
-    import $ from 'jquery'
     import { defineComponent } from 'vue';
+    import { mapActions } from 'vuex';
 
     // Components
     import SelectNumber from '@/components/menus/bottom/SelectNumber.vue';
 
     export default defineComponent({
         name: 'select-model-vehicul-comp',
-        emits: ["place-valided", "switch-identity-car"],
+        emits: ["car-valided", "switch-identity-car"],
         components: {
             SelectNumber,
         },
@@ -235,52 +292,33 @@
         data() {
             return {
                 mode: "select-model",
-                color: "red",
+                color: "#111111",
                 infos: [
-                    {model: "Moto", color: "silver", icon:"mdi-motorbike"},
-                    {model: "Compact", color: "white", icon:"mdi-car-hatchback"},
-                    {model: "Berline", color: "red", icon:"mdi-car-sports"},
-                    {model: "SUV", color: "navy", icon:"mdi-car-estate"},
-                    {model: "Monospace", color: "gray", icon:"mdi-car-estate"},
+                    {model: "Moto", color: "silver", icon:"mdi-motorbike", maxSeats:1},
+                    {model: "Compact", color: "white", icon:"mdi-car-hatchback", maxSeats:4},
+                    {model: "Berline", color: "red", icon:"mdi-car-sports", maxSeats:4},
+                    {model: "SUV", color: "navy", icon:"mdi-car-estate", maxSeats:8},
+                    {model: "Monospace", color: "gray", icon:"mdi-car-estate", maxSeats:8},
                 ],
+                max: 3,
+                matricul: "",
+                modelV: "",
                 car: 0,
+                messageSnackbarError: "",
+                showSnackbarError: false,
+                messageSnackbarSuccess: "",
+                showSnackbarSuccess: false,
             };
         },
         mounted() {
-            //$(".model").animate();
             
-            // console.log(scrollWidth, $('.model .text')[3])
-            $(".model").each(function(){
-                const _this = $(this);
-                
-                //first step
-                const debordement = 50;
-                const scrollWidth = _this.find(".text").width()-_this.width()+debordement;
-                //console.log(_this.width(), scrollWidth, scrollWidth-debordement, _this.find(".text").width())
-                if(_this.width() < _this.find(".text").width()){
-                    console.log("defilement-debordement")
-                    _this.animate({scrollLeft: scrollWidth}, 4000, 'linear', function(){
-                        //_this.scrollLeft(0);
-                        _this.animate({scrollLeft: 0}, 500);
-                    });
-
-                    //after first
-                    setInterval(function(){
-                        const scrollWidth = _this.find(".text").width()-_this.width()+debordement;
-                        _this.animate({scrollLeft: scrollWidth}, 4000, 'linear', function(){
-                            //_this.scrollLeft(0);
-                            _this.animate({scrollLeft: 0}, 500);
-                        });
-                    }, 6000);
-                }
-            });
         },
         methods: {
-            // selectCar(index, info){
-            //     console.log("selected", index, info);
-            //     this.car = index;
-            //     this.$emit("car-selected");
-            // },
+            ...mapActions("profil", ["addCar"]),
+            getColor(color){
+                console.log("color:", color);
+                this.color = color;
+            },
             checkPlaque(e){
                 e.target.value = e.target.value.replace(/[^a-zA-Z0-9-]/g, '');
                 const text = e.target.value;
@@ -296,9 +334,32 @@
                 else if( text.length == 7 && text.replaceAll("-", "").length == 5 ){
                     e.target.value = text.slice(0, 6);
                 }
+                this.matricul = e.target.value;
             },
-            valided(){
-                this.$emit('place-valided');
+            async valided(){
+                this.matricul = this.matricul.toUpperCase();
+                const infos = { 
+                        model: this.modelV,
+                        licence_plate: this.matricul,
+                        brand: "UNKNOWN",
+                        color: this.color,
+                        seats: this.$refs.SelectNumberRef.number
+                    };
+                // console.log("infos-to-add-car", infos);
+                const result = await this.addCar(infos);
+                if(result.status == 0){
+                    this.messageSnackbarSuccess = result.message;
+                    this.showSnackbarSuccess = true;
+                    this.$emit('car-valided');
+                    
+                    setTimeout(function(){
+                        this.mode = "select-model";
+                    }.bind(this), 1000);
+                }
+                else{
+                    this.messageSnackbarError = result.message;
+                    this.showSnackbarError = true;
+                }
             }
         },
         watch: {
@@ -306,6 +367,12 @@
                 if( this.mode == 'identity-car' ){
                     this.$emit("switch-identity-car");
                 }
+            },
+            color(){
+                console.log(this.color);
+            },
+            matricul(){
+                console.log("matricul:", this.matricul);
             }
         },
     });

@@ -76,6 +76,10 @@
     transform: scale(0.8) !important;
 }
 
+.v-overlay {
+    position: fixed;
+}
+
 // snack-bar
 .v-overlay__content {
     // min-width: 200px;

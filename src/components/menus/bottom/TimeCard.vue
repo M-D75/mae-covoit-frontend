@@ -454,7 +454,7 @@
                     Vibration.vibrate({duration: 1});
                 }
                 else {
-                    console.log("L'API Vibration Android n'est pas prise en charge sur cet appareil.");
+                    console.log("L'API Vibration Android, IOS n'est pas prise en charge sur cet appareil.");
                 }
             },
         },

@@ -123,6 +123,7 @@
             v-if="mode=='nb-passenger' || mode=='select-car'"
             ref="BottomMenuRefnb-passenger" 
             :class-name="['number']"
+            :paramsNumber="{min: 1, max: max_seats}"
             mode="nb-passenger"
             labelSelectorN1="Combien de personnes pouvez-vous prendre à bord ?"
             v-on:close="overlay = false"
@@ -266,9 +267,9 @@
 
     //import supabase from '@/utils/supabaseClient.js';
     import { getFirstDayOfWeek, findKeyOfNullOrUndefined } from '@/utils/utils.js'
-    import { Capacitor } from '@capacitor/core';
+    // import { Capacitor } from '@capacitor/core';
 
-    const isIOS = Capacitor.getPlatform() === 'ios';
+    // const isIOS = Capacitor.getPlatform() === 'ios';
 
 
     export default defineComponent({
@@ -298,30 +299,32 @@
                 }
                 else {
                     if ( this.mode == "destination" ) {
-                        return this.villages.filter(
+                        const villages = this.villages.filter(
                                 (dataVillage) => this.saisi != dataVillage.village 
                                 && dataVillage.village != this.infosPublish[typePath].depart 
                                 && dataVillage.village.toLowerCase().replaceAll("'", "").includes(this.saisi.toLocaleLowerCase().replaceAll("'", "")))
                             .map((dataVillage) => dataVillage.village)
                             .sort((a, b) => {
-                                if( isIOS )
-                                    return this.matchValue(a.replaceAll("'", ""), this.saisi) - this.matchValue(b.replaceAll("'", ""), this.saisi);
-                                else
-                                    return this.matchValue(b.replaceAll("'", ""), this.saisi) - this.matchValue(a.replaceAll("'", ""), this.saisi);
+                                return this.matchValue(a.toLocaleLowerCase().replaceAll("'", ""), this.saisi.toLocaleLowerCase().replaceAll("'", "")) - this.matchValue(b.toLocaleLowerCase().replaceAll("'", ""), this.saisi.toLocaleLowerCase().replaceAll("'", ""));                                
                             });
+
+                        return villages;
+
                     }
                     else if( this.mode == "depart" ) {
-                        return this.villages.filter(
+
+                        const villages = this.villages.filter(
                                 (dataVillage) => this.saisi != dataVillage.village 
                                 && dataVillage.village.toLowerCase().replaceAll("'", "").includes(this.saisi.toLocaleLowerCase().replaceAll("'", ""))
                             )
                             .map((dataVillage) => dataVillage.village)
                             .sort((a, b) => {
-                                if( isIOS )
-                                    return this.matchValue(a.replaceAll("'", ""), this.saisi) - this.matchValue(b.replaceAll("'", ""), this.saisi);
-                                else
-                                    return this.matchValue(b.replaceAll("'", ""), this.saisi) - this.matchValue(a.replaceAll("'", ""), this.saisi);
+                                return this.matchValue(a.toLocaleLowerCase().replaceAll("'", ""), this.saisi.toLocaleLowerCase().replaceAll("'", "")) - this.matchValue(b.toLocaleLowerCase().replaceAll("'", ""), this.saisi.toLocaleLowerCase().replaceAll("'", "")); 
                             });
+                        
+                        return villages;
+                        // else
+                        //     return villages.slice().reverse();
                     }
                 }
                 return [];
@@ -336,6 +339,7 @@
                 mode: "depart",
                 indexMode: 0,
                 modeWork: false,
+                max_seats: 2,
                 notification: {
                     color:  "mdi-check-circle",
                     icon: "#9fcb66",
@@ -539,6 +543,7 @@
                     case "select-car":
                         if (this.$refs.SelectCarRef) {
                             this.infosPublish[typePath].car = this.$refs.SelectCarRef.car;
+                            this.max_seats = this.$refs.SelectCarRef.seats;
                         }
                         this.nextStepMode();
                         break;
@@ -573,6 +578,7 @@
                                 maxSeats: this.infosPublish.default.nbPassager,
                                 price: this.infosPublish.default.price,
                                 route: this.infosPublish.default.route,
+                                car_id: this.infosPublish.default.car,
                             };
 
                             console.log("infos", infos);
@@ -660,6 +666,7 @@
                                 route: this.infosPublish.work.route,
                                 daysHour: this.infosPublish.work.daysHour,
                                 weeksSelected: this.infosPublish.work.weeksSelected,
+                                car_id: this.infosPublish.work.car,
                             };
 
                             const keyNovalue = findKeyOfNullOrUndefined(infos)

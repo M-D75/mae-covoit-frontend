@@ -23,6 +23,7 @@ export default createStore({
             paths: [
                 'auth.provider',
                 'auth.registerDeviceToken',
+                'auth.customer_id',
                 'general.isNative',
                 'profil.auto_accept_trip',
                 'profil.profil.infos_perso',
@@ -34,6 +35,9 @@ export default createStore({
                 'profil.userName',
                 'profil.autoValidation',
                 'profil.avatarUrl',
+                'profil.cars',
+                'profil.credit_card',
+                'profil.preferenceVirementMode',
                 'profil.profil.infos_perso.preferences',
                 'search.villages',
                 'search.accounts',

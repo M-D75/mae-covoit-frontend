@@ -317,6 +317,8 @@ export default {
                     max_seats,
                     price,
                     route,
+                    car_id,
+                    car (*),
                     account (*),
                     booking (
                         passenger_account_id,
@@ -369,6 +371,7 @@ export default {
                     bookings: trip.booking,
                     max_seats: trip.max_seats,
                     route: trip.route,
+                    car: trip.car,
                 };
                 _trips.push(_trip);
             }

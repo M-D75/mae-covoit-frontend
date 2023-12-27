@@ -130,12 +130,15 @@
 <script>
     import $ from 'jquery'
     import { defineComponent } from 'vue';
+    import { mapState, mapActions } from 'vuex';
 
     // Components
 
     export default defineComponent({
         name: 'select-car-view',
-
+        computed: {
+            ...mapState("profil", ["cars"]),
+        },
         components: {
         },
         data() {
@@ -154,10 +157,21 @@
                     {model: "Nissan - Juke", color: "maroon", icon:"mdi-car-estate"},
                 ],
                 car: 0,
+                seats: 7,
+                infosModelVehicul: [
+                    {model: "Moto", color: "silver", icon:"mdi-motorbike", maxSeats:1},
+                    {model: "Compact", color: "white", icon:"mdi-car-hatchback", maxSeats:4},
+                    {model: "Berline", color: "red", icon:"mdi-car-sports", maxSeats:4},
+                    {model: "SUV", color: "navy", icon:"mdi-car-estate", maxSeats:8},
+                    {model: "Monospace", color: "gray", icon:"mdi-car-estate", maxSeats:8},
+                ],
             };
         },
         mounted() {
             //$(".model").animate();
+            this.infos = [];
+
+            this.getCarsIn();
             
             // console.log(scrollWidth, $('.model .text')[3])
             $(".model").each(function(){
@@ -186,10 +200,28 @@
             });
         },
         methods: {
+            ...mapActions("profil", ["updateAutoValidation", "getCars"]),
             selectCar(index, info){
                 console.log("selected", index, info);
-                this.car = index;
+                this.car = info.id != undefined ? info.id : index;
+                this.seats = info.seats;
                 this.$emit("car-selected");
+            },
+            async getCarsIn(){
+                this.infos = [];
+                const result = await this.getCars();
+                if(result.status == 0 && this.cars.length > 0){
+                    for (let index = 0; index < this.cars.length; index++) {
+                        const car = this.cars[index];
+                        this.infos.push({
+                            model: car.license_plate, 
+                            color: car.color, 
+                            icon: this.infosModelVehicul.find((vehicul) => vehicul.model == car.model).icon,
+                            id: car.id,
+                            seats: car.seats,
+                        });
+                    }
+                }
             },
         },
         watch: {

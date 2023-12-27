@@ -21,7 +21,7 @@
     }
 
 
-    .v-container.select-car-view{
+    .v-container.select-virement-view{
         // circle radio
         .mdi-radiobox-blank{
             color: var(--font-color-label);
@@ -31,7 +31,7 @@
 
 <!-- scss -->
 <style lang="scss" scoped>
-    .v-container.select-car-view{
+    .v-container.select-virement-view{
         .title {
             font-size: var(--font-size-h1);
             font-weight: bold;
@@ -48,7 +48,7 @@
             flex-direction: column;
             justify-content: center;
             //margin-top: 20px;
-            .v-card.car {
+            .v-card.virement {
                 margin: 10px auto;
                 padding: 5px 20px;
                 width: 90%;
@@ -59,6 +59,7 @@
                     overflow: visible;
                     display: flex;
                     justify-content: space-between;
+                    align-items: center;
                     .icon-container {
                         margin: auto 0;
                         .v-icon {
@@ -68,9 +69,9 @@
                         }
                     }
                     .model {
-                        max-width: 170px;
+                        // max-width: 170px;
                         margin: auto 0 !important;
-                        width: 65%;
+                        width: 77%;
                         overflow-x: auto;
                         .text{
                             width: fit-content;
@@ -98,7 +99,7 @@
 <template>
  
     <v-container 
-        class="select-car-view"
+        class="select-virement-view"
     >
         <div
             class="title text-center"
@@ -107,12 +108,14 @@
         <div 
             class="card-contain"
         >
-            <v-radio-group>
+            <v-radio-group
+                v-model="choice"
+            >
                 <v-card
                     v-for="(info, index) in infos.slice(0, 6)"
                     :key="index"
-                    class="car mx-auto"
-                    @click="selectCar(index, info)"
+                    class="virement mx-auto"
+                    @click="select(index)"
                 >
                     <v-list>
                         <div class="model scrollable-container" >
@@ -135,65 +138,39 @@
 
 <!--  -->
 <script>
-    import $ from 'jquery'
     import { defineComponent } from 'vue';
-    import { mapState } from 'vuex';
+    import { mapState, mapMutations } from 'vuex';
 
     // Components
 
     export default defineComponent({
         name: 'select-virement-mode',
         computed: {
-            ...mapState("profil", ["darkMode"]),
+            ...mapState("profil", ["darkMode", "preferenceVirementMode"]),
         },
         components: {
         },
         data() {
             return {
-                color: "red",
                 infos: [
-                    {text: "1 fois par semaine", subText: "+1.0 de frais", value: "1"},
-                    {text: "1 fois tous les 2 semaines", subText: "+0.5 de frais", value: "2"},
-                    {text: "1 fois par mois", subText: "0.0 de frais ", value: "3"},
-                    {text: "1 fois tous les 3 mois", subText: "0.0 de frais", value: "4"},
+                    {text: "Transfert manuel", subText: "frais en fonction de votre usage", value: 0},
+                    {text: "1 fois par semaine", subText: "+1.0 de frais", value: 1},
+                    {text: "1 fois tous les 2 semaines", subText: "+0.5 de frais", value: 2},
+                    {text: "1 fois par mois", subText: "0.0 de frais ", value: 3},
+                    {text: "1 fois tous les 3 mois", subText: "0.0 de frais", value: 4},
                 ],
-                car: 0,
+                choice: 0,
             };
         },
         mounted() {
-            
-            // console.log(scrollWidth, $('.model .text')[3])
-            $(".model").each(function(){
-                const _this = $(this);
-                
-                //first step
-                const debordement = 50;
-                const scrollWidth = _this.find(".text").width()-_this.width()+debordement;
-                //console.log(_this.width(), scrollWidth, scrollWidth-debordement, _this.find(".text").width())
-                if(_this.width() < _this.find(".text").width()){
-                    console.log("defilement-debordement")
-                    _this.animate({scrollLeft: scrollWidth}, 4000, 'linear', function(){
-                        //_this.scrollLeft(0);
-                        _this.animate({scrollLeft: 0}, 500);
-                    });
-
-                    //after first
-                    setInterval(function(){
-                        const scrollWidth = _this.find(".text").width()-_this.width()+debordement;
-                        _this.animate({scrollLeft: scrollWidth}, 4000, 'linear', function(){
-                            //_this.scrollLeft(0);
-                            _this.animate({scrollLeft: 0}, 500);
-                        });
-                    }, 6000);
-                }
-            });
+            this.choice = this.preferenceVirementMode;
         },
         methods: {
-            selectCar(index, info){
-                console.log("selected", index, info);
-                this.car = index;
-                this.$emit("car-selected");
-            },
+            ...mapMutations("profil", ["SET_PREFERENCE_VIREMENT_MODE"]),
+            select(index){
+                this.choice = index;
+                this.SET_PREFERENCE_VIREMENT_MODE(index);
+            }
         },
         watch: {
         },

@@ -92,13 +92,13 @@
             isSmallScreen: window.innerWidth <= 600,
         }),
         async mounted(){
-
-            $(document).ready(function() {
-                $("<style type='text/css'> ::-webkit-scrollbar {display: none;} </style>").appendTo("head");
-            });
-
             
             // cus_P9EoaH2vfbFG6a
+
+            // const customer = await stripe.customers.create({
+            //     name: 'Jenny Rosen',
+            //     email: 'jennyrosen@example.com',
+            // });
 
             // const card = await stripe.customers.createSource(
             //     'cus_P9EoaH2vfbFG6a',

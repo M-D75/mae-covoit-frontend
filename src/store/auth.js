@@ -4,11 +4,13 @@ import router from '../router';
 import supabase from '@/utils/supabaseClient.js';
 
 import store from '../store'; 
+import stripe from '@/utils/stripe.js'
 
 export default {
     namespaced: true,
     state: {
         userId: "",
+        customer_id: "",
         logged_in: false,
         account_created: false,
         provider: "",
@@ -104,6 +106,8 @@ export default {
                 state.provider = user.app_metadata.provider;
                 console.log('User is already connected:', user);
 
+                
+
                 //Check if account are created
                 let { data: account, error: error_account } = await supabase
                     .from('account')
@@ -127,6 +131,42 @@ export default {
                         console.log("Welcome ! ", account[0].firstname);
                         store.state.profil.userId = account[0].id;
                         state.account_created = true;
+                        
+                        // Create or retrieve custromer
+                        if( account[0].customer_id == null ){
+                            console.log("create new customer");
+                            // strip customer
+                            const customer = await stripe.customers.create({
+                                name: `${account[0].firstname} ${account[0].lastname}`,
+                                email: user.email,
+                            });
+
+                            console.log("new customer:", customer);
+                            await supabase
+                                .from('account')
+                                .update({ customer_id: customer.id })
+                                .eq('user_id', user.id)
+                                .select();
+                        }
+                        else{
+                            const customer = await stripe.customers.retrieve(account[0].customer_id);
+                            console.log("retrieve customer:", customer);
+                            state.customer_id = customer.id;
+                            if( customer.default_source ){
+                                try {
+                                    const card = await stripe.customers.retrieveSource(
+                                        customer.id,
+                                        customer.default_source
+                                    );
+                                    store.state.profil.credit_card.brand = card.brand;
+                                    store.state.profil.credit_card.num_end_credit_card = card.last4;
+                                    store.state.profil.credit_card.available = true;
+                                } catch (error) {
+                                    console.error("Erreur lors de la récupération de la carte:", error);
+                                    throw error;
+                                }
+                            }
+                        }
                     }
                     else{
                         console.log("No account")
