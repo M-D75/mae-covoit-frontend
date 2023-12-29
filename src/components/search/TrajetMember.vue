@@ -104,6 +104,7 @@
 
 <style lang="scss" scoped>
     .v-card {
+        position: relative;
         background-color: var(--white-bg-color);
         margin: 20px;
         width: 87.2%;
@@ -124,6 +125,19 @@
             }
         }
 
+        .load {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            background: #1515157d;
+            z-index: 999;
+            .v-progress-circular {
+                margin: auto;
+            }
+        }
+
         
     }
     .v-btn {
@@ -140,6 +154,13 @@
         max-width="500"
     >
         <v-list>
+
+            <div v-if="loading" class="load apear-alpha">
+                <v-progress-circular
+                    indeterminate
+                    color="primary"
+                ></v-progress-circular>
+            </div>
 
             <div class="part-list">
                 <div>
@@ -170,6 +191,7 @@
                 <div class="avatar flex">
                     <v-avatar
                         size="47px"
+                        @click="$emit('touched-avatar')"
                     >
                         <v-img
                             alt="Avatar"
@@ -211,6 +233,7 @@
     // Components
     export default {
         name: 'trajet-member-comp',
+        emits: ["touched-avatar"],
         props: {
             infos: {
                 type: Object,
@@ -227,10 +250,20 @@
                     };
                 },
             },
+            load: {
+                type: Boolean,
+                default: false,
+            }
         },
         data() {
             return {
+                loading: false,
             }
         },
+        watch: {
+            load(){
+                this.loading=this.load;
+            },
+        }
     };
 </script>

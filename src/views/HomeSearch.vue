@@ -91,18 +91,7 @@
             v-on:fast-get-trip="getFastInfo"
         />
 
-        
-
-        <!-- <v-btn
-            class="map-btn mr-4 text-none"
-            rounded="xl" 
-            size="x-large"
-            variant="outlined"
-            block
-            @click="goToMap()"
-        >
-            Map
-        </v-btn> -->
+    
 
         <!-- Get Value -->
         <PaneGetValue
@@ -135,8 +124,19 @@
             ref="BottomMenuRefResults"
             :class-name="['reserve']" 
             mode="reserve"
-            v-on:close="overlay = false" 
+            v-on:close="overlay = false"
+            v-on:touched-avatar="openProfilMember()"
+            v-on:need-payment-intent-reserve="buildPaymentIntentReserve()"
             :infos="infos"
+        />
+
+        <!-- PaymentItent -->
+        <BottomMenu
+            v-if="buildPaymentIntent"
+            ref="BottomMenuPaymentItentRef"
+            :class-name="['payment-intent']"
+            mode="payment-intent"
+            v-on:close="overlay = false"
         />
         
     </v-main>
@@ -152,7 +152,7 @@
 <script>
     // import $ from 'jquery'
     import { defineComponent } from 'vue';
-    import { mapMutations, mapState } from 'vuex';
+    import { mapMutations, mapState, mapActions } from 'vuex';
     // import axios from 'axios';
 
     // Components
@@ -166,7 +166,7 @@
     export default defineComponent({
         name: 'home-search-view',
         computed: {
-            ...mapState("search", ['depart', "destination", "nbPassenger"]),
+            ...mapState("search", ['depart', "destination", "nbPassenger", "trajetSelected"]),
             ...mapState("profil", ['userUid']),
         },
         components: {
@@ -193,6 +193,7 @@
                     "name": "Ledou",
                     "passenger_number": 2
                 },
+                buildPaymentIntent: false,
             };
         },
         mounted() {
@@ -232,6 +233,8 @@
         },
         methods: {
             ...mapMutations("search", ["SET_NB_PASSAGER"]),
+            ...mapMutations("trip", ["SET_TRIP_SELECTED"]),
+            ...mapActions("trip", ["getProfilMember"]),
             // TODO : inutile mode prod
             getTrajet() {
                 if(this.$refs.TrajetSearchRef){
@@ -239,6 +242,15 @@
                     const destination = this.$refs.TrajetSearchRef.destination;
                     this.infos = this.$store.state.search.trajets.filter(trajet => trajet.depart == depart && trajet.destination == destination)[0];
                 }
+            },
+            async openProfilMember(){
+                this.SET_TRIP_SELECTED(this.infos);
+                this.$refs.BottomMenuRefResults.loading = true;
+                const result = await this.getProfilMember({userUid: this.infos.driver_id});
+                if(result){
+                    this.$refs.PaneApearProfilMemberRef.open();
+                }
+                this.$refs.BottomMenuRefResults.loading = false;
             },
             openCalendar(){
                 console.log("open-pan-calendar-search")
@@ -291,8 +303,17 @@
                     this.infos = this.$refs.PileRef.infos;
                 }
             },
-            goToMap(){
-                this.$router.replace("/trip")
+            buildPaymentIntentReserve(){
+                console.log("Befor : buildPaymentIntentReserve");
+                this.buildPaymentIntent = true;
+                setTimeout(async function(){
+                    if(this.$refs.BottomMenuPaymentItentRef){
+                        const res = await this.$refs.BottomMenuPaymentItentRef.buildPaymentIntent();
+                        if(res.valided){
+                            this.$refs.BottomMenuRefResults.close();
+                        }
+                    }
+                }.bind(this), 1000);
             }
         },
         watch: {

@@ -3,6 +3,7 @@ import axios from 'axios'
 
 import store from '../store'; 
 
+import stripe from '@/utils/stripe.js'
 import supabase from '@/utils/supabaseClient.js';
 import router from '@/router';
 import { formaterDateUTC } from '@/utils/utils.js'
@@ -595,9 +596,41 @@ export default {
                 return { valided: false, message: "Une erreur est survenue !"};
             }
 
+            
+            let byCredit = true;
             // check soldes enouth
             if( 0 > account_passenger[0].credit - state.trajetSelected.price ){
-                return { valided: false, message: "Pas assez de credit !"}
+                byCredit = false;
+                // return { valided: false, message: "Pas assez de credit !"}
+                //transation stripe
+                const customer = await stripe.customers.retrieve(account_passenger[0].customer_id);
+                console.log("retrieve customer:", customer);
+                
+                //const cardId = customer.default_source;
+                const cardId = customer.metadata.source_selected;
+                try {
+                    const obj = {
+                        amount: state.trajetSelected.price*100,
+                        currency: 'eur',
+                        customer: customer.id,
+                        payment_method: cardId,
+                        confirm: true,
+                        description: `reservation de trajet ${state.trajetSelected.depart} vers ${state.trajetSelected.destination} à ${state.trajetSelected.departure_time} pour ${account_passenger[0].username}; userUid : ${account_passenger[0].user_id};`,
+                        // return_url: 'http://localhost:8080/profil',
+                        automatic_payment_methods: {
+                            enabled: true,
+                            allow_redirects: 'never'
+                        },
+                    };
+                    console.log("build-payment-intent", obj);
+                    const paymentIntent = await stripe.paymentIntents.create(obj);
+            
+                    console.log("paymentIntent [OK]", paymentIntent);
+                } 
+                catch (error) {
+                    console.error("Erreur lors de la création de l'intention de paiement:", error);
+                    return {valided: false, status: 2, message: "Une erreur s'est produite lors du prélevement sur votre card de credit, veuillez réessayer plus tard."};
+                }
             }
 
             // get all booking id
@@ -615,19 +648,21 @@ export default {
             // const newBookingId = booking.length+1;
             
             // debit le montant
-            let { data: account_update, error: error_update } = await supabase
-                .from('account')
-                .update({ credit: (account_passenger[0].credit - state.trajetSelected.price) })
-                .eq('user_id', playload.user_id)
-                .select()
+            if(byCredit){
+                let { data: account_update, error: error_update } = await supabase
+                    .from('account')
+                    .update({ credit: (account_passenger[0].credit - state.trajetSelected.price) })
+                    .eq('user_id', playload.user_id)
+                    .select()
 
-            if( error_update ){
-                console.error("Error update", error_update)
-                return { valided: false, message: "Nous avons pas pu debiter votre solde veuillez réessayer plus tard."};
+                if( error_update ){
+                    console.error("Error update", error_update)
+                    return { valided: false, message: "Nous avons pas pu debiter votre solde veuillez réessayer plus tard."};
+                }
+
+                store.state.profil.soldes = account_update[0].credit;
+                console.log("new-soldes:", account_update[0].credit);
             }
-            
-            store.state.profil.soldes = account_update[0].credit;
-            console.log("new-soldes:", account_update[0].credit);
 
             //credité driver
             let { data: account_update_driver, error: error_update_driver } = await supabase

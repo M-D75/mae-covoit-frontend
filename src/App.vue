@@ -95,6 +95,50 @@
             
             // cus_P9EoaH2vfbFG6a
 
+            // stripe.paymentMethods.list({
+            //     customer: 'cus_PGIn2BjIiMbn3j', // Remplacez par l'ID du client
+            //     type: 'card',
+            // }, function(err, paymentMethods) {
+            //     if (err) {
+            //         // Gérer l'erreur
+            //         console.error(err);
+            //     } else {
+            //         // Traiter les méthodes de paiement (cartes)
+            //         console.log("paymentMethods", paymentMethods);
+            //     }
+            // });
+
+            // const customer = await stripe.customers.retrieve('cus_P9EoaH2vfbFG6a');
+            // console.log("retricve-customer:", customer);
+
+
+            // const paymentIntents = await stripe.paymentIntents.list({
+            //     limit: 30,
+            // });
+
+            // for (let index = 0; index < paymentIntents.data.length; index++) {
+            //     const paymentIntent = paymentIntents.data[index];
+            //     console.log("paymentIntent.amount_received", paymentIntent.amount_received);
+            //     if(paymentIntent.amount_received == 0 && paymentIntent.status == "requires_payment_method"){
+            //         // const paymentIntentC = await stripe.paymentIntents.cancel(
+            //         //     paymentIntent.id
+            //         // );
+
+            //         const paymentIntentC = await stripe.paymentIntents.confirm(
+            //             paymentIntent.id,
+            //             {
+            //                 payment_method: 'pm_card_visa',
+            //                 return_url: 'http://localhost:8080',
+            //             }
+            //         );
+
+            //         console.log("paymentIntentC", paymentIntentC, paymentIntent.id);
+            //     }
+                
+            // }
+
+            // console.log("all payments Intens", paymentIntents);
+
             // const customer = await stripe.customers.create({
             //     name: 'Jenny Rosen',
             //     email: 'jennyrosen@example.com',
@@ -110,16 +154,6 @@
             // const customers = await stripe.customers.list({
             //     limit: 10,
             // });
-
-            // const token = await stripe.tokens.create({
-            // card: {
-            //     number: '4242424242424242',
-            //     exp_month: 12,
-            //     exp_year: 2024,
-            //     cvc: '314',
-            // },
-            // });
-
 
             // console.log("customer", customers, card);
             

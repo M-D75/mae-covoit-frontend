@@ -95,3 +95,45 @@
         }
     }
 }
+
+
+//****************
+//Animations
+//****************
+.zoom-bounce {
+    animation: zoomBounce 0.7s ease-out;
+}
+
+@keyframes zoomBounce {
+    0% {
+        transform: scale(0);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    70% {
+        transform: scale(0.9);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.apear-alpha {
+    animation: apearAlpha 0.5s linear;
+}
+
+@keyframes apearAlpha {
+    0% {
+        opacity: 0;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    70% {
+        opacity: 0.7;
+    }
+    100% {
+        opacity: 1;
+    }
+}

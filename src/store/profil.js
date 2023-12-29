@@ -31,7 +31,7 @@ export default {
         soldes: 0,
         gain: 0,
         credit_card: {
-            num_end_credit_card: "0000",
+            last4: "0000",
             available: false,
             brand: "",
         },
@@ -145,7 +145,8 @@ export default {
         },
         SET_CREDIT_CARD(state, infos){
             console.log("infos----", infos);
-            state.credit_card = {num_end_credit_card: infos.last4, available: infos.available, brand: infos.brand};
+            const available = infos.last4 != undefined && infos.last4 != "";
+            state.credit_card = {last4: infos.last4, available:  available, brand: infos.brand};
         }
     },
     actions: {
@@ -267,8 +268,8 @@ export default {
             //get card
             const customer = await stripe.customers.retrieve(account[0].customer_id);
             console.log("retrieve customer:", customer);
-            if( customer.default_source ){
-                const cardId = customer.default_source;
+            if( customer.metadata.source_selected ){
+                const cardId = customer.metadata.source_selected;
                 try {
                     const obj = {
                         amount: infosLoad.credit*100,

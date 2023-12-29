@@ -27,6 +27,7 @@
 <!-- scss -->
 <style lang="scss" scoped>
     .v-card {
+        min-width: 225px;
         background-color: var(--white-bg-color);
         color: var(--font-color-label);
         border-radius: 10px !important;

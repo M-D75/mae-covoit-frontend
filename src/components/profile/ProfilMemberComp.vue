@@ -1,5 +1,14 @@
 <!-- scss -->
 <style lang="scss" scoped>
+    .v-toolbar {
+        background-color: var(--bg-app-color);
+        color: var(--font-color-label);
+        border-bottom: 1px solid #4d4d4d45;
+        .v-toolbar-title{
+            color: var(--font-color-label);
+        }
+    }
+
     .main {
         height: 100%;
         margin-bottom: 13px;

@@ -33,7 +33,9 @@
 <template>
     <PaneApear mode="contacts" ref="PaneApearRef"/>
 
-    <v-btn @click="open()">Open</v-btn>
+    <!-- <v-btn @click="open()">Open</v-btn> -->
+
+    <SelectCreditCard />
 
     <!-- loading -->
     <v-overlay disabled :model-value="overlayLoad" class="align-center justify-center">
@@ -54,6 +56,7 @@
     // Components
     // import Contacts from '@/components/profile/Contacts.vue';
     import PaneApear from '@/components/PaneApear.vue';
+    import SelectCreditCard from '@/components/menus/bottom/SelectCreditCard.vue';
 
     export default defineComponent({
         name: 'test-view',
@@ -63,6 +66,7 @@
         },
         components: {
             PaneApear,
+            SelectCreditCard,
         },
         props: {
         },

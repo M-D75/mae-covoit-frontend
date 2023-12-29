@@ -30,6 +30,7 @@
     "@mdi/font": "^7.2.96",
     "@mdi/js": "^7.2.96",
     "@popperjs/core": "^2.11.8",
+    "@stripe/stripe-js": "^2.2.2",
     "@supabase/supabase-js": "^2.31.0",
     "axios": ">=1.6.0",
     "core-js": "^3.8.3",

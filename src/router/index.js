@@ -19,10 +19,16 @@ import Trip from '@/views/trip/Trip.vue'
 import Chat from '@/views/trip/Chat.vue'
 import ProfilMember from '@/views/profil/ProfilMember.vue'
 import Test from '@/views/Test.vue'
-
+import StripeCheckout from '@/views/StripeCheckout.vue'
 // import store from '../store'; // Chemin d'accès à votre fichier store
 
 const routes = [
+    {
+        path: '/checkout',
+        name: 'checkout',
+        component: StripeCheckout,
+        meta: { requiresAuth: true },
+    },
     {
         path: '/test',
         name: 'test',

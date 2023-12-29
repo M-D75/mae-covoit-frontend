@@ -11,6 +11,7 @@ export default {
     state: {
         userId: "",
         customer_id: "",
+        customer: null,
         logged_in: false,
         account_created: false,
         provider: "",
@@ -152,6 +153,7 @@ export default {
                             const customer = await stripe.customers.retrieve(account[0].customer_id);
                             console.log("retrieve customer:", customer);
                             state.customer_id = customer.id;
+                            state.customer = customer;
                             if( customer.default_source ){
                                 try {
                                     const card = await stripe.customers.retrieveSource(

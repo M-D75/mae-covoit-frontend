@@ -519,8 +519,8 @@
             <!-- ** Results **
                 **************
             -->
-            <TrajetMember v-if="!notif && mode=='reserve'" :infos="infos"/>
-            <ReservePlace ref="ReservePlaceRef" v-if="!notif && mode=='reserve'" v-on:test-notif-success="reserveNotif()"/>
+            <TrajetMember v-if="!notif && mode=='reserve'" :load="loading" :infos="infos" v-on:touched-avatar="$emit('touched-avatar')"/>
+            <ReservePlace ref="ReservePlaceRef" v-if="!notif && mode=='reserve'" v-on:no-source-founded="$emit('need-payment-intent-reserve')" v-on:test-notif-success="reserveNotif()"/>
 
             <Notification v-if="notif && mode=='reserve'" :icon="reserve.icon" :message="reserve.message" />
             <!-- End Results -->
@@ -760,12 +760,32 @@
                 </v-card>
             </div>
 
+            <!-- Add Card strip public -->
+            <div 
+                v-if="mode=='register-credit-card'"
+            >
+                <SelectCreditCard
+                    v-if="creditCard.mode=='see-card'"
+                    ref="SelectCreditCardRef"
+                    v-on:need-to-add-new-card="creditCard.mode='register-card'; reOpenB(); "
+                    v-on:no-card-founded="creditCard.mode='register-card'; open_b ? reOpenB() : console.log('not-opened') ;"
+                    v-on:card-selected="updateDefaultSourcePayment()"
+                />
+                <StripeCheckout v-if="creditCard.mode=='register-card'"  mode="register-card"/>
+            </div>
+
+            <!-- Payment intent -->
+            <div 
+                v-if="mode=='payment-intent'"
+            >
+                <StripeCheckout v-if="paymentIntentId!=null" ref="StripeCheckoutPaymentIntentRef" mode="payment-card" :payment-intent-id="paymentIntentId" v-on:checkbox-update="reOpenB()"/>
+            </div>
+
             <!-- Add Card -->
             <div
-                v-if="mode=='register-credit-card'" 
+                v-if="mode=='register-credit-card' && false" 
                 class="credit-card card-contain"
             >
-                
                 
                 <!-- num card -->
                 <div class="bloc-saisi num-credit-card">
@@ -1074,6 +1094,8 @@
     import PreferenceChoice from '@/components/menus/bottom/bottom_menu/PreferenceChoice.vue';
     import CardButton from './setting/CardButton.vue';
     import SelectModelVehicul from '@/components/menus/bottom/SelectModelVehicul.vue';
+    import StripeCheckout from '@/views/StripeCheckout.vue';
+    import SelectCreditCard from './bottom/SelectCreditCard.vue';
 
     import { Capacitor } from '@capacitor/core';
 
@@ -1084,7 +1106,7 @@
         name: 'bottom-menu',
         emits: ["close", "time-valided", "time-changed", 
             "day-valided", "day-not-selected",
-            "opened", "close", "select-price", "drop-money", "up-money", "week-valided"],
+            "opened", "close", "select-price", "drop-money", "up-money", "week-valided", "touched-avatar", "need-payment-intent-reserve"],
         components: {
             Vue3DraggableResizable,
             TrajetMember,
@@ -1097,11 +1119,14 @@
             PreferenceChoice,
             CardButton,
             SelectModelVehicul,
+            StripeCheckout,
+            SelectCreditCard,
         },
         computed: {
-            ...mapState("profil", ["aboutPrefs", "modeDriver"]),
+            ...mapState("profil", ["aboutPrefs", "modeDriver", "userUid", "userName"]),
             ...mapState("publish", ["priceRecommended"]),
             ...mapState("auth", ["customer_id"]),
+            ...mapState("search", ["trajetSelected"]),
             numericRule() {
                 return (value) => /^\d*$/.test(value) || 'Veuillez entrer uniquement des chiffres';
             },
@@ -1199,6 +1224,7 @@
         },
         data() {
             return {
+                loading: false,
                 numericValues: ['', '', '', '', '', '', ''],
                 x: 0,
                 y: 0,
@@ -1256,6 +1282,10 @@
                         passwordMatch: () => this.passwordChange.password == this.passwordChange.passwordComfirmed || `Vous devez entrer le même mot de passe`,
                     },
                 },
+                creditCard: {
+                    mode: "see-card", //posibility :  "register-card",  "see-card", "pay-card"
+                },
+                paymentIntentId: null,
                 showSnackbarError: false,
                 messageSnackbarError: "",
                 showSnackbarSuccess: false,
@@ -1299,6 +1329,10 @@
             //     this.showSnackbarError = true;
             // }
 
+            // if( this.mode == 'register-credit-card' ){
+            //     this.mountCard();
+            // }
+
             //weeks
             if( this.mode == 'select-week' ){
                 let numWeekCurrent = getISOWeekNumber(new Date())
@@ -1312,6 +1346,37 @@
         methods: {
             ...mapActions("profil", ["addCredit", "transfertGain"]),
             ...mapMutations("profil", ["SET_CREDIT_CARD"]),
+            async mountCard(){
+                const paymentIntent = await stripe.paymentIntents.create({
+                    amount: 200,
+                    currency: "eur",
+                    automatic_payment_methods: {
+                        enabled: true,
+                    },
+                });
+
+                const clientSecret = paymentIntent.client_secret;
+
+                const appearance = {
+                    theme: 'stripe',
+                };
+
+                const elements = stripe.elements({ appearance, clientSecret });
+
+                const paymentElementOptions = {
+                    layout: "tabs",
+                };
+
+                const paymentElement = elements.create("payment", paymentElementOptions);
+                paymentElement.mount("#payment-element");
+
+                // const elements = stripe.elements();
+                // const card = elements.create('card');
+                // card.mount('#card-element');
+
+                // this.stripe = stripe;
+                // this.card = card;
+            },
             checkNumericalValue(event, nextInputRef){
                 this.numericValues = this.numericValues.map(nums => nums.replace(/\D/g, ''));
                 event.target.value = event.target.value.replace(/\D/g, '')
@@ -1331,9 +1396,9 @@
                 }
             },
             onDrag(pos) {
-                
+                this.subContHeigth = this.$refs.subCont.clientHeight;
                 const posOpenY = this.sizeScreen - ( (this.subContHeigth + this.subContSupHeigth ) + 50 );
-                // console.log("pos", pos, posOpenY - 20);
+                console.log("pos", pos, posOpenY - 20);
                 if(pos.y > posOpenY - 20){
                     this.move = true;
                     this.active = false;
@@ -1648,6 +1713,74 @@
 
                 this.notif = !this.notif;
             },
+            async updateDefaultSourcePayment(){
+                const source = this.$refs.SelectCreditCardRef.cardSelected;
+                if(source != null && source.id != undefined){
+                    let customer = null
+                    if(/^card_/.test(source.id)){
+                        customer = await stripe.customers.update(
+                            this.customer_id,
+                            {
+                                default_source: source.id,
+                                invoice_settings: {
+                                    default_payment_method: null,
+                                },
+                                metadata: {
+                                    type_source: "card",
+                                    source_selected: source.id,
+                                }
+                            }
+                        );
+                    }
+                    else if(/^pm_/.test(source.id)){
+                        customer = await stripe.customers.update(
+                            this.customer_id,
+                            {
+                                invoice_settings: {
+                                    default_payment_method: source.id,
+                                },
+                                metadata: {
+                                    type_source: "pm",
+                                    source_selected: source.id,
+                                }
+                            }
+                        );
+                    }
+
+                    this.SET_CREDIT_CARD(source);
+                    this.$refs.SelectCreditCardRef.defaultSource = source.id;
+
+                    console.log("update-customer", customer);
+                }
+            },
+            async buildPaymentIntent(){
+                console.log("buildPaymentIntent");
+                try {
+                    const obj = {
+                        amount: this.trajetSelected.price*100,
+                        currency: 'eur',
+                        customer: this.customer_id,
+                        description: `reservation de trajet ${this.trajetSelected.depart} vers ${this.trajetSelected.destination} à ${this.trajetSelected.departure_time} pour ${this.userName}; userUid : ${this.userUid};`,
+                        // return_url: 'http://localhost:8080/profil',
+                        automatic_payment_methods: {
+                            enabled: true,
+                            allow_redirects: 'never'
+                        },
+                    };
+                    console.log("build-payment-intent", obj);
+                    const paymentIntent = await stripe.paymentIntents.create(obj);
+                    this.paymentIntentId = paymentIntent.id;
+
+                    // this.$refs.StripeCheckoutPaymentIntentRef.mountPay();
+                    this.open();
+                    console.log("paymentIntent [OK]", paymentIntent);
+                    return {valided: false};
+                } 
+                catch (error) {
+                    console.error("Erreur lors de la création de l'intention de paiement:", error);
+                    return {valided: false, status: 2, message: "Une erreur s'est produite lors du prélevement sur votre card de credit, veuillez réessayer plus tard."};
+                }
+            },
             reOpenB(){
                 console.log("reOpen");
                 
@@ -1657,7 +1790,7 @@
                     this.open();
                 }.bind(this), 20)
                 
-            }
+            },
         },
         watch:{
             y(){

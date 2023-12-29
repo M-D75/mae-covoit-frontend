@@ -1,24 +1,6 @@
 <!-- scss -->
 <style lang="scss" model>
-    //Animations
-    .zoom-bounce {
-        animation: zoomBounce 0.7s ease-out;
-    }
-
-    @keyframes zoomBounce {
-        0% {
-            transform: scale(0);
-        }
-        50% {
-            transform: scale(1.2);
-        }
-        70% {
-            transform: scale(0.9);
-        }
-        100% {
-            transform: scale(1);
-        }
-    }
+    
 </style>
 
 

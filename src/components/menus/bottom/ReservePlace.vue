@@ -145,6 +145,7 @@
 
 <script>
     import axios from 'axios';
+    import stripe from '@/utils/stripe.js'
     
     import { mapActions, mapState } from 'vuex';
     import { Plugins, Capacitor } from '@capacitor/core';
@@ -158,9 +159,10 @@
     // Components
     export default {
         name: 'reserve-place-menu-comp',
-        emits: ["test-notif-success"],
+        emits: ["test-notif-success", "no-source-founded"],
         computed: {
-            ...mapState("profil", ["userUid", "notification"]),
+            ...mapState("profil", ["userUid", "notification", "soldes", "customer_id"]),
+            ...mapState("auth", ["customer_id"]),
             ...mapState("search", ["trajetSelected"]),
             ...mapActions("search", ["reserveTrajet"]),
         },
@@ -278,8 +280,19 @@
                 }
             },
             async tryReserve(){
+                console.log("tryReserve-------------", this.customer_id);
                 this.overlayLoad = true;
                 this.updateCar();
+                if( this.soldes < this.trajetSelected.price ){
+                    const customer = await stripe.customers.retrieve(this.customer_id);
+                    if( !customer.metadata.source_selected ){
+                        console.log("no-source-founded==========");
+                        this.$emit("no-source-founded");
+                        this.overlayLoad = false;
+                        return;
+                    }
+                }
+
                 const reserved = await this.$store.dispatch("search/reserveTrajet", { user_id: this.$store.state.profil.userUid });
                 this.overlayLoad = false;
                 if( ! reserved.valided ){

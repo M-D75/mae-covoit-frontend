@@ -24,6 +24,7 @@ export default createStore({
                 'auth.provider',
                 'auth.registerDeviceToken',
                 'auth.customer_id',
+                'auth.customer',
                 'general.isNative',
                 'profil.auto_accept_trip',
                 'profil.profil.infos_perso',

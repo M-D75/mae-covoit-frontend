@@ -28,8 +28,19 @@ import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 
+//Stripe
+// import { StripePlugin } from '@vue-stripe/vue-stripe';
+
+// const options = {
+//   pk: process.env.VUE_APP_API_STRIPE_PK,
+// //   stripeAccount: process.env.STRIPE_ACCOUNT,
+// //   apiVersion: process.env.API_VERSION,
+// //   locale: process.env.LOCALE,
+// };
+
 //Other
 import "@/styles/global.scss";
+// import "@/styles/checkout.scss";
 
 const vuetify = createVuetify({
     components,
@@ -68,6 +79,7 @@ createApp(App)
     .provide('supabase', supabase)
     .provide('stripe', stripe)
     //.use(VCalendar)
+    // .use(StripePlugin, options)
     .use(router)
     .use(store)
     .use(vuetify)
