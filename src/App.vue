@@ -94,6 +94,14 @@
         async mounted(){
             
             // cus_P9EoaH2vfbFG6a
+            // pi_3OSuTRIKwmrDLewY15HDSoMz
+
+            // await stripe.paymentIntents.update(
+            //     'pi_3OSuTRIKwmrDLewY15HDSoMz',
+            //     {
+            //         setup_future_usage: 'on_session'
+            //     }
+            // );
 
             // stripe.paymentMethods.list({
             //     customer: 'cus_PGIn2BjIiMbn3j', // Remplacez par l'ID du client

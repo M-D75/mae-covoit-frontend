@@ -65,14 +65,15 @@
         data() {
             return {
                 overlay: false,
+                //Warn : if update here update in trip
                 aboutPreference: {
                     discution: [
                         {
                             index: 0,
                             about: "discution",
-                            prependIconColor: "var(--blue-color)",
+                            prependIconColor:  "#9fcb66",
                             prependIcon:"mdi-forum",
-                            text:"j'aime bien discuter",
+                            text:"Bavard enthousiaste!",
                             chip:false,
                             chipIcon: null,
                             switchBtn: false,
@@ -82,9 +83,9 @@
                         {
                             index: 1,
                             about: "discution",
-                            prependIconColor: "#ff5353",
+                            prependIconColor: "var(--blue-color)",
                             prependIcon:"mdi-forum",
-                            text: "je discute de temps à autres",
+                            text: "Papotage occasionnel.",
                             chip:false,
                             chipIcon: null,
                             switchBtn: false,
@@ -94,9 +95,9 @@
                         {
                             index: 2,
                             about: "discution",
-                            prependIconColor: "#9fcb66",
+                            prependIconColor: "#ff5353",
                             prependIcon:"mdi-forum",
-                            text:"je ne parle pas beaucoup",
+                            text:"Plutôt silencieux.",
                             chip:false,
                             chipIcon: null,
                             switchBtn: false,
@@ -108,9 +109,9 @@
                         {
                             index: 0,
                             about: "smoke",
-                            prependIconColor: "var(--blue-color)",
+                            prependIconColor:  "#9fcb66",
                             prependIcon:"mdi-smoking-off",
-                            text:"Je fume dans ma voiture",
+                            text:"Fumeur en voiture.",
                             chip:false,
                             chipIcon: null,
                             chipText: "",
@@ -119,9 +120,9 @@
                         {
                             index: 1,
                             about: "smoke",
-                            prependIconColor: "#ff5353",
+                            prependIconColor: "var(--blue-color)",
                             prependIcon:"mdi-smoking-off",
-                            text:"Je fume en dehors de la voiture",
+                            text:"Fumeur hors voiture.",
                             chip:false,
                             chipIcon: null,
                             chipText: "",
@@ -130,9 +131,9 @@
                         {
                             index: 2,
                             about: "smoke",
-                            prependIconColor: "#9fcb66",
+                            prependIconColor: "#ff5353",
                             prependIcon:"mdi-smoking-off",
-                            text:"Pas de cigarette en voiture",
+                            text:"Voiture sans fumée.",
                             chip:false,
                             chipIcon: null,
                             chipText: "",
@@ -143,9 +144,9 @@
                         {
                             index: 0,
                             about: "music",
-                            prependIconColor: "var(--blue-color)",
+                            prependIconColor: "#9fcb66",
                             prependIcon:"mdi-music",
-                            text:"Music tout au long !",
+                            text:"Musique non-stop!",
                             chip:false,
                             chipIcon: null,
                             chipText: "",
@@ -154,9 +155,9 @@
                         {
                             index: 1,
                             about: "music",
-                            prependIconColor: "#ff5353",
+                            prependIconColor: "var(--blue-color)",
                             prependIcon:"mdi-music",
-                            text:"Tout depend de la music",
+                            text:"Musique selon l'humeur.",
                             chip:false,
                             chipIcon: null,
                             chipText: "",
@@ -165,7 +166,7 @@
                         {
                             index: 2,
                             about: "music",
-                            prependIconColor: "#9fcb66",
+                            prependIconColor: "#ff5353",
                             prependIcon:"mdi-music",
                             text:"Le silence est d'or",
                             chip:false,
@@ -178,9 +179,9 @@
                         {
                             index: 0,
                             about: "animal",
-                            prependIconColor: "var(--blue-color)",
+                            prependIconColor: "#9fcb66",
                             prependIcon:"mdi-paw",
-                            text:"J'aime bien les animaux",
+                            text:"Ami des animaux.",
                             chip:false,
                             chipIcon: null,
                             chipText: "",
@@ -189,9 +190,9 @@
                         {
                             index: 1,
                             about: "animal",
-                            prependIconColor: "#ff9c00",
+                            prependIconColor: "var(--blue-color)",
                             prependIcon:"mdi-paw",
-                            text:"J'aime certains animaux",
+                            text:"Sélectif avec les animaux.",
                             chip:false,
                             chipIcon: null,
                             chipText: "",
@@ -200,9 +201,9 @@
                         {
                             index: 2,
                             about: "animal",
-                            prependIconColor: "#9fcb66",
+                            prependIconColor: "#ff5353",
                             prependIcon:"mdi-paw",
-                            text:"Pas d'animaux en voiture",
+                            text:"Pas d'animaux en voiture.",
                             chip:false,
                             chipIcon: null,
                             chipText: "",

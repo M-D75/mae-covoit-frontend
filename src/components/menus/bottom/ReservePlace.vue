@@ -194,6 +194,7 @@
             this.updateCar();
         },
         methods: {
+            ...mapActions("profil", ["getSoldes"]),
             updateCar(){
                 if ( Object.keys(this.trajetSelected).length > 0 ) {
                     this.car.model = this.trajetSelected.car.license_plate;
@@ -280,16 +281,30 @@
                 }
             },
             async tryReserve(){
-                console.log("tryReserve-------------", this.customer_id);
+                console.log("tryReserve...");
                 this.overlayLoad = true;
+                const res = await this.getSoldes();
+                console.log(res);
                 this.updateCar();
                 if( this.soldes < this.trajetSelected.price ){
+                    console.log("pas assez de soldes...", this.soldes, this.trajetSelected.price);
                     const customer = await stripe.customers.retrieve(this.customer_id);
-                    if( !customer.metadata.source_selected ){
-                        console.log("no-source-founded==========");
+                    if( !(customer.metadata.source_selected 
+                            && (customer.metadata.source_selected == customer.default_source 
+                                || customer.metadata.source_selected == customer.invoice_settings.default_payment_method
+                                )
+                        ) || !customer.metadata.source_selected
+                        ){
+                        console.log("no-source-founded");
                         this.$emit("no-source-founded");
                         this.overlayLoad = false;
                         return;
+                    }
+                    else{
+                        console.log("source founded", customer, (customer.metadata.source_selected 
+                            && (customer.metadata.source_selected == customer.default_source 
+                                || customer.metadata.source_selected == customer.invoice_settings.default_payment_method
+                                )), !customer.metadata.source_selected);
                     }
                 }
 

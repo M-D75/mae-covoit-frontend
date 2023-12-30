@@ -771,14 +771,27 @@
                     v-on:no-card-founded="creditCard.mode='register-card'; open_b ? reOpenB() : console.log('not-opened') ;"
                     v-on:card-selected="updateDefaultSourcePayment()"
                 />
-                <StripeCheckout v-if="creditCard.mode=='register-card'"  mode="register-card"/>
+
+                <StripeCheckout 
+                    v-if="creditCard.mode=='register-card'"  
+                    mode="register-card"
+                    v-on:card-registered="close(); creditCard.mode='see-card'"    
+                />
             </div>
 
             <!-- Payment intent -->
             <div 
                 v-if="mode=='payment-intent'"
             >
-                <StripeCheckout v-if="paymentIntentId!=null" ref="StripeCheckoutPaymentIntentRef" mode="payment-card" :payment-intent-id="paymentIntentId" v-on:checkbox-update="reOpenB()"/>
+                <StripeCheckout 
+                    v-if="paymentIntentId!=null" 
+                    ref="StripeCheckoutPaymentIntentRef" 
+                    mode="payment-card" 
+                    :payment-intent-id="paymentIntentId" 
+                    v-on:checkbox-update="reOpenB()"
+                    v-on:element-mounted="reOpenB()"
+                    v-on:payment-valided="close(); $emit('retry-reserve')"
+                />
             </div>
 
             <!-- Add Card -->
@@ -907,7 +920,6 @@
                     size="x-large"
                     variant="outlined"
                     block
-                    @click="registerCreditCard()"
                 >Enregistrer</v-btn>
             </div>
 
@@ -1104,9 +1116,12 @@
 
     export default defineComponent({
         name: 'bottom-menu',
-        emits: ["close", "time-valided", "time-changed", 
+        emits: [
+            "close", "time-valided", "time-changed", 
             "day-valided", "day-not-selected",
-            "opened", "close", "select-price", "drop-money", "up-money", "week-valided", "touched-avatar", "need-payment-intent-reserve"],
+            "opened", "close", "select-price", "drop-money", 
+            "up-money", "week-valided", "touched-avatar", 
+            "need-payment-intent-reserve", "retry-reserve"],
         components: {
             Vue3DraggableResizable,
             TrajetMember,
@@ -1329,10 +1344,6 @@
             //     this.showSnackbarError = true;
             // }
 
-            // if( this.mode == 'register-credit-card' ){
-            //     this.mountCard();
-            // }
-
             //weeks
             if( this.mode == 'select-week' ){
                 let numWeekCurrent = getISOWeekNumber(new Date())
@@ -1346,37 +1357,6 @@
         methods: {
             ...mapActions("profil", ["addCredit", "transfertGain"]),
             ...mapMutations("profil", ["SET_CREDIT_CARD"]),
-            async mountCard(){
-                const paymentIntent = await stripe.paymentIntents.create({
-                    amount: 200,
-                    currency: "eur",
-                    automatic_payment_methods: {
-                        enabled: true,
-                    },
-                });
-
-                const clientSecret = paymentIntent.client_secret;
-
-                const appearance = {
-                    theme: 'stripe',
-                };
-
-                const elements = stripe.elements({ appearance, clientSecret });
-
-                const paymentElementOptions = {
-                    layout: "tabs",
-                };
-
-                const paymentElement = elements.create("payment", paymentElementOptions);
-                paymentElement.mount("#payment-element");
-
-                // const elements = stripe.elements();
-                // const card = elements.create('card');
-                // card.mount('#card-element');
-
-                // this.stripe = stripe;
-                // this.card = card;
-            },
             checkNumericalValue(event, nextInputRef){
                 this.numericValues = this.numericValues.map(nums => nums.replace(/\D/g, ''));
                 event.target.value = event.target.value.replace(/\D/g, '')
@@ -1398,7 +1378,7 @@
             onDrag(pos) {
                 this.subContHeigth = this.$refs.subCont.clientHeight;
                 const posOpenY = this.sizeScreen - ( (this.subContHeigth + this.subContSupHeigth ) + 50 );
-                console.log("pos", pos, posOpenY - 20);
+                // console.log("pos", pos, posOpenY - 20);
                 if(pos.y > posOpenY - 20){
                     this.move = true;
                     this.active = false;
@@ -1548,6 +1528,10 @@
 
                         const classBottomMenuNameJqueryDraggable = _this.className != "" && _this.className != null ? `.draggable.${_this.className.join(".")}` : ".draggable";
                         $(classBottomMenuNameJqueryDraggable).removeClass("open")
+
+                        if( _this.mode == 'register-credit-card')
+                            _this.creditCard.mode='see-card';
+
                         _this.$emit('close');
                     });
 
@@ -1642,35 +1626,6 @@
                     }
                 }
             },
-            async registerCreditCard(){
-                console.log("register-credit-card");
-                
-                const card = await stripe.customers.createSource(
-                    this.customer_id,
-                    {
-                        source: 'tok_mastercard',
-                    }
-                );
-
-                if(card){
-                    console.log("card", card);
-                    const infos = {last4: card.last4, available: true, brand: card.brand};
-                    this.SET_CREDIT_CARD(infos);
-                }
-
-                // const customers = await stripe.customers.list({
-                //     limit: 10,
-                // });
-
-                // const token = await stripe.tokens.create({
-                // card: {
-                //     number: '4242424242424242',
-                //     exp_month: 12,
-                //     exp_year: 2024,
-                //     cvc: '314',
-                // },
-                // });
-            },
             emit(value){
                 if( value == "time-valided" ){
                     if(this.$refs.TimeCardRef){
@@ -1749,6 +1704,7 @@
 
                     this.SET_CREDIT_CARD(source);
                     this.$refs.SelectCreditCardRef.defaultSource = source.id;
+                    this.$refs.SelectCreditCardRef.load = false;
 
                     console.log("update-customer", customer);
                 }
@@ -1761,6 +1717,7 @@
                         currency: 'eur',
                         customer: this.customer_id,
                         description: `reservation de trajet ${this.trajetSelected.depart} vers ${this.trajetSelected.destination} à ${this.trajetSelected.departure_time} pour ${this.userName}; userUid : ${this.userUid};`,
+                        setupFutureUsage: 'on_session',
                         // return_url: 'http://localhost:8080/profil',
                         automatic_payment_methods: {
                             enabled: true,
@@ -1770,11 +1727,14 @@
                     console.log("build-payment-intent", obj);
                     const paymentIntent = await stripe.paymentIntents.create(obj);
                     this.paymentIntentId = paymentIntent.id;
+                    if(this.paymentIntentId == null)
+                        this.paymentIntentId = paymentIntent.id;
+                    else if(this.paymentIntentId != paymentIntent.id)
+                        this.open();
 
-                    // this.$refs.StripeCheckoutPaymentIntentRef.mountPay();
-                    this.open();
                     console.log("paymentIntent [OK]", paymentIntent);
-                    return {valided: false};
+                    // console.log("paymentIntent [OK]");
+                    return {valided: true};
                 } 
                 catch (error) {
                     console.error("Erreur lors de la création de l'intention de paiement:", error);
@@ -1791,6 +1751,9 @@
                 }.bind(this), 20)
                 
             },
+            tryReserveRes(){
+                this.$refs.ReservePlaceRef.tryReserve();
+            }
         },
         watch:{
             y(){

@@ -95,12 +95,14 @@
 
         <div class="contain-btn">
             <v-btn
-                color="blue"
+                :color="cards.length==1 && cards.find((card) => card.select == true) ? 'gray' : 'blue'"
                 icon
+                :disabled="cards.length==1 && cards.find((card) => card.select == true)"
                 @click="addOrSelect()"
             >
-                <v-icon v-if="cards.find((card) => card.select == true)" class="zoom-bounce" :icon="cards.find((card) => card.select == true) ? 'mdi-credit-card-check' : 'mdi-credit-card-plus'"></v-icon>
-                <v-icon v-else class="zoom-bounce" :icon="cards.find((card) => card.select == true) ? 'mdi-credit-card-check' : 'mdi-credit-card-plus'"></v-icon>
+                <v-progress-circular v-if="load" indeterminate color="white"></v-progress-circular>
+                <v-icon v-if="!load && cards.find((card) => card.select == true)" class="zoom-bounce" :icon="cards.find((card) => card.select == true) ? 'mdi-credit-card-check' : 'mdi-credit-card-plus'"></v-icon>
+                <v-icon v-if="!load && !cards.find((card) => card.select == true)" class="zoom-bounce" :icon="cards.find((card) => card.select == true) ? 'mdi-credit-card-check' : 'mdi-credit-card-plus'"></v-icon>
             </v-btn>
         </div>
 
@@ -120,6 +122,7 @@
             ...mapState("auth", ["customer_id", "customer"]),
         },
         data: () => ({
+            load: false,
             cards: [
                 {
                     id: 1,
@@ -144,12 +147,14 @@
         mounted(){
             const vue = this;
             vue.cards = [];
+            this.load = true;
             stripe.paymentMethods.list({
                 customer: this.customer_id,
                 type: 'card',
             }, async function(err, paymentMethods) {
                 if (err) {
                     console.error(err);
+                    vue.load = false;
                 } 
                 else {
                     const customer = await stripe.customers.retrieve(vue.customer_id);
@@ -176,14 +181,13 @@
                         
                         const infos = {id: paymentMethod.id, brand: card.brand, exp_month: card.exp_month, exp_year: card.exp_year, last4: card.last4, select: selected};
                         if(selected){
-                            console.log("seleccettrtrttddfdgdgdgdgfd", paymentMethod.id, vue.customer_id);
-                            vue.SET_CREDIT_CARD(infos)
+                            vue.SET_CREDIT_CARD(infos);
                             vue.defaultSource = paymentMethod.id;
                         }
                         vue.cards.push(infos);
 
                     }
-
+                    vue.load = false;
                     console.log("all cards", vue.cards);
                 }
             });
@@ -194,10 +198,8 @@
                 const card = this.cards.find((card) => card.select == true);
                 if(card)
                     card.select = false;
-                if(!card || card.last4 != this.cards[index].last4 ){
+                if( ! card || card.last4 != this.cards[index].last4 ){
                     this.cards[index].select = true;
-                    // this.SET_CREDIT_CARD(this.cards[index]);
-                    // this.defaultSource = this.cards[index].id;
                 }
             },
             getLastNumber(number) {
@@ -207,8 +209,9 @@
             addOrSelect(){
                 const card = this.cards.find((card) => card.select == true)
                 if(card){
-                    console.log("obj-card", card, card.id);
+                    console.log("obj-card", card);
                     this.cardSelected = card;
+                    this.load = true;
                     this.$emit("card-selected");
                 }
                 else{

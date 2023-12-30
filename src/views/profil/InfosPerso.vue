@@ -21,7 +21,7 @@
         <!-- ? -->
         <PanneauInfo v-if="modeDriver" :infos_panneau="infos_panneau" />
 
-        <!--  -->
+        <!-- Preference et autres -->
         <GroupCard class="grouP" :groupeParameters="groupeParameters" />
 
         <!-- Credit Card -->
@@ -221,6 +221,7 @@ export default defineComponent({
                 (pref) => {
                     if ('about' in pref) {
                         console.log(this.preferences, this.preferences.filter((prefs) => prefs.about == pref.about)[0], pref);
+                        //Assigne methode select
                         this.preferences.filter((prefs) => prefs.about == pref.about)[0].fun = () => this.selectPreference(pref.about);
                         return this.preferences.filter((prefs) => prefs.about == pref.about)[0];
                     }
@@ -241,6 +242,7 @@ export default defineComponent({
             }
         },
         switchModeDriverGroupParameters() {
+            //show only necessary
             if (this.modeDriver) {
                 this.groupeParameters[0].disable = false;
                 this.groupeParameters[1].disable = false;

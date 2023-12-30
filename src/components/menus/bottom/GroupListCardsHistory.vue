@@ -40,6 +40,7 @@
         width: 91%;
         overflow-y: scroll;
         overflow-x: visible;
+        overflow: visible;
         max-height: 400px;
         padding: 5px;
         .group-year {

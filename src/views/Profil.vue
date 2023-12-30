@@ -146,6 +146,7 @@
 
         <!-- message error -->
         <v-snackbar
+            class="error-snackbar"
             v-model="showSnackbarError"
             :timeout="4000"
             color="error"

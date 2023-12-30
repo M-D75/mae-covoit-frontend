@@ -141,9 +141,7 @@
                 const classPaneApearNameJquery = this.className != "" && this.className != null ? `.pan-apear-value.${this.className.join(".")}` : ".pan-apear-value";
                 $(classPaneApearNameJquery).removeClass("closed");
 
-                console.log("bar-hei-", this.barHeight);
-                const vue = this;
-                
+                const vue = this;                
 
                 $(classPaneApearNameJquery).animate({left: `0px`}, 'fast', 
                                 function(){

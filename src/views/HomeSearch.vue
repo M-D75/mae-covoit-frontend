@@ -33,6 +33,7 @@
             }
         }
     }
+
 </style>
    
 <!--  -->
@@ -48,7 +49,7 @@
     ></v-overlay>
 
     <v-main>
-
+        
         <v-row 
             class="home-search-view mt-40 mb-0"
             style="margin-top: 40px;"
@@ -122,23 +123,24 @@
         <!-- reserve fast -->
         <BottomMenu 
             ref="BottomMenuRefResults"
-            :class-name="['reserve']" 
             mode="reserve"
+            :class-name="['reserve']"
+            :infos="infos"
             v-on:close="overlay = false"
             v-on:touched-avatar="openProfilMember()"
             v-on:need-payment-intent-reserve="buildPaymentIntentReserve()"
-            :infos="infos"
         />
 
         <!-- PaymentItent -->
         <BottomMenu
             v-if="buildPaymentIntent"
             ref="BottomMenuPaymentItentRef"
-            :class-name="['payment-intent']"
             mode="payment-intent"
+            :class-name="['payment-intent']"
             v-on:close="overlay = false"
+            v-on:retry-reserve="$refs.BottomMenuRefResults.open(); $refs.BottomMenuRefResults.tryReserveRes();"
         />
-        
+            
     </v-main>
 
     <!-- Menu -->

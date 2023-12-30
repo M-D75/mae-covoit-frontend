@@ -73,8 +73,32 @@
         <v-overlay v-model="overlay" contained persistent style="z-index: 0;" @click="callCloseBottomChild()"></v-overlay>
     </v-main>
 
+    <PaneApear
+        mode="profil-member"
+        :class-name="['profil-member']"
+        ref="PaneApearProfilMemberRef"
+    />
+
     <!-- reserve -->
-    <BottomMenu :class-name="['results']" ref="BottomMenuRef" mode="reserve" v-on:close="overlay = false;" :infos="infos" />
+    <BottomMenu 
+        ref="BottomMenuRefResults" 
+        mode="reserve" 
+        :infos="infos"
+        :class-name="['results']"
+        v-on:close="overlay = false;"
+        v-on:touched-avatar="openProfilMember()"
+        v-on:need-payment-intent-reserve="buildPaymentIntentReserve()"
+    />
+
+    <!-- PaymentItent -->
+    <BottomMenu
+        v-if="buildPaymentIntent"
+        ref="BottomMenuPaymentItentRef"
+        mode="payment-intent"
+        :class-name="['payment-intent']"
+        v-on:close="overlay = false"
+        v-on:retry-reserve="$refs.BottomMenuRefResults.open(); $refs.BottomMenuRefResults.tryReserveRes();"
+    />
 
     <!-- loading -->
     <v-overlay disabled :model-value="overlayLoad" class="align-center justify-center">
@@ -105,6 +129,7 @@ import { mapActions, mapMutations, mapState } from 'vuex';
 // Components
 import Toolbar from '@/components/menus/head/Toolbar.vue'
 import TrajetMember from '@/components/search/TrajetMember.vue';
+import PaneApear from '@/components/PaneApear.vue'; 
 import BottomMenu from '@/components/menus/BottomMenu.vue';
 
 export default defineComponent({
@@ -125,6 +150,7 @@ export default defineComponent({
     components: {
         Toolbar,
         TrajetMember,
+        PaneApear,
         BottomMenu,
     },
     props: {
@@ -147,6 +173,7 @@ export default defineComponent({
     },
     data() {
         return {
+            buildPaymentIntent: false,
             infos: {
                 depart: "Tsingoni",
                 destination: "Mamoudzou",
@@ -168,6 +195,8 @@ export default defineComponent({
     },
     methods: {
         ...mapMutations("search", ["SET_DEPART", "SET_DESTINATION", "SET_NB_PASSENGER", "SET_TRAJET_SELECTED"]),
+        ...mapMutations("trip", ["SET_TRIP_SELECTED"]),
+        ...mapActions("trip", ["getProfilMember"]),
         reserve(event, index) {
             this.infos = this.trajetFiltered[index];
             // TODO: propre
@@ -177,14 +206,34 @@ export default defineComponent({
             //this.$store.commit("search/SET_NB_PASSAGER", 1);
             this.callChildMethod();
         },
+        async openProfilMember(){
+            this.SET_TRIP_SELECTED(this.infos);
+            this.$refs.BottomMenuRefResults.loading = true;
+            const result = await this.getProfilMember({userUid: this.infos.driver_id});
+            if(result){
+                this.$refs.PaneApearProfilMemberRef.open();
+            }
+            this.$refs.BottomMenuRefResults.loading = false;
+        },
+        buildPaymentIntentReserve(){
+            this.buildPaymentIntent = true;
+            setTimeout(async function(){
+                if( this.$refs.BottomMenuPaymentItentRef ){
+                    const res = await this.$refs.BottomMenuPaymentItentRef.buildPaymentIntent();
+                    if( res.valided ){
+                        this.$refs.BottomMenuRefResults.close();
+                    }
+                }
+            }.bind(this), 1000);
+        },
         callChildMethod() {
-            if (this.$refs.BottomMenuRef) {
-                this.overlay = this.$refs.BottomMenuRef.open();
+            if (this.$refs.BottomMenuRefResults) {
+                this.overlay = this.$refs.BottomMenuRefResults.open();
             }
         },
         callCloseBottomChild() {
-            if (this.$refs.BottomMenuRef) {
-                this.$refs.BottomMenuRef.close();
+            if (this.$refs.BottomMenuRefResults) {
+                this.$refs.BottomMenuRefResults.close();
                 this.SET_TRAJET_SELECTED(null);
                 setTimeout(
                     function () {
@@ -243,7 +292,7 @@ export default defineComponent({
     watch: {
         overlay() {
             if ( ! this.overlay ) {
-                if (this.$refs.BottomMenuRef && this.$refs.BottomMenuRef.notif) {
+                if (this.$refs.BottomMenuRefResults && this.$refs.BottomMenuRefResults.notif) {
                     this.$router.replace("/search")
                 }
             }

@@ -81,6 +81,18 @@
 }
 
 // snack-bar
+.error-snackbar{
+    .v-overlay__content {
+        min-width: inherit;
+        width: 98%;
+    }
+}
+
+.v-overlay__content.bg-error{
+    min-width: inherit;
+    width: 98%;
+}
+
 .v-overlay__content {
     // min-width: 200px;
     // width: 98%;

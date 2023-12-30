@@ -1,6 +1,7 @@
 <!-- scss -->
 <style lang="scss" scoped>
     .v-toolbar {
+        z-index: 27;
         background-color: var(--bg-app-color);
         color: var(--font-color-label);
         border-bottom: 1px solid #4d4d4d45;
@@ -10,16 +11,17 @@
     }
 
     .main {
+        z-index: 26;
         height: 100%;
         margin-bottom: 13px;
         overflow: scroll;
+        top: 0;
+        position: absolute;
     }
 
     .grouP {
         margin-top: 50px;
     }
-
-
 </style>
    
 <!--  -->
@@ -127,42 +129,15 @@
                         parameters: [
                             {
                                 about: "discution",
-                                prependIconColor: "var(--blue-color)",
-                                prependIcon:"mdi-forum",
-                                text:"j'aime bien discuter",
-                                chip:false,
-                                chipIcon: null,
-                                switchBtn: false,
-                                chipText: "",
                             },
                             {
                                 about: "smoke",
-                                prependIconColor: "#ff5353",
-                                prependIcon:"mdi-smoking-off",
-                                text:"Pas de cigarette en voiture",
-                                chip:false,
-                                chipIcon: null,
-                                chipText: "",
-
                             },
                             {
                                 about: "music",
-                                prependIconColor: "#9fcb66",
-                                prependIcon:"mdi-music",
-                                text:"Music tout au long !",
-                                chip:false,
-                                chipIcon: null,
-                                chipText: "",
-
                             },
                             {
                                 about: "animal",
-                                prependIconColor: "#ff9c00",
-                                prependIcon:"mdi-paw",
-                                text:"J'aime bien les animaux",
-                                chip:false,
-                                chipIcon: null,
-                                chipText: "",
                             },
                         ],
                     },
@@ -191,7 +166,7 @@
                     this.groupeParameters[1].parameters = this.groupeParameters[1].parameters.map(
                         (pref) => { 
                             if('about' in pref){
-                                console.log("ppp", this.preferences, this.preferences.filter((prefs) => prefs && prefs["about"] != undefined && prefs.about == pref.about)[0], pref);
+                                // Assigne methode select
                                 this.preferences.filter((prefs) => prefs && prefs["about"] != undefined && prefs.about == pref.about)[0].fun = () => this.selectPreference(pref.about);
                                 return this.preferences.filter((prefs) => prefs && prefs["about"] != undefined && prefs.about == pref.about)[0];
                             }

@@ -53,7 +53,7 @@ export default {
                         about: "discution",
                         prependIconColor: "var(--blue-color)",
                         prependIcon:"mdi-forum",
-                        text:"j'aime bien discuter",
+                        text:"j'aime bien discuter-",
                         chip:false,
                         chipIcon: null,
                         switchBtn: false,
@@ -63,7 +63,7 @@ export default {
                         about: "smoke",
                         prependIconColor: "#ff5353",
                         prependIcon:"mdi-smoking-off",
-                        text:"Pas de cigarette en voiture",
+                        text:"Pas de cigarette en voiture-",
                         chip:false,
                         chipIcon: null,
                         chipText: "",
@@ -73,7 +73,7 @@ export default {
                         about: "music",
                         prependIconColor: "#9fcb66",
                         prependIcon:"mdi-music",
-                        text:"Music tout au long !",
+                        text:"Music tout au long !-",
                         chip:false,
                         chipIcon: null,
                         chipText: "",
@@ -83,7 +83,7 @@ export default {
                         about: "animal",
                         prependIconColor: "#ff9c00",
                         prependIcon:"mdi-paw",
-                        text:"J'aime bien les animaux",
+                        text:"J'aime bien les animaux-",
                         chip:false,
                         chipIcon: null,
                         chipText: "",
@@ -244,6 +244,27 @@ export default {
         async registerVehicul(){
             
         },
+        async getSoldes({state}){
+            const sessionChecked = await store.dispatch("auth/checkSessionOnly");
+            if( ! sessionChecked ){
+                router.replace("/login");
+                return;
+            }
+
+            // get-credit
+            let { data: account, error: error_account } = await supabase
+                .from('account')
+                .select("credit, customer_id")
+                .eq('user_id', state.userUid);
+
+            if(error_account){
+                console.log("Error2:", error_account);
+                return {status: 2, message: "Une erreur s'est produite lors de la récupératioin de votre solde."};
+            }
+
+            state.soldes = account[0].credit;
+            return {status: 0, message: `Votre solide est de : ${state.soldes}`};
+        },
         async addCredit({state}, infosLoad){
             const sessionChecked = await store.dispatch("auth/checkSessionOnly");
             if( ! sessionChecked ){
@@ -262,40 +283,42 @@ export default {
                 return {status: 2, message: "Une erreur s'est produite lors de la récupératioin de votre solde."};
             }
 
-            console.log("account:", account, error_account, account[0].credit+infosLoad.credit);
+            console.log("account:", account, error_account, account[0].credit+infosLoad.credit, infosLoad.no_source);
 
             const customerId = account[0].customer_id;
-            //get card
-            const customer = await stripe.customers.retrieve(account[0].customer_id);
-            console.log("retrieve customer:", customer);
-            if( customer.metadata.source_selected ){
-                const cardId = customer.metadata.source_selected;
-                try {
-                    const obj = {
-                        amount: infosLoad.credit*100,
-                        currency: 'eur',
-                        customer: customerId,
-                        payment_method: cardId,
-                        confirm: true,
-                        description: `rechargement de credits pour ${state.userName}; userUid : ${state.userUid};`,
-                        // return_url: 'http://localhost:8080/profil',
-                        automatic_payment_methods: {
-                            enabled: true,
-                            allow_redirects: 'never'
-                        },
-                    };
-                    console.log("build-payment-intent", obj);
-                    const paymentIntent = await stripe.paymentIntents.create(obj);
-            
-                    console.log("paymentIntent [OK]", paymentIntent);
-                } 
-                catch (error) {
-                    console.error("Erreur lors de la création de l'intention de paiement:", error);
-                    return {status: 2, message: "Une erreur s'est produite lors du prélevement sur votre card de credit, veuillez réessayer plus tard."};
+            if( ! infosLoad.no_source ){
+                //get card
+                const customer = await stripe.customers.retrieve(account[0].customer_id);
+                console.log("retrieve customer:", customer);
+                if( customer.metadata.source_selected ){
+                    const cardId = customer.metadata.source_selected;
+                    try {
+                        const obj = {
+                            amount: infosLoad.credit*100,
+                            currency: 'eur',
+                            customer: customerId,
+                            payment_method: cardId,
+                            confirm: true,
+                            description: `rechargement de credits pour ${state.userName}; userUid : ${state.userUid};`,
+                            // return_url: 'http://localhost:8080/profil',
+                            automatic_payment_methods: {
+                                enabled: true,
+                                allow_redirects: 'never'
+                            },
+                        };
+                        console.log("build-payment-intent", obj);
+                        const paymentIntent = await stripe.paymentIntents.create(obj);
+                
+                        console.log("paymentIntent [OK]", paymentIntent);
+                    } 
+                    catch (error) {
+                        console.error("Erreur lors de la création de l'intention de paiement:", error);
+                        return {status: 2, message: "Une erreur s'est produite lors du prélevement sur votre card de credit, veuillez réessayer plus tard."};
+                    }
                 }
-            }
-            else {
-                return {status: 4, message: "Carte de crédit non detecté"};
+                else {
+                    return {status: 4, message: "Carte de crédit non detecté"};
+                }
             }
 
             // update
