@@ -21,6 +21,12 @@ module.exports = defineConfig({
     //         }
     //     }
     // }
+    // chainWebpack: (config) => {
+    //     config.optimization.delete('splitChunks');
+    //     config
+    //       .plugin('limitSplitChunks')
+    //       .use(webpack.optimize.LimitChunkCountPlugin, [{ maxChunks: 1 }]);
+    // },
     devServer: {
         host: '0.0.0.0',
         allowedHosts: 'all',

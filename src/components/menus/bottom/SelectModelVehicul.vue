@@ -28,6 +28,9 @@
         .select-number {
             .v-container {
                 .v-color-picker {
+                    &.v-sheet{
+                        height: 130px;
+                    }
                     .v-color-picker__controls {
                         .v-color-picker-preview {
                             .v-color-picker-preview__eye-dropper {
@@ -185,10 +188,9 @@
         <div v-if="mode=='select-model'">
             <div
                 class="title text-center"
-            >Selectionnez un type de véhicul !</div>
+            >Quel est le type de carrosserie de votre véhicule ?</div>
 
             <div 
-                
                 class="card-contain"
             >
                 <v-card
@@ -210,11 +212,11 @@
             v-else
             class="select-number mx-auto"
         >
-            <div class="label text-center">Saisissez votre plaque d'immatriculation, ainsi que le nombre de place que vous pouvez prendre</div>
+            <div class="label text-center">{{ labelSaisie }}</div>
             <v-text-field v-model="matricul" placeholder="XX-000-XX" maxLength="9" variant="solo-inverted" ref="input" @input="checkPlaque($event)"></v-text-field>
             <v-container>
                 <v-color-picker 
-                    :model-value="color"
+                    v-model="color"
                     @update:model-value="getColor($event)"
                     style="max-width: none; width: inherit;" 
                     hide-canvas 
@@ -284,15 +286,11 @@
             SelectNumber,
         },
         props: {
-            // mode: {
-            //     type: String,
-            //     default: "select-model",
-            // },
         },
         data() {
             return {
                 mode: "select-model",
-                color: "#111111",
+                color: "#F44336",
                 infos: [
                     {model: "Moto", color: "silver", icon:"mdi-motorbike", maxSeats:1},
                     {model: "Compact", color: "white", icon:"mdi-car-hatchback", maxSeats:4},
@@ -300,6 +298,7 @@
                     {model: "SUV", color: "navy", icon:"mdi-car-estate", maxSeats:8},
                     {model: "Monospace", color: "gray", icon:"mdi-car-estate", maxSeats:8},
                 ],
+                labelSaisie: "Prêt à présenter votre bolide ? Partagez avec nous sa plaque d'immatriculation, sa couleur éclatante, et combien de passagers peuvent profiter de l'aventure à bord ! 🚗✨",
                 max: 3,
                 matricul: "",
                 modelV: "",
@@ -316,7 +315,6 @@
         methods: {
             ...mapActions("profil", ["addCar"]),
             getColor(color){
-                console.log("color:", color);
                 this.color = color;
             },
             checkPlaque(e){
@@ -368,11 +366,10 @@
                     this.$emit("switch-identity-car");
                 }
             },
-            color(){
-                console.log(this.color);
-            },
-            matricul(){
-                console.log("matricul:", this.matricul);
+            max(){
+                if(this.max == 1){
+                    this.labelSaisie = "Merci de renseigner la plaque d'immatriculation et la couleur de votre véhicule."
+                }
             }
         },
     });

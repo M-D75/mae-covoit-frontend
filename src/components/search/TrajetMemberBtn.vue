@@ -136,6 +136,7 @@
         margin-top: 16px;
     }
     .empty-mask {
+        border-radius: 24px;
         //display: none;
         position: absolute;
         top: 0;
@@ -154,6 +155,7 @@
         left: 0;
         width: 100%;
         height: 100%;
+        border-radius: 24px;
         z-index: 9999;
         text-align: center;
         .v-icon {

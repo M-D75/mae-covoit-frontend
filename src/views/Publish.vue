@@ -43,6 +43,30 @@
                 }
             }
         }
+
+        .nothing {
+            display: table;
+            text-align: center;
+            height: 83vh;
+
+            .contenu {
+                text-align: center;
+                display: table-cell;
+                vertical-align: middle;
+                color: var(--font-color-label);
+                i {
+                    font-size: 35px;
+                    // margin-bottom: 5px;
+                }
+
+                span {
+                    font-size: 17px;
+                    // text-transform: uppercase;
+                    display: block;
+                    margin: 15px auto;
+                }
+            }
+        }
     }
     
 </style>
@@ -59,7 +83,7 @@
         @click="close()"
     ></v-overlay>
 
-    <v-main>
+    <v-main v-if="isDriver">
 
         <!-- Depart -->
         <Search 
@@ -215,20 +239,39 @@
             v-on:week-valided="getSelected()"
         />
 
-        <!-- message error -->
-        <v-snackbar
-            v-model="showSnackbarError"
-            :timeout="4000"
-            color="error"
-        >
-            <div class="contain-ico">
-                <v-icon icon="mdi-alert-circle"></v-icon> 
-            </div>
-            <div>
-                <span>{{ messageSnackbarError }}</span>
-            </div>
-        </v-snackbar>
+        
     </v-main>
+
+    <v-main v-else>
+        <div class="nothing label-filter text-caption mx-auto">
+            <div v-if="nothing" class="contenu">
+                <v-icon icon="mdi-car-off"></v-icon>
+                <span>Oups ! Il semble que votre garage soit vide. Que diriez-vous de lui donner vie en ajoutant un véhicule pour votre annonce ? 🚗✨</span>
+                <v-btn
+                    color="blue"
+                    icon
+                    @click="goToAddVehicul()"
+                >
+                    <!-- <v-progress-circular v-if="load" indeterminate color="white"></v-progress-circular> -->
+                    <v-icon class="zoom-bounce" icon="mdi-car-side"></v-icon>
+                </v-btn>
+            </div>
+        </div>
+    </v-main>
+
+    <!-- message error -->
+    <v-snackbar
+        v-model="showSnackbar.showError"
+        :timeout="4000"
+        color="error"
+    >
+        <div class="contain-ico">
+            <v-icon icon="mdi-alert-circle"></v-icon> 
+        </div>
+        <div>
+            <span>{{ showSnackbar.messageError }}</span>
+        </div>
+    </v-snackbar>
 
     <!-- Load -->
     <v-overlay
@@ -238,13 +281,12 @@
         style="z-index: 9999;"
     >
         <v-progress-circular
-            color="black"
+            color="blue"
             indeterminate
             size="64"
         ></v-progress-circular>
     </v-overlay>
 
-    <BottomNav />
 </template>
 
 
@@ -256,7 +298,6 @@
     import { mapState, mapGetters, mapActions } from 'vuex';
 
     // Components
-    import BottomNav from '@/components/menus/BottomNav.vue';
     import Search from '@/components/publish/Search.vue';
     import BottomMenu from '@/components/menus/BottomMenu.vue';
     import SelectCar from '@/components/publish/SelectCar.vue';
@@ -271,11 +312,9 @@
 
     // const isIOS = Capacitor.getPlatform() === 'ios';
 
-
     export default defineComponent({
         name: 'publish-view',
         components: {
-            BottomNav,
             Search,
             BottomMenu,
             SelectCar,
@@ -286,6 +325,7 @@
         computed: {
             ...mapState("search", ['villages', 'communesHistory']),
             ...mapGetters("search", ["getVillagesByName", "GET_ID_VILLAGE_BY_NAME"]),
+            ...mapState("profil", ['cars']),
             villagesSortedFiltered(){
                 const typePath = this.modeWork ? "work" : "default";
 
@@ -332,7 +372,9 @@
         },
         data() {
             return {
-                overlayLoad: false,
+                isDriver: false,
+                nothing: false,
+                overlayLoad: true,
                 saisi: "",
                 open: true,
                 overlay: false,
@@ -433,8 +475,10 @@
                     minuteInit: 30,
                     nbPasMinutes: 5,
                 },
-                showSnackbarError: false,
-                messageSnackbarError: "",
+                showSnackbar: {
+                    showError: false,
+                    messageError: "",
+                }
             }
         },
         created() {
@@ -443,8 +487,26 @@
                 this.getVillages();
             }
         },
-        mounted() {
+        async mounted() {
             $(".mode-publish").css("display", "flex");
+
+            // const res = await this.getCars();
+            // if( res.status == 0 ){
+            //     if( this.cars.length == 0 ){
+            //         this.nothing = true;
+            //     }
+            //     else{
+            //         this.isDriver = true;
+            //     }
+            // }
+            // else{
+            //     this.showError("Une erreur s'est produite. Veuillez réessayer plus tard. Si le problème persiste, n'hésitez pas à contacter notre support.");
+            // }
+            
+            // TODO : test
+            this.isDriver = true;
+
+            this.overlayLoad = false;
 
             // this.test();
             let date = new Date();
@@ -467,6 +529,7 @@
             ...mapActions("search", ['ajouterAuHistorique', 'sauvegarderHistorique', 'chargerHistorique']),
             ...mapActions("search", ['getVillages']),
             ...mapActions("publish", ["newTrip", "getPriceRecommended"]),
+            ...mapActions("profil", ["getCars"]),
             getSaisi(){
                 $(".mode-publish").css("display", "none");
                 if(this.$refs[`SearchRef${this.mode}`])
@@ -529,8 +592,7 @@
                             _tmp_village_orig = this.getVillagesByName(this.itineraire.origin.infos.village);
                             result = await this.getPriceRecommended({orig_id: _tmp_village_orig.id, dest_id: _tmp_village.id});
                             if( result.status != 0 ){
-                                this.messageSnackbarError = result.message;
-                                this.showSnackbarError = true;
+                                this.showError(result.message);
                                 setTimeout(this.$router.go(), 4000);
                                 // this.mode = "depart";
                                 return;
@@ -887,8 +949,11 @@
                 return time;
             },
             showError(message){
-                this.messageSnackbarError = message;
-                this.showSnackbarError = true;
+                this.showSnackbar.messageError = message;
+                this.showSnackbar.showError = true;
+            },
+            goToAddVehicul(){
+                this.$router.push('/profil/perso/open-add-vehicle');
             },
         },
         watch: {

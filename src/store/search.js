@@ -6,7 +6,8 @@ import store from '../store';
 import stripe from '@/utils/stripe.js'
 import supabase from '@/utils/supabaseClient.js';
 import router from '@/router';
-import { formaterDateUTC } from '@/utils/utils.js'
+import { formaterDateUTC, getRandomInt, getRandomString, getFutureTime } from '@/utils/utils.js'
+
 
 export default {
     namespaced: true,
@@ -22,105 +23,6 @@ export default {
         communesHistory: [],
         communesFrequency: {},
         trajets: [
-            // {
-            //     "depart": "Tsingoni",
-            //     "destination": "Mamoudzou",
-            //     "hour_start": "04:50",
-            //     "hour_end": "06:55",
-            //     "price": 4,
-            //     "name": "Ledou",
-            //     "passenger_number": 2
-            // },
-            // {
-            //     "depart": "Bandraboua",
-            //     "destination": "Chirongui",
-            //     "hour_start": "07:30",
-            //     "hour_end": "09:15",
-            //     "price": 8,
-            //     "name": "Madi",
-            //     "passenger_number": 1
-            // },
-            // {
-            //     "depart": "Kani-Kéli",
-            //     "destination": "Ouangani",
-            //     "hour_start": "10:20",
-            //     "hour_end": "12:10",
-            //     "price": 6,
-            //     "name": "Halima",
-            //     "passenger_number": 3
-            // },
-            // {
-            //     "depart": "Bouéni",
-            //     "destination": "Dzaoudzi",
-            //     "hour_start": "14:45",
-            //     "hour_end": "16:30",
-            //     "price": 5,
-            //     "name": "Nassim",
-            //     "passenger_number": 1
-            // },
-            // {
-            //     "depart": "Sada",
-            //     "destination": "Pamandzi",
-            //     "hour_start": "17:05",
-            //     "hour_end": "18:55",
-            //     "price": 10,
-            //     "name": "Zainab",
-            //     "passenger_number": 4
-            // },
-            // {
-            //     "depart": "Tsingoni",
-            //     "destination": "Mamoudzou",
-            //     "hour_start": "08:30",
-            //     "hour_end": "10:20",
-            //     "price": 7,
-            //     "name": "Fatima",
-            //     "passenger_number": 2
-            // },
-            // {
-            //     "depart": "Bandraboua",
-            //     "destination": "Chirongui",
-            //     "hour_start": "11:45",
-            //     "hour_end": "13:30",
-            //     "price": 9,
-            //     "name": "Ahmed",
-            //     "passenger_number": 1
-            // },
-            // {
-            //     "depart": "Kani-Kéli",
-            //     "destination": "Ouangani",
-            //     "hour_start": "14:15",
-            //     "hour_end": "16:00",
-            //     "price": 5,
-            //     "name": "Amina",
-            //     "passenger_number": 3
-            // },
-            // {
-            //     "depart": "Bouéni",
-            //     "destination": "Dzaoudzi",
-            //     "hour_start": "18:10",
-            //     "hour_end": "19:50",
-            //     "price": 6,
-            //     "name": "Issa",
-            //     "passenger_number": 1
-            // },
-            // {
-            //     "depart": "Sada",
-            //     "destination": "Pamandzi",
-            //     "hour_start": "20:25",
-            //     "hour_end": "22:10",
-            //     "price": 8,
-            //     "name": "Leila",
-            //     "passenger_number": 4
-            // },
-            // {
-            //     "depart": "Tsingoni",
-            //     "destination": "Mamoudzou",
-            //     "hour_start": "23:15",
-            //     "hour_end": "01:05",
-            //     "price": 10,
-            //     "name": "Karim",
-            //     "passenger_number": 2
-            // },
         ],
         accounts: [],
     },
@@ -201,13 +103,13 @@ export default {
                     })
                     .then(response => {
                         commit('SET_VILLAGES', response.data.result);
-                        console.log("village", response.data.result);
+                        console.log("get-villages:", response.data.result);
                     })
                     .catch(error => {
                         console.error(error);
                     });
             else
-                console.log("Village Alreadyyyyy done");
+                console.log("Get Villages Already done !");
         },
         // async getTrajets({ commit, state, dispatch }) {
         //     const sessionChecked = await store.dispatch("auth/checkSession");
@@ -300,6 +202,31 @@ export default {
 
         //     return true
         // },
+        async getTrajetsFake({ state }){
+
+            const travelList = [];
+
+            for (let i = 0; i < Math.ceil(Math.random() * 5)+1; i++) {
+                travelList.push({
+                    avatar: "https://avataaars.io/?avatarStyle=Circle&topType=ShortHairDreads01&accessoriesType=Blank&hairColor=PastelPink&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Wink&eyebrowType=DefaultNatural&mouthType=Serious&skinColor=Tanned",
+                    depart: "Combani",
+                    departure_time: getFutureTime(2),
+                    destination: "Mamoudzou",
+                    driver_id: getRandomString(36),
+                    hour_end: `${getRandomInt(2).toString().padStart(2, '0')}:${getRandomInt(60).toString().padStart(2, '0')}`,
+                    hour_start: `${getRandomInt(2).toString().padStart(2, '0')}:${getRandomInt(60).toString().padStart(2, '0')}`,
+                    id: getRandomInt(10),
+                    max_seats: getRandomInt(10),
+                    name: getRandomString(2),
+                    passenger_number: getRandomInt(10),
+                    price: getRandomInt(10)
+                });
+            }
+
+            state.trajets = travelList;
+            console.log("travelList Fake", travelList);
+
+        },
         async getTrajets({ commit, getters }) {
             const sessionChecked = await store.dispatch("auth/checkSessionOnly");
             if(!sessionChecked){

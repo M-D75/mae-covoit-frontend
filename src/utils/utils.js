@@ -23,8 +23,6 @@ export function dateConverter(date){
     return dateString;
 }
 
-
-
 function getMonthOrder(month) {
     const months = [
         'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
@@ -180,5 +178,31 @@ export function arrondirSpecial(nombre) {
     else {
       return partieEntiere;
     }
+}
+
+export function keepLetter(word) {
+    word = word.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ ]/g, '');
+    return word;
+}
+
+
+// For test
+export function getRandomInt(max) {
+    return Math.floor(Math.random() * max);
+}
+
+export function getRandomString(length) {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return result;
+}
+
+export function getFutureTime(hours) {
+    const now = new Date();
+    now.setHours(now.getHours() + hours);
+    return now.toISOString();
 }
   

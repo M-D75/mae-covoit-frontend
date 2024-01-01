@@ -1,8 +1,7 @@
 
 <style lang="scss" model>
 
-    .v-card{
-
+    .v-card.create-account {
         .v-input {
             margin: 0;
             .v-input__control{
@@ -11,17 +10,15 @@
                 margin: auto !important;
             }
         }
-
     }
 
 </style>
 
 <!-- scoped -->
 <style lang="scss" scoped>
-    .v-card{
+    .v-card {
         background-color: #f5f5f5;
         height: 90vh;
-
         .v-card-subtitle{
             white-space: inherit;
         }
@@ -43,8 +40,6 @@
                 box-shadow: none;
             }
             .v-text-field {
-                // background-color: #FBFBFB;
-                // border-radius: 10px;
                 font-size: 16px;
                 height: 50px;
                 .v-field__input {
@@ -65,12 +60,11 @@
         <v-dialog
             v-model="dialog"
             persistent
-            width="1024"
         >
-            <v-card>
-                <v-toolbar color="gray" title="Infos"></v-toolbar>
+            <v-card class="create-account">
+                <v-toolbar color="gray" title="Qui êtes vous ?"></v-toolbar>
                 <v-card-subtitle>
-                    Entrez les informations suivantes pour continuer
+                    Veuillez compléter les informations ci-dessous pour procéder.
                 </v-card-subtitle>
                 <v-form @submit.prevent>
                     <v-container>
@@ -82,11 +76,12 @@
                                     <!-- <div class="label text-subtitle">Nom</div> -->
                                     <v-text-field 
                                         v-model="name" 
-                                        :rules="rules"
                                         label="Nom"
                                         variant="solo"
+                                        :rules="rules"
                                         :persistent-placeholder="false"
                                         :persistent-hint="false"
+                                        @input="name = keepLetterValue($event)"
                                     ></v-text-field>
                                 </div>
                             </v-col>
@@ -101,11 +96,12 @@
                                 >
                                     <v-text-field 
                                         v-model="firstname" 
-                                        label="Prenom"
-                                        :rules="rules"
+                                        label="Prénom"
                                         variant="solo"
+                                        :rules="rules"
                                         :persistent-placeholder="false"
                                         :persistent-hint="false"
+                                        @input="firstname = keepLetterValue($event)"
                                     ></v-text-field>
                                 </div>
                             </v-col>
@@ -154,8 +150,6 @@
 
     </v-main>
 
-        
-
     <!-- Load -->
     <v-overlay
         :model-value="overlayLoad"
@@ -168,23 +162,36 @@
         ></v-progress-circular>
     </v-overlay>
 
+    <!-- message error -->
+    <v-snackbar
+        class="error-snackbar"
+        v-model="showSnakBarInfo.showError"
+        :timeout="4000"
+        color="error"
+    >
+        <div class="contain-ico">
+            <v-icon icon="mdi-alert-circle"></v-icon> 
+        </div>
+        <div>
+            <span>{{ showSnakBarInfo.messageError }}</span>
+        </div>
+    </v-snackbar>
+
 </template>
 
 
 <!--  -->
 <script>
     import { mapActions, mapState } from 'vuex'
-
+    import { keepLetter } from '@/utils/utils.js';
 
     // Components
 
     export default {
         name: 'create-account-view',
         computed: {
-            ...mapState("auth", ["logged_in", "account_created"]),
-            ...mapActions("auth", ["checkSession", "createAccount"]),
-            ...mapState("search", ['villages', 'depart', 'destination', 'nbPassenger']),
-            ...mapActions("search", ['getVillages']),
+            ...mapState("auth", ["account_created"]),
+            ...mapState("search", ['villages']),
             listVillages(){
                 return this.villages.map((village) => village.village);
             }
@@ -193,9 +200,11 @@
             return {
                 overlayLoad: true,
                 dialog: false,
+                // user interact
                 name: "",
                 firstname: "",
                 village: "",
+                // cond
                 rules: [
                     value => {
                         if (value) return true
@@ -203,25 +212,36 @@
                         return 'Veuillez remplir ce champ'
                     },
                 ],
+                showSnakBarInfo: {
+                    showError: false,
+                    messageError: "",
+                },
             }
         },
         methods: {
-            async waitGettingvillage(){
-                await this.getVillages;
-                this.overlayLoad = false;
-                this.dialog = true;
-            },
+            ...mapActions("auth", ["createAccount"]),
+            ...mapActions("search", ['getVillages']),
             async tryCreateAccount(){
-                if(this.firstname != "" && this.name != ""){
-                    await this.$store.dispatch("auth/createAccount", {name: this.name, firstname: this.firstname, village: this.village});
-                    if( this.account_created ){
+                if( this.firstname != "" && this.name != "" ){
+                    const res = await this.createAccount({name: this.name, firstname: this.firstname, village: this.village});
+                    if( res.status == 0 && this.account_created ){
                         this.$router.replace("/search");
                     }
+                    else{
+                        this.showSnakBarInfo.messageError = res.message;
+                        this.showSnakBarInfo.showError = true;
+                    }
                 }
-            }
+            },
+            keepLetterValue(event){
+                event.target.value = keepLetter(event.target.value);
+                return event.target.value;
+            },
         },
-        mounted() {
-            this.waitGettingvillage();
+        async mounted() {
+            await this.getVillages();
+            this.overlayLoad = false;
+            this.dialog = true;
         },
     }
 </script>

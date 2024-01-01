@@ -24,9 +24,9 @@
             color: var(--font-color-label);
             font-weight: bold;
             width: 100%;
-            padding: 0 39px 0px 39px;
+            padding: 0 10px;
             margin: 30px auto;
-            margin-bottom: 100px;
+            margin-bottom: 40px;
         }
 
         .cont {
@@ -79,7 +79,7 @@
 
         .hour-edit {
             margin: 20px auto;
-            margin-bottom: 80px;
+            margin-bottom: 50px;
             font-size: 16px;
             text-align: center;
             width: 90%;
@@ -144,7 +144,7 @@
             class="hour-edit"
             @click="hourEdit()"
         >
-            Vous ne partez pas aux mêmes horaires chaque jour ?
+            Vos horaires de départ varient-ils d'un jour à l'autre ?
         </div>
         
         <div class="cont">

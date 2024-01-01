@@ -16,13 +16,10 @@
     }
 </style>
 
-<!-- scss -->
 <style lang="scss" scoped>
     .v-main{
-        //margin-bottom: 25px;
         padding-top: var(--safe-top);
         .v-row.home-search-view{
-            //margin: 30px auto;
             .title {
                 font-size: var(--font-size-h1);
                 color: var(--font-color-label);
@@ -36,10 +33,9 @@
 
 </style>
    
-<!--  -->
+
 <template>
 
-    <!-- overlay -->
     <v-overlay 
         v-model="overlay" 
         contained
@@ -87,14 +83,11 @@
         <Pile 
             class="pile-search"
             ref="PileRef"
-            :infos="infos"
             v-on:reserve="reserve()"
             v-on:fast-get-trip="getFastInfo"
         />
 
-    
-
-        <!-- Get Value -->
+        <!-- date; depart; destination; -->
         <PaneGetValue
             ref="PaneGetValueRef"
             :mode="modePanel" 
@@ -114,6 +107,7 @@
             v-on:time-valided="getSelected()"
         />
 
+        <!-- member-profil -->
         <PaneApear
             mode="profil-member"
             :class-name="['profil-member']"
@@ -125,7 +119,7 @@
             ref="BottomMenuRefResults"
             mode="reserve"
             :class-name="['reserve']"
-            :infos="infos"
+            :infos="travel"
             v-on:close="overlay = false"
             v-on:touched-avatar="openProfilMember()"
             v-on:need-payment-intent-reserve="buildPaymentIntentReserve()"
@@ -143,16 +137,10 @@
             
     </v-main>
 
-    <!-- Menu -->
-    <BottomNav />
-
 </template>
 
 
-
-<!--  -->
 <script>
-    // import $ from 'jquery'
     import { defineComponent } from 'vue';
     import { mapMutations, mapState, mapActions } from 'vuex';
     // import axios from 'axios';
@@ -160,7 +148,6 @@
     // Components
     import TrajetSearch from '@/components/search/TrajetSearch.vue';
     import Pile from '@/components/search/Pile.vue'
-    import BottomNav from '@/components/menus/BottomNav.vue';
     import PaneGetValue from '@/components/menus/PaneGetValue.vue';
     import PaneApear from '@/components/PaneApear.vue'; 
     import BottomMenu from '@/components/menus/BottomMenu.vue';
@@ -174,7 +161,6 @@
         components: {
             TrajetSearch,
             Pile,
-            BottomNav,
             PaneGetValue,
             PaneApear,
             BottomMenu,
@@ -186,15 +172,7 @@
                 modePanel: "date",
                 date: null,
                 dateString: "Aujourd'hui",
-                infos: {
-                    "depart": "Tsingoni",
-                    "destination": "Mamoudzou",
-                    "hour_start": "4:50",
-                    "hour_end": "6:55",
-                    "price": 4,
-                    "name": "Ledou",
-                    "passenger_number": 2
-                },
+                travel: {},
                 buildPaymentIntent: false,
             };
         },
@@ -242,13 +220,13 @@
                 if(this.$refs.TrajetSearchRef){
                     const depart = this.$refs.TrajetSearchRef.depart;
                     const destination = this.$refs.TrajetSearchRef.destination;
-                    this.infos = this.$store.state.search.trajets.filter(trajet => trajet.depart == depart && trajet.destination == destination)[0];
+                    this.travel = this.$store.state.search.trajets.filter(trajet => trajet.depart == depart && trajet.destination == destination)[0];
                 }
             },
             async openProfilMember(){
-                this.SET_TRIP_SELECTED(this.infos);
+                this.SET_TRIP_SELECTED(this.travel);
                 this.$refs.BottomMenuRefResults.loading = true;
-                const result = await this.getProfilMember({userUid: this.infos.driver_id});
+                const result = await this.getProfilMember({userUid: this.travel.driver_id});
                 if(result){
                     this.$refs.PaneApearProfilMemberRef.open();
                 }
@@ -302,7 +280,7 @@
             },
             getFastInfo(){
                 if( this.$refs.PileRef ){
-                    this.infos = this.$refs.PileRef.infos;
+                    this.travel = this.$refs.PileRef.infos;
                 }
             },
             buildPaymentIntentReserve(){
@@ -319,12 +297,6 @@
             }
         },
         watch: {
-            depart(){
-                console.log("dep-watch:", this.depart);
-            },
-            destination(){
-                console.log("dest-watch:", this.destination);
-            },
             date(){
                 const tmpCurrentDate = new Date();
                 var day   = tmpCurrentDate.getDate();
@@ -360,6 +332,9 @@
                     }
                 }
             },
+            trajetSelected(){
+                this.travel = this.trajetSelected;
+            }
         },
     });
 </script>

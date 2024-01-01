@@ -189,6 +189,7 @@
                 <GroupInput :group-input="groupInput"/>
             </div>
 
+            <!-- CGU -->
             <div 
                 v-if="mode=='infos-general'"
                 class="other-mode"
@@ -196,6 +197,7 @@
                 <InfosGeneral :title="cgu.title" :text="cgu.text"/>
             </div>
 
+            <!--  -->
             <div 
                 v-if="mode=='data-protection'"
                 class="other-mode"
@@ -446,19 +448,18 @@
         async mounted() {
             window.scrollTo(0, 0);
 
-            console.log("vvvvvv", this.villages);
-
             if( this.villages.length == 0 ){
-                this.getVillages();
+                await this.getVillages();
             }
 
+            // infos-perso-inputs
             this.groupInput = [
                 {
                     id: "civilite",
                     typeInput: "select",
                     label: "Civilite",
                     value: this.profil.infos_perso.civilite,
-                    items: ["Mr", "Mme", "Non binaire"],
+                    items: ["Mr", "Mme"],
                 },
                 {
                     id: "nom",

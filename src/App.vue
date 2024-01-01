@@ -1,5 +1,55 @@
 
 <style lang="scss" model>
+
+    // TODO : Property must be shared
+    .v-card {
+        > .v-list {
+            background-color: var(--white-bg-color);
+            .v-field__field {
+                background-color: var(--white-bg-color);
+                color: var(--font-color-label);
+            }
+        }
+        .v-input {
+            height: 78px;
+            margin-left: 8px;
+            margin-bottom: -20px;
+            .v-input__prepend {
+                //margin-right: 0;
+                text-align: center;
+                .v-icon {
+                    color: var(--gray-icon-color);
+                }
+            }
+
+            .v-input__control {
+                width: 90%;
+                // margin-left: 20px;
+            }
+        }
+    }
+
+    .v-card.list::-webkit-scrollbar {
+        width: 0;  /* Masquer la barre de défilement verticale */
+        height: 0; /* Masquer la barre de défilement horizontale */
+    }
+
+    .v-card.list {
+        -ms-overflow-style: none;
+        > .v-list {
+            .v-list-item {
+                .v-list-item__content {
+                    color: var(--font-color-label);
+                }
+                .v-list-item__prepend {
+                    .v-icon {
+                        font-weight: bold;
+                        color: var(--gray-icon-color);
+                    }
+                }
+            }
+        }
+    }
     
 </style>
 
@@ -42,13 +92,14 @@
         display: none !important;
     }
 
-
 </style>
 
 <template>
     <v-app class="ligth-mode">
-        <router-view v-if="isMobileOrSmallScreen"/>
+        <router-view v-if="isMobileOrSmallScreen" ref="routerViewRef"/>
         <MobileOnly v-else></MobileOnly>
+        <!-- Menu Nav -->
+        <BottomNav v-if="isMobileOrSmallScreen && bottomNav"/>
     </v-app>
 </template>
 
@@ -67,24 +118,28 @@
     const { LocalNotifications } = Plugins;
 
     import axios from 'axios';
+    import { mapMutations, mapState, mapActions } from 'vuex';
 
     const isAndroid = Capacitor.getPlatform() === 'android';
     const isIOS = Capacitor.getPlatform() === 'ios';
 
     //Component
     import MobileOnly from './views/MobileOnly.vue';
-    import { mapMutations, mapState, mapActions } from 'vuex';
+    import BottomNav from './components/menus/BottomNav.vue';
 
     export default {
         name: 'App',
         components: {
             MobileOnly,
+            BottomNav,
         },
         computed: {
-            
-            ...mapState("profil", ["darkMode", "userUid", "notification"]),
+            ...mapState("profil", ["darkMode", "userUid", "notification", "profil"]),
             isMobileOrSmallScreen() {
                 return this.isMobile || this.isSmallScreen;
+            },
+            bottomNav() {
+                return this.$route.meta.bottomNav;
             },
         },
         data: () => ({
@@ -96,6 +151,47 @@
             // cus_P9EoaH2vfbFG6a
             // pi_3OSuTRIKwmrDLewY15HDSoMz
 
+            // if(this.profil.infos_perso.email){
+            //     const account = await stripe.accounts.create({
+            //         type: 'custom',
+            //         country: 'FR',
+            //         email: this.profil.infos_perso.email,
+            //         capabilities: {
+            //             card_payments: {
+            //                 requested: true,
+            //             },
+            //             transfers: {
+            //                 requested: true,
+            //             },
+            //         },
+            //     });
+
+            //     console.log("account-bank", account);
+
+            //     const external = await stripe.accounts.createExternalAccount(
+            //         account.id,
+            //         {
+            //             external_account: {
+            //                 object: 'bank_account',
+            //                 country: 'FR',
+            //                 currency: 'eur',
+            //                 account_number: 'FR1420041010050500013M02606', // Numéro de compte (RIB)
+            //                 // Autres informations bancaires
+            //             }
+            //         }
+            //     );
+
+            //     console.log("external-account-ok", external );
+
+            //     const transfert = await stripe.transfers.create({
+            //         amount: 1000, // montant en centimes
+            //         currency: 'eur',
+            //         destination: account.id,
+            //         // Autres paramètres du transfert
+            //     });
+
+            //     console.log("transfer-ok",transfert );
+            // }
             // await stripe.paymentIntents.update(
             //     'pi_3OSuTRIKwmrDLewY15HDSoMz',
             //     {
@@ -190,7 +286,7 @@
 
             if( isIOS || isAndroid ){
                 PushNotifications.requestPermissions().then(result => {
-                    console.log("grandteeed");
+                    console.log("requestPermissions Pusg [OK]");
                     if (result.receive === 'granted') {
                         console.log("in-register");
                         PushNotifications.register();
@@ -205,7 +301,6 @@
                             console.log("Notification action user", JSON.stringify(notification));
                         });
 
-                        console.log("reg---");
                         PushNotifications.addListener('registration', token => {
                             console.info('Registration token: ', token.value);
                             this.SET_REGISTER_DEVICE_TOKEN(token.value);
@@ -226,8 +321,8 @@
                         PushNotifications.addListener('registrationError', err => {
                             console.error('Registration error: ', err.error);
                         });
-                    } else {
-                        // Handle denial of permission
+                    } 
+                    else {
                         console.log("Autoriasation failed:");
                     }
                 });
@@ -322,7 +417,7 @@
             },
         },
         beforeUnmount() {
-            // window.removeEventListener('resize', this.updateIsSmallScreen);
+            window.removeEventListener('resize', this.updateIsSmallScreen);
         }
     }
 </script>

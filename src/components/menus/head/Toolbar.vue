@@ -26,11 +26,19 @@
             padding-top: var(--safe-area-inset-top);
             margin-top: var(--safe-area-inset-top);
 
-            .v-btn i.v-icon {
-                margin-right: 0 !important;
-                color: var(--gray-icon-color);
-                &.mdi-chevron-left {
-                    font-size: 2em;
+            .v-btn {
+                i.v-icon {
+                    margin-right: 0 !important;
+                    color: var(--gray-icon-color);
+                    &.mdi-chevron-left {
+                        font-size: 2em;
+                    }
+                }
+
+                &.active {
+                    i.v-icon {
+                        color: var(--blue-color);
+                    }
                 }
             }
             .v-toolbar-title {
@@ -44,7 +52,7 @@
                 width: 85%;
             }
         }
-}
+    }
 
 </style>
    
@@ -78,7 +86,11 @@
                 <div class="text-subtitle-2 font-weight-medium">{{date}}, {{nbPassenger}} passager</div>
             </v-toolbar-title>
 
-            <v-btn icon>
+            <v-btn 
+                icon
+                :class="{active: filterOpen}"
+                @click="$emit('open-filter')"  
+            >
                 <v-icon>mdi-filter</v-icon>
             </v-btn>
         </v-toolbar>
@@ -94,6 +106,7 @@
 
     export default defineComponent({
         name: 'toolbar-comp',
+        emits: ["open-filter"],
         components: {
         },
         props: {
@@ -114,6 +127,10 @@
             nbPassenger: {
                 type: String,
                 default: "0",
+            },
+            filterOpen: {
+                type: Boolean,
+                default: false,
             }
         },
         data() {

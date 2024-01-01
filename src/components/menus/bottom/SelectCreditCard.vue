@@ -124,29 +124,28 @@
         data: () => ({
             load: false,
             cards: [
-                {
-                    id: 1,
-                    exp_month: 12,
-                    exp_year: 2024,
-                    last4: '4545',
-                    brand: 'mastercard',
-                    select: false,
-                },
-                {
-                    id: 2,
-                    exp_month: 9,
-                    exp_year: 2024,
-                    last4: '4242',
-                    brand: 'visa',
-                    select: false,
-                },
+                // {
+                //     id: 1,
+                //     exp_month: 12,
+                //     exp_year: 2024,
+                //     last4: '4545',
+                //     brand: 'mastercard',
+                //     select: false,
+                // },
+                // {
+                //     id: 2,
+                //     exp_month: 9,
+                //     exp_year: 2024,
+                //     last4: '4242',
+                //     brand: 'visa',
+                //     select: false,
+                // },
             ],
             defaultSource: "",
             cardSelected: null,
         }),
         mounted(){
             const vue = this;
-            vue.cards = [];
             this.load = true;
             stripe.paymentMethods.list({
                 customer: this.customer_id,
@@ -160,15 +159,11 @@
                     const customer = await stripe.customers.retrieve(vue.customer_id);
                     console.log("paymentMethods", paymentMethods);
                     const cards = paymentMethods.data;
-                    if(cards.length > 0){
-                        vue.cards = [];
-                    }
-                    else{
+                    if(cards.length == 0){
                         vue.$emit("no-card-founded");
                         return;
                     }
                     
-                    vue.cards = [];
                     for (let index = 0; index < cards.length; index++) {
                         const paymentMethod = cards[index];
                         const card = paymentMethod.card;

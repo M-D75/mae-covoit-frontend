@@ -174,9 +174,9 @@
                 message: "",
                 accepted: false,
                 car: {
-                    model: "VW-GOLF 7",
-                    color: 'blue',
-                    icon: "mdi-car",
+                    model: "AUCUN VEHICUL",
+                    color: 'var(--bg-app-color)',
+                    icon: "mdi-car-off",
                 },
                 infosModelVehicul: [
                     {model: "Moto", color: "silver", icon:"mdi-motorbike", maxSeats:1},
@@ -196,8 +196,8 @@
         methods: {
             ...mapActions("profil", ["getSoldes"]),
             updateCar(){
-                if ( Object.keys(this.trajetSelected).length > 0 ) {
-                    this.car.model = this.trajetSelected.car.license_plate;
+                if ( Object.keys(this.trajetSelected).length > 0 && this.trajetSelected.car ) {
+                    this.car.model = this.trajetSelected.car.brand != "UNKNOWN" ? this.trajetSelected.car.brand : this.trajetSelected.car.license_plate;
                     this.car.color = this.trajetSelected.car.color;
                     this.car.icon = this.infosModelVehicul.find((car) => car.model == this.trajetSelected.car.model).icon;
                 }

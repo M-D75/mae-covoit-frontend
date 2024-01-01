@@ -44,8 +44,6 @@
 
 
 <script>
-    import $ from 'jquery'
-
     // Components
     import CardButton from '@/components/menus/setting/CardButton.vue';
 
@@ -117,9 +115,6 @@
         };
     },
     mounted() {
-        // const vue = this;
-        $(document).ready(function () {
-        });
     },
 };
 </script>

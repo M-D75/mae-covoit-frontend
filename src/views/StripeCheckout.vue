@@ -77,7 +77,7 @@
 
     export default defineComponent({
         name: 'stripe-checkout-view',
-        emits: ["checkbox-update", "payment-valided", "payment-failed", "element-mounted", "card-registered"],
+        emits: ["checkbox-update", "payment-valided", "payment-failed", "element-mounted", "card-registered", "card-register-failed"],
         computed: {
             ...mapState("profil", ["darkMode"]),
             ...mapState("auth", ["customer_id"]),
@@ -201,7 +201,7 @@
             },
             async submitCard(e) {
                 e.preventDefault();
-                $("#spinner").removeClass("hidden");
+                $(".spinner").removeClass("hidden");
                 const vue = this;
                 const stripePublic = await stripePromise;
                 
@@ -210,6 +210,7 @@
 
                 if (error) {
                     console.error(error);
+                    this.$emit("card-register-failed")
                 } 
                 else {
                     // create source card
@@ -222,7 +223,7 @@
                     this.$emit("card-registered")
                     console.log("card:", card);
                 }
-                $("#spinner").addClass("hidden");
+                $(".spinner").addClass("hidden");
             },
             async mountPay(){
                 if(this.paymentIntentId == null){
@@ -334,7 +335,7 @@
                 e.preventDefault();
                 const vue = this;
                 if(!this.paymentIntentId){
-                    $("#spinner").removeClass("hidden");
+                    $(".spinner").removeClass("hidden");
                     const resultAdd = await vue.addCredit({credit: vue.elements._commonOptions.amount/100, no_source: true});
                     if(resultAdd.status == 0){
                         console.log("payment-valided");
@@ -344,10 +345,10 @@
                         console.log("payment-failed");
                         vue.$emit("payment-failed")
                     }
-                    $("#spinner").addClass("hidden");
+                    $(".spinner").addClass("hidden");
                 }
                 else{
-                    $("#spinner").removeClass("hidden");
+                    $(".spinner").removeClass("hidden");
                     const resultAdd = await vue.addCredit({credit: vue.price, no_source: true});
                     if(resultAdd.status == 0){
                         const elements = this.elements;
@@ -363,7 +364,7 @@
                                 if (result.error) {
                                     console.log("Error", result.error);
                                     vue.$emit("payment-failed");
-                                    $("#spinner").addClass("hidden");
+                                    $(".spinner").addClass("hidden");
                                 }
                                 else {
                                     console.log("results-payment:", result);
@@ -375,7 +376,7 @@
                                         console.log("payment-failed");
                                         vue.$emit("payment-failed");
                                     }
-                                    $("#spinner").addClass("hidden");
+                                    $(".spinner").addClass("hidden");
                                 }
                             });
                             

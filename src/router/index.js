@@ -79,12 +79,17 @@ const routes = [
     {
         path: '/profil',
         component: Profil,
-        meta: { requiresAuth: true },
+        meta: { requiresAuth: true, bottomNav: true },
     },
     {
         path: '/profil/perso',
         component: InfosPerso,
-        meta: { requiresAuth: true },
+        meta: { requiresAuth: true, bottomNav: true },
+    },
+    {
+        path: '/profil/perso/:action',
+        component: InfosPerso,
+        meta: { requiresAuth: true, bottomNav: true },
     },
     {
         path: '/setting',
@@ -94,7 +99,7 @@ const routes = [
     {
         path: '/search',
         component: HomeSearch,
-        meta: { requiresAuth: true },
+        meta: { requiresAuth: true, bottomNav: true },
     },
     {
         path: '/results/:depart/:destination/:date/:nbPassenger',
@@ -105,7 +110,7 @@ const routes = [
     {
         path: '/publish',
         component: Publish,
-        meta: { requiresAuth: true },
+        meta: { requiresAuth: true, bottomNav: true },
     },
     {
         path: '/publish/select-car',

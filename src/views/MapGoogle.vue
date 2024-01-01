@@ -124,7 +124,7 @@
                 </GMapMarker> -->
 
                 <GMapMarker
-                    v-for="(marker, index) in alert.groupMark"
+                    v-for="(marker, index) in groupMarker"
                     :key="index"
                     :position="marker"
                     :clickable="true"
@@ -201,6 +201,10 @@
             faster(){
                 return this.routes.length > 0 && this.routes[0].faster;
             },
+            groupMarker(){
+                console.log(this.alert.groupMark[0], "marker");
+                return this.alert.groupMark;
+            }
         },
         components: {
             BottomMenu,
@@ -278,7 +282,7 @@
         },
         methods: {
             touch(e){
-                console.log("e", e, e.latLng);
+                console.log("e", e, e.latLng, this.alert.groupMark.length, this.alert.groupMark[0]);
                 this.alert.groupMark.push({lat:e.latLng.lat(), lng:e.latLng.lng()})
             },
             trajetSelected(index){
@@ -502,7 +506,7 @@
                 }
                 
                 // this.getRouteInfos();
-                this.updateLoc();
+                // this.updateLoc();
             },
             async updateLoc(){
                 // Obtention de la position actuelle

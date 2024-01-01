@@ -1,72 +1,73 @@
 
 <style lang="scss" model>
-   .blc-text.publish .v-input .v-input__prepend {
-      margin-right: -5px !important;
-      text-align: center;
-   }
-   .blc-text.publish .v-input .v-input__prepend i.v-icon.mdi-navigation.mdi.notranslate.v-theme--light.v-icon--size-default {
-      transform: inherit;
-   }
+    .publish-view {
+        .blc-text.publish .v-input .v-input__prepend {
+            margin-right: -5px !important;
+            text-align: center;
+        }
+        .blc-text.publish .v-input .v-input__prepend i.v-icon.mdi-navigation.mdi.notranslate.v-theme--light.v-icon--size-default {
+            transform: inherit;
+        }
 
-   .blc-text.publish {
-        > .v-input {
-            padding: 10px 0;
-            .v-input__control {
-                .v-field {
-                    .v-field__field {
-                        .v-field__input {
-                            margin-left: 17px !important;
+        .blc-text.publish {
+            > .v-input {
+                padding: 10px 0;
+                .v-input__control {
+                    .v-field {
+                        .v-field__field {
+                            .v-field__input {
+                                margin-left: 17px !important;
+                            }
                         }
                     }
                 }
             }
         }
-    }
 
-
-   .v-card {
-        > .v-list {
-            background-color: var(--white-bg-color);
-            .v-field__field {
+        .v-card {
+            > .v-list {
                 background-color: var(--white-bg-color);
-                color: var(--font-color-label);
-            }
-        }
-        .v-input {
-            height: 78px;
-            margin-left: 8px;
-            margin-bottom: -20px;
-            .v-input__prepend {
-                //margin-right: 0;
-                text-align: center;
-                .v-icon {
-                    color: var(--gray-icon-color);
-                }
-            }
-
-            .v-input__control {
-                width: 90%;
-                margin-left: 20px;
-            }
-        }
-    }
-
-    .v-card.list::-webkit-scrollbar {
-        width: 0;  /* Masquer la barre de défilement verticale */
-        height: 0; /* Masquer la barre de défilement horizontale */
-    }
-
-    .v-card.list {
-        -ms-overflow-style: none;
-        > .v-list {
-            .v-list-item {
-                .v-list-item__content {
+                .v-field__field {
+                    background-color: var(--white-bg-color);
                     color: var(--font-color-label);
                 }
-                .v-list-item__prepend {
+            }
+            .v-input {
+                height: 78px;
+                margin-left: 8px;
+                margin-bottom: -20px;
+                .v-input__prepend {
+                    //margin-right: 0;
+                    text-align: center;
                     .v-icon {
-                        font-weight: bold;
                         color: var(--gray-icon-color);
+                    }
+                }
+
+                .v-input__control {
+                    width: 90%;
+                    // margin-left: 20px;
+                }
+            }
+        }
+
+        .v-card.list::-webkit-scrollbar {
+            width: 0;  /* Masquer la barre de défilement verticale */
+            height: 0; /* Masquer la barre de défilement horizontale */
+        }
+
+        .v-card.list {
+            -ms-overflow-style: none;
+            > .v-list {
+                .v-list-item {
+                    .v-list-item__content {
+                        color: var(--font-color-label);
+                    }
+                    .v-list-item__prepend {
+                        .v-icon {
+                            font-weight: bold;
+                            color: var(--gray-icon-color);
+                        }
                     }
                 }
             }
@@ -76,6 +77,17 @@
 
 <!-- scss -->
 <style lang="scss" scoped>
+
+    .v-card {
+        .v-input {
+            margin: 0;
+            .v-input__control{
+                width: 100% !important;
+                margin-left: inherit !important;
+                margin: auto !important;
+            }
+        }
+    }
 
     .bloc {
         // padding-top: var(--safe-top);
@@ -98,15 +110,15 @@
             width: 85%;
             > .v-input {
                 padding: 10px 0;
-                .v-input__control {
-                    .v-field {
-                        .v-field__field {
-                            .v-field__input {
-                                margin-left: 17px !important;
-                            }
-                        }
-                    }
-                }
+                // .v-input__control {
+                //     .v-field {
+                //         .v-field__field {
+                //             .v-field__input {
+                //                 margin-left: 17px !important;
+                //             }
+                //         }
+                //     }
+                // }
             }
         }
         .v-card {
@@ -158,35 +170,35 @@
     }
 
     .mode-publish {
-            margin: auto;
-            // display: flex !important;
-            display: flex;
-            align-items: center;
-            width: fit-content;
-            .v-icon{
-                color: var(--font-color-label);
-                &.disabled_icon{
-                    opacity: 0.1;
-                }
-            }
-            .v-switch{
-                margin: auto 11px;
-                font-weight: bold;
-                color: var(--font-color-label);
-                padding-top: 8px;
-                .v-input__append {
-                    color: var(--gray-icon-color);
-                }
-                .v-input__details{
-                    display: none !important;
-                }
+        margin: auto;
+        // display: flex !important;
+        display: flex;
+        align-items: center;
+        width: fit-content;
+        .v-icon{
+            color: var(--font-color-label);
+            &.disabled_icon{
+                opacity: 0.1;
             }
         }
+        .v-switch{
+            margin: auto 11px;
+            font-weight: bold;
+            color: var(--font-color-label);
+            padding-top: 8px;
+            .v-input__append {
+                color: var(--gray-icon-color);
+            }
+            .v-input__details{
+                display: none !important;
+            }
+        }
+    }
 </style>
    
 <!--  -->
 <template>
-    <div class="bloc">
+    <div class="bloc publish-view">
         <div
             class="title text-center"
         >{{ title }}</div>
@@ -225,9 +237,9 @@
                     :key="index"
                     :value="index"
                     :prepend-icon="'mdi-history'"
-                    @click="select(item)"
                     :ripple="false"
                     :active="false"
+                    @click="select(item)"
                 >{{ item }}</v-list-item>
 
                 <v-list-item
@@ -235,9 +247,9 @@
                     :key="index"
                     :value="index"
                     :prepend-icon="'mdi-magnify'"
-                    @click="select(item)"
                     :ripple="false"
                     :active="false"
+                    @click="select(item)"
                 >{{ item }}</v-list-item>
 
                 <!-- <v-list-item
@@ -261,9 +273,6 @@
                 </div>
             </v-list>
         </v-card>
-
-        
-
     </div>
 </template>
 

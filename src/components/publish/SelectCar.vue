@@ -7,9 +7,9 @@
             scrollbar-width: thin;
             scrollbar-color: transparent transparent;
             //display: inline-table;
-            .text{
-                margin-top: 5px;
-            }
+            // .text{
+            //     margin-top: 5px;
+            // }
         }
 
         /* Pour Chrome, Edge et Safari */
@@ -30,7 +30,7 @@
 <!-- scss -->
 <style lang="scss" scoped>
     .v-container.select-car-view{
-        height: 100vh;
+        // height: 100vh;
         .title {
             font-size: var(--font-size-h1);
             font-weight: bold;
@@ -41,11 +41,6 @@
 
         div.card-contain{
             margin: auto;
-            height: 85%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            //margin-top: 20px;
             .v-card.car {
                 margin: 10px auto;
                 padding: 5px 20px;
@@ -68,11 +63,13 @@
                         }
                     }
                     .model {
+                        position: relative;
                         //max-width: 170px;
                         margin: auto 15px !important;
                         width: 65%;
                         overflow-x: auto;
                         .text{
+                            position: relative;
                             width: fit-content;
                             text-transform: uppercase;
                             font-weight: bold;
@@ -83,7 +80,8 @@
                     }
                     .color {
                         margin: auto 0;
-                        border: 4px solid #eeecec ;
+                        // border: 4px solid #eeecec ;
+                        opacity: 0.2;
                         border-radius: 200px;
                         height: 32px;
                         width: 32px;
@@ -167,61 +165,74 @@
                 ],
             };
         },
-        mounted() {
-            //$(".model").animate();
+        async mounted() {
             this.infos = [];
 
-            this.getCarsIn();
-            
-            // console.log(scrollWidth, $('.model .text')[3])
-            $(".model").each(function(){
-                const _this = $(this);
-                
-                //first step
-                const debordement = 50;
-                const scrollWidth = _this.find(".text").width()-_this.width()+debordement;
-                //console.log(_this.width(), scrollWidth, scrollWidth-debordement, _this.find(".text").width())
-                if(_this.width() < _this.find(".text").width()){
-                    console.log("defilement-debordement")
-                    _this.animate({scrollLeft: scrollWidth}, 4000, 'linear', function(){
-                        //_this.scrollLeft(0);
-                        _this.animate({scrollLeft: 0}, 500);
-                    });
+            // const result = await this.getCars();
+            // if(result.status == 0 && this.cars.length > 0){
+            //     for (let index = 0; index < this.cars.length; index++) {
+            //         const car = this.cars[index];
+            //         this.infos.push({
+            //             model: car.license_plate, 
+            //             color: car.color, 
+            //             icon: this.infosModelVehicul.find((vehicul) => vehicul.model == car.model).icon,
+            //             id: car.id,
+            //             seats: car.seats,
+            //         });
+            //     }
+            // }
 
-                    //after first
-                    setInterval(function(){
-                        const scrollWidth = _this.find(".text").width()-_this.width()+debordement;
-                        _this.animate({scrollLeft: scrollWidth}, 4000, 'linear', function(){
-                            //_this.scrollLeft(0);
-                            _this.animate({scrollLeft: 0}, 500);
-                        });
-                    }, 6000);
+            this.infos = [
+                {
+                    "model": "AA-898-AA",
+                    "color": "#AB47BC",
+                    "icon": "mdi-car-estate",
+                    "id": 3,
+                    "seats": 8
+                },
+                {
+                    "model": "XXXXXXX-XXXXXXXXXXXXXAA",
+                    "color": "blue",
+                    "icon": "mdi-car-estate",
+                    "id": 1,
+                    "seats": 5
                 }
-            });
+            ];
+            
+            this.$nextTick(function(){
+                // Animation pour text trop long
+                $(".model").each(function(){
+                    const _this = $(this);
+                    const debordement = 10;
+                    const scrollWidth = _this.find(".text").width()-_this.width()+debordement;
+                    if(_this.width() < _this.find(".text").width()){
+                        // console.log("defilement-debordement", _this.scrollLeft(), scrollWidth)
+                        _this.find(".text").animate({left: -scrollWidth}, 3000, 'linear', function(){
+                            setTimeout(function(){//pause
+                                _this.find(".text").animate({left: 0}, 500); 
+                            }, 500)                  
+                        });
+
+                        // after first
+                        setInterval(function(){
+                            _this.find(".text").animate({left: -scrollWidth}, 3000, 'linear', function(){
+                                setTimeout(function(){//pause
+                                    _this.find(".text").animate({left: 0}, 500); 
+                                }, 500)
+                            });
+                        }, 5000);
+                    }
+                });
+            })
+            
         },
         methods: {
             ...mapActions("profil", ["updateAutoValidation", "getCars"]),
             selectCar(index, info){
-                console.log("selected", index, info);
+                // console.log("selected", index, info);
                 this.car = info.id != undefined ? info.id : index;
                 this.seats = info.seats;
                 this.$emit("car-selected");
-            },
-            async getCarsIn(){
-                this.infos = [];
-                const result = await this.getCars();
-                if(result.status == 0 && this.cars.length > 0){
-                    for (let index = 0; index < this.cars.length; index++) {
-                        const car = this.cars[index];
-                        this.infos.push({
-                            model: car.license_plate, 
-                            color: car.color, 
-                            icon: this.infosModelVehicul.find((vehicul) => vehicul.model == car.model).icon,
-                            id: car.id,
-                            seats: car.seats,
-                        });
-                    }
-                }
             },
         },
         watch: {

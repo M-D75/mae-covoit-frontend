@@ -38,20 +38,23 @@ export default {
 
             if(!user){
                 console.log("user not exist")
-                return
+                return {status: 1, message: "Un probléme est survenu, veuillez réessayer plus tard"}
             }
             
+            // create account
             const { data: account_ins, error: err_account_ins } = await supabase
                 .from('account')
                 .insert([
-                    { username: `${info.name} ${info.firstname}`, lastname: info.name, firstname: info.firstname, user_id: user.id, credit: 0, email: user.email },
+                    { username: `${info.name} ${info.firstname}`, lastname: info.name, firstname: info.firstname, user_id: user.id, email: user.email },
                 ])
                 .select()
 
             if(err_account_ins){
                 console.error("Erreur", err_account_ins)
+                return {status: 2, message: "Nous n'avons pas pu crée votre compte, veuillez réessayer plus tard"}
             }
 
+            // create setting
             const { data: setting_ins, error: err_setting_ins } = await supabase
                 .from('setting')
                 .insert([
@@ -61,25 +64,13 @@ export default {
 
             if(err_setting_ins){
                 console.error("Erreur", err_setting_ins)
+                return {status: 3, message: "La création de votre compte n'a pas pu aboutir, certaines fonctionnalité seront indeisponible."}
             }
 
             console.log("INS:", info, account_ins, setting_ins);
 
-            //Check if account are created
-            let { data: account, error: error_account } = await supabase
-                .from('account')
-                .select('*')
-                .eq('user_id', store.state.profil.userUid)
-
-            if(error_account){
-                console.error("Erreur", error_account)
-            }
-            else{
-                if(account.length > 0){
-                    console.log("Welcome ! ", account[0].firstname);
-                    state.account_created = true;
-                }
-            }
+            state.account_created = true;
+            return {status: 0, message: "Votre compte à été crée avec succès"};
         },
         async refreshToken({state}){
             const { data, error } = await supabase.auth.refreshSession()
@@ -233,7 +224,7 @@ export default {
             if(error)
                 return false;
 
-            console.log("checkSession--data.session:", data.session)
+            // console.log("checkSession--data.session:", data.session)
             if( data.session ){
                 return true;
             }

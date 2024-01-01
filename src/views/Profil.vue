@@ -129,7 +129,7 @@
                 v-on:up-money="onUpMoney()"
                 v-on:add-card="onAddCard()"
                 v-on:drop-money="onDropMoney()"
-                v-on:transfert-gain="showLedou()"
+                v-on:transfert-gain="transferGainToSoldes()"
             />
 
             <!-- Graph -->
@@ -160,7 +160,7 @@
         </v-snackbar>
     </v-main>
         
-    <BottomNav />
+    <!-- <BottomNav /> -->
 
     <PaneApear ref="PaneApearRef" :class-name="['pan-apear-contact']" mode="contacts"/>
 
@@ -198,6 +198,7 @@
         ref="BottomMenuRefMoney"
         v-on:close="overlay = false"
         v-on:drop-money="onDropMoney()"
+        v-on:payment-intent-recharge="onPaymentIntentRecharge()"
         />
 
     <!-- money driver to passenger -->
@@ -231,7 +232,7 @@
     import CreditCard from '@/components/profile/CreditCard.vue';
     import StatsTrajet from '@/components/profile/StatsTrajet.vue';
     import HistoryTrajets from '@/components/profile/HistoryTrajets.vue';
-    import BottomNav from '@/components/menus/BottomNav.vue';
+    // import BottomNav from '@/components/menus/BottomNav.vue';
     import BottomMenu from '@/components/menus/BottomMenu.vue';
     import PaneApear from '@/components/PaneApear.vue';    
 
@@ -249,7 +250,7 @@
             CreditCard,
             StatsTrajet,
             HistoryTrajets,
-            BottomNav,
+            // BottomNav,
             BottomMenu,
             PaneApear,
         },
@@ -438,20 +439,26 @@
                 }
             },
             onDropMoney(){
-                if( this.modePathNavigation != "drop-money" ){
-                    
-                    this.modePathNavigation = "drop-money";
-                    this.indexModeNavigation = -1;
-                    this.pathNavigationNext();
-
-                    setTimeout(function(){
-                        if ( this.$refs.BottomMenuRefMoney ) {
-                            this.overlay = this.$refs.BottomMenuRefMoney.open();
-                        }
-                    }.bind(this), 500);
+                if( this.gain == 0 ){
+                    this.messageSnackbarError = "Désolé, vous n'avez pas de gains suffisants pour cette action."
+                    this.showSnackbarError = true;
                 }
-                else {
-                    this.pathNavigationNext();
+                else{
+                    if( this.modePathNavigation != "drop-money" ){
+                        
+                        this.modePathNavigation = "drop-money";
+                        this.indexModeNavigation = -1;
+                        this.pathNavigationNext();
+
+                        setTimeout(function(){
+                            if ( this.$refs.BottomMenuRefMoney ) {
+                                this.overlay = this.$refs.BottomMenuRefMoney.open();
+                            }
+                        }.bind(this), 500);
+                    }
+                    else {
+                        this.pathNavigationNext();
+                    }
                 }
             },
             onUpMoney(){
@@ -474,10 +481,6 @@
                 this.indexModeNavigation = (this.indexModeNavigation + 1) % this.pathNavigation[this.modePathNavigation].length;
                 this.modeBottomMenu = this.pathNavigation[this.modePathNavigation][this.indexModeNavigation].mode;
                 console.log("pathNavNext:", this.modeBottomMenu, this.indexModeNavigation, this.modePathNavigation)
-            },
-            recharger(){
-                console.log("recharger");
-                this.modeBottomMenu = "recharge-valided";
             },
             switchModeDriverPanneauInfos(){
                 if(this.modeDriver){
@@ -526,14 +529,23 @@
                     }
                 }
             },
-            showLedou(){
+            transferGainToSoldes(){
                 if( this.gain == 0 ){
-                    this.messageSnackbarError = "Désolè vous ne possédé actuellement aucun gain pour effectué cette action."
+                    this.messageSnackbarError = "Désolé, vous n'avez pas de gains suffisants pour cette action."
                     this.showSnackbarError = true;
                 }
                 else{
                     this.overlay = true;
                     this.$refs.BottomMenuRefMoneyDriver.open();
+                }
+            },
+            onPaymentIntentRecharge(){
+                if(this.$refs.BottomMenuRefMoney){
+                    this.modeBottomMenu = 'payment-intent';
+                    setTimeout(function(){
+                        this.$refs.BottomMenuRefMoney.reOpenB();
+                    }.bind(this), 1000);
+                    // this.$refs.BottomMenuRefMoney.
                 }
             },
         },

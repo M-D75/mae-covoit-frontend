@@ -15,8 +15,8 @@
         height: 100%;
         margin-bottom: 13px;
         overflow: scroll;
-        top: 0;
-        position: absolute;
+        // top: 0;
+        // position: absolute;
     }
 
     .grouP {
@@ -62,6 +62,7 @@
 
 <!--  -->
 <script>
+    import $ from 'jquery';
     import { defineComponent } from 'vue';
     import { mapState } from 'vuex';
 
@@ -87,6 +88,12 @@
             Avatar,
             PanneauInfo,
             GroupCard,
+        },
+        props: {
+            toolbarDouble: {
+                type: Boolean,
+                default: false,
+            },
         },
         data() {
             return {
@@ -145,6 +152,8 @@
             }
         },
         mounted() {
+            if(this.toolbarDouble)
+                $(".main").css({position: "absolute", top: "0px"})
             //this.$refs.BottomMenuRefPreference.open();
             this.updateGrouparameterPreference();
             // this.$refs.ToolbarRef.needToComeBack = true;

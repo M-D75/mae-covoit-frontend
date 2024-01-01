@@ -772,10 +772,11 @@
                     v-on:card-selected="updateDefaultSourcePayment()"
                 />
 
-                <StripeCheckout 
-                    v-if="creditCard.mode=='register-card'"  
+                <StripeCheckout
+                    v-if="creditCard.mode=='register-card'"
                     mode="register-card"
-                    v-on:card-registered="close(); creditCard.mode='see-card'"    
+                    v-on:card-registered="close(); creditCard.mode='see-card'"
+                    v-on:card-register-failed="close(); registerFailed()"
                 />
             </div>
 
@@ -1085,7 +1086,7 @@
 </template>
 
 
-<!--  -->
+
 <script>
     import { defineComponent } from 'vue';
     import $ from 'jquery';
@@ -1121,7 +1122,9 @@
             "day-valided", "day-not-selected",
             "opened", "close", "select-price", "drop-money", 
             "up-money", "week-valided", "touched-avatar", 
-            "need-payment-intent-reserve", "retry-reserve"],
+            "need-payment-intent-reserve", "retry-reserve",
+            "payment-intent-recharge"
+        ],
         components: {
             Vue3DraggableResizable,
             TrajetMember,
@@ -1376,6 +1379,7 @@
                 }
             },
             onDrag(pos) {
+                // console.log("onDrag");
                 this.subContHeigth = this.$refs.subCont.clientHeight;
                 const posOpenY = this.sizeScreen - ( (this.subContHeigth + this.subContSupHeigth ) + 50 );
                 // console.log("pos", pos, posOpenY - 20);
@@ -1399,7 +1403,7 @@
                 }
             },
             onDragStop(pos) {
-                console.log("onstooooop");
+                console.log("onDragStop");
 
                 const _this = this;
                 if ( ! this.move ) {
@@ -1413,7 +1417,7 @@
                         }, 100)
                     }
                     else if( ! $(classBottomMenuNameJquery).hasClass("closed") ){
-                        console.log("onDragStop")
+                        console.log("onDragStop-close")
                         this.close();
                     }
                     
@@ -1602,15 +1606,56 @@
                 console.log("number-up", this.$refs.SelectNumberRef.number);
                 // TODO : get value
                 if(!this.modeDriver){
-                    const result = await this.addCredit({credit: this.$refs.SelectNumberRef.number});
-                    if(result.status == 0){
-                        this.messageSnackbarSuccess = result.message;
-                        this.showSnackbarSuccess = true;
-                        this.$emit("close");
+                    // check-source
+                    const customer = await stripe.customers.retrieve(this.customer_id);
+                    if( !(customer.metadata.source_selected 
+                            && (customer.metadata.source_selected == customer.default_source 
+                                || customer.metadata.source_selected == customer.invoice_settings.default_payment_method
+                                )
+                        ) || !customer.metadata.source_selected
+                    ){
+                        console.log("no-source-founded -> payment with card");
+                        
+                        try {
+                            const obj = {
+                                amount: this.$refs.SelectNumberRef.number*100,
+                                currency: 'eur',
+                                customer: this.customer_id,
+                                description: `rechargement de soldes pour ${this.userName}`,
+                                setup_future_usage: 'on_session',
+                                // return_url: 'http://localhost:8080/profil',
+                                automatic_payment_methods: {
+                                    enabled: true,
+                                    allow_redirects: 'never'
+                                },
+                            };
+                            const paymentIntent = await stripe.paymentIntents.create(obj);
+                            this.paymentIntentId = paymentIntent.id;
+                            if(this.paymentIntentId == null)
+                                this.paymentIntentId = paymentIntent.id;
+
+                            console.log("paymentIntent recharche : [OK]", paymentIntent);
+                            this.$emit("payment-intent-recharge");
+                        } 
+                        catch (error) {
+                            console.error("Erreur lors de la création de l'intention de paiement:", error);
+                            return {valided: false, status: 2, message: "Une erreur s'est produite lors du prélevement sur votre card de credit, veuillez réessayer plus tard."};
+                        }
+                        
+                        this.overlayLoad = false;
+                        return;
                     }
                     else{
-                        this.messageSnackbarError = result.message;
-                        this.showSnackbarError = true;
+                        const result = await this.addCredit({credit: this.$refs.SelectNumberRef.number});
+                        if(result.status == 0){
+                            this.messageSnackbarSuccess = result.message;
+                            this.showSnackbarSuccess = true;
+                            this.$emit("close");
+                        }
+                        else{
+                            this.messageSnackbarError = result.message;
+                            this.showSnackbarError = true;
+                        }
                     }
                 }
                 else{
@@ -1717,7 +1762,7 @@
                         currency: 'eur',
                         customer: this.customer_id,
                         description: `reservation de trajet ${this.trajetSelected.depart} vers ${this.trajetSelected.destination} à ${this.trajetSelected.departure_time} pour ${this.userName}; userUid : ${this.userUid};`,
-                        setupFutureUsage: 'on_session',
+                        setup_future_usage: 'on_session',
                         // return_url: 'http://localhost:8080/profil',
                         automatic_payment_methods: {
                             enabled: true,
@@ -1729,11 +1774,11 @@
                     this.paymentIntentId = paymentIntent.id;
                     if(this.paymentIntentId == null)
                         this.paymentIntentId = paymentIntent.id;
-                    else if(this.paymentIntentId != paymentIntent.id)
+                    else
                         this.open();
 
                     console.log("paymentIntent [OK]", paymentIntent);
-                    // console.log("paymentIntent [OK]");
+                    
                     return {valided: true};
                 } 
                 catch (error) {
@@ -1753,6 +1798,10 @@
             },
             tryReserveRes(){
                 this.$refs.ReservePlaceRef.tryReserve();
+            },
+            registerFailed(){
+                this.messageSnackbarError = "Une erreur s'est produite, veuillez réessayer plus tard.";
+                this.showSnackbarError = true;
             }
         },
         watch:{

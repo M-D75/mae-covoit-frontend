@@ -25,7 +25,7 @@
             color: var(--font-color-label);
             font-weight: bold;
             width: 100%;
-            padding: 0 39px 0px 39px;
+            padding: 0 10px;
             margin: 30px auto;
         }
 

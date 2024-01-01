@@ -5,7 +5,6 @@
         overflow: visible;
         border-radius: 20px !important;
         
-        
         i.v-icon {
             font-size: 1.2em;
             margin: auto 0;
@@ -359,7 +358,7 @@
                 this.SET_DESTINATION(tmp);
             },
             goResult(){
-                console.log("go to :", `/results/${this.depart}/${this.destination}/${this.dateString}/${this.nbPassenger}`)
+                // console.log("go to :", `/results/${this.depart}/${this.destination}/${this.dateString}/${this.nbPassenger}`)
                 if ( this.depart && this.destination ) {
                     this.$emit("trajet-selected");
                     this.$router.push(`/results/${this.depart}/${this.destination}/${this.dateString}/${this.nbPassenger}`);

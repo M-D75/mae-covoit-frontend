@@ -66,6 +66,7 @@
 
             <ProfilMemberComp 
                 v-if="mode=='profil-member'"
+                :toolbar-double="toolbarDouble"
                 v-on:go-back="close()"
             />
         </div>
@@ -104,6 +105,10 @@
             ProfilMemberComp,
         },
         props: {
+            toolbarDouble: {
+                type: Boolean,
+                default: false,
+            },
             openP: {
                 type: Boolean,
                 default: () => false,

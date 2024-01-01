@@ -178,7 +178,27 @@
                             this.$router.push("/profil");
                         }
                 }
-            }
+            },
+            $route(to, from) {
+                console.log("route-from", from.path, "to", to.path);
+                if(to.path == "/profil/perso/open-add-vehicle"){
+                    this.value = 2;
+                }
+                // switch (to) {
+                //     case '':
+                //         this.$router.push("/search");
+                //         break;
+                //     case 1:
+                //         if(this.$router.currentRoute._rawValue.path != "/publish/select-car"){
+                //             this.$router.push("/publish");
+                //         }
+                //         break;
+                //     default:
+                //         if ( ! this.$router.currentRoute._rawValue.path.includes("/profil") ) {
+                //             this.$router.push("/profil");
+                //         }
+                // }
+            },
         },
     };
 </script>
