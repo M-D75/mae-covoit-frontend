@@ -10,25 +10,26 @@ PODS:
   - CapacitorClipboard (5.0.6):
     - Capacitor
   - CapacitorCordova (5.2.3)
+  - CapacitorFirebaseMessaging (5.3.0):
+    - Capacitor
+    - FirebaseMessaging (= 10.8.0)
   - CapacitorGeolocation (5.0.6):
     - Capacitor
   - CapacitorLocalNotifications (5.0.6):
-    - Capacitor
-  - CapacitorPushNotifications (5.1.0):
     - Capacitor
   - CapacitorShare (5.0.6):
     - Capacitor
   - CapacitorStatusBar (5.0.6):
     - Capacitor
-  - Firebase/CoreOnly (10.19.0):
-    - FirebaseCore (= 10.19.0)
-  - Firebase/Messaging (10.19.0):
+  - Firebase/CoreOnly (10.8.0):
+    - FirebaseCore (= 10.8.0)
+  - Firebase/Messaging (10.8.0):
     - Firebase/CoreOnly
-    - FirebaseMessaging (~> 10.19.0)
-  - FirebaseCore (10.19.0):
+    - FirebaseMessaging (~> 10.8.0)
+  - FirebaseCore (10.8.0):
     - FirebaseCoreInternal (~> 10.0)
-    - GoogleUtilities/Environment (~> 7.12)
-    - GoogleUtilities/Logger (~> 7.12)
+    - GoogleUtilities/Environment (~> 7.8)
+    - GoogleUtilities/Logger (~> 7.8)
   - FirebaseCoreInternal (10.19.0):
     - "GoogleUtilities/NSData+zlib (~> 7.8)"
   - FirebaseInstallations (10.19.0):
@@ -36,10 +37,10 @@ PODS:
     - GoogleUtilities/Environment (~> 7.8)
     - GoogleUtilities/UserDefaults (~> 7.8)
     - PromisesObjC (~> 2.1)
-  - FirebaseMessaging (10.19.0):
+  - FirebaseMessaging (10.8.0):
     - FirebaseCore (~> 10.0)
     - FirebaseInstallations (~> 10.0)
-    - GoogleDataTransport (~> 9.3)
+    - GoogleDataTransport (~> 9.2)
     - GoogleUtilities/AppDelegateSwizzler (~> 7.8)
     - GoogleUtilities/Environment (~> 7.8)
     - GoogleUtilities/Reachability (~> 7.8)
@@ -80,9 +81,9 @@ DEPENDENCIES:
   - "CapacitorCamera (from `../../node_modules/@capacitor/camera`)"
   - "CapacitorClipboard (from `../../node_modules/@capacitor/clipboard`)"
   - "CapacitorCordova (from `../../node_modules/@capacitor/ios`)"
+  - "CapacitorFirebaseMessaging (from `../../node_modules/@capacitor-firebase/messaging`)"
   - "CapacitorGeolocation (from `../../node_modules/@capacitor/geolocation`)"
   - "CapacitorLocalNotifications (from `../../node_modules/@capacitor/local-notifications`)"
-  - "CapacitorPushNotifications (from `../../node_modules/@capacitor/push-notifications`)"
   - "CapacitorShare (from `../../node_modules/@capacitor/share`)"
   - "CapacitorStatusBar (from `../../node_modules/@capacitor/status-bar`)"
   - Firebase/Messaging
@@ -112,12 +113,12 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capacitor/clipboard"
   CapacitorCordova:
     :path: "../../node_modules/@capacitor/ios"
+  CapacitorFirebaseMessaging:
+    :path: "../../node_modules/@capacitor-firebase/messaging"
   CapacitorGeolocation:
     :path: "../../node_modules/@capacitor/geolocation"
   CapacitorLocalNotifications:
     :path: "../../node_modules/@capacitor/local-notifications"
-  CapacitorPushNotifications:
-    :path: "../../node_modules/@capacitor/push-notifications"
   CapacitorShare:
     :path: "../../node_modules/@capacitor/share"
   CapacitorStatusBar:
@@ -130,21 +131,21 @@ SPEC CHECKSUMS:
   CapacitorCamera: 084b0b228bba7d00587910337b1c89e93b1d32ab
   CapacitorClipboard: 77edf49827ea21da2a9c05c690a4a6a4d07199c4
   CapacitorCordova: 35def3ebfdef491f0a7b652816eb873ff4b20bbf
+  CapacitorFirebaseMessaging: 1da1774c4545c4457e3d09d09db66eec7602fb1c
   CapacitorGeolocation: 7be5f77abc205c0efe319fff8587a7183e7b0240
   CapacitorLocalNotifications: c2d8b14794064fd4814b1d6c4ddbac8029afa295
-  CapacitorPushNotifications: b31e326c6e4eb216a622041d6ca21a973f34943f
   CapacitorShare: cd41743331cb71d217c029de54b681cbd91e0fcc
   CapacitorStatusBar: 565c0a1ebd79bb40d797606a8992b4a105885309
-  Firebase: 63ce8ece0d43743dc28eacac0c6867a2d7fd5a9d
-  FirebaseCore: dc5c7badf99d47613c52b2e3a57a64cd187f8554
+  Firebase: b49ef44e5ec9a3d0c1f6450f410337e97872279c
+  FirebaseCore: e78636a990b54be427ce300aa09a0e359f4e0e87
   FirebaseCoreInternal: b444828ea7cfd594fca83046b95db98a2be4f290
   FirebaseInstallations: 033d199474164db20c8350736842a94fe717b960
-  FirebaseMessaging: d322bd030a0e97398bf134746e087b88e6ba0074
+  FirebaseMessaging: 16c395d01ecd269357c5b86abe662851fff98236
   GoogleDataTransport: 57c22343ab29bc686febbf7cbb13bad167c2d8fe
   GoogleUtilities: 0759d1a57ebb953965c2dfe0ba4c82e95ccc2e34
   nanopb: d4d75c12cd1316f4a64e3c6963f879ecd4b5e0d5
   PromisesObjC: c50d2056b5253dadbd6c2bea79b0674bd5a52fa4
 
-PODFILE CHECKSUM: 5317671cbcd6406456dcf9dfa63a9f2e42a6d931
+PODFILE CHECKSUM: ba40ee4febf9e9e5df0df7dd9a3faa3f926c4a21
 
 COCOAPODS: 1.14.3

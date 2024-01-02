@@ -1316,45 +1316,55 @@
             this.sizeScreen = $(window).innerHeight();
             this.y = this.sizeScreen;
 
-            //init price recomended
-            this.priceRecomended.min = arrondirSpecial(this.priceRecommended);
-            this.priceRecomended.max = arrondirSpecial(this.priceRecommended)+1;
-            
             const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
             $(classBottomMenuNameJquery).css("top", `${this.y}px`);
             
             const classSubContNameJquery = this.className != "" && this.className != null ? `.sub-cont.${this.className.join(".")}` : ".sub-cont";
             this.subContHeigth = $(classSubContNameJquery)[0].clientHeight;
 
-            // console.log("Mounted BottomMenu : classe-name", this.className, "screen-height", this.sizeScreen, "subContHeigth", this.subContHeigth, "object", $(classSubContNameJquery));
+            // reopen When size changed
+            this.resizeObserver = new ResizeObserver(() => {
+                // for (let entry of entries) {
+                    // const { height } = entry.contentRect;
+                    const classSubContNameJquery = this.className != "" && this.className != null ? `.sub-cont.${this.className.join(".")}` : ".sub-cont";
+                    if( $(classSubContNameJquery) && $(classSubContNameJquery).length > 0 ){
+                        this.subContHeigth = $(classSubContNameJquery)[0].clientHeight;
+                        if(this.open_b){
+                            setTimeout(function(){
+                                this.reOpenB();
+                            }.bind(this), 500);
+                        }
+                    }
 
+                    // console.log(`La hauteur de l'élément est maintenant : ${height}`);
+                // }
+            });
+
+            if (this.$refs.subCont) {
+                this.resizeObserver.observe(this.$refs.subCont);
+            }
+
+            // console.log("Mounted BottomMenu : classe-name", this.className, "screen-height", this.sizeScreen, "subContHeigth", this.subContHeigth, "object", $(classSubContNameJquery));
             const classSubContSupNameJquery = this.className != "" && this.className != null ? `.sub-cont-sup.${this.className.join(".")}` : ".sub-cont-sup";
             this.subContSupHeigth = $(classSubContSupNameJquery)[0].clientHeight;
 
             // console.log("this.subContSupHeigth", this.subContSupHeigth, $(classSubContSupNameJquery));
-
-            // if( this.mode=="notification" ){
-            //     this.open();
-            // }
-            // else {
-                $(classBottomMenuNameJquery).addClass("closed");
-            // }
+            $(classBottomMenuNameJquery).addClass("closed");
             
-            $("div.sub-label-color").addClass("warn-good-to-low");
-            // if(this.mode=="password"){
-            //     this.open();
-            //     this.messageSnackbarError = "test";
-            //     this.showSnackbarError = true;
-            // }
-
-            //weeks
-            if( this.mode == 'select-week' ){
-                let numWeekCurrent = getISOWeekNumber(new Date())
-                for (let index = 0; index < 4; index++) {
-                    console.log(numWeekCurrent);
-                    this.weeksSelected[index].week = `S${numWeekCurrent}`;
-                    numWeekCurrent = (numWeekCurrent + 1) % 52 == 0 ? 52 : (numWeekCurrent + 1) % 52;
-                }
+            // init en fonction d mode
+            if (this.mode == 'select-week') {
+                    let numWeekCurrent = getISOWeekNumber(new Date())
+                    for (let index = 0; index < 4; index++) {
+                        // console.log("numWeekCurrent", numWeekCurrent);
+                        this.weeksSelected[index].week = `S${numWeekCurrent}`;
+                        numWeekCurrent = (numWeekCurrent + 1) % 52 == 0 ? 52 : (numWeekCurrent + 1) % 52;
+                    }
+            }
+            else if (this.mode == 'select-price'){
+                    //init price recomended
+                    this.priceRecomended.min = arrondirSpecial(this.priceRecommended);
+                    this.priceRecomended.max = arrondirSpecial(this.priceRecommended)+1;
+                    $("div.sub-label-color").addClass("warn-good-to-low");
             }
         },
         methods: {
@@ -1774,8 +1784,6 @@
                     this.paymentIntentId = paymentIntent.id;
                     if(this.paymentIntentId == null)
                         this.paymentIntentId = paymentIntent.id;
-                    else
-                        this.open();
 
                     console.log("paymentIntent [OK]", paymentIntent);
                     
@@ -1827,7 +1835,8 @@
                     this.close();
                     this.open();
                 }
-            }
+            },
+
         }
    });
 </script>

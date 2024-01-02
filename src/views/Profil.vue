@@ -365,7 +365,7 @@
             }
         },
         beforeMount(){
-            this.checkSessionIn();
+            // this.checkSessionIn();
         },
         mounted(){
             this.switchModeDriverPanneauInfos();

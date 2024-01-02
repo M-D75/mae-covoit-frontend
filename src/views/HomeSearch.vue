@@ -181,6 +181,16 @@
                 this.date = this.$refs.PaneGetValueRef.getDate();
             }
 
+            // this.buildPaymentIntent = true;
+            // this.$nextTick(function(){
+            //     if(this.$refs.BottomMenuPaymentItentRef){
+            //         console.log("open");
+            //         this.$refs.BottomMenuPaymentItentRef.open();
+            //         this.$refs.BottomMenuPaymentItentRef.paymentIntentId = "pi_3OSuTRIKwmrDLewY15HDSoMz";
+            //     }
+            // })
+            
+            
             // this.$refs.PaneApearProfilMemberRef.open()
 
             // const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
@@ -210,6 +220,8 @@
             //     .catch(error => {
             //         console.error('Il y a eu une erreur :', error);
             //     });
+
+
         },
         methods: {
             ...mapMutations("search", ["SET_NB_PASSAGER"]),

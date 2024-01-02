@@ -9,5 +9,10 @@
     "src": "./assets/logo.png",
     "sizes": "1081×1081",
     "type": "image/png"
+  },
+  "plugins": {
+    "FirebaseMessaging": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    }
   }
 }

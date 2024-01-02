@@ -122,6 +122,7 @@
             <div class="label"> {{ modeDriver ? 'Gain' : 'Solde' }} Disponible</div>
             <div class="solde">
                 <v-icon 
+                    class="zoom-bounce"
                     v-if="!modeDriver"
                     @click="emit('up-money')"
                 >mdi-wallet-bifold</v-icon>
