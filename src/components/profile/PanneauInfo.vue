@@ -66,6 +66,9 @@
                     color: var(--font-color-label);
                     font-size: 12px;
                     font-weight: bold;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
                 }
                 .label {
                     color: var(--font-color-label);

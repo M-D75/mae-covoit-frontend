@@ -66,6 +66,8 @@
     import { defineComponent } from 'vue';
     import { mapState } from 'vuex';
 
+    import { formatNumber } from '@/utils/utils.js'
+
     // Components
     import Avatar from '@/components/profile/Avatar.vue';
     import PanneauInfo from '@/components/profile/PanneauInfo.vue';
@@ -79,6 +81,10 @@
                 avatar: state => state.member.avatar,
                 userName: state => state.member.userName,
                 location: state => state.member.location,
+                // notation
+                nbTrip: state => state.member.notation.nbTrip,
+                avis: state => state.member.notation.avis,
+                satisfaction: state => state.member.notation.satisfaction,
             }),
             ...mapState("trip", {
                 preferences: state => state.member.preferences,
@@ -104,17 +110,17 @@
                     {
                         btn:false,
                         label: "expert",
-                        text:"niveau",
+                        text:"trajets",
                     },
                     {
                         btn:false,
-                        label:"4/5",
+                        label:"0/5",
                         text:"avis",
                     },
                     {
                         btn:false,
-                        label:"bonne",
-                        text:"conduite",
+                        label:"0%",
+                        text:"satisfaction",
                     },
                 ],
                 groupeParameters: [
@@ -205,6 +211,9 @@
                 console.log("pref modifierd");
                 this.updateGrouparameterPreference();
             },
+            nbTrip(){
+                this.infos_panneau[0].label = formatNumber(this.nbTrip);
+            }
         }
     });
 </script>

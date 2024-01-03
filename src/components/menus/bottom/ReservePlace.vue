@@ -14,6 +14,53 @@
         font-size: 1.7em;
         margin: 0 !important;
     }
+
+    .v-dialog.car-info {
+        .v-overlay__content{
+            .v-card.car-info {
+                background-color: var(--bg-app-color);
+                .v-toolbar{
+                    background-color: var(--bg-app-color);
+                    color: var(--font-color-label);
+                }
+                .v-list {
+                    background-color: var(--bg-app-color);
+                    .v-field__field {
+                        background-color: var(--bg-app-color);
+                        color: var(--font-color-label);
+                    }
+
+                    .v-list-item:nth-child(2) {
+                        border-bottom: 1px solid #11100022 !important;
+                        border-top: 1px solid #11100022 !important;
+                    }
+
+                    .v-list-item {
+                        .v-list-item__content {
+                            color: var(--font-color-label);
+                            .v-list-item-title {
+                                text-transform: capitalize;
+                            }
+                        }
+                        .v-list-item__prepend {
+                            .v-icon {
+                                font-weight: bold;
+                                color: var(--gray-icon-color);
+                            }
+                        }
+                        .v-list-item__append {
+                            color: var(--font-color-label);
+                            .v-chip {
+                                border-radius: 100px;
+                                width: 24px;
+                                height: 24px;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 </style>
 
 <!-- scoped -->
@@ -64,6 +111,8 @@
         }
     }
 
+   
+
 </style>
 
 <template>
@@ -75,7 +124,8 @@
         <v-list-item
             class="car"
             :prepend-icon="car.icon"
-            :title="car.model"
+            :title="car.license_plate"
+            @click="carInfoIsOpen = true;"
         >
             <v-chip
                 class="ma-2 prix"
@@ -122,6 +172,107 @@
         </v-btn>
     </v-card>
 
+
+    <v-dialog
+        v-model="carInfoIsOpen"
+        class="car-info"
+        :class="{'dark-mode': darkMode, 'ligth-mode': !darkMode}"
+        style="z-index: 10000;"
+    >
+        <v-card class="car-info mx-auto">
+            <v-toolbar color="gray" title="Véhicule"></v-toolbar>
+            <v-list>    
+                <!-- color -->
+                <v-list-item
+                    title="couleur"
+                >
+                    <template v-slot:prepend>
+                        <v-icon
+                            icon="mdi-palette"
+                            color="gray"
+                        />
+                    </template>
+            
+                    <template v-slot:append>
+                        <v-chip
+                            class="ma-2 prix"
+                            :color="car.color"
+                            label
+                        />
+                    </template>
+                </v-list-item>
+
+                <!-- plaque -->
+                <v-list-item
+                    title="plaque"
+                >
+                    <template v-slot:prepend>
+                        <v-icon
+                            icon="mdi-card-account-details"
+                            color="gray"
+                        />
+                    </template>
+            
+                    <template v-slot:append>
+                        <span
+                            variant="text"
+                        >{{ car.license_plate }}</span>
+                    </template>
+                </v-list-item>
+
+                <!-- model -->
+                <v-list-item
+                    title="carrosserie"
+                >
+                    <template v-slot:prepend>
+                        <v-icon
+                            :icon="car.icon"
+                            color="gray"
+                        />
+                    </template>
+            
+                    <template v-slot:append>
+                        <span
+                            variant="text"
+                        >{{ car.model }}</span>
+                    </template>
+                </v-list-item>
+
+                <!-- brand -->
+                <!-- <v-list-item
+                    title="marque"
+                >
+                    <template v-slot:prepend>
+                        <v-icon
+                            icon
+                            color="gray"
+                        ><font-awesome-icon :icon="['fas', 'copyright']" /></v-icon>
+                    </template>
+            
+                    <template v-slot:append>
+                        <v-btn
+                            variant="text"
+                        >{{ car.brand }}</v-btn>
+                    </template>
+                </v-list-item> -->
+            </v-list>
+
+            <div class="contain-btn">
+                <v-btn
+                    class="search-btn mr-4 text-none"
+                    rounded="xl" 
+                    size="x-large"
+                    variant="plain"
+                    block
+                    @click="carInfoIsOpen = false;"
+                >
+                    OK
+                </v-btn>
+            </div>
+
+        </v-card>
+    </v-dialog>
+
     <!-- message error -->
     <v-snackbar
         v-model="showSnackbarError"
@@ -161,22 +312,25 @@
         name: 'reserve-place-menu-comp',
         emits: ["test-notif-success", "no-source-founded"],
         computed: {
-            ...mapState("profil", ["userUid", "notification", "soldes", "customer_id"]),
+            ...mapState("profil", ["userUid", "notification", "soldes", "customer_id", "darkMode"]),
             ...mapState("auth", ["customer_id"]),
             ...mapState("search", ["trajetSelected"]),
             ...mapActions("search", ["reserveTrajet"]),
         },
         data() {
             return {
+                carInfoIsOpen: false,
                 showSnackbarError: false,
                 messageSnackbarError: "",
                 overlayLoad: false,
                 message: "",
                 accepted: false,
                 car: {
-                    model: "AUCUN VEHICUL",
+                    model: "AUCUN VEHICULE",
                     color: 'var(--bg-app-color)',
                     icon: "mdi-car-off",
+                    brand: 'VW-GOLF',
+                    license_plate: "XX-000-XX",
                 },
                 infosModelVehicul: [
                     {model: "Moto", color: "silver", icon:"mdi-motorbike", maxSeats:1},
@@ -198,6 +352,9 @@
             updateCar(){
                 if ( Object.keys(this.trajetSelected).length > 0 && this.trajetSelected.car ) {
                     this.car.model = this.trajetSelected.car.brand != "UNKNOWN" ? this.trajetSelected.car.brand : this.trajetSelected.car.license_plate;
+                    this.car.model = this.trajetSelected.car.model;
+                    this.car.brand = this.trajetSelected.car.brand;
+                    this.car.license_plate = this.trajetSelected.car.license_plate;
                     this.car.color = this.trajetSelected.car.color;
                     this.car.icon = this.infosModelVehicul.find((car) => car.model == this.trajetSelected.car.model).icon;
                 }

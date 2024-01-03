@@ -287,7 +287,7 @@ export default {
                 const _trip  = {
                     id: trip.id,
                     driver_id: trip.driver_id,
-                    name: trip.account.firstname,
+                    name: `${trip.account.firstname} ${trip.account.lastname}`,
                     avatar: trip.account.avatar,
                     depart: getters.GET_VILLAGE_BY_ID(trip.village_departure_id),
                     destination: getters.GET_VILLAGE_BY_ID(trip.village_arrival_id),
@@ -304,7 +304,7 @@ export default {
                 _trips.push(_trip);
             }
 
-            console.log("trips-search:", _trips)
+            console.log("trips-search:", _trips);
             
             commit('SET_TRAJETS', _trips);
 

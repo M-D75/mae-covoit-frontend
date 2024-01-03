@@ -69,6 +69,8 @@
                 :toolbar-double="toolbarDouble"
                 v-on:go-back="close()"
             />
+
+            <Identity v-if="mode=='identity'" v-on:close="close()"/>
         </div>
 
     </v-container>
@@ -92,6 +94,7 @@
     import Contacts from '@/components/profile/Contacts.vue';
     // import ProfilMember from '@/views/profil/ProfilMember.vue';
     import ProfilMemberComp from './profile/ProfilMemberComp.vue';
+    import Identity from './profile/Identity.vue';
     
     export default defineComponent({
         name: 'pan-apear-comp',
@@ -103,6 +106,7 @@
             Contacts,
             // ProfilMember,
             ProfilMemberComp,
+            Identity,
         },
         props: {
             toolbarDouble: {

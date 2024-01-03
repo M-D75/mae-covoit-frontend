@@ -8,6 +8,15 @@
         .pile-search {
             z-index: 0 !important;
         }
+
+        .v-col{
+            .v-img{
+                img{
+                    position: absolute;
+                    top: 23px;
+                }
+            }
+        }
     }
 
     .v-btn.map-btn{
@@ -28,6 +37,8 @@
                 padding: 0 39px 0px 39px;
                 margin: auto;
             }
+
+            
         }
     }
 
@@ -58,11 +69,11 @@
             <!-- image -->
             <v-col>
                 <v-img
-                style="margin: auto;"
-                :width="200"
-                aspect-ratio="16/9"
-                cover
-                src="@/assets/car-removebg-preview.png"
+                    style="margin: auto; z-index: 24; overflow: visible;"
+                    :width="200"
+                    aspect-ratio="16/9"
+                    cover
+                    src="@/assets/car-removebg-preview.png"
                 ></v-img>
             </v-col>
         </v-row>

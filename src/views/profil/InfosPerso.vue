@@ -43,6 +43,8 @@
         />
 
     </v-main>
+
+    <PaneApear ref="PaneApearIdentityRef" mode="identity"/>
     <!-- <BottomNav /> -->
 </template>
 
@@ -53,12 +55,15 @@
     import { defineComponent } from 'vue';
     import { mapState, mapActions } from 'vuex';
 
+
+    import { formatNumber } from '@/utils/utils.js'
+
     // Components
     import ToolbarProfil from '@/components/menus/head/ToolbarProfil.vue';
     import Avatar from '@/components/profile/Avatar.vue';
     import PanneauInfo from '@/components/profile/PanneauInfo.vue';
     import GroupCard from '@/components/menus/setting/GroupCard.vue';
-    // import BottomNav from '@/components/menus/BottomNav.vue';
+    import PaneApear from '@/components/PaneApear.vue';
     import BottomMenu from '@/components/menus/BottomMenu.vue';
 
     export default defineComponent({
@@ -67,6 +72,7 @@
             ...mapState("profil", ["profil", "userName", "modeDriver", "avatarUrl", "auto_accept_trip", "cars"]),
             ...mapState("profil", {
                 preferences: state => state.profil.infos_perso.preferences,
+                nbTrip: state => state.profil.nbTrip,
             }),
         },
         components: {
@@ -74,7 +80,7 @@
             Avatar,
             PanneauInfo,
             GroupCard,
-            // BottomNav,
+            PaneApear,
             BottomMenu,
         },
         props: {
@@ -87,18 +93,18 @@
                 infos_panneau: [
                     {
                         btn: false,
-                        label: "expert",
-                        text: "niveau",
+                        label: "0",
+                        text: "TRAJETS",
                     },
                     {
                         btn: false,
-                        label: "4/5",
+                        label: "0/5",
                         text: "avis",
                     },
                     {
                         btn: false,
-                        label: "bonne",
-                        text: "conduite",
+                        label: "0%",
+                        text: "satisfaction",
                     },
                 ],
                 groupeParameters: [
@@ -111,7 +117,8 @@
                                 text: "Identité & coordonnées",
                                 chip: true,
                                 chipIcon: null,
-                                chipText: "3/3",
+                                chipText: "1/3",
+                                fun: () => { this.$refs.PaneApearIdentityRef.open() },
                             },
                         ],
                         disable: false,
@@ -212,11 +219,13 @@
             this.updateGrouparameterPreference();
             this.switchModeDriverGroupParameters();
             // this.updateCar();
+
+            this.getNotation();
         },
         methods: {
-            ...mapActions("profil", ["updateAutoValidation", "getCars"]),
+            ...mapActions("profil", ["updateAutoValidation", "getCars", "getNotation"]),
             updateAutoValidation() {
-                console.log("updateAutoValidation==");
+                console.log("updateAutoValidation:");
                 this.updateAutoValidation();
             },
             selectModel() {
@@ -293,6 +302,9 @@
             modeDriver() {
                 this.switchModeDriverGroupParameters();
             },
+            nbTrip(){
+                this.infos_panneau[0].label = formatNumber(this.nbTrip);
+            }
         }
     });
 </script>

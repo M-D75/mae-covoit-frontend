@@ -26,6 +26,7 @@ export default createStore({
                 'auth.customer_id',
                 'auth.customer',
                 'general.isNative',
+                'profil.cguAccepted',
                 'profil.auto_accept_trip',
                 'profil.profil.infos_perso',
                 'profil.notification',

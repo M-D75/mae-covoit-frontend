@@ -437,7 +437,7 @@
 
                 let { data, error } = {data: null, error: null}
                 if( isAndroid || isIOS ){
-                    //Android
+                    //Android & IOS
                     ({ data, error } = await this.supabase.auth.signInWithOAuth({
                         provider: service,
                         options: {

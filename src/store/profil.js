@@ -22,7 +22,7 @@ export default {
         auto_accept_trip: true,
         modeCo: "online",
         notification: true,
-        modeDriver: true,
+        modeDriver: false,
         darkMode: false,
         userId: null,
         userUid: "",
@@ -30,12 +30,14 @@ export default {
         avatarUrl: 'https://avataaars.io/?avatarStyle=Circle&topType=ShortHairDreads01&accessoriesType=Blank&hairColor=PastelPink&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Wink&eyebrowType=DefaultNatural&mouthType=Serious&skinColor=Tanned',
         soldes: 0,
         gain: 0,
+        cguAccepted: false,
         credit_card: {
             last4: "0000",
             available: false,
             brand: "",
         },
         profil: {
+            nbTrip: 0,
             infos_perso: {
                 civilite: "Mr.",
                 nom: "Ledou",
@@ -147,9 +149,27 @@ export default {
             console.log("infos----", infos);
             const available = infos.last4 != undefined && infos.last4 != "";
             state.credit_card = {last4: infos.last4, available:  available, brand: infos.brand};
+        },
+        SET_CGU_ACCEPTED(state, bool){
+            console.log("CGU:", bool);
+            state.cguAccepted = bool;
         }
     },
     actions: {
+        async getNotation({state}){
+            const { count, error } = await supabase
+                .from('trip')
+                .select('id', { count: 'exact', head: true })
+                .eq("driver_id", state.userUid);
+
+            if(error){
+                return {status: 1, message: "Erreur"}
+            }
+            // console.log("count", error, count);
+            state.profil.nbTrip = count;
+            return {status: 0, message: "Nombre de trajets:"+state.profil.nbTrip}
+
+        },
         async addCar({state}, infos){
 
             const sessionChecked = await store.dispatch("auth/checkSessionOnly");

@@ -113,7 +113,7 @@
     import { Capacitor } from '@capacitor/core';
     import { Plugins } from '@capacitor/core';
 
-    // import stripe from '@/utils/stripe.js'
+    import stripe from '@/utils/stripe.js'
 
     const { LocalNotifications } = Plugins;
 
@@ -153,47 +153,33 @@
             // cus_P9EoaH2vfbFG6a
             // pi_3OSuTRIKwmrDLewY15HDSoMz
 
-            // if(this.profil.infos_perso.email){
-            //     const account = await stripe.accounts.create({
-            //         type: 'custom',
-            //         country: 'FR',
-            //         email: this.profil.infos_perso.email,
-            //         capabilities: {
-            //             card_payments: {
-            //                 requested: true,
-            //             },
-            //             transfers: {
-            //                 requested: true,
-            //             },
-            //         },
-            //     });
+            if(this.profil.infos_perso.email){
+                const account = await stripe.accounts.create({
+                    type: 'standard',
+                    country: 'FR',
+                    email: this.profil.infos_perso.email,
+                });
 
-            //     console.log("account-bank", account);
+                console.log("account-bank", account);
 
-            //     const external = await stripe.accounts.createExternalAccount(
-            //         account.id,
-            //         {
-            //             external_account: {
-            //                 object: 'bank_account',
-            //                 country: 'FR',
-            //                 currency: 'eur',
-            //                 account_number: 'FR1420041010050500013M02606', // Numéro de compte (RIB)
-            //                 // Autres informations bancaires
-            //             }
-            //         }
-            //     );
+                const external = await stripe.accounts.createExternalAccount(
+                    account.id,
+                    {
+                        external_account: "btok_1NAiJy2eZvKYlo2Cnh6bIs9c",
+                    }
+                );
 
-            //     console.log("external-account-ok", external );
+                console.log("external-account-ok", external );
 
-            //     const transfert = await stripe.transfers.create({
-            //         amount: 1000, // montant en centimes
-            //         currency: 'eur',
-            //         destination: account.id,
-            //         // Autres paramètres du transfert
-            //     });
+                const transfert = await stripe.transfers.create({
+                    amount: 1000, // montant en centimes
+                    currency: 'eur',
+                    destination: account.id,
+                    // Autres paramètres du transfert
+                });
 
-            //     console.log("transfer-ok",transfert );
-            // }
+                console.log("transfer-ok",transfert );
+            }
             // await stripe.paymentIntents.update(
             //     'pi_3OSuTRIKwmrDLewY15HDSoMz',
             //     {

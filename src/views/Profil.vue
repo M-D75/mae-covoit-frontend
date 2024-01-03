@@ -365,7 +365,7 @@
             }
         },
         beforeMount(){
-            // this.checkSessionIn();
+            this.checkSessionIn();
         },
         mounted(){
             this.switchModeDriverPanneauInfos();
@@ -498,21 +498,23 @@
                 const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
 
                 const typeUrl = this.modeCo;
-                axios.post(`${adresse[typeUrl]}/askNewMessage`, {
-                        userId: this.userUid,
-                    })
-                    .then(response => {
-                        console.log("askNewMessage", response.data);
-                        const data = response.data;
+                if(this.infosTravels.length > 0){
+                    axios.post(`${adresse[typeUrl]}/askNewMessage`, {
+                            userId: this.userUid,
+                        })
+                        .then(response => {
+                            console.log("askNewMessage", response.data);
+                            const data = response.data;
 
-                        this.SET_NOT_MESSAGE_VUE(data.idsTrip);
-                        if( this.infosTravels.length > 0){
-                            this.updateNotifMessage();
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Il y a eu une erreur :', error);
-                    });
+                            this.SET_NOT_MESSAGE_VUE(data.idsTrip);
+                            if( this.infosTravels.length > 0){
+                                this.updateNotifMessage();
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Il y a eu une erreur :', error);
+                        });
+                }
             },
             updateNotifMessage(){
                 console.log("updateNotifMessage");

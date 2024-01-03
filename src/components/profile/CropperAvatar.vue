@@ -49,6 +49,7 @@
 
     <!-- Load -->
     <v-overlay
+        style="z-index: 9999;"
         :model-value="overlayLoad"
         disabled
         class="align-center justify-center"
@@ -59,6 +60,22 @@
             size="64"
         ></v-progress-circular>
     </v-overlay>
+
+
+    <!-- message error -->
+    <v-snackbar
+        v-model="showSnackbarError"
+        :timeout="4000"
+        color="error"
+        style="z-index: 99999;"
+    >
+        <div class="contain-ico">
+            <v-icon icon="mdi-alert-circle"></v-icon> 
+        </div>
+        <div>
+            <span>{{ messageSnackbarError }}</span>
+        </div>
+    </v-snackbar>
     
 </template>
 
@@ -88,6 +105,10 @@
                     top: 0,
                 },
                 overlayLoad: false,
+                showSnackbar: {
+                    showError: false,
+                    messageError: "",
+                },
             };
         },
         beforeMount(){
@@ -114,6 +135,8 @@
                     this.overlayLoad = false;
                 } 
                 catch (e) {
+                    this.showSnackbar.messageError = "Désolé veuillez réessayer avec une autre image"
+                    this.showSnackbar.showError = true;
                     console.error('Erreur lors de la tentative de toDataURL', e);
                 }
                 

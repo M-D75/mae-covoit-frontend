@@ -314,7 +314,7 @@
         },
         data() {
             return {
-                filterOpen: true,
+                filterOpen: false,
                 triers: [
                     {
                         id: 0,

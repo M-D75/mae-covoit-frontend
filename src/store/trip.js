@@ -20,6 +20,11 @@ export default {
             userName: "",
             location: "",
             preferences: [],
+            notation: {
+                avis: 0,
+                nbTrip: 0,
+                satisfaction: 0,
+            }
         },
         aboutPreference: {
             discution: [
@@ -215,7 +220,7 @@ export default {
             
             let { data: account, error: error_account } = await supabase
                 .from('account')
-                .select("*")
+                .select(`*, settings(*)`)
                 .eq('user_id', member.userUid)
             
             if(error_account){
@@ -223,20 +228,24 @@ export default {
                 return false;
             }
 
+            // Notation... TODO : add others informations
+            const { count, error: error_count } = await supabase
+                .from('trip')
+                .select('id', { count: 'exact' })
+                .eq("driver_id", member.userUid);
 
-            let { data: settings, error: error_setting } = await supabase
-                .from('settings')
-                .select('*')
-                .eq('account_id', account[0].id)
-        
-            if(error_setting){
-                console.error(error_setting)
-                return false;
+            if(error_count){
+                console.log("Error count: ", error_count);
             }
+            else {
+                state.member.notation.nbTrip = count;
+            }
+
+            const settings = account[0].settings;
             
             if(settings && settings.length > 0){
                 state.member.avatar = account[0].avatar;
-                state.member.userName = account[0].username;
+                state.member.userName = `${account[0].firstname} ${account[0].lastname}`;
                 state.member.location = account[0].village != null && account[0].village != "" ? account[0].village : "";
 
                 let outPreferences = [];

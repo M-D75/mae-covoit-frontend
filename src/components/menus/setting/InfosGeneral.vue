@@ -39,14 +39,29 @@
         <div class="text">{{ text }}</div>
 
         <v-btn
-            v-if="mode=='infos-general'"
+            v-if="mode=='infos-general' && !cguAccepted"
             class="text-none"
             rounded="xl" 
             size="x-large"
             variant="outlined"
             block
+            @click="SET_CGU_ACCEPTED(true)"
         >
             J'accepte
+        </v-btn>
+
+        <v-btn
+            v-if="mode=='infos-general' && cguAccepted"
+            class="text-none"
+            rounded="xl" 
+            size="x-large"
+            variant="plain"
+            block
+        >
+            Approuvé
+            <template v-slot:append>
+                <v-icon class="zoom-bounce" color="success" icon="mdi-check-bold"></v-icon>
+            </template>
         </v-btn>
 
         <v-btn
@@ -60,19 +75,21 @@
             Supprimer mon compte
         </v-btn>
     </div>
-
-    
- 
  </template>
 
 
 
 <script>
+    import { mapMutations, mapState } from 'vuex';
+
 
     // Components
 
     export default {
         name: "infos-general-comp",
+        computed: {
+            ...mapState("profil", ['cguAccepted']),
+        },
         components: {
         },
         props: {
@@ -95,6 +112,9 @@
         },
         mounted() {
         },
+        methods: {
+            ...mapMutations("profil", ["SET_CGU_ACCEPTED"]),
+        }
     };
 </script>
 

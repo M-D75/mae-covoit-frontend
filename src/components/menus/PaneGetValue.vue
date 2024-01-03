@@ -3,6 +3,11 @@
 <style lang="scss" model>
     .v-container {
         .sub-cont {
+            position: relative;
+            .btn-close {
+                color: var(--font-color-label);
+                background-color: var(--bg-app-color);
+            }
             .vc-calendar-pi {
                 box-shadow: none;
                 border: none;
@@ -61,10 +66,21 @@
         class="pan-get-value" 
     >
         <div class="sub-cont" :class="mode=='date' ? 'scrolling' : 'not-scroll'">
+            
+            <v-btn
+                v-if="mode=='date'"
+                class="btn-close"
+                icon="mdi-close"
+                style="position: absolute; left: 0; top: 0;"
+                @click="$emit('close')"
+            />
+
             <div
                 v-if="mode=='date'"
                 class="title text-center"
-            >Quand partez vous ?</div>
+            >
+                Quand partez vous ?
+            </div>
 
             <VDatePickerIo
                 v-if="mode=='date'"
