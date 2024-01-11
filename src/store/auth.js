@@ -10,7 +10,10 @@ export default {
     namespaced: true,
     state: {
         userId: "",
+        //stripe
         customer_id: "",
+        provider_id: "", //id compte stipe connect
+        provider: null,
         customer: null,
         logged_in: false,
         account_created: false,
@@ -98,8 +101,6 @@ export default {
                 state.provider = user.app_metadata.provider;
                 console.log('User is already connected:', user);
 
-                
-
                 //Check if account are created
                 let { data: account, error: error_account } = await supabase
                     .from('account')
@@ -159,6 +160,32 @@ export default {
                                     throw error;
                                 }
                             }
+                        }
+
+                        //***************
+                        // Create or retrieve provider
+                        if( account[0].provider_id == null ){
+                            console.log("create new provider");
+                            // strip provider
+                            const provider = await stripe.accounts.create({
+                                type: 'standard',
+                                country: 'FR',
+                                email: user.email,
+                            });
+
+                            console.log("new provider:", provider);
+                            await supabase
+                                .from('account')
+                                .update({ provider_id: provider.id })
+                                .eq('user_id', user.id)
+                                .select();
+                        }
+                        else{
+                            const provider = await stripe.accounts.retrieve(account[0].provider_id);
+                            console.log("retrieve provider:", provider);
+                            state.provider_id = provider.id;
+                            state.provider = provider;
+                            store.state.profil.payouts_enabled = provider.payouts_enabled;
                         }
                     }
                     else{

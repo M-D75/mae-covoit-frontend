@@ -588,7 +588,6 @@
                             _tmp_village = this.getVillagesByName(this.itineraire.destination.infos.village);
                             this.setItineraire("destination", _tmp_village);
                             console.log("Name dest", this.itineraire.destination)
-                            //ici--
                             _tmp_village_orig = this.getVillagesByName(this.itineraire.origin.infos.village);
                             result = await this.getPriceRecommended({orig_id: _tmp_village_orig.id, dest_id: _tmp_village.id});
                             if( result.status != 0 ){

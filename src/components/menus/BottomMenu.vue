@@ -682,7 +682,7 @@
                 <div class="label text-center">{{ labelSelectorN1 }}</div>
                 <!-- <div class="sub-label-color" :class="{warning_yellow: warn=='low', warning_red: warn=='bad'}">prix recommandé : 2 à 3 €</div> -->
                 <div class="sub-label-color">prix recommandé : {{ priceRecomended.min }} à {{ priceRecomended.max }} €</div>
-                <SelectNumber ref="SelectNumberRef" icon="mdi-currency-eur" :min="1" :max="8" v-on:number-changed="selectNumber()" />
+                <SelectNumber ref="SelectNumberRef" icon="mdi-currency-eur" :min="1" :max="8" :initNumber="priceRecommended" v-on:number-changed="selectNumber()" />
                 <v-btn 
                     class="text-none"
                     rounded="xl" 
@@ -732,8 +732,14 @@
                     size="x-large"
                     variant="outlined"
                     block
+                    :loading="loadingBtn"
                     @click="recharger()"
-                >{{ upMoneyObj.btn }}</v-btn>
+                >
+                    {{ upMoneyObj.btn }}
+                    <template v-slot:loader>
+                        <v-progress-circular indeterminate></v-progress-circular>
+                    </template>
+                </v-btn>
             </div>
             <Notification 
                 v-if="mode=='confirme-up-money'"
@@ -1243,6 +1249,7 @@
         data() {
             return {
                 loading: false,
+                loadingBtn: false,
                 numericValues: ['', '', '', '', '', '', ''],
                 x: 0,
                 y: 0,
@@ -1614,6 +1621,7 @@
             },
             async recharger(){
                 console.log("number-up", this.$refs.SelectNumberRef.number);
+                this.loadingBtn = true;
                 // TODO : get value
                 if(!this.modeDriver){
                     // check-source
@@ -1648,9 +1656,11 @@
                             this.$emit("payment-intent-recharge");
                         } 
                         catch (error) {
+                            this.loadingBtn = false;
                             console.error("Erreur lors de la création de l'intention de paiement:", error);
                             return {valided: false, status: 2, message: "Une erreur s'est produite lors du prélevement sur votre card de credit, veuillez réessayer plus tard."};
                         }
+                        this.loadingBtn = false;
                         
                         this.overlayLoad = false;
                         return;
@@ -1667,6 +1677,7 @@
                             this.showSnackbarError = true;
                         }
                     }
+                    this.loadingBtn = false;
                 }
                 else{
                     const result = await this.transfertGain({credit: this.$refs.SelectNumberRef.number});

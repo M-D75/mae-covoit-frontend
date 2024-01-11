@@ -218,7 +218,7 @@
             //this.$refs.BottomMenuRefPreference.open();
             this.updateGrouparameterPreference();
             this.switchModeDriverGroupParameters();
-            // this.updateCar();
+            this.updateCar();
 
             this.getNotation();
         },

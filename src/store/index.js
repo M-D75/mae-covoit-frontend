@@ -27,6 +27,7 @@ export default createStore({
                 'auth.customer',
                 'general.isNative',
                 'profil.cguAccepted',
+                'profil.payouts_enabled',
                 'profil.auto_accept_trip',
                 'profil.profil.infos_perso',
                 'profil.notification',

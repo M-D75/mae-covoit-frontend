@@ -31,6 +31,7 @@ export default {
         soldes: 0,
         gain: 0,
         cguAccepted: false,
+        payouts_enabled: false,
         credit_card: {
             last4: "0000",
             available: false,

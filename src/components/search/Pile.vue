@@ -221,8 +221,8 @@
                 this.info = {};
                 this.load = true;
 
-                await this.getTrajets();
-                // await this.getTrajetsFake();
+                // await this.getTrajets();
+                await this.getTrajetsFake();
                 
                 setTimeout(function(){
 

@@ -13,6 +13,7 @@
                             .v-avatar {
                                 .v-icon {
                                     font-size: 35px;
+                                    color: var(--font-color-label);
                                 }
                             }
                         }
@@ -42,14 +43,11 @@
         .v-row{
             .v-card{
                 width: 90%;
+                color: var(--font-color-label);
+                background-color: var(--white-bg-color);
                 .v-card-item {
-                    .v-card-item__prepend {
-                        .v-avatar {
-                            .v-icon {
-                                font-size: 35px;
-                            }
-                        }
-                    }
+                    color: var(--font-color-label);
+                    background-color: var(--white-bg-color);
                 }
             }
         }
@@ -105,9 +103,10 @@
                 <v-card
                     class="mx-auto"
                     max-width="344"
-                    title="Permis de conduire"
-                    subtitle="Aucun permis de conduire"
+                    title="Identité"
+                    subtitle="Identité non vérifiée"
                     prepend-icon="mdi-card-account-details-outline"
+                    @click="checkIdentity()"
                 >
                     <template v-slot:append>
                         <v-btn
@@ -127,8 +126,8 @@
                 <v-card
                     class="mx-auto"
                     max-width="344"
-                    title="RIB"
-                    subtitle="Aucun RIB"
+                    title="Banque"
+                    subtitle="Aucun RIB enregistré"
                     prepend-icon="mdi-bank-outline"
                 >
                     <template v-slot:append>
@@ -141,41 +140,6 @@
                 </v-card>
             </v-col>
         </v-row>
-
-        <!-- <v-row>
-            <v-file-input
-                v-model="files"
-                color="deep-purple-accent-4"
-                counter
-                label="File input"
-                multiple
-                placeholder="Select your files"
-                prepend-icon="mdi-paperclip"
-                variant="outlined"
-                :show-size="1000"
-            >
-                <template v-slot:selection="{ fileNames }">
-                <template v-for="(fileName, index) in fileNames" :key="fileName">
-                    <v-chip
-                    v-if="index < 2"
-                    color="deep-purple-accent-4"
-                    label
-                    size="small"
-                    class="me-2"
-                    >
-                    {{ fileName }}
-                    </v-chip>
-
-                    <span
-                    v-else-if="index === 2"
-                    class="text-overline text-grey-darken-3 mx-2"
-                    >
-                    +{{ files.length - 2 }} File(s)
-                    </span>
-                </template>
-                </template>
-            </v-file-input>
-        </v-row> -->
     </v-main>
 
 </template>
@@ -185,7 +149,11 @@
 <!--  -->
 <script>
     import { defineComponent } from 'vue';
-    // import { mapMutations, mapState } from 'vuex';
+    import { mapState } from 'vuex';
+
+    let stripePromise;
+
+    import stripe from '@/utils/stripe.js'
 
     // Components
     // ...
@@ -194,6 +162,7 @@
         name: 'identity-comp',
         emits: ["close"],
         computed: {
+            ...mapState("profil", ["userUid"]),
         },
         components: {
         },
@@ -201,10 +170,63 @@
         },
         data() {
             return {
-                files: [],
+                clientSecret: "",
+                id: "",
             }
         },
         methods: {
+            async retrieveIdentity(){
+                // "vs_1OW66BIKwmrDLewYEKwIzTHW"
+                const verificationSession = await stripe.identity.verificationSessions.retrieve(
+                    'vs_1OW68UIKwmrDLewYIQhqapUR'
+                );
+                console.log("verificationSession", verificationSession);
+                this.clientSecret = verificationSession.client_secret;
+                const stripePK = await stripePromise;
+                stripePK.verifyIdentity(this.clientSecret).then((resu) => {
+                    console.log("resu", resu);
+                });
+                // console.log("res:", res);
+                // const verificationSession2 = await stripe.identity.verificationSessions.retrieve(
+                //     'vs_1OW68UIKwmrDLewYIQhqapUR'
+                // );
+                // console.log("verificationSession2", verificationSession2);
+
+            },
+            async checkIdentity(){
+                // await this.retrieveIdentity();
+                // back-end create verification
+                const verificationSession = await stripe.identity.verificationSessions.create({
+                    type: 'document',
+                    metadata: {
+                        user_id: this.userUid,
+                    },
+                });
+
+                this.clientSecret = verificationSession.client_secret;
+                this.id = verificationSession.id;
+                console.log("clientSecret", this.clientSecret);
+
+                const stripePK = await stripePromise;
+                stripePK.verifyIdentity(this.clientSecret).then((res) => {
+                    console.log("resu", res);
+                    this.recheck(this.id)
+                });
+            },
+            async recheck(id){
+                console.log("recheck", id);
+                const verificationSession2 = await stripe.identity.verificationSessions.retrieve(
+                    id
+                );
+                console.log("verificationSession2", verificationSession2);
+            }
+        },
+        async mounted(){
+            //dynamic
+            if (!stripePromise) {
+                const { loadStripe } = await import('@stripe/stripe-js');
+                stripePromise = loadStripe(process.env.VUE_APP_API_STRIPE_PK);
+            }
         }
     });
 </script>

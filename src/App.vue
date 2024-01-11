@@ -113,7 +113,7 @@
     import { Capacitor } from '@capacitor/core';
     import { Plugins } from '@capacitor/core';
 
-    import stripe from '@/utils/stripe.js'
+    // import stripe from '@/utils/stripe.js'
 
     const { LocalNotifications } = Plugins;
 
@@ -153,33 +153,58 @@
             // cus_P9EoaH2vfbFG6a
             // pi_3OSuTRIKwmrDLewY15HDSoMz
 
-            if(this.profil.infos_perso.email){
-                const account = await stripe.accounts.create({
-                    type: 'standard',
-                    country: 'FR',
-                    email: this.profil.infos_perso.email,
-                });
+            // acct_1OUWQcI3Nt412vf3
 
-                console.log("account-bank", account);
+            // const account = await stripe.accounts.retrieve('acct_1OUWQcI3Nt412vf3');
 
-                const external = await stripe.accounts.createExternalAccount(
-                    account.id,
-                    {
-                        external_account: "btok_1NAiJy2eZvKYlo2Cnh6bIs9c",
-                    }
-                );
 
-                console.log("external-account-ok", external );
+            // await stripe.charges.create({
+            //     amount: 2000, // Montant en centimes (ex. 2000 pour 20 EUR/USD)
+            //     currency: 'eur', // ou 'usd', etc.
+            //     source: 'tok_bypassPending', // ou un autre token de carte de test approprié
+            //     description: 'Charge de test pour augmenter le solde',
+            // });
 
-                const transfert = await stripe.transfers.create({
-                    amount: 1000, // montant en centimes
-                    currency: 'eur',
-                    destination: account.id,
-                    // Autres paramètres du transfert
-                });
 
-                console.log("transfer-ok",transfert );
-            }
+            // const balance = await stripe.balance.retrieve();
+            // console.log("balance", balance);
+
+            // const accountLink = await stripe.accountLinks.create({
+            //     account: 'acct_1OUWQcI3Nt412vf3', // ID du compte Stripe de l'utilisateur
+            //     refresh_url: 'http://localhost:8080/reauth',
+            //     return_url: 'http://localhost:8080/dashboard',
+            //     type: 'account_onboarding',
+            // });
+
+            // window.location.href = accountLink.url;
+
+            // if(this.profil.infos_perso.email){
+            //     // const account = await stripe.accounts.create({
+            //     //     type: 'standard',
+            //     //     country: 'FR',
+            //     //     email: this.profil.infos_perso.email,
+            //     // });
+
+            //     // console.log("account-bank", account);
+
+            //     // const external = await stripe.accounts.createExternalAccount(
+            //     //     account.id,
+            //     //     {
+            //     //         external_account: "btok_1NAiJy2eZvKYlo2Cnh6bIs9c",
+            //     //     }
+            //     // );
+
+            //     // console.log("external-account-ok", external );
+
+            //     const transfert = await stripe.transfers.create({
+            //         amount: 1000, // montant en centimes
+            //         currency: 'eur',
+            //         destination: account.id,
+            //         // Autres paramètres du transfert
+            //     });
+
+            //     console.log("transfer-ok",transfert );
+            // }
             // await stripe.paymentIntents.update(
             //     'pi_3OSuTRIKwmrDLewY15HDSoMz',
             //     {

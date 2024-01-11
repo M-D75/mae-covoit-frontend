@@ -134,6 +134,7 @@
 <script>
     import { defineComponent } from 'vue';
     import $ from 'jquery';
+    import { arrondirSpecial } from '@/utils/utils.js';
 
     // Components
     //...
@@ -175,7 +176,7 @@
             this.numbers = Array.from({ length: parseInt(this.max) }, (_, i) => (parseInt(i+parseInt(this.min)) ))
             
             if( this.initNumber >= this.numbers[0] )
-                this.number = this.initNumber;
+                this.number = arrondirSpecial(this.initNumber);
             else
                 this.number = this.numbers[0];
 
