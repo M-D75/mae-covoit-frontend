@@ -29,6 +29,7 @@ export default createStore({
                 'profil.cguAccepted',
                 'profil.payouts_enabled',
                 'profil.auto_accept_trip',
+                'profil.identity',
                 'profil.profil.infos_perso',
                 'profil.notification',
                 'profil.modeDriver',

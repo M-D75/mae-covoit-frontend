@@ -69,7 +69,7 @@
     export default defineComponent({
         name: 'infos-profil-view',
         computed: {
-            ...mapState("profil", ["profil", "userName", "modeDriver", "avatarUrl", "auto_accept_trip", "cars"]),
+            ...mapState("profil", ["profil", "userName", "modeDriver", "avatarUrl", "auto_accept_trip", "cars", "payouts_enabled", "identity"]),
             ...mapState("profil", {
                 preferences: state => state.profil.infos_perso.preferences,
                 nbTrip: state => state.profil.nbTrip,
@@ -221,6 +221,11 @@
             this.updateCar();
 
             this.getNotation();
+
+            if(this.payouts_enabled || this.identity)
+                this.groupeParameters[0].parameters[0].chipText = "2/3";
+            if(this.payouts_enabled && this.identity)
+                this.groupeParameters[0].parameters[0].chipText = "3/3";
         },
         methods: {
             ...mapActions("profil", ["updateAutoValidation", "getCars", "getNotation"]),

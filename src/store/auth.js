@@ -13,11 +13,10 @@ export default {
         //stripe
         customer_id: "",
         provider_id: "", //id compte stipe connect
-        provider: null,
+        stripe_provider: null,
         customer: null,
         logged_in: false,
         account_created: false,
-        provider: "",
         // device Id pour Android, IOS
         registerDeviceToken: "",
     },
@@ -110,8 +109,10 @@ export default {
                     `)
                     .eq('user_id', user.id)
 
-                if(account && account.length > 0)
+                if(account && account.length > 0){
                     store.state.profil.auto_accept_trip = account[0].settings[0].auto_accept_trip;
+                    store.state.profil.identity = account[0].identity;
+                }
 
                 console.log("Account", account);
 
@@ -184,7 +185,7 @@ export default {
                             const provider = await stripe.accounts.retrieve(account[0].provider_id);
                             console.log("retrieve provider:", provider);
                             state.provider_id = provider.id;
-                            state.provider = provider;
+                            state.stripe_provider = provider;
                             store.state.profil.payouts_enabled = provider.payouts_enabled;
                         }
                     }

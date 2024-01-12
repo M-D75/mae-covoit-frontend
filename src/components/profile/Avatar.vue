@@ -93,7 +93,7 @@
             </v-avatar>
 
             <v-icon
-                v-if="!modeEdit"
+                v-if="!modeEdit && identity"
                 class="badge-cerification zoom-bounce"
             >
                 mdi-shield-check
@@ -117,9 +117,10 @@
 
 
 <!--  -->
-<script>
+<script>    
     import { defineComponent } from 'vue';
-    import { mapMutations } from 'vuex';
+    import { mapState, mapMutations } from 'vuex';
+    
 
     // Components
     // ...
@@ -127,6 +128,7 @@
     export default defineComponent({
         name: 'avatar-profil-comp',
         computed: {
+            ...mapState("profil", ["identity"]),
         },
         components: {
         },

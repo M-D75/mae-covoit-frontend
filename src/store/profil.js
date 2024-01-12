@@ -31,6 +31,7 @@ export default {
         soldes: 0,
         gain: 0,
         cguAccepted: false,
+        identity: false,
         payouts_enabled: false,
         credit_card: {
             last4: "0000",
@@ -542,6 +543,43 @@ export default {
             state.history.historycalBooking = bookingGrouped;
 
             state.history.load = false;
-        }
+        },
+        // stripe
+        async getProvider({state}){
+            let { data: account, error } = await supabase
+                .from('account')
+                .select(`
+                    provider_id
+                `)
+                .eq('user_id', state.userUid)
+
+            if(error){
+                console.error("Error : ", error)
+                return {status: 1, message: "Une erreur s'est produite"}
+            }
+
+            const provider = await stripe.accounts.retrieve(account[0].provider_id);
+            console.log("retrieve provider : ", provider);
+            store.state.auth.provider_id = provider.id;
+            store.state.auth.stripe_provider = provider;
+            state.payouts_enabled = provider.payouts_enabled;
+        },
+        async identityChecked({state}){
+            
+            const { data, error } = await supabase
+                .from('account')
+                .update({ identity: true })
+                .eq('user_id', state.userUid)
+                .select()
+        
+            if(error){
+                console.error("Error : ", error)
+                return {status: 1, message: "Une erreur s'est produite"}
+            }
+
+            if(data)
+                return {status: 0, message:"Mise à jour effectuée avec succées"};
+            return {status: 2, message: "Un problème est survenue"};
+        },
     },
 }
