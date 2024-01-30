@@ -84,9 +84,10 @@
             @ready="isLoaded()" 
             ref="mapRef"
         >            
-            <l-tile-layer url="https://api.maptiler.com/maps/winter-v2/{z}/{x}/{y}.png?key=faY6afh2tnFprZqdoyZP"/>
-
-            <!-- point-dest -->
+            <!-- <l-tile-layer url="https://api.maptiler.com/maps/winter-v2/{z}/{x}/{y}.png?key=faY6afh2tnFprZqdoyZP"/> -->
+            <l-tile-layer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"/>
+            
+            <!-- our-position -->
             <l-circle-marker 
                 v-if="currentLocation.current.length >= 2"
                 :lat-lng="currentLocation.current"
@@ -98,6 +99,21 @@
                 style="z-index: 9999;"
             >
             </l-circle-marker>
+
+            <div>
+                <l-circle-marker 
+                    v-for="(loc, index) in localisation"
+                    :key="index"
+                    :lat-lng="loc.latLng"
+                    :radius="9"
+                    :weight="2"
+                    :color="'white'"
+                    :fillColor="colorsLoc[index % colorsLoc.length]" 
+                    :fillOpacity="0.7"
+                    style="z-index: 9999;"
+                >
+                </l-circle-marker>
+            </div>
 
             <!-- origin -->
             <l-marker 
@@ -221,6 +237,8 @@
     import { Geolocation } from '@capacitor/geolocation';
     import { mapActions, mapState, mapGetters, mapMutations } from 'vuex';
     import axios from 'axios';
+    import io from 'socket.io-client';
+    import supabase from '@/utils/supabaseClient.js';
 
     import L from "leaflet";
     
@@ -236,8 +254,8 @@
         name: 'results-view',
         emits: ["trajet-selected"],
         computed: {
-            ...mapState("profil", ["modeCo"]),
-            ...mapState("trip", ["tripSelected", "notMessageVue"]),
+            ...mapState("profil", ["modeCo", "userUid"]),
+            ...mapState("trip", ["tripSelected", "notMessageVue", "chat"]),
             ...mapGetters("search", ["getVillagesByName", "GET_ID_VILLAGE_BY_NAME"]),
             center() {
                 const latitudes =  [this.itineraire.origin.location.latLng.latitude, this.itineraire.destination.location.latLng.latitude];
@@ -301,6 +319,11 @@
                 overlayLoad: false,
                 zoom: 10,
                 routes: [],
+                currentContact: {
+                    username: "Username",
+                    avatarContact: "https://avataaars.io/?avatarStyle=Circle&topType=LongHairStraight&accessoriesType=Blank&hairColor=BrownDark&facialHairType=Blank&clotheType=BlazerShirt&eyeType=Default&eyebrowType=Default&mouthType=Default&skinColor=Light'",
+                    userUid: "",
+                },
                 customIcon: L.icon({
                     iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Map-circle-black.svg/2048px-Map-circle-black.svg.png', // Remplacez cela par le chemin d'accès ou l'URL de l'image
                     iconSize: [12, 12], // Taille de l'icône. Cette valeur dépend de la taille de  l'image.
@@ -352,6 +375,10 @@
                         }
                     },
                 },
+                socket: null,
+                mode_driver: false,
+                colorsLoc: ["red", "black", "green", "yellow"],
+                localisation: [{type: "driver", latLng: [-12.7997252, 45.1038055]}, {type: "passenger", latLng: [-12.7797252, 45.1038055]}]
             }
         },
         beforeMount(){
@@ -367,7 +394,82 @@
             // this.askNewMessage();
             SafeAreaController.injectCSSVariables();
             console.log("itineraire", this.itineraire);
-            this.$refs.BottomMenuRef.open();
+            // this.$refs.BottomMenuRef.open();
+
+            // real-time
+            const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
+
+            const typeUrl = this.modeCo;
+            if( Object.keys(this.tripSelected).length > 0 && this.userUid != this.tripSelected.driver_id ){//mode passager
+                this.mode_driver = false;
+                this.socket = io(adresse[typeUrl], {
+                    reconnection: true,
+                    reconnectionDelay: 1000,
+                    reconnectionAttempts: 60,
+                    query: {
+                        userId: this.userUid,
+                        chatIds: [[this.userUid, this.tripSelected.driver_id].sort((a, b) => {
+                                return a.localeCompare(b);
+                            }).join(":")],
+                        registerDeviceToken: this.registerDeviceToken,
+                    }
+                });
+
+                this.currentContact.userUid = this.tripSelected.driver_id;
+
+                // this.updateName(this.tripSelected.driver_id);
+            }
+            else{
+                this.mode_driver = true;
+                this.contacts = this.chat.contacts;
+
+                let chatIds = [];
+                for (let index = 0; index < this.contacts.length; index++) {
+                    chatIds.push([this.userUid, this.contacts[index].user_id].sort((a, b) => {
+                                return a.localeCompare(b);
+                            }).join(":"));
+                }
+
+                this.socket = io(adresse[typeUrl], {
+                    reconnection: true,
+                    reconnectionDelay: 1000,
+                    reconnectionAttempts: 60,
+                    query: {
+                        userId: this.userUid,
+                        chatIds: chatIds,
+                        registerDeviceToken: this.registerDeviceToken,
+                    }
+                });
+
+                this.currentContact.username = this.contacts[0].username;
+                this.currentContact.avatarContact = this.contacts[0].avatar;
+                this.currentContact.userUid = this.contacts[0].user_id;
+            }
+
+            this.socket.on('connect', () => {
+                console.log('Map-Connecté au serveur Socket.IO!');
+                this.overlayLoad = false;
+                const engine = this.socket.io.engine;
+                console.log(engine.transport.name);
+            });
+
+            this.socket.on('get-localisation', (loc) => {
+                console.log('Localisation reçu:', loc);
+                const indexLoc = this.localisation.findIndex(loca => loca.from == loc.from);
+                if(indexLoc !== -1 ){
+                    this.localisation[indexLoc].latLng = loc.latLng;
+                }
+                else{
+                    let newLoc = {
+                        idTrip: loc.idTrip,
+                        from: loc.from,
+                        to: loc.to,
+                        latLng: loc.latLng,
+                    };
+
+                    this.localisation.push(newLoc);
+                }
+            });
             
         },
         methods: {
@@ -623,8 +725,7 @@
                 // this.itin.duration = this.tripSelected.route.duration;
                 // this.itin.distance = this.tripSelected.route.distance;
                 // this.routeAvail = true;
-                // this.updateLoc();
-                            
+                this.updateLoc();
                 // this.getRouteInfos();
             },
             convertSecondsToHoursAndMinutes(seconds) {
@@ -666,23 +767,43 @@
                 // this.routes = this.routeTmp.slice(0, 1);
                 //console.log(this.routes);
 
-                // setInterval(async function () {
-                //     const coordinates = await Geolocation.getCurrentPosition();
-                //     const { latitude, longitude } = coordinates.coords;
-                //     const currentPosition = [latitude, longitude]; // Obtenez la position actuelle
-                //     this.updatePassedPoints(currentPosition);
+                setInterval(async function () {
+                    const coordinates = await Geolocation.getCurrentPosition();
+                    const { latitude, longitude } = coordinates.coords;
+                    const currentPosition = [latitude, longitude]; // Obtenez la position actuelle
+                    this.updatePassedPoints(currentPosition);
 
-                //     // const bounds = [[latitude, longitude], [43.60461578085957, 3.880710839194244]]
-                //     if(this.$refs.mapRef){
-                //         this.currentLocation.current = [latitude, longitude];
-                //         // this.$refs.mapRef.leafletObject.fitBounds(bounds, {
-                //         //     padding: [18, 18] // padding en pixels autour des limites.
-                //         // });
-                //     }
-                // }.bind(this), 10000); // Met à jour toutes les secondes, par exemple
+                    // const bounds = [[latitude, longitude], [43.60461578085957, 3.880710839194244]]
+                    if(this.$refs.mapRef){
+                        this.currentLocation.current = [latitude, longitude];
+                        for (let index = 0; index < this.contacts.length; index++) {
+                            let newLoc = {
+                                idTrip: this.tripSelected.id,
+                                from: this.userUid,
+                                to: this.contacts[index].user_id,
+                                latLng: this.currentLocation.current, 
+                                status: "send=",
+                            }
+                            this.socket.emit("send-localisation", newLoc);
+                        }
+                        
+                        // this.$refs.mapRef.leafletObject.fitBounds(bounds, {
+                        //     padding: [18, 18] // padding en pixels autour des limites.
+                        // });
+                    }
+                }.bind(this), 10000); // Met à jour toutes les secondes, par exemple
                 
                 this.currentLocation.current = [-12.7897252, 45.1038055];
-                
+                for (let index = 0; index < this.contacts.length; index++) {
+                    let newLoc = {
+                        idTrip: this.tripSelected.id,
+                        from: this.userUid,
+                        to: this.contacts[index].user_id,
+                        latLng: this.currentLocation.current, 
+                        status: "send-",
+                    }
+                    this.socket.emit("send-localisation", newLoc);
+                }
                 // setTimeout(this.avancerSurItineraire, 1000);
                 // this.simuleMovement.intervalId = setInterval(this.avancerSurItineraire, 50);
             },
@@ -895,6 +1016,19 @@
                 this.itineraire[loc].location.latLng.longitude = infoVillage.lon;
                 this.itineraire[loc].location.latLng.latLngTab = [infoVillage.lat, infoVillage.lon];
             },
+            async updateName(userUid){
+                //Check if account are created
+                let { data: account, error: error_account } = await supabase
+                    .from('account')
+                    .select('*')
+                    .eq('user_id', userUid);
+                
+                if(error_account){
+                    console.error("Error:", error_account);
+                }
+
+                this.currentContact.username = account[0].username;
+            }
         },
         watch: {
         },

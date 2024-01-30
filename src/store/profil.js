@@ -20,7 +20,7 @@ export default {
             animal: "animal",
         },
         auto_accept_trip: true,
-        modeCo: "online",
+        modeCo: "online", //online, local
         notification: true,
         modeDriver: false,
         darkMode: false,
@@ -415,7 +415,7 @@ export default {
             }
 
             if( _trips.length == 0 ){
-                console.error("Error getTravels 2")
+                console.error("Error : Aucun trajets; code 2")
                 return {status: 2, message: "Aucun trajets"};
             }
 
@@ -577,8 +577,11 @@ export default {
                 return {status: 1, message: "Une erreur s'est produite"}
             }
 
-            if(data)
+
+            if(data){
+                state.identity = true;
                 return {status: 0, message:"Mise à jour effectuée avec succées"};
+            }
             return {status: 2, message: "Un problème est survenue"};
         },
     },

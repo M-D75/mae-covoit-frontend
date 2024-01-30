@@ -262,6 +262,11 @@
                 v-else
                 v-slot:append
             >
+                <v-btn icon
+                    @click="$router.push('/trip')"
+                >
+                    <v-icon>mdi-map-legend</v-icon>
+                </v-btn>
                 <v-menu 
                     class="contact"
                 >
@@ -416,28 +421,28 @@
                 },
                 newMessage: '',
                 messages: [
-                    { from: this.userUid, message: "Bonjour, c'est Marc. Je suis votre conducteur pour le covoiturage de demain.", type: 0, time: "08:22", status: "vue" },
-                    { from: "this.userUid", message: "Salut Marc, ici Léa. Oui, je me réjouis de notre trajet !", type: 1, time: "08:22", status: "vue" },
-                    { from: this.userUid, message: "Super ! Pouvez-vous confirmer l'heure et le lieu de départ ?", type: 0, time: "08:23", status: "vue" },
-                    { from: "this.userUid", message: "Bien sûr. On avait dit 8h devant la gare, n'est-ce pas ?", type: 1, time: "08:24", status: "vue" },
-                    { from: this.userUid, message: "Exactement. Et votre destination finale est bien la rue de Rivoli ?", type: 0, time: "08:24", status: "vue" },
-                    { from: "this.userUid", message: "Oui, c'est parfait. Combien de temps pensez-vous que le trajet va durer ?", type: 1, time: "08:25", status: "vue" },
-                    { from: this.userUid, message: "En général, ça prend une heure, mais je prévois un peu de marge pour le trafic.", type: 0, time: "08:26", status: "vue" },
-                    { from: "this.userUid", message: "Ça marche. Aurons-nous le temps de faire une pause café en cours de route ?", type: 1, time: "08:26", status: "vue" },
-                    { from: this.userUid, message: "Bien sûr, je pense qu'une petite pause serait agréable.", type: 0, time: "08:26", status: "vue" },
-                    { from: "this.userUid", message: "Super ! J'apporterai des croissants.", type: 1, time: "08:27" },
-                    { from: this.userUid, message: "C'est très gentil, merci ! Vous avez des préférences musicales pour le trajet ?", type: 0, time: "08:27", status: "vue" },
-                    { from: "this.userUid", message: "Pas vraiment, je suis assez éclectique. Et vous ?", type: 1, time: "08:28", status: "vue" },
-                    { from: this.userUid, message: "Pareil ici. J'ai une playlist assez variée, on devrait trouver quelque chose d'agréable.", type: 0, time: "08:28", status: "vue" },
-                    { from: "this.userUid", message: "Parfait. Avez-vous assez de place pour une petite valise ?", type: 1, time: "08:28" },
-                    { from: this.userUid, message: "Oui, aucun souci pour la valise. Vous avez besoin d'aide pour la porter ?", type: 0, time: "08:28", status: "vue" },
-                    { from: "this.userUid", message: "Ça ira, merci. Elle n'est pas très lourde.", type: 1, time: "08:29", status: "vue" },
-                    { from: this.userUid, message: "D'accord. Je conduis une voiture bleue, juste pour que vous sachiez.", type: 0, time: "08:29", status: "vue" },
-                    { from: "this.userUid", message: "Super, je serai à l'heure demain.", type: 1, time: "08:29", status: "vue" },
-                    { from: this.userUid, message: "Parfait. Si vous avez le moindre changement, n'hésitez pas à me le faire savoir.", type: 0, time: "08:30", status: "vue" },
-                    { from: "this.userUid", message: "Je le ferai. Merci encore et à demain !", type: 1, time: "08:30", status: "vue" },
-                    { from: this.userUid, message: "Avec plaisir. Bonne soirée et à demain !", type: 0, time: "08:30", status: "vue" },
-                    { from: "this.userUid", message: "Bonne soirée à vous aussi !", type: 1, time: "08:30", status: "sended" },
+                    // { from: this.userUid, message: "Bonjour, c'est Marc. Je suis votre conducteur pour le covoiturage de demain.", type: 0, time: "08:22", status: "vue" },
+                    // { from: "this.userUid", message: "Salut Marc, ici Léa. Oui, je me réjouis de notre trajet !", type: 1, time: "08:22", status: "vue" },
+                    // { from: this.userUid, message: "Super ! Pouvez-vous confirmer l'heure et le lieu de départ ?", type: 0, time: "08:23", status: "vue" },
+                    // { from: "this.userUid", message: "Bien sûr. On avait dit 8h devant la gare, n'est-ce pas ?", type: 1, time: "08:24", status: "vue" },
+                    // { from: this.userUid, message: "Exactement. Et votre destination finale est bien la rue de Rivoli ?", type: 0, time: "08:24", status: "vue" },
+                    // { from: "this.userUid", message: "Oui, c'est parfait. Combien de temps pensez-vous que le trajet va durer ?", type: 1, time: "08:25", status: "vue" },
+                    // { from: this.userUid, message: "En général, ça prend une heure, mais je prévois un peu de marge pour le trafic.", type: 0, time: "08:26", status: "vue" },
+                    // { from: "this.userUid", message: "Ça marche. Aurons-nous le temps de faire une pause café en cours de route ?", type: 1, time: "08:26", status: "vue" },
+                    // { from: this.userUid, message: "Bien sûr, je pense qu'une petite pause serait agréable.", type: 0, time: "08:26", status: "vue" },
+                    // { from: "this.userUid", message: "Super ! J'apporterai des croissants.", type: 1, time: "08:27" },
+                    // { from: this.userUid, message: "C'est très gentil, merci ! Vous avez des préférences musicales pour le trajet ?", type: 0, time: "08:27", status: "vue" },
+                    // { from: "this.userUid", message: "Pas vraiment, je suis assez éclectique. Et vous ?", type: 1, time: "08:28", status: "vue" },
+                    // { from: this.userUid, message: "Pareil ici. J'ai une playlist assez variée, on devrait trouver quelque chose d'agréable.", type: 0, time: "08:28", status: "vue" },
+                    // { from: "this.userUid", message: "Parfait. Avez-vous assez de place pour une petite valise ?", type: 1, time: "08:28" },
+                    // { from: this.userUid, message: "Oui, aucun souci pour la valise. Vous avez besoin d'aide pour la porter ?", type: 0, time: "08:28", status: "vue" },
+                    // { from: "this.userUid", message: "Ça ira, merci. Elle n'est pas très lourde.", type: 1, time: "08:29", status: "vue" },
+                    // { from: this.userUid, message: "D'accord. Je conduis une voiture bleue, juste pour que vous sachiez.", type: 0, time: "08:29", status: "vue" },
+                    // { from: "this.userUid", message: "Super, je serai à l'heure demain.", type: 1, time: "08:29", status: "vue" },
+                    // { from: this.userUid, message: "Parfait. Si vous avez le moindre changement, n'hésitez pas à me le faire savoir.", type: 0, time: "08:30", status: "vue" },
+                    // { from: "this.userUid", message: "Je le ferai. Merci encore et à demain !", type: 1, time: "08:30", status: "vue" },
+                    // { from: this.userUid, message: "Avec plaisir. Bonne soirée et à demain !", type: 0, time: "08:30", status: "vue" },
+                    // { from: "this.userUid", message: "Bonne soirée à vous aussi !", type: 1, time: "08:30", status: "sended" },
                 ],
                 contacts: [
                     {

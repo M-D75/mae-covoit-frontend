@@ -117,9 +117,9 @@
 
     const { LocalNotifications } = Plugins;
 
-    import { FirebaseMessaging } from '@capacitor-firebase/messaging';
+    // import { FirebaseMessaging } from '@capacitor-firebase/messaging';
 
-    import axios from 'axios';
+    // import axios from 'axios';
     import { mapMutations, mapState, mapActions } from 'vuex';
 
     const isAndroid = Capacitor.getPlatform() === 'android';
@@ -149,14 +149,8 @@
             isSmallScreen: window.innerWidth <= 600,
         }),
         async mounted(){
-            
-            // cus_P9EoaH2vfbFG6a
-            // pi_3OSuTRIKwmrDLewY15HDSoMz
-
-            // acct_1OUWQcI3Nt412vf3
 
             // const account = await stripe.accounts.retrieve('acct_1OUWQcI3Nt412vf3');
-
 
             // await stripe.charges.create({
             //     amount: 2000, // Montant en centimes (ex. 2000 pour 20 EUR/USD)
@@ -297,103 +291,103 @@
             if(SafeAreaController)
                 SafeAreaController.injectCSSVariables();
 
-            if( isIOS || isAndroid ){
-                // PushNotifications.requestPermissions().then(result => {
-                //     console.log("requestPermissions Pusg [OK]");
-                //     if (result.receive === 'granted') {
-                //         console.log("in-register");
-                //         PushNotifications.register();
-                //         PushNotifications.addListener('pushNotificationReceived', (notification) => {
-                //             // Gérer la réception de la notification
-                //             console.log("Notification reçu", JSON.stringify(notification));
-                //             this.sendNotification(notification.title, notification.body, notification.data);
-                //         });
+            // if( isIOS || isAndroid ){
+            //     // PushNotifications.requestPermissions().then(result => {
+            //     //     console.log("requestPermissions Pusg [OK]");
+            //     //     if (result.receive === 'granted') {
+            //     //         console.log("in-register");
+            //     //         PushNotifications.register();
+            //     //         PushNotifications.addListener('pushNotificationReceived', (notification) => {
+            //     //             // Gérer la réception de la notification
+            //     //             console.log("Notification reçu", JSON.stringify(notification));
+            //     //             this.sendNotification(notification.title, notification.body, notification.data);
+            //     //         });
 
-                //         PushNotifications.addListener('pushNotificationActionPerformed', notification => {
-                //             // Gérer l'action de l'utilisateur sur la notification
-                //             console.log("Notification action user", JSON.stringify(notification));
-                //         });
+            //     //         PushNotifications.addListener('pushNotificationActionPerformed', notification => {
+            //     //             // Gérer l'action de l'utilisateur sur la notification
+            //     //             console.log("Notification action user", JSON.stringify(notification));
+            //     //         });
 
-                //         PushNotifications.addListener('registration', token => {
-                //             console.info('Registration token: ', token.value);
-                //             this.SET_REGISTER_DEVICE_TOKEN(token.value);
+            //     //         PushNotifications.addListener('registration', token => {
+            //     //             console.info('Registration token: ', token.value);
+            //     //             this.SET_REGISTER_DEVICE_TOKEN(token.value);
                             
-                //             const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
-                //             axios.post(`${adresse.online}/registerDeviceToken`, {
-                //                 registerDeviceToken: token.value,
-                //                 userId: this.userUid,
-                //             })
-                //             .then(response => {
-                //                 console.log(response.data);
-                //             })
-                //             .catch(error => {
-                //                 console.error('Il y a eu une erreur :', error);
-                //             });
-                //         });
+            //     //             const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
+            //     //             axios.post(`${adresse.online}/registerDeviceToken`, {
+            //     //                 registerDeviceToken: token.value,
+            //     //                 userId: this.userUid,
+            //     //             })
+            //     //             .then(response => {
+            //     //                 console.log(response.data);
+            //     //             })
+            //     //             .catch(error => {
+            //     //                 console.error('Il y a eu une erreur :', error);
+            //     //             });
+            //     //         });
 
-                //         PushNotifications.addListener('registrationError', err => {
-                //             console.error('Registration error: ', err.error);
-                //         });
-                //     } 
-                //     else {
-                //         console.log("Autoriasation failed:");
-                //     }
-                // });
+            //     //         PushNotifications.addListener('registrationError', err => {
+            //     //             console.error('Registration error: ', err.error);
+            //     //         });
+            //     //     } 
+            //     //     else {
+            //     //         console.log("Autoriasation failed:");
+            //     //     }
+            //     // });
 
-                FirebaseMessaging.requestPermissions().then(result => {
-                    console.log("FirebaseMessaging Access :", result.receive);
-                    if ( result.receive === 'granted' ) {
-                        // const getToken = async () => {
-                        //     const result = await FirebaseMessaging.getToken();
-                        //     return result.token;
-                        // };
+            //     FirebaseMessaging.requestPermissions().then(result => {
+            //         console.log("FirebaseMessaging Access :", result.receive);
+            //         if ( result.receive === 'granted' ) {
+            //             // const getToken = async () => {
+            //             //     const result = await FirebaseMessaging.getToken();
+            //             //     return result.token;
+            //             // };
 
-                        // getToken();
+            //             // getToken();
                         
-                        const addTokenReceivedListener = async () => {
-                            await FirebaseMessaging.addListener('tokenReceived', event => {
-                                console.log('tokenReceived', { event }, event.token);
+            //             const addTokenReceivedListener = async () => {
+            //                 await FirebaseMessaging.addListener('tokenReceived', event => {
+            //                     console.log('tokenReceived', { event }, event.token);
 
-                                this.SET_REGISTER_DEVICE_TOKEN(event.token);
+            //                     this.SET_REGISTER_DEVICE_TOKEN(event.token);
                             
-                                const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
-                                axios.post(`${adresse.online}/registerDeviceToken`, {
-                                    registerDeviceToken: event.token,
-                                    userId: this.userUid,
-                                })
-                                .then(response => {
-                                    console.log(response.data);
-                                })
-                                .catch(error => {
-                                    console.error('Il y a eu une erreur :', error);
-                                });
-                            });
-                        };
+            //                     const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
+            //                     axios.post(`${adresse.online}/registerDeviceToken`, {
+            //                         registerDeviceToken: event.token,
+            //                         userId: this.userUid,
+            //                     })
+            //                     .then(response => {
+            //                         console.log(response.data);
+            //                     })
+            //                     .catch(error => {
+            //                         console.error('Il y a eu une erreur :', error);
+            //                     });
+            //                 });
+            //             };
 
-                        addTokenReceivedListener();
+            //             addTokenReceivedListener();
 
-                        const addNotificationReceivedListener = async () => {
-                            await FirebaseMessaging.addListener('notificationReceived', event => {
-                                console.log('notificationReceived', { event });
-                                this.sendNotification(event.notification.title, event.notification.body, event.notification.data);
-                            });
-                        };
+            //             const addNotificationReceivedListener = async () => {
+            //                 await FirebaseMessaging.addListener('notificationReceived', event => {
+            //                     console.log('notificationReceived', { event });
+            //                     this.sendNotification(event.notification.title, event.notification.body, event.notification.data);
+            //                 });
+            //             };
 
-                        addNotificationReceivedListener();
+            //             addNotificationReceivedListener();
 
-                        const addNotificationActionPerformedListener = async () => {
-                            await FirebaseMessaging.addListener('notificationActionPerformed', event => {
-                                console.log('notificationActionPerformed', { event });
-                            });
-                        };
+            //             const addNotificationActionPerformedListener = async () => {
+            //                 await FirebaseMessaging.addListener('notificationActionPerformed', event => {
+            //                     console.log('notificationActionPerformed', { event });
+            //                 });
+            //             };
 
-                        addNotificationActionPerformedListener();
-                    }
-                    else {
-                        console.log("Autoriasation Messaging failed:");
-                    }
-                });
-            }
+            //             addNotificationActionPerformedListener();
+            //         }
+            //         else {
+            //             console.log("Autoriasation Messaging failed:");
+            //         }
+            //     });
+            // }
 
             if(isAndroid || isIOS)
                 StatusBar.setOverlaysWebView({ overlay: true });

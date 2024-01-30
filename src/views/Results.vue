@@ -261,11 +261,13 @@
             ...mapState("profil", ["darkMode"]),
             trajetFiltered() {
                 let trips = this.trajets.filter(
-                    (trajet) => trajet.depart == this.depart
-                        && trajet.destination == this.destination
-                        //&& trajet.passenger_number + parseInt(this.nbPassenger) <= trajet.max_seats
-                        && this.getDate().getTime() < new Date(trajet.departure_time).getTime()
-                        // && this.isSameDay(this.getDate(), new Date(trajet.departure_time))
+                    (trajet) => {
+                        return trajet.depart == this.depart
+                            && trajet.destination == this.destination
+                            //&& trajet.passenger_number + parseInt(this.nbPassenger) <= trajet.max_seats
+                            && this.getDate().getTime() < new Date(trajet.departure_time).getTime()
+                            && this.isSameDay(this.getDate(), new Date(trajet.departure_time))
+                    }
                 );
 
                 switch (this.defaulttrier) {
@@ -356,17 +358,17 @@
             
             // console.log("params", this.$route.params);
             this.overlayLoad = true;
-            // try {
-            //     await this.getTrajets;
-            //     if (this.trajetFiltered.length == 0)
-            //         this.nothing = true;
-            // }
-            // catch (error) {
-            //     console.error("Error:", error)
-            //     this.nothing = true;
-            // }
+            try {
+                await this.getTrajets;
+                if (this.trajetFiltered.length == 0)
+                    this.nothing = true;
+            }
+            catch (error) {
+                console.error("Error:", error)
+                this.nothing = true;
+            }
             // console.log("trrrrr", this.trajets);
-            this.nothing = true;
+            // this.nothing = true;
             this.overlayLoad = false;
         },
         methods: {
@@ -430,9 +432,9 @@
 
                 currentDate = new Date();
 
-                day = this.date.split("/")[0];
-                month = this.date.split("/")[1];
-                year = this.date.split("/")[2];
+                day = this.date.split("-")[0];
+                month = this.date.split("-")[1];
+                year = this.date.split("-")[2];
 
                 if (this.date == "Aujourd'hui") {
                     return currentDate;
@@ -441,7 +443,7 @@
                     return tomorrowsDate;
                 }
                 else {
-                    return new Date(`${month}/${day}/${year}}`)
+                    return new Date(`${month}/${day}/${year}`)
                 }
             },
             isSameDay(date1, date2) {

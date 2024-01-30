@@ -623,6 +623,7 @@ export default {
             }
 
             console.log("reserveTrajet:", data_booking);
+            store.state.trip.rating = true;
             const message_success = auto_accept_trip ? "Votre réservation à été effectué avec succès" : "Votre demande est en attente de validation par le chauffeur !";
             return {valided: true, message: message_success, accepted: auto_accept_trip };
         },

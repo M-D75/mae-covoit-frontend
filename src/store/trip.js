@@ -9,6 +9,7 @@ import supabase from '@/utils/supabaseClient.js';
 export default {
     namespaced: true,
     state: {
+        rating: false,
         driver: true,
         route: {},
         chat: {
@@ -172,6 +173,9 @@ export default {
         SET_TRIP_SELECTED(state, trip) {
             state.tripSelected = trip;
         },
+        SET_RATING(state, bool) {
+            state.rating = bool;
+        },
     },
     actions: {
         async getContacts({ state }){
@@ -281,6 +285,28 @@ export default {
 
                 if( data ){
                     state.chat.contacts[index].booking[indexB].is_accepted = true;
+                }
+            }
+
+            return {status: 0, message: "success"};
+        },
+        async updateRefusedBooking({state}, index){
+            const bookings = state.chat.contacts[index].booking;
+            for (let indexB = 0; indexB < bookings.length; indexB++) {
+                const id_bk = bookings[indexB].id;
+                const { data, error } = await supabase
+                    .from('booking')
+                    .update({ is_refused: true })
+                    .eq('id', id_bk)
+                    .select();
+
+                if(error){
+                    console.error("Error", error)
+                    return {status: 1, message: "Une erreur s'est produite, veuillez réessayer plus tard !"};
+                }
+
+                if( data ){
+                    state.chat.contacts[index].booking[indexB].is_refused = true;
                 }
             }
 

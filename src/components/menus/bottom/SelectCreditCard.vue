@@ -44,8 +44,6 @@
         }
 
         .contain-btn {
-            // position: absolute;
-            // bottom: 0px;
             width: 100%;
             padding: 0 10px;
             margin: 10px 0;
@@ -85,7 +83,7 @@
                 <template v-slot:append>
                     <v-btn
                         :color="card.select ? 'green' : 'grey-lighten-1'"
-                        :icon="defaultSource == card.id ? 'mdi-check-decagram' : 'mdi-check-circle-outline'"
+                        :icon="defaultSource == card.id ? 'mdi-check-circle' : 'mdi-check-circle-outline'"
                         variant="text"
                         @click="select(index)"
                     ></v-btn>
@@ -101,8 +99,7 @@
                 @click="addOrSelect()"
             >
                 <v-progress-circular v-if="load" indeterminate color="white"></v-progress-circular>
-                <v-icon v-if="!load && cards.find((card) => card.select == true)" class="zoom-bounce" :icon="cards.find((card) => card.select == true) ? 'mdi-credit-card-check' : 'mdi-credit-card-plus'"></v-icon>
-                <v-icon v-if="!load && !cards.find((card) => card.select == true)" class="zoom-bounce" :icon="cards.find((card) => card.select == true) ? 'mdi-credit-card-check' : 'mdi-credit-card-plus'"></v-icon>
+                <v-icon v-if="!load" class="zoom-bounce" :icon="'mdi-credit-card-plus'"></v-icon>
             </v-btn>
         </div>
 
@@ -183,7 +180,7 @@
 
                     }
                     vue.load = false;
-                    console.log("all cards", vue.cards);
+                    // console.log("all cards", vue.cards);
                 }
             });
         },
@@ -191,10 +188,16 @@
             ...mapMutations("profil", ["SET_CREDIT_CARD"]),
             select(index){
                 const card = this.cards.find((card) => card.select == true);
-                if(card)
+                
+                if(card && card.last4 != this.cards[index].last4)
                     card.select = false;
+
                 if( ! card || card.last4 != this.cards[index].last4 ){
                     this.cards[index].select = true;
+                    // console.log("obj-card", card);
+                    this.cardSelected = this.cards[index];
+                    this.load = true;
+                    this.$emit("card-selected");
                 }
             },
             getLastNumber(number) {
@@ -202,17 +205,8 @@
                 return chaine.length > 2 ? chaine.slice(-2) : chaine;
             },
             addOrSelect(){
-                const card = this.cards.find((card) => card.select == true)
-                if(card){
-                    console.log("obj-card", card);
-                    this.cardSelected = card;
-                    this.load = true;
-                    this.$emit("card-selected");
-                }
-                else{
-                    this.cardSelected = null;
-                    this.$emit("need-to-add-new-card");
-                }
+                this.cardSelected = null;
+                this.$emit("need-to-add-new-card");
             },
         },
     });

@@ -48,6 +48,7 @@ export default createStore({
                 'trip.tripSelected',
                 'trip.chat',
                 'trip.member',
+                'trip.rating',
             ]
         })
     ],

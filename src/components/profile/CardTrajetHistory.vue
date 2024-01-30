@@ -104,10 +104,11 @@
                 <v-avatar 
                     v-if="mode=='planning' && infos.bookings.length == 0"
                 >
-                    <v-img
+                    <!-- <v-img
                         alt="Avatar"
                         :src="'https://cdn.vectorstock.com/i/preview-1x/76/28/unknown-person-user-icon-for-web-vector-34757628.jpg'"
-                    ></v-img>
+                    ></v-img> -->
+                    <v-icon icon="mdi-incognito-circle-off"></v-icon>
                 </v-avatar>
 
                 <div
@@ -153,7 +154,7 @@
 
                 <div class="trajet">
                     <div>{{ infos.depart }}</div>
-                    <v-icon>mdi-swap-horizontal</v-icon>
+                    <v-icon>mdi-arrow-right-thin</v-icon>
                     <div>{{ infos.destination }}</div>
                 </div>
 

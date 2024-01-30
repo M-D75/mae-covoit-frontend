@@ -22,13 +22,13 @@
 
     <Map></Map>
 
-    <BottomMenuTrip
+    <!-- <BottomMenuTrip
         mode="alert"
         :class-name="['alert']"
         ref="BottomMenuRef"
         v-on:close="open_b = false"
         v-on:opened="open_b = true"
-    />
+    /> -->
     </div>
 </template>
 
@@ -37,9 +37,9 @@
 
     //comp
     // import Map from "@/components/publish/Map.vue"
-    // import Map from "@/components/trip/MapTrip.vue"
-    import Map from "@/views/MapGoogle.vue"
-    import BottomMenuTrip from '@/components/menus/trip/BottomMenuTrip.vue';
+    import Map from "@/components/trip/MapTrip.vue"
+    // import Map from "@/views/MapGoogle.vue"
+    // import BottomMenuTrip from '@/components/menus/trip/BottomMenuTrip.vue';
 
     export default defineComponent({
         name: 'results-view',
@@ -56,7 +56,7 @@
         },
         components: {
             Map,
-            BottomMenuTrip,
+            // BottomMenuTrip,
         },
         props: {
             
@@ -67,7 +67,7 @@
             }
         },
         mounted(){
-            this.$refs.BottomMenuRef.open();
+            // this.$refs.BottomMenuRef.open();
         },
         methods: {
             handleMapLoad(event) {

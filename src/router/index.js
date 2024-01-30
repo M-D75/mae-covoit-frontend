@@ -164,28 +164,96 @@ const router = createRouter({
     routes
 });
 
-// router.beforeEach(async (to, from, next) => {
-//     // const requiresAuth = to.meta.requiresAuth;
-//     // const isUserAuthenticated = store.getters['auth/isAuthenticated'];
-    
-//     // console.log("beforeEach...")
-//     // console.log("to.name", to.name)
-//     // console.log("isUserAuthenticated", isUserAuthenticated)
-//     // if ( requiresAuth && !isUserAuthenticated ) {
-//     //     next('/login');
-//     // }
-//     // else if ( requiresAuth && isUserAuthenticated ) {
-//     //     const tokenCloseToExpiry = (store.state.auth.tokenExpiry - new Date().getTime()) < (5 * 60 * 1000); // 5 minutes, par exemple
 
-//     //     console.log("close-to-expire:", tokenCloseToExpiry, store.state.auth.tokenExpiry, new Date(store.state.auth.tokenExpiry))
-//     //     // if (tokenCloseToExpiry) {
-//     //     //     await store.dispatch('auth/refreshToken');
-//     //     // }
-//     //     next();
-//     // }
-//     // else{
-//     //     next();
-//     // }
-// });
+import { FirebaseMessaging } from '@capacitor-firebase/messaging';
+import { Capacitor } from '@capacitor/core';
+import axios from 'axios';
+// import store from '../store'; 
+
+
+const isAndroid = Capacitor.getPlatform() === 'android';
+const isIOS = Capacitor.getPlatform() === 'ios';
+
+router.beforeEach(async (to, from, next) => {
+    console.log("from", from);
+    if (to.path === '/search') {
+
+        // if(store.state.trip.rating){
+
+        // }
+        
+        if( isIOS || isAndroid ){
+            FirebaseMessaging.requestPermissions().then(result => {
+                console.log("FirebaseMessaging Access :", result.receive);
+                if ( result.receive === 'granted' ) { 
+                    const addTokenReceivedListener = async () => {
+                        await FirebaseMessaging.addListener('tokenReceived', event => {
+                            console.log('tokenReceived', { event }, event.token);
+
+                            this.SET_REGISTER_DEVICE_TOKEN(event.token);
+                        
+                            const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
+                            axios.post(`${adresse.online}/registerDeviceToken`, {
+                                registerDeviceToken: event.token,
+                                userId: this.userUid,
+                            })
+                            .then(response => {
+                                console.log(response.data);
+                            })
+                            .catch(error => {
+                                console.error('Il y a eu une erreur :', error);
+                            });
+                        });
+                    };
+
+                    addTokenReceivedListener();
+
+                    const addNotificationReceivedListener = async () => {
+                        await FirebaseMessaging.addListener('notificationReceived', event => {
+                            console.log('notificationReceived', { event });
+                            this.sendNotification(event.notification.title, event.notification.body, event.notification.data);
+                        });
+                    };
+
+                    addNotificationReceivedListener();
+
+                    const addNotificationActionPerformedListener = async () => {
+                        await FirebaseMessaging.addListener('notificationActionPerformed', event => {
+                            console.log('notificationActionPerformed', { event });
+                        });
+                    };
+
+                    addNotificationActionPerformedListener();
+                }
+                else {
+                    console.log("Autoriasation Messaging failed:");
+                }
+            });
+        }
+    }
+
+    next();
+    // const requiresAuth = to.meta.requiresAuth;
+    // const isUserAuthenticated = store.getters['auth/isAuthenticated'];
+    
+    // console.log("beforeEach...")
+    // console.log("to.name", to.name)
+    // console.log("isUserAuthenticated", isUserAuthenticated)
+    // if ( requiresAuth && !isUserAuthenticated ) {
+    //     next('/login');
+    // }
+    // else if ( requiresAuth && isUserAuthenticated ) {
+    //     const tokenCloseToExpiry = (store.state.auth.tokenExpiry - new Date().getTime()) < (5 * 60 * 1000); // 5 minutes, par exemple
+
+    //     console.log("close-to-expire:", tokenCloseToExpiry, store.state.auth.tokenExpiry, new Date(store.state.auth.tokenExpiry))
+    //     // if (tokenCloseToExpiry) {
+    //     //     await store.dispatch('auth/refreshToken');
+    //     // }
+    //     next();
+    // }
+    // else{
+    //     next();
+    // }
+});
 
 export default router

@@ -246,7 +246,8 @@
         <div class="nothing label-filter text-caption mx-auto">
             <div v-if="nothing" class="contenu">
                 <v-icon icon="mdi-car-off"></v-icon>
-                <span>Oups ! Il semble que votre garage soit vide. Que diriez-vous de lui donner vie en ajoutant un véhicule pour votre annonce ? 🚗✨</span>
+                <span v-if="cars.length == 0 ">Oups ! Il semble que votre garage soit vide. Que diriez-vous de lui donner vie en ajoutant un véhicule pour votre annonce ? 🚗✨</span>
+                <span v-if="cars.length != 0 && ! payouts_enabled">Attention vous ne serez pas payé si vous n'enregistrer pas vos coordonnées bancaire, souhaitez vous continuer ? 🚗✨</span>
                 <v-btn
                     color="blue"
                     icon
@@ -323,9 +324,10 @@
             HourDepOther,
         },
         computed: {
+
             ...mapState("search", ['villages', 'communesHistory']),
             ...mapGetters("search", ["getVillagesByName", "GET_ID_VILLAGE_BY_NAME"]),
-            ...mapState("profil", ['cars']),
+            ...mapState("profil", ['cars', "payouts_enabled"]),
             villagesSortedFiltered(){
                 const typePath = this.modeWork ? "work" : "default";
 
@@ -490,9 +492,12 @@
         async mounted() {
             $(".mode-publish").css("display", "flex");
 
+            await this.getProvider();
+            
+
             // const res = await this.getCars();
             // if( res.status == 0 ){
-            //     if( this.cars.length == 0 ){
+            //     if( this.cars.length == 0 || ! this.payouts_enabled ){
             //         this.nothing = true;
             //     }
             //     else{
@@ -529,7 +534,7 @@
             ...mapActions("search", ['ajouterAuHistorique', 'sauvegarderHistorique', 'chargerHistorique']),
             ...mapActions("search", ['getVillages']),
             ...mapActions("publish", ["newTrip", "getPriceRecommended"]),
-            ...mapActions("profil", ["getCars"]),
+            ...mapActions("profil", ["getCars", "getProvider"]),
             getSaisi(){
                 $(".mode-publish").css("display", "none");
                 if(this.$refs[`SearchRef${this.mode}`])
@@ -603,6 +608,7 @@
                     
                     case "select-car":
                         if (this.$refs.SelectCarRef) {
+                            console.log("car--", this.$refs.SelectCarRef.car);
                             this.infosPublish[typePath].car = this.$refs.SelectCarRef.car;
                             this.max_seats = this.$refs.SelectCarRef.seats;
                         }

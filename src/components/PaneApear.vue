@@ -76,7 +76,7 @@
     </v-container>
 
     <!-- loading -->
-    <v-overlay style="z-index: 9999;" disabled :model-value="overlayLoad" class="align-center justify-center">
+    <v-overlay style="z-index: 99999;" disabled :model-value="overlayLoad" class="align-center justify-center">
         <v-progress-circular color="blue" indeterminate size="64"></v-progress-circular>
     </v-overlay>
 </template>
@@ -140,10 +140,7 @@
         mounted() {
             this.sizeScreen = $(window).innerWidth();            
             $(".pan-apear-value").css("left", `${this.sizeScreen}px`);
-            $(".pan-apear-value").addClass("closed");
-
-            //Init calendar
-            
+            $(".pan-apear-value").addClass("closed");            
         },
         methods: {
             async open(){

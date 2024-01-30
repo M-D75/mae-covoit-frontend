@@ -127,20 +127,30 @@
                             <v-icon
                                 v-for="n in item.seats"
                                 :key="n"
-                                :color=" !item.isAccepted ? 'grey-lighten-1' : 'green'"
+                                :color="!item.isAccepted ? (!item.isRefused ? 'grey-lighten-1' : 'red') : 'green'"
                             >mdi-seat-passenger</v-icon>
                         </div>
                     </template>
 
                     <template v-slot:append>
                         <v-btn
-                            color="white"
+                            v-if="item.isAccepted"
+                            :color="darkMode ? 'white' : 'black'"
                             icon="mdi-chat-processing-outline"
                             variant="text"
                             @click="$router.push('/message')"
                         ></v-btn>
 
                         <v-btn
+                            v-else
+                            color="red"
+                            icon="mdi-delete-forever"
+                            variant="text"
+                            @click="removePassenger(item.index)"
+                        ></v-btn>
+
+                        <v-btn
+                            v-if="!item.isRefused"
                             :color=" !item.isAccepted ? 'grey-lighten-1' : 'green'"
                             icon="mdi-check-decagram"
                             variant="text"
@@ -171,6 +181,7 @@
         v-model="showSnackbarError"
         :timeout="4000"
         color="error"
+        style="z-index: 99999;"
     >
         <div class="contain-ico">
             <v-icon icon="mdi-alert-circle"></v-icon> 
@@ -185,7 +196,7 @@
         v-model="showSnackbarSuccess"
         :timeout="4000"
         color="success"
-        style="z-index: 9999;"
+        style="z-index: 99999;"
     >
         <div class="contain-ico">
             <v-icon icon="$success"></v-icon> 
@@ -211,6 +222,7 @@
         name: 'contacts-comp',
         emits: ["go-back"],
         computed: {
+            ...mapState("profil", ["darkMode"]),
             ...mapState("trip", ["chat", "tripSelected"]),
             itemsContacts(){
                 // console.log(this.tripSelected, this.chat.contacts);
@@ -232,6 +244,7 @@
                             max_seats: contacts.length > 0 && contacts[0].booking != undefined && contacts[0].booking.length > 0 ? contacts[0].booking[0].max_seats : 0,
                             seats: contacts[index].booking != undefined ? contacts[index].booking.length : 0,
                             isAccepted: contacts[index].booking && contacts[index].booking.length > 0 && contacts[index].booking[0].is_accepted ? contacts[index].booking[0].is_accepted : false,
+                            isRefused: contacts[index].booking && contacts[index].booking.length > 0 && contacts[index].booking[0].is_refused ? contacts[index].booking[0].is_refused : false,
                         }
                     )
                     items.push({type: "divider", inset: true})
@@ -304,7 +317,7 @@
             this.initStatusBarHeight();
         },
         methods: {
-            ...mapActions("trip", ["getContacts", "getProfilMember", "updateAccepteBooking"]),
+            ...mapActions("trip", ["getContacts", "getProfilMember", "updateAccepteBooking", "updateRefusedBooking"]),
             async goToProfil(userUid){
                 const memberOk = await this.getProfilMember({userUid: userUid});
                 if( memberOk )
@@ -339,6 +352,25 @@
             async getSafeAreaInsets () {
                 const insets = await SafeArea.getSafeAreaInsets();
                 return insets; // Ex. { "bottom":34, "top":47, "right":0, "left":0 }
+            },
+            async removePassenger(index){
+                console.log("remove-index", index, this.chat.contacts);
+                if( !this.chat.contacts[index].booking[0].is_refused ){
+                    const response = await this.updateRefusedBooking(index);
+                    if(response.status != 0){
+                        this.messageSnackbarError = response.message;
+                        this.showSnackbarError = true;
+                    }
+                    else{
+                        this.messageSnackbarSuccess = "Réservation refusé !";
+                        this.showSnackbarSuccess = true;
+                    }
+                }
+                else{
+                    console.log("here-----");
+                    this.messageSnackbarError = "Ce trajet à déjà était refusé";
+                    this.showSnackbarError = true;
+                }
             },
         },
         watch: {
