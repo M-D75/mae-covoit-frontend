@@ -1,27 +1,37 @@
 
 <style lang="scss" model>
-    .home-search-view {
-        // calendar
-        .trajet-search {
-            z-index: 100 !important;
-        }
-        .pile-search {
-            z-index: 0 !important;
-        }
+    .v-main.home-search-view {
+        .home-search-view {
+            // calendar
+            .trajet-search {
+                z-index: 100 !important;
+            }
+            .pile-search {
+                z-index: 0 !important;
+            }
 
-        .v-col{
-            .v-img{
-                img{
-                    position: absolute;
-                    top: 23px;
+            .v-col{
+                .v-img{
+                    img{
+                        position: absolute;
+                        top: 23px;
+                    }
                 }
             }
         }
-    }
 
-    .v-btn.map-btn{
-        color: var(--font-color-label);
-        margin: 10px auto;
+        .v-btn.map-btn{
+            color: var(--font-color-label);
+            margin: 10px auto;
+        }
+
+        .contain-btn {
+            .v-btn {
+                .v-btn__prepend i.v-icon{
+                    font-size: 1.2em !important;
+                }
+            }
+        }
     }
 </style>
 
@@ -40,6 +50,21 @@
 
             
         }
+
+        .contain-btn {
+            width: 100%;
+            padding: 0 10px;
+            margin: 10px 0;
+            display: block;
+            .v-btn {
+                display: flex;
+                margin: 0px auto;
+                margin-bottom: 40px;
+                .v-btn__prepend i.v-icon{
+                    font-size: 1.2em !important;
+                }
+            }
+        }
     }
 
 </style>
@@ -55,7 +80,7 @@
         @click="close()"
     ></v-overlay>
 
-    <v-main>
+    <v-main class="home-search-view">
         
         <v-row 
             class="home-search-view mt-40 mb-0"
@@ -64,10 +89,10 @@
             <!-- Title -->
             <div
                 class="title text-center"
-            >Le choix de trajets à petits prix</div>
+            >Prix mini, voyage maxi</div>
 
             <!-- image -->
-            <v-col>
+            <v-col style="z-index: 900;">
                 <v-img
                     style="margin: auto; z-index: 24; overflow: visible;"
                     :width="200"
@@ -97,6 +122,23 @@
             v-on:reserve="reserve()"
             v-on:fast-get-trip="getFastInfo"
         />
+
+        <!-- Go to trip history -->
+        <div 
+            v-if="trajetAvail != null"
+            class="contain-btn"
+        >
+            <v-btn
+                :color="'blue'"
+                prepend-icon="mdi-car-clock"
+                append-icon="mdi-chevron-right"
+                @click="goToHistory()"
+                variant="tonal"
+            >
+                <!-- <v-icon class="zoom-bounce" :icon="'mdi-car-clock'"></v-icon> -->
+                MES TRAJETS
+            </v-btn>
+        </div>
 
         <!-- date; depart; destination; -->
         <PaneGetValue
@@ -167,7 +209,7 @@
         name: 'home-search-view',
         computed: {
             ...mapState("search", ['depart', "destination", "nbPassenger", "trajetSelected"]),
-            ...mapState("profil", ['userUid']),
+            ...mapState("profil", ['userUid', 'history']),
         },
         components: {
             TrajetSearch,
@@ -185,12 +227,15 @@
                 dateString: "Aujourd'hui",
                 travel: {},
                 buildPaymentIntent: false,
+                trajetAvail: null,
             };
         },
         mounted() {
             if(this.$refs.PaneGetValueRef){
                 this.date = this.$refs.PaneGetValueRef.getDate();
             }
+
+            this.checkDateTrip();
 
             // this.buildPaymentIntent = true;
             // this.$nextTick(function(){
@@ -235,7 +280,7 @@
 
         },
         methods: {
-            ...mapMutations("search", ["SET_NB_PASSAGER"]),
+            ...mapMutations("search", ["SET_NB_PASSAGER", "SET_REMOVE_HISTORY_DATES"]),
             ...mapMutations("trip", ["SET_TRIP_SELECTED"]),
             ...mapActions("trip", ["getProfilMember"]),
             // TODO : inutile mode prod
@@ -245,6 +290,39 @@
                     const destination = this.$refs.TrajetSearchRef.destination;
                     this.travel = this.$store.state.search.trajets.filter(trajet => trajet.depart == depart && trajet.destination == destination)[0];
                 }
+            },
+            checkDateTrip(){
+                console.log("\ncheckDateTrip:");
+                const dateToday = new Date();
+                // date passenger
+                for (let index = 0; index < this.history.datesTripPassenger.length; index++) {
+                    const departure_time = this.history.datesTripPassenger[index];
+                    const dateTrip = new Date(departure_time);
+                    if( dateTrip.getTime() + ((60*1000)*10) < dateToday.getTime() ){
+                        this.SET_REMOVE_HISTORY_DATES({ type: "passenger", index: index });
+                    }
+                    else if( dateTrip.getTime() > dateToday.getTime() - ((60*1000)*30) ){
+                        this.trajetAvail = "passenger";
+                        console.log("Trip Passenger Founded\n");
+                        return;
+                    }
+                }
+
+                for (let index = 0; index < this.history.datesTripDriver.length; index++) {
+                    const departure_time = this.history.datesTripDriver[index];
+                    const dateTrip = new Date(departure_time);
+                    if( dateTrip.getTime() + ((60*1000)*10) < dateToday.getTime() ){
+                        this.SET_REMOVE_HISTORY_DATES({ type: "driver", index: index });
+                    }
+                    else if( dateTrip.getTime() > dateToday.getTime() - ((60*1000)*30) ){
+                        this.trajetAvail = "driver";
+                        console.log("Trip Driver Founded\n");
+                        return;
+                    }
+                }
+
+                this.trajetAvail = null;
+                console.log("No Trip Date\n");
             },
             async openProfilMember(){
                 this.SET_TRIP_SELECTED(this.travel);
@@ -317,7 +395,15 @@
                         }
                     }
                 }.bind(this), 1000);
-            }
+            },
+            goToHistory(){
+                if(this.trajetAvail == 'passenger'){
+                    this.$router.push('/profil/open-trip-passenger');
+                }
+                else{
+                    this.$router.push('/profil/open-trip-driver');
+                }
+            },
         },
         watch: {
             date(){

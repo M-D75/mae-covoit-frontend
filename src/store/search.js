@@ -323,6 +323,7 @@ export default {
                     trip_id,
                     passenger_account_id,
                     is_accepted,
+                    is_refused,
                     trip (
                         id, 
                         driver_id,
@@ -368,6 +369,7 @@ export default {
                 const _trip  = {
                     id: trip.id,
                     is_accepted: booking.is_accepted,
+                    is_refused: booking.is_refused,
                     driver_id: trip.driver_id,
                     avatar: trip.account.avatar,
                     name: trip.account.username,
@@ -553,7 +555,7 @@ export default {
                     const paymentIntent = await stripe.paymentIntents.create(obj);
             
                     console.log("paymentIntent [OK]", paymentIntent);
-                } 
+                }
                 catch (error) {
                     console.error("Erreur lors de la création de l'intention de paiement:", error);
                     return {valided: false, status: 2, message: "Une erreur s'est produite lors du prélevement sur votre card de credit, veuillez réessayer plus tard."};
@@ -592,6 +594,41 @@ export default {
             }
 
             //credité driver
+            const accountStrip = await stripe.accounts.retrieve(account_driver[0].provider_id);
+            console.log("accountStrip", accountStrip, (state.trajetSelected.price * 0.59) * 100);
+            
+            const balance = await stripe.balance.retrieve();
+            if( balance.available[0].amount < (state.trajetSelected.price * 0.59) * 100 ){
+                await stripe.charges.create({
+                    amount: 2000, // Montant en centimes (ex. 2000 pour 20 EUR/USD)
+                    currency: 'eur', // ou 'usd', etc.
+                    source: 'tok_bypassPending', // ou un autre token de carte de test approprié
+                    description: 'Charge de test pour augmenter le solde',
+                });
+            }
+
+            let transfert = null;
+            try {
+                transfert = await stripe.transfers.create({
+                    amount: (state.trajetSelected.price*0.59) * 100, // montant en centimes
+                    currency: 'eur',
+                    destination: accountStrip.id,
+                });
+            } 
+            catch (error) {
+                console.log("Error--:", error);
+                return { valided: false, message: "Une erreur s'est produite veuillez réessayer plus tard."};
+            }
+            
+
+            if(transfert){
+                console.log("transfert-ok", transfert);
+            }
+            else{
+                console.log("Erreur:", transfert);
+                return { valided: false, message: "Une erreur est survenue."};
+            }
+
             let { data: account_update_driver, error: error_update_driver } = await supabase
                 .from('account')
                 .update({ gain: (account_driver[0].gain + state.trajetSelected.price) })
@@ -611,6 +648,7 @@ export default {
                 list_ins_passenger.push({ trip_id: state.trajetSelected.id, passenger_account_id: user_id, is_accepted: auto_accept_trip })
             }
 
+
             //add +1 reserve
             let { data: data_booking, error: error_booking_update } = await supabase
                 .from('booking')
@@ -624,6 +662,7 @@ export default {
 
             console.log("reserveTrajet:", data_booking);
             store.state.trip.rating = true;
+            store.state.profil.history.datesTripPassenger.push(state.trajetSelected.departure_time);
             const message_success = auto_accept_trip ? "Votre réservation à été effectué avec succès" : "Votre demande est en attente de validation par le chauffeur !";
             return {valided: true, message: message_success, accepted: auto_accept_trip };
         },

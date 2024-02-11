@@ -65,6 +65,12 @@
                     display: block;
                     margin: 15px auto;
                 }
+
+                .cont-btn {
+                    display: flex;
+                    justify-content: space-around;
+                    width: 100%;
+                }
             }
         }
     }
@@ -245,17 +251,29 @@
     <v-main v-else>
         <div class="nothing label-filter text-caption mx-auto">
             <div v-if="nothing" class="contenu">
-                <v-icon icon="mdi-car-off"></v-icon>
+                <v-icon :icon="cars.length == 0 ? 'mdi-car-off' : 'mdi-bank-off' "></v-icon>
                 <span v-if="cars.length == 0 ">Oups ! Il semble que votre garage soit vide. Que diriez-vous de lui donner vie en ajoutant un véhicule pour votre annonce ? 🚗✨</span>
-                <span v-if="cars.length != 0 && ! payouts_enabled">Attention vous ne serez pas payé si vous n'enregistrer pas vos coordonnées bancaire, souhaitez vous continuer ? 🚗✨</span>
-                <v-btn
-                    color="blue"
-                    icon
-                    @click="goToAddVehicul()"
-                >
-                    <!-- <v-progress-circular v-if="load" indeterminate color="white"></v-progress-circular> -->
-                    <v-icon class="zoom-bounce" icon="mdi-car-side"></v-icon>
-                </v-btn>
+                <span v-if="cars.length != 0 && ! payouts_enabled">Attention vous ne serez pas payé si vous n'enregistrer pas vos coordonnées bancaire, souhaitez vous continuer ?</span>
+                
+                <div class="cont-btn">
+                    <v-btn
+                        v-if="cars.length != 0 && ! payouts_enabled"
+                        color="red"
+                        icon
+                        @click="nothing = false; isDriver=true;"
+                    >
+                        <v-icon class="zoom-bounce" icon="mdi-close-octagon"></v-icon>
+                    </v-btn>
+
+                    <v-btn
+                        color="blue"
+                        icon
+                        @click="goToAddVehiculOrBank()"
+                    >
+                        <!-- <v-progress-circular v-if="load" indeterminate color="white"></v-progress-circular> -->
+                        <v-icon class="zoom-bounce" :icon="cars.length == 0 ? 'mdi-car-side' : 'mdi-bank-plus'"></v-icon>
+                    </v-btn>
+                </div>
             </div>
         </div>
     </v-main>
@@ -828,76 +846,76 @@
             },
             actionAfterNextStep(){
                 switch (this.mode) {
-                case "depart":
-                    break;
+                    case "depart":
+                        break;
 
-                case "time":
-                    //open
-                    if (this.$refs[`BottomMenuRef${this.mode}`] && !this.overlay && !this.modeWork) {
-                        this.overlay = this.$refs[`BottomMenuRef${this.mode}`].open();
-                    }
-                    break;
+                    case "time":
+                        //open
+                        if (this.$refs[`BottomMenuRef${this.mode}`] && !this.overlay && !this.modeWork) {
+                            this.overlay = this.$refs[`BottomMenuRef${this.mode}`].open();
+                        }
+                        break;
 
-                case "destination":
+                    case "destination":
+                        
+                        break;
                     
-                    break;
-                
-                case "select-car":
-                    //open
-                    if (this.$refs[`BottomMenuRef${this.mode}`] && !this.overlay) {
-                        this.overlay = this.$refs[`BottomMenuRef${this.mode}`].open();
-                    }
-                    break;
+                    case "select-car":
+                        //open
+                        if (this.$refs[`BottomMenuRef${this.mode}`] && !this.overlay) {
+                            this.overlay = this.$refs[`BottomMenuRef${this.mode}`].open();
+                        }
+                        break;
 
-                case "nb-passenger":
-                    //open
-                    if (this.$refs[`BottomMenuRef${this.mode}`]) {
-                        this.overlay = this.$refs[`BottomMenuRef${this.mode}`].open();
-                    }
-                    break;
+                    case "nb-passenger":
+                        //open
+                        if (this.$refs[`BottomMenuRef${this.mode}`]) {
+                            this.overlay = this.$refs[`BottomMenuRef${this.mode}`].open();
+                        }
+                        break;
 
-                case "itineraire":
+                    case "itineraire":
 
-                    break;
+                        break;
 
-                case "select-price":
-                    this.overlay = true;
-                    //open
-                    if ( this.$refs[`BottomMenuRef${this.mode}`] ) {
-                        this.overlay = this.$refs[`BottomMenuRef${this.mode}`].open();
-                    }  
-                    break;
-                
-                case "select-week":
-                    this.overlay = true;
-                    //open
-                    if ( this.$refs[`BottomMenuRef${this.mode}`] ) {
-                        this.overlay = this.$refs[`BottomMenuRef${this.mode}`].open();
-                    }  
-                    break;
-                
-                case "select-day-hour-domicile":
+                    case "select-price":
+                        this.overlay = true;
+                        //open
+                        if ( this.$refs[`BottomMenuRef${this.mode}`] ) {
+                            this.overlay = this.$refs[`BottomMenuRef${this.mode}`].open();
+                        }  
+                        break;
                     
-                    break;
+                    case "select-week":
+                        this.overlay = true;
+                        //open
+                        if ( this.$refs[`BottomMenuRef${this.mode}`] ) {
+                            this.overlay = this.$refs[`BottomMenuRef${this.mode}`].open();
+                        }  
+                        break;
+                    
+                    case "select-day-hour-domicile":
+                        
+                        break;
 
-                case "hour-program":
-                    console.log("Hour-program");
-                    break;
-                case "select-day":
-                    //open
-                    if ( this.$refs[`BottomMenuRef${this.mode}`] ) {
-                        this.overlay = this.$refs[`BottomMenuRef${this.mode}`].open();
-                    }
-                    break;
-                case "notification":
-                    //open
-                    if (this.$refs[`BottomMenuRef${this.mode}`]) {
-                        this.overlay = this.$refs[`BottomMenuRef${this.mode}`].open();
-                    }
-                    break;
-                default:
-                    // this.nextStepMode();
-                    break;
+                    case "hour-program":
+                        console.log("Hour-program");
+                        break;
+                    case "select-day":
+                        //open
+                        if ( this.$refs[`BottomMenuRef${this.mode}`] ) {
+                            this.overlay = this.$refs[`BottomMenuRef${this.mode}`].open();
+                        }
+                        break;
+                    case "notification":
+                        //open
+                        if (this.$refs[`BottomMenuRef${this.mode}`]) {
+                            this.overlay = this.$refs[`BottomMenuRef${this.mode}`].open();
+                        }
+                        break;
+                    default:
+                        // this.nextStepMode();
+                        break;
                 }
             },
             close(){
@@ -957,8 +975,14 @@
                 this.showSnackbar.messageError = message;
                 this.showSnackbar.showError = true;
             },
-            goToAddVehicul(){
-                this.$router.push('/profil/perso/open-add-vehicle');
+            goToAddVehiculOrBank(){
+                if( this.cars.length != 0 && ! this.payouts_enabled){
+                    this.$router.push('/profil/perso/open-check-identiy');
+                }
+                else{
+                    this.$router.push('/profil/perso/open-add-vehicle');
+                }
+                
             },
         },
         watch: {

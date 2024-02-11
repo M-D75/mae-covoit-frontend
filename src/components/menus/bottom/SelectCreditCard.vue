@@ -30,7 +30,7 @@
     .v-card.select-credit-card {
         // height: inherit;
         box-shadow: none;
-        min-height: 50vh;
+        // min-height: 50vh;
         width: 100%;
         color: var(--font-color-label);
         .v-list {
@@ -82,6 +82,13 @@
         
                 <template v-slot:append>
                     <v-btn
+                        color="red"
+                        icon="mdi-delete-forever"
+                        variant="text"
+                        @click="deleteSource(card.id, index)"
+                    ></v-btn>
+
+                    <v-btn
                         :color="card.select ? 'green' : 'grey-lighten-1'"
                         :icon="defaultSource == card.id ? 'mdi-check-circle' : 'mdi-check-circle-outline'"
                         variant="text"
@@ -93,9 +100,8 @@
 
         <div class="contain-btn">
             <v-btn
-                :color="cards.length==1 && cards.find((card) => card.select == true) ? 'gray' : 'blue'"
+                :color="'blue'"
                 icon
-                :disabled="cards.length==1 && cards.find((card) => card.select == true)"
                 @click="addOrSelect()"
             >
                 <v-progress-circular v-if="load" indeterminate color="white"></v-progress-circular>
@@ -113,7 +119,7 @@
     import stripe from '@/utils/stripe.js'
 
     export default defineComponent({
-        emits: ["no-card-founded", "need-to-add-new-card", "card-selected"],
+        emits: ["no-card-founded", "need-to-add-new-card", "card-selected", "mount"],
         computed: {
             ...mapState("profil", ["darkMode"]),
             ...mapState("auth", ["customer_id", "customer"]),
@@ -142,6 +148,7 @@
             cardSelected: null,
         }),
         mounted(){
+            this.$emit("mount");
             const vue = this;
             this.load = true;
             stripe.paymentMethods.list({
@@ -207,6 +214,18 @@
             addOrSelect(){
                 this.cardSelected = null;
                 this.$emit("need-to-add-new-card");
+            },
+            async deleteSource(id, index){
+                console.log("id:", id, this.customer_id, this.cards[index]);
+
+                const customerSource = await stripe.customers.deleteSource(
+                    this.customer_id,
+                    id
+                );
+
+                this.cards = this.cards.slice().filter((card) => card.id != customerSource.id);
+
+                console.log("customerSource", customerSource, this.cards);
             },
         },
     });

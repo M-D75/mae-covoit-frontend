@@ -54,7 +54,7 @@
             white-space: nowrap; 
             overflow: hidden; 
             text-overflow: ellipsis;
-            max-width: 70%;
+            max-width: 80%;
         }
         .sub-title{
             font-size: 12px;

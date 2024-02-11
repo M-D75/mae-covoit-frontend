@@ -211,8 +211,13 @@
         mounted() {
             // console.log("action", this.action, this.$route.params);
             if( this.$route.params.action == 'open-add-vehicle' ){
-                if (this.$refs.BottomMenuRefModelVehicul) {
+                if ( this.$refs.BottomMenuRefModelVehicul ) {
                     this.overlay = this.$refs.BottomMenuRefModelVehicul.open();
+                }
+            }
+            else if( this.$route.params.action == 'open-check-identiy' ){
+                if( this.$refs.PaneApearIdentityRef ){
+                    this.$refs.PaneApearIdentityRef.open();
                 }
             }
             //this.$refs.BottomMenuRefPreference.open();

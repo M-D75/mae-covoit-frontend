@@ -212,9 +212,10 @@
 
 <!--  -->
 <script>
+    import axios from 'axios';
     //import $ from 'jquery';
     import { defineComponent } from 'vue';
-    import { mapState, mapActions } from 'vuex';
+    import { mapState, mapActions, mapGetters } from 'vuex';
     import { SafeAreaController, SafeArea } from '@aashu-dubey/capacitor-statusbar-safe-area';
 
     // Components
@@ -318,6 +319,7 @@
         },
         methods: {
             ...mapActions("trip", ["getContacts", "getProfilMember", "updateAccepteBooking", "updateRefusedBooking"]),
+            ...mapGetters("search", ["GET_VILLAGE_BY_ID"]),
             async goToProfil(userUid){
                 const memberOk = await this.getProfilMember({userUid: userUid});
                 if( memberOk )
@@ -338,6 +340,40 @@
                     else{
                         this.messageSnackbarSuccess = "La réservation de ce passager, à bien était validé !";
                         this.showSnackbarSuccess = true;
+
+
+                        // Notif
+                        const dateTrip = new Date(this.chat.contacts[index].booking[0].trip.departure_time);
+                        let hours = dateTrip.getUTCHours().toString().padStart(2, '0');
+                        let minutes = dateTrip.getUTCMinutes().toString().padStart(2, '0');
+                        let departure_time = `${hours}:${minutes}`;
+
+                        // Notif send
+                        let date = new Date();
+
+                        date.setMinutes(date.getMinutes() + 3);
+                        console.log("localDate", date);
+
+                        const adresse = {local: "http://192.168.134.15:8090", online: "https://server-mae-covoit-notif.infinityinsights.fr"}
+                        const typeUrl = this.modeCo;
+                        axios.post(`${adresse[typeUrl]}/reservation`, {
+                            userId: this.chat.contacts[index].user_id,
+                            date: date,
+                            title: "Tsiyo",
+                            body: `Vôtre trajet, à bien était validé par le chauffeur !`,
+                            data: {
+                                largeBody: `Tsiyo : Votre trajet de ${this.GET_VILLAGE_BY_ID(this.chat.contacts[index].booking[0].trip.village_departure_id)} à ${this.GET_VILLAGE_BY_ID(this.chat.contacts[index].booking[0].trip.village_arrival_id)} depart à ${departure_time} à bien été validé par le chauffeur.`,
+                                actions: {
+                                    goTo: "/profil/open-trip-passenger",
+                                }
+                            }
+                        })
+                        .then(response => {
+                            console.log(response.data);
+                        })
+                        .catch(error => {
+                            console.error('Il y a eu une erreur :', error);
+                        });   
                     }
                 }
                 else{
@@ -364,6 +400,39 @@
                     else{
                         this.messageSnackbarSuccess = "Réservation refusé !";
                         this.showSnackbarSuccess = true;
+
+                        //Notif
+                        const dateTrip = new Date(this.chat.contacts[index].booking[0].trip.departure_time);
+                        let hours = dateTrip.getUTCHours().toString().padStart(2, '0');
+                        let minutes = dateTrip.getUTCMinutes().toString().padStart(2, '0');
+                        let departure_time = `${hours}:${minutes}`;
+
+                        // Notif send
+                        let date = new Date();
+
+                        date.setMinutes(date.getMinutes() + 3);
+                        console.log("localDate", date);
+
+                        const adresse = {local: "http://192.168.134.15:8090", online: "https://server-mae-covoit-notif.infinityinsights.fr"}
+                        const typeUrl = this.modeCo;
+                        axios.post(`${adresse[typeUrl]}/reservation`, {
+                            userId: this.chat.contacts[index].user_id,
+                            date: date,
+                            title: "Désolé",
+                            body: `Vôtre trajet, à était refusé par le chauffeur !`,
+                            data: {
+                                largeBody: `Désolé : Votre trajet de ${this.GET_VILLAGE_BY_ID(this.chat.contacts[index].booking[0].trip.village_departure_id)} à ${this.GET_VILLAGE_BY_ID(this.chat.contacts[index].booking[0].trip.village_arrival_id)} depart à ${departure_time} à était refusé par le chauffeur`,
+                                actions: {
+                                    goTo: "/profil/open-trip-passenger",
+                                }
+                            }
+                        })
+                        .then(response => {
+                            console.log(response.data);
+                        })
+                        .catch(error => {
+                            console.error('Il y a eu une erreur :', error);
+                        });   
                     }
                 }
                 else{

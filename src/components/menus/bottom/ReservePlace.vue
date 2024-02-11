@@ -278,6 +278,7 @@
         v-model="showSnackbarError"
         :timeout="4000"
         color="error"
+        style="z-index: 9999;"
     >
         <div class="contain-ico">
             <v-icon icon="mdi-alert-circle"></v-icon> 
@@ -310,9 +311,9 @@
     // Components
     export default {
         name: 'reserve-place-menu-comp',
-        emits: ["test-notif-success", "no-source-founded"],
+        emits: ["test-notif-success", "no-source-founded", "notif-failed"],
         computed: {
-            ...mapState("profil", ["userUid", "notification", "soldes", "customer_id", "darkMode"]),
+            ...mapState("profil", ["userUid", "notification", "soldes", "customer_id", "darkMode", "modeCo"]),
             ...mapState("auth", ["customer_id"]),
             ...mapState("search", ["trajetSelected"]),
             ...mapActions("search", ["reserveTrajet"]),
@@ -350,7 +351,7 @@
         methods: {
             ...mapActions("profil", ["getSoldes"]),
             updateCar(){
-                if ( Object.keys(this.trajetSelected).length > 0 && this.trajetSelected.car ) {
+                if ( this.trajetSelected != undefined && Object.keys(this.trajetSelected).length > 0 && this.trajetSelected.car != undefined && this.trajetSelected.car ) {
                     this.car.model = this.trajetSelected.car.brand != "UNKNOWN" ? this.trajetSelected.car.brand : this.trajetSelected.car.license_plate;
                     this.car.model = this.trajetSelected.car.model;
                     this.car.brand = this.trajetSelected.car.brand;
@@ -375,67 +376,53 @@
                             largeIcon: "res://icon",
                         }]
                     });
-
-                    let dateString = "";
-
-                    // Nettoyage de la chaîne pour respecter le format ISO 8601 (suppression des microsecondes et conversion de +00 en Z)
-                    //dateString = this.trajetSelected.departure_time.replace(' ', 'T').slice(0, -3) + 'Z';
-                    dateString = this.trajetSelected.departure_time;
-                    let date = new Date(dateString);
-
-                    // Créez une nouvelle date ajustée pour le fuseau horaire local
-                    date.setMinutes(date.getMinutes() - 5);
-                    console.log("localDate", date);
-
-                    let currentDate = new Date();
-
-                    // Calculez la différence en millisecondes
-                    let difference = currentDate.getTime() - date.getTime();
-
-                    // Convertissez cette différence en minutes
-                    let differenceInMinutes = difference / (1000 * 60);
-
-                    // Vérifiez si la différence est supérieure à 30 minutes
-                    if ( differenceInMinutes > 30 )
-                        console.log("diff-ok");
-                    else
-                        console.log("non-diff");
-
-                    const adresse = {local: "http://192.168.134.15:8090", online: "https://server-mae-covoit-notif.infinityinsights.fr"}
-                    axios.post(`${adresse.online}/reservation`, {
-                        userId: this.userUid,
-                        date: date,
-                        title: "Tchipou Tchipou",
-                        body: `Tsiyo, soyez prêt pour vôtre départ ! Horaire : ${this.trajetSelected.hour_start}. Ne soyez pas en retard !`,
-                        data: {
-                            largeBody: `Tsiyo : Votre trajet de ${this.trajetSelected.depart} à ${this.trajetSelected.destination} depart à ${this.trajetSelected.hour_start} est proche. Ne soyez pas en retard.`,
-                        }
-                    })
-                    .then(response => {
-                        console.log(response.data);
-                    })
-                    .catch(error => {
-                        console.error('Il y a eu une erreur :', error);
-                    });
-
-                    // await LocalNotifications.schedule({
-                    //     notifications: [{
-                    //         id: 1,
-                    //         title: "Tchipou Tchipou",
-                    //         body: "Tsiyo, soyez prêt pour vôtre départ !",
-                    //         largeBody: `Tsiyo : Votre trajet de ${this.trajetSelected.depart} à ${this.trajetSelected.destination} depart à ${this.trajetSelected.hour_start} est proche. Ne soyez pas en retard.`,
-                    //         summaryText: "",
-                    //         schedule: { at: date }, // dans 5 secondes
-                    //         iconColor: "red",
-                    //         smallIcon: "res://icon",
-                    //         largeIcon: "res://icon",
-                    //     }]
-                    // });
-                //} 
                 }
                 else{
                     console.log("permission non accordé");
                 }
+
+                let dateString = "";
+
+                // Nettoyage de la chaîne pour respecter le format ISO 8601 (suppression des microsecondes et conversion de +00 en Z)
+                //dateString = this.trajetSelected.departure_time.replace(' ', 'T').slice(0, -3) + 'Z';
+                dateString = this.trajetSelected.departure_time;
+                let date = new Date(dateString);
+
+                // Créez une nouvelle date ajustée pour le fuseau horaire local
+                date.setMinutes(date.getMinutes() - 30);
+                console.log("localDate", date);
+
+                let currentDate = new Date();
+
+                // Calculez la différence en millisecondes
+                let difference = currentDate.getTime() - date.getTime();
+
+                // Convertissez cette différence en minutes
+                let differenceInMinutes = difference / (1000 * 60);
+
+                // Vérifiez si la différence est supérieure à 30 minutes
+                if ( differenceInMinutes > 30 )
+                    console.log("diff-ok");
+                else
+                    console.log("non-diff");
+
+                const adresse = {local: "http://192.168.134.15:8090", online: "https://server-mae-covoit-notif.infinityinsights.fr"}
+                const typeUrl = this.modeCo;
+                axios.post(`${adresse[typeUrl]}/reservation`, {
+                    userId: this.userUid,
+                    date: date,
+                    title: "Tchipou Tchipou",
+                    body: `Tsiyo, soyez prêt pour vôtre départ ! Horaire : ${this.trajetSelected.hour_start}. Ne soyez pas en retard !`,
+                    data: {
+                        largeBody: `Tsiyo : Votre trajet de ${this.trajetSelected.depart} à ${this.trajetSelected.destination} depart à ${this.trajetSelected.hour_start} est proche. Ne soyez pas en retard.`,
+                    }
+                })
+                .then(response => {
+                    console.log(response.data);
+                })
+                .catch(error => {
+                    console.error('Il y a eu une erreur :', error);
+                });   
             },
             async tryReserve(){
                 console.log("tryReserve...");
@@ -470,6 +457,9 @@
                 if( ! reserved.valided ){
                     this.messageSnackbarError=reserved.message;
                     this.showSnackbarError=true;
+
+                    this.message = reserved.message;
+                    this.$emit("notif-failed");
                 }
                 else{
                     if(isAndroid || isIOS)

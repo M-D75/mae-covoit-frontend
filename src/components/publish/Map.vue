@@ -68,7 +68,8 @@
             @ready="isLoaded()" 
             ref="mapRef"
         >            
-            <l-tile-layer url="https://api.maptiler.com/maps/winter-v2/{z}/{x}/{y}.png?key=faY6afh2tnFprZqdoyZP"/>
+            <!-- <l-tile-layer url="https://api.maptiler.com/maps/winter-v2/{z}/{x}/{y}.png?key=faY6afh2tnFprZqdoyZP"/> -->
+            <l-tile-layer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"/>
 
 
             <!-- origin -->

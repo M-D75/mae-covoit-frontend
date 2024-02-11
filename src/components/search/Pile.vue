@@ -160,6 +160,7 @@
 
     export default defineComponent({
         name: 'pile-search-comp',
+        emits: ["fast-get-trip", "reserve"],
         setup() {
             const blocPile = ref(null);
 
@@ -221,8 +222,8 @@
                 this.info = {};
                 this.load = true;
 
-                // await this.getTrajets();
-                await this.getTrajetsFake();
+                await this.getTrajets();
+                // await this.getTrajetsFake();
                 
                 setTimeout(function(){
 

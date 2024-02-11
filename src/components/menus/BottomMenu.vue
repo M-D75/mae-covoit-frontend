@@ -520,9 +520,20 @@
                 **************
             -->
             <TrajetMember v-if="!notif && mode=='reserve'" :load="loading" :infos="infos" v-on:touched-avatar="$emit('touched-avatar')"/>
-            <ReservePlace ref="ReservePlaceRef" v-if="!notif && mode=='reserve'" v-on:no-source-founded="$emit('need-payment-intent-reserve')" v-on:test-notif-success="reserveNotif()"/>
+            <ReservePlace 
+                v-if="!notif && mode=='reserve'"
+                ref="ReservePlaceRef"  
+                v-on:no-source-founded="$emit('need-payment-intent-reserve')" 
+                v-on:test-notif-success="reserveNotif()"
+                v-on:notif-failed="reserveNotifFailed()"
+            />
 
-            <Notification v-if="notif && mode=='reserve'" :icon="reserve.icon" :message="reserve.message" />
+            <Notification 
+                v-if="notif && mode=='reserve'" 
+                :icon="reserve.icon" 
+                :message="reserve.message" 
+                :color="color" 
+                />
             <!-- End Results -->
 
             <!-- ** Publish **
@@ -773,16 +784,20 @@
                 <SelectCreditCard
                     v-if="creditCard.mode=='see-card'"
                     ref="SelectCreditCardRef"
-                    v-on:need-to-add-new-card="creditCard.mode='register-card'; reOpenB(); "
-                    v-on:no-card-founded="creditCard.mode='register-card'; open_b ? reOpenB() : console.log('not-opened') ;"
-                    v-on:card-selected="updateDefaultSourcePayment()"
+                    v-on:need-to-add-new-card="creditCard.mode='register-card'; reOpenB();"
+                    v-on:no-card-founded="creditCard.mode='register-card'; open_b ? reOpenB() : console.log('not-opened', creditCard.mode);"
+                    v-on:card-selected="updateDefaultSourcePayment(); console.log('card-selected')"
+                    v-on:unmount="loading=true"
+                    v-on:mount="loading=false"
                 />
 
                 <StripeCheckout
-                    v-if="creditCard.mode=='register-card'"
+                    v-if="creditCard.mode=='register-card' && open_b"
                     mode="register-card"
                     v-on:card-registered="close(); creditCard.mode='see-card'"
                     v-on:card-register-failed="close(); registerFailed()"
+                    v-on:unmount="loading=true"
+                    v-on:mount="loading=false"
                 />
             </div>
 
@@ -799,135 +814,6 @@
                     v-on:element-mounted="reOpenB()"
                     v-on:payment-valided="close(); $emit('retry-reserve')"
                 />
-            </div>
-
-            <!-- Add Card -->
-            <div
-                v-if="mode=='register-credit-card' && false" 
-                class="credit-card card-contain"
-            >
-                
-                <!-- num card -->
-                <div class="bloc-saisi num-credit-card">
-                    <div>
-                        <v-text-field
-                            v-model="numericValues[0]"
-                            placeholder="1234"
-                            maxLength="4"
-                            @input="checkNumericalValue($event, 'input2')"
-                            @keydown="handleKeydown($event, '1')"
-                            ref="input1"
-                            single-line
-                            variant="solo"
-                            role="number"
-                            inputmode="numeric"
-                            ></v-text-field>
-                    </div>
-                    <div>
-                        <v-text-field
-                            v-model="numericValues[1]"
-                            placeholder="1234"
-                            maxLength="4"
-                            @input="checkNumericalValue($event, 'input3')"
-                            @keydown="handleKeydown($event, '2')"
-                            ref="input2"
-                            single-line
-                            variant="solo"
-                            role="number"
-                            inputmode="numeric"
-                            ></v-text-field>
-                    </div>
-                    <div>
-                        <v-text-field
-                            v-model="numericValues[2]"
-                            placeholder="1234"
-                            maxLength="4"
-                            @input="checkNumericalValue($event, 'input4')"
-                            @keydown="handleKeydown($event, '3')"
-                            ref="input3"
-                            single-line
-                            variant="solo"
-                            role="number"
-                            inputmode="numeric"
-                            ></v-text-field>
-                    </div>
-                    <div>
-                        <v-text-field
-                            v-model="numericValues[3]"
-                            placeholder="1234"
-                            maxLength="4"
-                            @input="checkNumericalValue($event, 'input5')"
-                            @keydown="handleKeydown($event, '4')"
-                            ref="input4"
-                            single-line
-                            variant="solo"
-                            role="number"
-                            inputmode="numeric"
-                            ></v-text-field>
-                    </div>
-                </div>
-                
-                <!-- date/cvc -->
-                <div class="date-cvc">
-                    <!-- date -->
-                    <div class="bloc-saisi date">
-                        <div class="month">
-                            <v-text-field
-                                v-model="numericValues[4]"
-                                @input="checkNumericalValue($event, 'input6')"
-                                @keydown="handleKeydown($event, '5')"
-                                ref="input5" 
-                                placeholder="MM" 
-                                maxLength="2" 
-                                variant="solo"
-                                role="number"
-                                inputmode="numeric"
-                            ></v-text-field>
-                        </div>
-                        <div class="slash">/</div>
-                        <div class="year">
-                            <v-text-field
-                                v-model="numericValues[5]"
-                                @input="checkNumericalValue($event, 'input7')"
-                                @keydown="handleKeydown($event, '6')"
-                                ref="input6" 
-                                placeholder="YY" 
-                                maxLength="2" 
-                                variant="solo"
-                                role="number"
-                                inputmode="numeric"
-                            ></v-text-field>
-                        </div>
-                    </div>
-                    
-                    <!-- cvc -->
-                    <div class="bloc-saisi cvc">
-                        <v-text-field
-                            v-model="numericValues[6]"
-                            @input="checkNumericalValue($event, 'input8')"
-                            @keydown="handleKeydown($event, '7')"
-                            ref="input7"
-                            placeholder="123" 
-                            variant="solo"
-                            maxLength="3"
-                            role="number"
-                            inputmode="numeric"
-                        ></v-text-field>
-                    </div>
-                </div>
-
-                <!-- name card -->
-                <div class="bloc-saisi name">
-                    <v-text-field v-model="nameCreditCard" @input="checkNameValue($event)" ref="input8" placeholder="Eddine Omar" variant="solo"></v-text-field>
-                </div>
-
-                <v-btn
-                    class="text-none"
-                    rounded="xl" 
-                    size="x-large"
-                    variant="outlined"
-                    block
-                >Enregistrer</v-btn>
             </div>
 
             <!-- Password -->
@@ -1255,6 +1141,7 @@
                 y: 0,
                 draggableBar: true,
                 notif: false,
+                color: '#9fcb66',
                 active: true,
                 disabledY: false,
                 sizeScreen: 0,
@@ -1473,7 +1360,7 @@
             open(){
                 
                 this.subContHeigth = this.$refs.subCont.clientHeight;
-                
+
                 console.log("open_b", this.open_b, this.subContHeigth);
                 if ( ! this.open_b ) {
                     if( ! this.move ){
@@ -1487,22 +1374,25 @@
                         this.y = this.sizeScreen - ( this.subContHeigth + 50 );
                         const _this = this;
                         
-                        
                         $(classBottomMenuNameJquery).animate({"top": `${_this.y}px`}, "fast", function(){
                             // $(this).animate({"top": "auto"}, 1000);
                             _this.y = parseInt($(this).css("top").replace("px", ""));
                             _this.move = false;
                             _this.$emit('opened');
                             const classBottomMenuNameJqueryDraggable = _this.className != "" && _this.className != null ? `.draggable.${_this.className.join(".")}` : ".draggable";
-                            $(classBottomMenuNameJqueryDraggable).addClass("open")
+                            $(classBottomMenuNameJqueryDraggable).addClass("open");
+                            console.log("opeeeeeneddd");
                         });
 
                         this.open_b = true;
+                        console.log("opened ?222", this.open_b);
                     }
                     else{
                         this.open_b = false;
                     }
                 }
+
+                console.log("opened ?", this.open_b);
 
                 return this.open_b;
             },
@@ -1549,9 +1439,6 @@
 
                         const classBottomMenuNameJqueryDraggable = _this.className != "" && _this.className != null ? `.draggable.${_this.className.join(".")}` : ".draggable";
                         $(classBottomMenuNameJqueryDraggable).removeClass("open")
-
-                        if( _this.mode == 'register-credit-card')
-                            _this.creditCard.mode='see-card';
 
                         _this.$emit('close');
                     });
@@ -1732,6 +1619,15 @@
                 else
                     this.reserve.icon = "mdi-clock-time-eight-outline";
 
+                this.color = "#9fcb66";
+                this.notif = !this.notif;
+            },
+            reserveNotifFailed(){
+                this.reserve.message = this.$refs.ReservePlaceRef.message;
+                
+                this.reserve.icon = "mdi-alert-circle";
+                this.color = "red";
+
                 this.notif = !this.notif;
             },
             async updateDefaultSourcePayment(){
@@ -1809,11 +1705,11 @@
                 console.log("reOpen");
                 
                 setTimeout(function(){
-                    console.log("oppp");
+                    console.log("re-open:", this.open_b, this.move);
                     this.open_b = false;
+                    this.move = false;
                     this.open();
-                }.bind(this), 20)
-                
+                }.bind(this), 20);
             },
             tryReserveRes(){
                 this.$refs.ReservePlaceRef.tryReserve();
@@ -1841,10 +1737,9 @@
                 this.priceRecomended.max = arrondirSpecial(this.priceRecommended)+1;
             },
             mode(){
-                console.log("changed mode");
-                if(this.open_b){
-                    this.close();
-                    this.open();
+                console.log("changed mode", this.mode);
+                if( this.open_b ){
+                    this.reOpenB();
                 }
             },
 

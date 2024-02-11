@@ -374,13 +374,21 @@
                 this.labelDashBoard = "synthèse";
             }
 
+            if( this.$route.params.action == 'open-trip-passenger' ){
+                this.onglet = "trajets";
+            }
+            else if( this.$route.params.action == 'open-trip-driver' ){
+                this.SET_MODE_DRIVER(true);
+                this.onglet = "planning";
+            }
+
             // this.$refs.PaneApearProfilMemberRef.open()
             // this.$refs.PaneApearRef.open()
         },
         methods: {
             ...mapActions("profil", ["getTravels", "getPublish", "buildHistoriqueBooking"]),
             ...mapActions("auth", ["checkSession"]),
-            ...mapMutations("profil", ["SET_LOAD_GET_TRIP_PUBLISH"]),
+            ...mapMutations("profil", ["SET_LOAD_GET_TRIP_PUBLISH", "SET_MODE_DRIVER"]),
             ...mapMutations("trip", ["SET_NOT_MESSAGE_VUE"]),
             async checkSessionIn(){
                 this.loadCreaditCard = true

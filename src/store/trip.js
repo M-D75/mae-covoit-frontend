@@ -179,42 +179,56 @@ export default {
     },
     actions: {
         async getContacts({ state }){
-            console.log("getConctats", state.tripSelected.bookings.length);
+            if(state.tripSelected != undefined && state.tripSelected.bookings != undefined) {
+                console.log("getConctats", state.tripSelected.bookings.length);
+            }
+            else {
+                console.log("getConctats-trip", state.tripSelected);
+                state.chat.contacts = [];
+                return;
+            }
+
             let contacts = [];
             let accounts_id = [];
 
             // get-account
-            for (let index = 0; index < state.tripSelected.bookings.length; index++) {
+            if( state.tripSelected != undefined && state.tripSelected.bookings != undefined ){
+                for (let index = 0; index < state.tripSelected.bookings.length; index++) {
+                    const passenger_account_id = state.tripSelected.bookings[index].passenger_account_id;
+                    const trip_id = state.tripSelected.id;
+                    console.log("trip_id-----", trip_id);
+                    if( ! accounts_id.includes(passenger_account_id) ){
 
-                const passenger_account_id = state.tripSelected.bookings[index].passenger_account_id;
-                const trip_id = state.tripSelected.id;
-                console.log("trip_id-----", trip_id);
-                if( ! accounts_id.includes(passenger_account_id) ){
-
-                    let { data: account, error: error_account } = await supabase
-                        .from('account')
-                        .select(`
-                            *,
-                            booking (
+                        let { data: account, error: error_account } = await supabase
+                            .from('account')
+                            .select(`
                                 *,
-                                trip (max_seats)
-                            )
-                        `)
-                        .eq('id', passenger_account_id)
-                        .eq('booking.trip_id', trip_id)
+                                booking (
+                                    *,
+                                    trip (
+                                        max_seats,
+                                        village_departure_id,
+                                        village_arrival_id,
+                                        departure_time
+                                    )
+                                )
+                            `)
+                            .eq('id', passenger_account_id)
+                            .eq('booking.trip_id', trip_id)
 
-                    if( error_account ){
-                        console.error("Error:", error_account);
+                        if( error_account ){
+                            console.error("Error:", error_account);
+                        }
+
+                        let contact = account[0];
+                        // contact.avatar = "https://avataaars.io/?avatarStyle=Circle&topType=ShortHairDreads01&accessoriesType=Blank&hairColor=PastelPink&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Wink&eyebrowType=DefaultNatural&mouthType=Serious&skinColor=Tanned";
+                        contact.messageNumber = 0;
+                        
+                        console.log("contact", contact);
+                        contacts.push(contact);
+                        accounts_id.push(passenger_account_id);
+
                     }
-
-                    let contact = account[0];
-                    // contact.avatar = "https://avataaars.io/?avatarStyle=Circle&topType=ShortHairDreads01&accessoriesType=Blank&hairColor=PastelPink&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Wink&eyebrowType=DefaultNatural&mouthType=Serious&skinColor=Tanned";
-                    contact.messageNumber = 0;
-                    
-                    console.log("contact", contact);
-                    contacts.push(contact);
-                    accounts_id.push(passenger_account_id);
-
                 }
             }
             

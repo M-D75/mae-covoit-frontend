@@ -148,6 +148,7 @@ export default {
                                     };
 
                                     datasNewTrips.push(dataNewTrip);
+                                    store.state.profil.history.datesTripDriver.push(dataNewTrip.departure_time);
                                 }
                             }
                             
@@ -177,6 +178,7 @@ export default {
                                     };
 
                                     datasNewTrips.push(dataNewTrip);
+                                    store.state.profil.history.datesTripDriver.push(dataNewTrip.departure_time);
                                 }
                             }
                         }
@@ -204,6 +206,8 @@ export default {
                 console.error("Error : ", error);
                 return {status: 3, message: "Une erreur s'est produite lors de la tentative de publication !"}
             }
+
+            
 
             return {status: 0, message: "Vos trajets ont bien été publié !"}
         },

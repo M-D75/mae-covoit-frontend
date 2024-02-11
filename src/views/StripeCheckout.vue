@@ -45,8 +45,8 @@
 <template>
     <!-- payment -->
     <v-form 
-        v-if="modeIn=='payment-card'" id="payment-form"
-        @submit.prevent="submitPayment($event)"
+        v-if="modeIn=='payment-card'" 
+        id="payment-form"
     >
         <div id="payment-element">
             <!--Stripe.js injects the Payment Element-->
@@ -70,8 +70,9 @@
     </v-form>
 
     <!-- card -->
-    <v-form 
-        v-if="modeIn=='register-card'" id="card-form"
+    <form 
+        v-if="modeIn=='register-card'" 
+        id="card-form"
     >
         <div id="card-element">
             <!--Stripe.js injects the Payment Element-->
@@ -82,7 +83,6 @@
             block
             type="submit"
             :loading="loading"
-            @submit.prevent="submitPayment($event)"
         >
             Enregistrer la carte
             <template v-slot:loader>
@@ -91,7 +91,7 @@
         </v-btn>
 
         <div id="card-message" class="hidden"></div>
-    </v-form>
+    </form>
 </template>
 
 <script>
@@ -104,7 +104,7 @@
 
     export default defineComponent({
         name: 'stripe-checkout-view',
-        emits: ["checkbox-update", "payment-valided", "payment-failed", "element-mounted", "card-registered", "card-register-failed"],
+        emits: ["checkbox-update", "payment-valided", "payment-failed", "element-mounted", "card-registered", "card-register-failed", "unmount", "mount"],
         computed: {
             ...mapState("profil", ["darkMode"]),
             ...mapState("auth", ["customer_id"]),
@@ -135,7 +135,16 @@
                 appearancePaymentIntent: {},
             };
         },
+        beforeUnmount(){
+            this.card = null;
+            this.loading = false;
+            this.elements = null;
+            console.log("unmount-stripe-chekcout:", this.modeIn);
+            this.$emit("unmount");
+        },
         async mounted() {
+            this.$emit("mount");
+            console.log("mount-strip-checkout", this.mode);
             this.modeIn = this.mode;
             this.appearancePaymentIntent = {
                 theme: this.darkMode ? 'night' : 'minimal',
@@ -189,7 +198,7 @@
             mountCardRegister(){
                 stripePromise.then(stripe => {
                     const appearance = {
-                        theme: this.darkMode ? 'night' : 'minimal',
+                        theme: this.darkMode ? 'night' : 'stripe',
                     };
 
                     //https://stripe.com/docs/js/elements_object/create
@@ -254,31 +263,41 @@
             },
             async submitCard(e) {
                 e.preventDefault();
-                this.loading = true; 
+                this.loading = true;
                 // $(".spinner").removeClass("hidden");
                 const vue = this;
                 const stripePublic = await stripePromise;
                 
-                console.log("creation...");
-                const { token, error } = await stripePublic.createToken(vue.card);
+                console.log("creation...", vue.card);
 
-                if (error) {
-                    console.error(error);
-                    this.$emit("card-register-failed")
-                } 
-                else {
-                    // create source card
-                    const card = await stripe.customers.createSource(
-                        this.customer_id,
-                        {
-                            source: token.id,
+                try {
+                    stripePublic.createToken(vue.card).then(async function(result) {
+                        // Handle result.error or result.token
+                        if (result.error) {
+                            console.log("erro---");
+                            console.error("Error:::", result.error);
+                            vue.$emit("card-register-failed")
+                        } 
+                        else {
+                            // create source card
+                            const card = await stripe.customers.createSource(
+                                vue.customer_id,
+                                {
+                                    source: result.token.id,
+                                }
+                            );
+                            vue.$emit("card-registered");
+                            vue.loading = false;
+                            console.log("card:", card, vue.loading, result.token);
                         }
-                    );
-                    this.$emit("card-registered")
-                    console.log("card:", card);
+                        // $(".spinner").addClass("hidden");
+                        vue.loading = false;
+                    });
                 }
-                // $(".spinner").addClass("hidden");
-                this.loading = false; 
+                catch (error) {
+                    console.log("ERROR===:", error);
+                    vue.loading = false;
+                }
             },
             // ******
             // payment-intent

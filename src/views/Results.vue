@@ -281,7 +281,7 @@
 
                         break;
                     case 2: //nb-place
-                        trips = trips.sort((a, b) => (a.max_seats - a.passenger_number) - (b.max_seats - b.passenger_number));
+                        trips = trips.sort((a, b) => (b.max_seats - b.passenger_number) - (a.max_seats - a.passenger_number));
                         break;
                     default:
                         break;
@@ -471,7 +471,7 @@
         watch: {
             overlay() {
                 if ( ! this.overlay ) {
-                    if (this.$refs.BottomMenuRefResults && this.$refs.BottomMenuRefResults.notif) {
+                    if ( this.$refs.BottomMenuRefResults && this.$refs.BottomMenuRefResults.notif ) {
                         this.$router.replace("/search")
                     }
                 }

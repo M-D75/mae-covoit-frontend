@@ -20,7 +20,7 @@ export default {
             animal: "animal",
         },
         auto_accept_trip: true,
-        modeCo: "online", //online, local
+        modeCo: "local", //online, local
         notification: true,
         modeDriver: false,
         darkMode: false,
@@ -101,6 +101,8 @@ export default {
         history: {
             historycalBooking: {},
             load: false,
+            datesTripPassenger: [],
+            datesTripDriver: [],
         },
         preferenceVirementMode: 0,
         cars: [],
@@ -155,6 +157,14 @@ export default {
         SET_CGU_ACCEPTED(state, bool){
             console.log("CGU:", bool);
             state.cguAccepted = bool;
+        },
+        SET_REMOVE_HISTORY_DATES(state, infos){ //Supprime une date si elle a expiré
+            if( infos.type=='passenger' ){
+                state.history.datesTripPassenger.splice(infos.index, 1);
+            }
+            else{
+                state.history.datesTripDriver.splice(infos.index, 1);
+            }
         }
     },
     actions: {
@@ -409,7 +419,7 @@ export default {
                     if( store.state.trip.notMessageVue.includes(booking.id + "") )
                         booking.notifMessage = true;
 
-                    if( currentDate.getTime() <= new Date(booking.departure_time).getTime() && booking.is_accepted )
+                    if( currentDate.getTime() <= new Date(booking.departure_time).getTime() )
                         _trips.push(booking);
                 }
             }

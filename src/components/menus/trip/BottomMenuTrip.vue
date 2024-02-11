@@ -453,6 +453,7 @@
                                 :size="indexB == 3 ? 'x-large' : 'default'"
                                 :class="indexB == 3 ? 'last' : ''"
                                 variant="outlined"
+                                @click="btn.fun; $emit('alert')"
                             >
                                 <v-icon>{{ btn.icon }}</v-icon>
                             </v-btn>
@@ -542,7 +543,7 @@
 
     export default defineComponent({
         name: 'bottom-menu',
-        emits: ["opened", "close"], // <--- add this line
+        emits: ["opened", "close", "alert"], // <--- add this line
         components: {
             Vue3DraggableResizable,
         },
@@ -637,44 +638,44 @@
                                 fun: ()=>console.log("click"),
                             },
                         ],
-                        [
-                            {
-                                icon: "mdi-halloween", 
-                                fun: ()=>console.log("click"),
-                            },
-                            {
-                                icon: "mdi-ocarina", 
-                                fun: ()=>console.log("click"),
-                            },
-                            {
-                                icon: "mdi-coach-lamp-variant", 
-                                fun: ()=>console.log("click"),
+                        // [
+                        //     {
+                        //         icon: "mdi-halloween", 
+                        //         fun: ()=>console.log("click"),
+                        //     },
+                        //     {
+                        //         icon: "mdi-ocarina", 
+                        //         fun: ()=>console.log("click"),
+                        //     },
+                        //     {
+                        //         icon: "mdi-coach-lamp-variant", 
+                        //         fun: ()=>console.log("click"),
                             
-                            },
-                            {
-                                icon: "mdi-chemical-weapon", 
-                                fun: ()=>console.log("click"),
-                            },
-                        ],
-                        [
-                            {
-                                icon: "mdi-skull-crossbones", 
-                                fun: ()=>console.log("click"),
-                            },
-                            {
-                                icon: "mdi-bone", 
-                                fun: ()=>console.log("click"),
-                            },
-                            {
-                                icon: "mdi-account-cowboy-hat", 
-                                fun: ()=>console.log("click"),
+                        //     },
+                        //     {
+                        //         icon: "mdi-chemical-weapon", 
+                        //         fun: ()=>console.log("click"),
+                        //     },
+                        // ],
+                        // [
+                        //     {
+                        //         icon: "mdi-skull-crossbones", 
+                        //         fun: ()=>console.log("click"),
+                        //     },
+                        //     {
+                        //         icon: "mdi-bone", 
+                        //         fun: ()=>console.log("click"),
+                        //     },
+                        //     {
+                        //         icon: "mdi-account-cowboy-hat", 
+                        //         fun: ()=>console.log("click"),
                             
-                            },
-                            {
-                                icon: "mdi-drama-masks", 
-                                fun: ()=>console.log("click"),
-                            },
-                        ],
+                        //     },
+                        //     {
+                        //         icon: "mdi-drama-masks", 
+                        //         fun: ()=>console.log("click"),
+                        //     },
+                        // ],
                     ]
                     
                 }

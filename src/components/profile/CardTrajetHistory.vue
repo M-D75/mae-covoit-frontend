@@ -165,9 +165,21 @@
                         <div class="hour">{{ infos.hour_start }}</div>
                     </div>
 
-                    <div v-if="mode=='planning'" style="display: flex; justify-content: space-between;">
+                    <div 
+                        v-if="mode=='planning'" 
+                        style="display: flex; justify-content: space-between;"
+                    >
                         <v-icon>mdi-seat-passenger</v-icon>
                         <div class="nb-passenger">{{ infos.passenger_number }}</div>
+                    </div>
+
+                    <div 
+                        v-if="mode!='planning'" 
+                        style="display: flex; justify-content: space-between;"
+                    >
+                        <v-icon v-if="infos.is_accepted" color="green">mdi-check-bold</v-icon>
+                        <v-icon v-if="!infos.is_accepted && !infos.is_refused">mdi-clock-time-two-outline</v-icon>
+                        <v-icon v-if="infos.is_refused" color="red">mdi-close-thick</v-icon>
                     </div>
 
                     <v-chip
@@ -245,19 +257,30 @@
             ...mapMutations("trip", ["SET_TRIP_SELECTED"]),
             ...mapActions("trip", ["getContacts", "getProfilMember"]),
             async selectTrip(){
-                this.SET_TRIP_SELECTED(this.infos);
-                if( this.mode == 'trajets' ){
-                    this.$router.push('/trip')
-                }
-                else{
-                    await this.getContacts();
-                    console.log("contacts:", this.chat.contacts);
-                    if( this.chat.contacts.length > 0 )
-                        this.$router.push('/message');
-                    else {
-                        this.messageSnackbarError = "Aucun passager n'a reserver ce trajet";
-                        this.showSnackbarError = true;
+                if( this.infos.is_accepted ){
+                    this.SET_TRIP_SELECTED(this.infos);
+                    if( this.mode == 'trajets' ){
+                        this.$router.push('/trip')
                     }
+                    else{
+                        await this.getContacts();
+                        console.log("contacts:", this.chat.contacts);
+                        if( this.chat.contacts.length > 0 ){
+                            this.$router.push('/message');
+                        }
+                        else {
+                            this.messageSnackbarError = "Aucun passager n'a reserver ce trajet";
+                            this.showSnackbarError = true;
+                        }
+                    }
+                }
+                else {
+                    if( ! this.infos.is_accepted && ! this.infos.is_refused)
+                        this.messageSnackbarError = "Trajet en attente de validation par le chauffeur";
+                    else
+                        this.messageSnackbarError = "Trajet refusé par le chauffeur";
+
+                    this.showSnackbarError = true;
                 }
             },
             async headerClick(){

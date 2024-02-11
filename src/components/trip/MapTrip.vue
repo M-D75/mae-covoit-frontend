@@ -55,6 +55,7 @@
                 :disabled="routes.length <= 1"
                 @click="swapRoute()"  
             />
+
             <v-btn 
                 icon
                 @click="$router.push('/message')"
@@ -62,6 +63,11 @@
                 <v-icon>mdi-chat-processing-outline</v-icon>
                 <span v-if="notifChat" class="notif-chat"></span>
             </v-btn>
+
+            <v-btn
+                :icon=" shareLocalisation ? 'mdi-map-marker-outline' : 'mdi-map-marker-off-outline'"
+                @click="shareLocalisation = !shareLocalisation"  
+            />
         </div>
 
         <div class="menu left">
@@ -209,7 +215,7 @@
     /> -->
 
     <BottomMenuTrip
-        mode="alert"
+        mode="map"
         :class-name="['alert']"
         ref="BottomMenuRef"
         v-on:close="open_b = false"
@@ -229,6 +235,38 @@
     </v-overlay>
 
 
+    <v-dialog 
+        v-model="dialog"
+        style="z-index: 9999;"
+    >
+        <template v-slot:activator="{ props }">
+            <v-btn v-bind="props" text="Open Dialog"> </v-btn>
+        </template>
+
+        <template v-slot:default="{ isActive }">
+            <v-card>
+                <v-card-title>
+                    Localisation
+                    <v-icon icon="mdi-map-marker-off-outline"></v-icon>
+                </v-card-title>
+
+                <v-card-text>
+                    Nous n'avons pas pu obtenir votre localisation, vérifier les permessions.
+                </v-card-text>
+
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+
+                    <v-btn
+                        text="Ok"
+                        @click="isActive.value = false"
+                    ></v-btn>
+                </v-card-actions>
+            </v-card>
+        </template>
+    </v-dialog>
+
+
 </template>
 
 <script>
@@ -246,6 +284,11 @@
     import { LMap, LTileLayer, LMarker, LPopup, LPolyline, LTooltip, LCircleMarker } from "@vue-leaflet/vue-leaflet";
     import { SafeAreaController } from '@aashu-dubey/capacitor-statusbar-safe-area';
     // import $ from 'jquery';
+
+    import { Capacitor } from '@capacitor/core';
+
+    const isAndroid = Capacitor.getPlatform() === 'android';
+    const isIOS = Capacitor.getPlatform() === 'ios';
     
     //componants
     import BottomMenuTrip from '@/components/menus/trip/BottomMenuTrip.vue';
@@ -314,6 +357,7 @@
         },
         data() {
             return {
+                dialog: false,
                 notifChat: false,
                 open_b: true, //open bottom menu
                 overlayLoad: false,
@@ -375,10 +419,15 @@
                         }
                     },
                 },
+                getGeolocalisation: false,
+                shareLocalisation: true,
+                watchId: null,
                 socket: null,
                 mode_driver: false,
                 colorsLoc: ["red", "black", "green", "yellow"],
-                localisation: [{type: "driver", latLng: [-12.7997252, 45.1038055]}, {type: "passenger", latLng: [-12.7797252, 45.1038055]}]
+                localisation: [
+                    // {type: "driver", latLng: [-12.7997252, 45.1038055]}, {type: "passenger", latLng: [-12.7797252, 45.1038055]}
+                ]
             }
         },
         beforeMount(){
@@ -390,11 +439,49 @@
 
             // console.log(this.itineraire);
         },
-        mounted(){
-            // this.askNewMessage();
+        async mounted(){
             SafeAreaController.injectCSSVariables();
+
+            await this.getContacts();
+
+            try {
+                if( isAndroid || isIOS ){
+                    const requestPermissions = await Geolocation.requestPermissions();
+                    console.log("check-requestPermissions", requestPermissions);
+
+                    const coordinates = await Geolocation.getCurrentPosition();
+                    const { latitude, longitude } = coordinates.coords;
+                    if(this.$refs.mapRef){
+                        this.currentLocation.current = [latitude, longitude];
+                    }
+                }
+                else{
+                    const coordinates = await Geolocation.getCurrentPosition();
+                    const { latitude, longitude } = coordinates.coords;
+                    if(this.$refs.mapRef){
+                        this.currentLocation.current = [latitude, longitude];
+                    }
+                }
+
+                const checkPermissions = await Geolocation.checkPermissions();
+                this.getGeolocalisation = checkPermissions.location == 'granted';
+                if( ! this.getGeolocalisation ){
+                    this.dialog = true;
+                }
+                console.log("check-checkPermissions", checkPermissions);
+
+            }
+            catch(error){
+                console.log("Error get localisation");
+                if( ! this.getGeolocalisation ){
+                    this.dialog = true;
+                }
+            }
+            
+            // this.askNewMessage();
+            
             console.log("itineraire", this.itineraire);
-            // this.$refs.BottomMenuRef.open();
+            this.$refs.BottomMenuRef.open();
 
             // real-time
             const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
@@ -423,6 +510,7 @@
                 this.mode_driver = true;
                 this.contacts = this.chat.contacts;
 
+                console.log("this.contacts", this.contacts);
                 let chatIds = [];
                 for (let index = 0; index < this.contacts.length; index++) {
                     chatIds.push([this.userUid, this.contacts[index].user_id].sort((a, b) => {
@@ -456,24 +544,29 @@
             this.socket.on('get-localisation', (loc) => {
                 console.log('Localisation reçu:', loc);
                 const indexLoc = this.localisation.findIndex(loca => loca.from == loc.from);
-                if(indexLoc !== -1 ){
-                    this.localisation[indexLoc].latLng = loc.latLng;
-                }
-                else{
-                    let newLoc = {
-                        idTrip: loc.idTrip,
-                        from: loc.from,
-                        to: loc.to,
-                        latLng: loc.latLng,
-                    };
 
-                    this.localisation.push(newLoc);
+                if( this.shareLocalisation ){
+                    if(indexLoc !== -1 ){
+                        this.localisation[indexLoc].latLng = loc.latLng;
+                    }
+                    else{
+                        let newLoc = {
+                            idTrip: loc.idTrip,
+                            from: loc.from,
+                            to: loc.to,
+                            latLng: loc.latLng,
+                        };
+
+                        this.localisation.push(newLoc);
+                    }
                 }
+
             });
             
         },
         methods: {
             ...mapActions("search", ['getVillages']),
+            ...mapActions("trip", ["getContacts"]),
             ...mapMutations("trip", ["SET_NOT_MESSAGE_VUE"]),
             askNewMessage(){
                 const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
@@ -767,45 +860,98 @@
                 // this.routes = this.routeTmp.slice(0, 1);
                 //console.log(this.routes);
 
-                setInterval(async function () {
-                    const coordinates = await Geolocation.getCurrentPosition();
-                    const { latitude, longitude } = coordinates.coords;
-                    const currentPosition = [latitude, longitude]; // Obtenez la position actuelle
-                    this.updatePassedPoints(currentPosition);
+                // this.shareLoc();
 
-                    // const bounds = [[latitude, longitude], [43.60461578085957, 3.880710839194244]]
-                    if(this.$refs.mapRef){
-                        this.currentLocation.current = [latitude, longitude];
-                        for (let index = 0; index < this.contacts.length; index++) {
-                            let newLoc = {
-                                idTrip: this.tripSelected.id,
-                                from: this.userUid,
-                                to: this.contacts[index].user_id,
-                                latLng: this.currentLocation.current, 
-                                status: "send=",
+                setInterval(async function () {
+                    if( this.getGeolocalisation ){
+                        const coordinates = await Geolocation.getCurrentPosition();
+                        const { latitude, longitude } = coordinates.coords;
+                        const currentPosition = [latitude, longitude]; // Obtenez la position actuelle
+                        this.updatePassedPoints(currentPosition);
+
+                        // const bounds = [[latitude, longitude], [43.60461578085957, 3.880710839194244]]
+                        if(this.$refs.mapRef){
+                            this.currentLocation.current = [latitude, longitude];
+
+                            if( this.shareLocalisation ){
+                                if(this.mode_driver){
+                                    for (let index = 0; index < this.contacts.length; index++) {
+                                        let newLoc = {
+                                            idTrip: this.tripSelected.id,
+                                            from: this.userUid,
+                                            to: this.contacts[index].user_id,
+                                            latLng: this.currentLocation.current, 
+                                            status: "send=",
+                                        }
+                                        this.socket.emit("send-localisation", newLoc);
+                                    }
+                                }
+                                else{
+                                    let newLoc = {
+                                        idTrip: this.tripSelected.id,
+                                        from: this.userUid,
+                                        to: this.currentContact.userUid,
+                                        latLng: this.currentLocation.current, 
+                                        status: "send=--",
+                                    }
+                                    this.socket.emit("send-localisation", newLoc);
+                                }
                             }
-                            this.socket.emit("send-localisation", newLoc);
+                            
+                            // this.$refs.mapRef.leafletObject.fitBounds(bounds, {
+                            //     padding: [18, 18] // padding en pixels autour des limites.
+                            // });
                         }
-                        
-                        // this.$refs.mapRef.leafletObject.fitBounds(bounds, {
-                        //     padding: [18, 18] // padding en pixels autour des limites.
-                        // });
                     }
-                }.bind(this), 10000); // Met à jour toutes les secondes, par exemple
-                
-                this.currentLocation.current = [-12.7897252, 45.1038055];
-                for (let index = 0; index < this.contacts.length; index++) {
-                    let newLoc = {
-                        idTrip: this.tripSelected.id,
-                        from: this.userUid,
-                        to: this.contacts[index].user_id,
-                        latLng: this.currentLocation.current, 
-                        status: "send-",
-                    }
-                    this.socket.emit("send-localisation", newLoc);
+
+                }.bind(this), 5000); // Met à jour toutes les secondes, par exemple
+            },
+            shareLoc(){
+                if( this.getGeolocalisation ){
+                    this.watchId = Geolocation.watchPosition({}, async (position, err) => {
+                        if (err) {
+                            console.error('Error watching position:', err);
+                            return;
+                        }
+
+                        console.log('New position:', position);
+
+                        const coordinates = await Geolocation.getCurrentPosition();
+                        const { latitude, longitude } = coordinates.coords;
+                        const currentPosition = [latitude, longitude]; // Obtenez la position actuelle
+                        this.updatePassedPoints(currentPosition);
+
+                        // const bounds = [[latitude, longitude], [43.60461578085957, 3.880710839194244]]
+                        if(this.$refs.mapRef){
+                            this.currentLocation.current = [latitude, longitude];
+
+                            if( this.shareLocalisation ){
+                                if(this.mode_driver){
+                                    for (let index = 0; index < this.contacts.length; index++) {
+                                        let newLoc = {
+                                            idTrip: this.tripSelected.id,
+                                            from: this.userUid,
+                                            to: this.contacts[index].user_id,
+                                            latLng: this.currentLocation.current, 
+                                            status: "send=",
+                                        }
+                                        this.socket.emit("send-localisation", newLoc);
+                                    }
+                                }
+                                else{
+                                    let newLoc = {
+                                        idTrip: this.tripSelected.id,
+                                        from: this.userUid,
+                                        to: this.currentContact.userUid,
+                                        latLng: this.currentLocation.current, 
+                                        status: "send=--",
+                                    }
+                                    this.socket.emit("send-localisation", newLoc);
+                                }
+                            }
+                        }
+                    });
                 }
-                // setTimeout(this.avancerSurItineraire, 1000);
-                // this.simuleMovement.intervalId = setInterval(this.avancerSurItineraire, 50);
             },
             formatDate(date) {
                 function padTo2Digits(num) {

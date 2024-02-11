@@ -158,7 +158,7 @@
                 <div 
                     class="btn eye"
                 >
-                    <v-icon class="zoom-bounce" v-if="eyeOff && !modeDriver" @click="emit('add-card')">mdi-eye-off</v-icon>
+                    <v-icon v-if="eyeOff && !modeDriver" class="zoom-bounce"  @click="emit('add-card')">mdi-eye-off</v-icon>
                     <!-- <v-icon v-else>mdi-eye</v-icon> -->
 
                     <v-icon 

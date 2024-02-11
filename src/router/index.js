@@ -89,6 +89,11 @@ const routes = [
         meta: { requiresAuth: true, bottomNav: true },
     },
     {
+        path: '/profil/:action',
+        component: Profil,
+        meta: { requiresAuth: true, bottomNav: true },
+    },
+    {
         path: '/profil/perso',
         component: InfosPerso,
         meta: { requiresAuth: true, bottomNav: true },
@@ -170,10 +175,47 @@ import { Capacitor } from '@capacitor/core';
 import axios from 'axios';
 // import store from '../store'; 
 
+import { Plugins } from '@capacitor/core';
+
+// import stripe from '@/utils/stripe.js'
+
+const { LocalNotifications } = Plugins;
+
 
 const isAndroid = Capacitor.getPlatform() === 'android';
 const isIOS = Capacitor.getPlatform() === 'ios';
 
+async function sendNotification(title, body, data) {
+    const permission = await LocalNotifications.requestPermissions();
+   
+    if( permission && this.notification ){
+
+        let option = {
+            id: 1,
+            title: title,
+            body: body,
+            summaryText: "!",
+            schedule: { at: new Date(Date.now() + 2000) }, // dans 5 secondes
+            iconColor: "red",
+            smallIcon: "res://icon",
+            largeIcon: "res://icon",
+        };
+
+        if( data.largeBody != undefined )
+            option["largeBody"] = data.largeBody;
+
+        await LocalNotifications.schedule({
+            notifications: [
+                option,
+            ]
+        });
+    }
+    else{
+        console.log("permission non accordé");
+    }
+}
+
+let initFireBase = false;
 router.beforeEach(async (to, from, next) => {
     console.log("from", from);
     if (to.path === '/search') {
@@ -182,7 +224,8 @@ router.beforeEach(async (to, from, next) => {
 
         // }
         
-        if( isIOS || isAndroid ){
+        if( (isIOS || isAndroid) && !initFireBase ){
+            initFireBase = true;
             FirebaseMessaging.requestPermissions().then(result => {
                 console.log("FirebaseMessaging Access :", result.receive);
                 if ( result.receive === 'granted' ) { 
@@ -209,9 +252,9 @@ router.beforeEach(async (to, from, next) => {
                     addTokenReceivedListener();
 
                     const addNotificationReceivedListener = async () => {
-                        await FirebaseMessaging.addListener('notificationReceived', event => {
+                        await FirebaseMessaging.addListener('notificationReceived', async (event) => {
                             console.log('notificationReceived', { event });
-                            this.sendNotification(event.notification.title, event.notification.body, event.notification.data);
+                            await sendNotification(event.notification.title, event.notification.body, event.notification.data);
                         });
                     };
 
@@ -220,6 +263,16 @@ router.beforeEach(async (to, from, next) => {
                     const addNotificationActionPerformedListener = async () => {
                         await FirebaseMessaging.addListener('notificationActionPerformed', event => {
                             console.log('notificationActionPerformed', { event });
+
+                            // actions:
+                            if( event.notification.data.actions != undefined ){
+
+                                // go to path ex: open mes trajets
+                                if( event.notification.data.actions.goTo != undefined ){
+                                    // next(event.notification.data.actions.goTo);
+                                    router.replace(event.notification.data.actions.goTo);
+                                }
+                            }
                         });
                     };
 

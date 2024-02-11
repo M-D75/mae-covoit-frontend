@@ -181,7 +181,7 @@
             },
             $route(to, from) {
                 console.log("route-from", from.path, "to", to.path);
-                if(to.path == "/profil/perso/open-add-vehicle"){
+                if(to.path == "/profil/perso/open-add-vehicle" || to.path == "/profil/perso/open-check-identiy"){
                     this.value = 2;
                 }
                 // switch (to) {
