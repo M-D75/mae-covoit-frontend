@@ -1,6 +1,9 @@
 <!-- scss -->
 <style lang="scss" scoped>
     .main {
+        &.profil-member{
+            overflow: auto;
+        }
         height: 100%;
         margin-bottom: 13px;
     }
@@ -23,7 +26,7 @@
     ></v-overlay>
 
     <ToolbarProfil ref="ToolbarRef" :setting="false" :title="'Profil'" v-on:back="back()"/>
-    <v-main class="main">
+    <v-main class="main profil-member">
         <!-- Avatar -->
         <Avatar :avatar="avatar" :modeEdit="false" :name="userName" :subTitle="location"/>
 
@@ -43,6 +46,8 @@
     import { defineComponent } from 'vue';
     import { mapState } from 'vuex';
 
+    import { formatNumber } from '@/utils/utils.js'
+
     // Components
     import ToolbarProfil from '@/components/menus/head/ToolbarProfil.vue';
     import Avatar from '@/components/profile/Avatar.vue';
@@ -56,6 +61,10 @@
                 avatar: state => state.member.avatar,
                 userName: state => state.member.userName,
                 location: state => state.member.location,
+                // notation
+                nbTrip: state => state.member.notation.nbTrip,
+                avis: state => state.member.notation.avis,
+                satisfaction: state => state.member.notation.satisfaction,
             }),
             ...mapState("trip", {
                 preferences: state => state.member.preferences,
@@ -172,9 +181,11 @@
                     this.groupeParameters[1].parameters = this.groupeParameters[1].parameters.map(
                         (pref) => { 
                             if('about' in pref){
-                                console.log("ppp", this.preferences, this.preferences.filter((prefs) => prefs && prefs["about"] != undefined && prefs.about == pref.about)[0], pref);
-                                this.preferences.filter((prefs) => prefs && prefs["about"] != undefined && prefs.about == pref.about)[0].fun = () => this.selectPreference(pref.about);
-                                return this.preferences.filter((prefs) => prefs && prefs["about"] != undefined && prefs.about == pref.about)[0];
+                                // Assigne methode select
+                                let current_pref = this.preferences.find((prefs) => prefs && prefs["about"] != undefined && prefs.about == pref.about);
+                                if(current_pref){
+                                    return current_pref;
+                                }
                             }
                             return pref;
                         }
@@ -202,6 +213,9 @@
                 console.log("pref modifierd");
                 this.updateGrouparameterPreference();
             },
+            nbTrip(){
+                this.infos_panneau[0].label = formatNumber(this.nbTrip);
+            }
         }
     });
 </script>

@@ -74,6 +74,16 @@
                         font-size: 20px;
                     }
                 }
+                .notif-point {
+                    border-radius: 500px;
+                    background-color: red;
+                    opacity: 0.5;
+                    width: 10px;
+                    height: 10px;
+                    position: absolute;
+                    top: -2px;
+                    left: -2px;
+                }
             }
         }
     }
@@ -104,6 +114,7 @@
             :modeEdit="false" 
             :name="userName"
             :subTitle="profil.infos_perso.adress.commune"
+            :identity="identity"
             v-on:avatar-touched="goToInfoPerso()"
         />
 
@@ -117,8 +128,14 @@
             <!-- <div class="label mx-auto">tableau de board</div> -->
             <div class="label-btn mx-auto">
                 <v-btn class="dashboard" :class="{active: onglet=='table-bord'}" @click="onglet='table-bord'" rounded="xl">{{ labelDashBoard }}</v-btn>
-                <v-btn v-if="modeDriver" :class="{active: onglet=='planning'}" class="calendar" @click="onglet='planning'" rounded="xl"><v-icon>mdi-calendar-month</v-icon></v-btn>
-                <v-btn class="my_trip" :class="{active: onglet=='trajets'}" @click="onglet='trajets'" rounded="xl">mes trajets</v-btn>
+                <v-btn v-if="modeDriver" :class="{active: onglet=='planning'}" class="calendar" @click="onglet='planning'" rounded="xl">
+                    <v-icon>mdi-calendar-month</v-icon>
+                    <div v-if="trajetAvail=='driver'" class="notif-point"></div>
+                </v-btn>
+                <v-btn class="my_trip" :class="{active: onglet=='trajets'}" @click="onglet='trajets'" rounded="xl">
+                    mes trajets
+                    <div v-if="trajetAvail=='passenger'" class="notif-point"></div>
+                </v-btn>
             </div>
 
             <!-- Tableau de bord -->
@@ -141,6 +158,7 @@
                 :infos="infosTravels" 
                 :mode="onglet"
                 v-on:open-contacts="$refs.PaneApearRef.open()"
+                v-on:open-member="$refs.PaneApearProfilMemberRef.open()"
             />
         </div>
 
@@ -164,7 +182,11 @@
 
     <PaneApear ref="PaneApearRef" :class-name="['pan-apear-contact']" mode="contacts"/>
 
-    <PaneApear ref="PaneApearProfilMemberRef" :class-name="['pan-apear-profil-member']" mode="profil-member"/>
+    <PaneApear 
+        ref="PaneApearProfilMemberRef"
+        :class-name="['pan-apear-profil-member']" 
+        mode="profil-member"
+    />
 
     <v-overlay 
         v-model="overlay"
@@ -239,7 +261,7 @@
     export default defineComponent({
         name: 'profil-view',
         computed: {
-            ...mapState("profil", ["darkMode", "userName", "profil", "history", 'modeDriver', "avatarUrl", "userUid", "modeCo", "gain"]),
+            ...mapState("profil", ["darkMode", "userName", "profil", "history", 'modeDriver', "avatarUrl", "userUid", "modeCo", "gain", "identity"]),
             ...mapState("trip", ["notMessageVue"]),
         },
         components: {
@@ -362,6 +384,7 @@
                 loadCreaditCard: false,
                 showSnackbarError: false,
                 messageSnackbarError: "",
+                trajetAvail: "",
             }
         },
         beforeMount(){
@@ -382,13 +405,15 @@
                 this.onglet = "planning";
             }
 
+            this.checkDateTrip()
+
             // this.$refs.PaneApearProfilMemberRef.open()
             // this.$refs.PaneApearRef.open()
         },
         methods: {
             ...mapActions("profil", ["getTravels", "getPublish", "buildHistoriqueBooking"]),
             ...mapActions("auth", ["checkSession"]),
-            ...mapMutations("profil", ["SET_LOAD_GET_TRIP_PUBLISH", "SET_MODE_DRIVER"]),
+            ...mapMutations("profil", ["SET_LOAD_GET_TRIP_PUBLISH", "SET_MODE_DRIVER", "SET_REMOVE_HISTORY_DATES", "SET_NB_PASSAGER"]),
             ...mapMutations("trip", ["SET_NOT_MESSAGE_VUE"]),
             async checkSessionIn(){
                 this.loadCreaditCard = true
@@ -558,6 +583,39 @@
                     // this.$refs.BottomMenuRefMoney.
                 }
             },
+            checkDateTrip(){
+                console.log("\ncheckDateTrip:");
+                const dateToday = new Date();
+                // date passenger
+                for (let index = 0; index < this.history.datesTripPassenger.length; index++) {
+                    const departure_time = this.history.datesTripPassenger[index];
+                    const dateTrip = new Date(departure_time);
+                    if( dateTrip.getTime() + ((60*1000)*10) < dateToday.getTime() ){
+                        this.SET_REMOVE_HISTORY_DATES({ type: "passenger", index: index });
+                    }
+                    else if( dateTrip.getTime() > dateToday.getTime() - ((60*1000)*30) ){
+                        this.trajetAvail = "passenger";
+                        console.log("Trip Passenger Founded\n");
+                        return;
+                    }
+                }
+
+                for (let index = 0; index < this.history.datesTripDriver.length; index++) {
+                    const departure_time = this.history.datesTripDriver[index];
+                    const dateTrip = new Date(departure_time);
+                    if( dateTrip.getTime() + ((60*1000)*10) < dateToday.getTime() ){
+                        this.SET_REMOVE_HISTORY_DATES({ type: "driver", index: index });
+                    }
+                    else if( dateTrip.getTime() > dateToday.getTime() - ((60*1000)*30) ){
+                        this.trajetAvail = "driver";
+                        console.log("Trip Driver Founded\n");
+                        return;
+                    }
+                }
+
+                this.trajetAvail = null;
+                console.log("No Trip Date\n");
+            }
         },
         watch: {
             darkMode(){
@@ -585,31 +643,35 @@
                 }
             },
             async onglet(){
+                // TODO : infosTravels need to reloaded every time
                 this.SET_LOAD_GET_TRIP_PUBLISH(true);
                 this.infosTravels = [];
-                if( this.onglet == "trajets" && this.profil.myTravels.length == 0){
+                if( this.onglet == "trajets" ){
                     await this.getTravels();
                     this.infosTravels = this.profil.myTravels;
+                    this.askNewMessage();
                 }
-                else if( this.onglet == "planning" && this.profil.myPublish.length == 0 ){
+                else if( this.onglet == "planning" ){
                     await this.getPublish();
                     this.infosTravels = this.profil.myPublish;
-                }
-                else{
                     this.askNewMessage();
-                    if( this.onglet == "trajets" ){
-                        this.infosTravels = this.profil.myTravels;
-                    }
-                    else if( this.onglet == "planning" ){
-                        this.infosTravels = this.profil.myPublish;
-                    }
                 }
+                // else{
+                //     this.askNewMessage();
+                //     if( this.onglet == "trajets" ){
+                //         this.infosTravels = this.profil.myTravels;
+                //     }
+                //     else if( this.onglet == "planning" ){
+                //         this.infosTravels = this.profil.myPublish;
+                //     }
+                // }
                 this.SET_LOAD_GET_TRIP_PUBLISH(false);
                 console.log("infos-travels:", this.infosTravels);
             },
             modeDriver(){
                 this.switchModeDriverPanneauInfos();
             },
+            
         }
     });
 </script>

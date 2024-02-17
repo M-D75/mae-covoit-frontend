@@ -104,10 +104,6 @@
                 <v-avatar 
                     v-if="mode=='planning' && infos.bookings.length == 0"
                 >
-                    <!-- <v-img
-                        alt="Avatar"
-                        :src="'https://cdn.vectorstock.com/i/preview-1x/76/28/unknown-person-user-icon-for-web-vector-34757628.jpg'"
-                    ></v-img> -->
                     <v-icon icon="mdi-incognito-circle-off"></v-icon>
                 </v-avatar>
 
@@ -120,9 +116,17 @@
                         style="position: relative; left:0px;"    
                     >
                         <v-img
+                            v-if="!loading"
                             alt="Avatar"
                             :src="booking.account.avatar"
                         ></v-img>
+
+                        <v-progress-circular
+                            v-else
+                            color="blue"
+                            indeterminate
+                            size="64"
+                        ></v-progress-circular>
                     </v-avatar>
 
                     <v-avatar 
@@ -130,9 +134,17 @@
                         style="position: relative; left: -30px;"    
                     >
                         <v-img
+                            v-if="!loading"
                             alt="Avatar"
                             :src="booking.account.avatar"
                         ></v-img>
+
+                        <v-progress-circular
+                            v-else
+                            color="blue"
+                            indeterminate
+                            size="64"
+                        ></v-progress-circular>
                     </v-avatar>
                 </div>
 
@@ -213,7 +225,7 @@
    // Components
     export default {
         name: 'card-trajet-history-comp',
-        emits: ["card-touched", "open-contacts"],
+        emits: ["card-touched", "open-contacts", "open-member"],
         computed: {
             ...mapState("trip", ['driver', 'chat']),
         },
@@ -236,7 +248,7 @@
                         "hour_end": "6:55",
                         "price": 4,
                         "name": "Ledou",
-                        "passenger_number": 2
+                        "passenger_number": 2,
                     };
                 },
             },
@@ -245,6 +257,7 @@
             return {
                 showSnackbarError: false,
                 messageSnackbarError: "",
+                loading: false,
                 // notifMessage: false,
             };
         },
@@ -257,30 +270,37 @@
             ...mapMutations("trip", ["SET_TRIP_SELECTED"]),
             ...mapActions("trip", ["getContacts", "getProfilMember"]),
             async selectTrip(){
-                if( this.infos.is_accepted ){
-                    this.SET_TRIP_SELECTED(this.infos);
-                    if( this.mode == 'trajets' ){
-                        this.$router.push('/trip')
-                    }
-                    else{
-                        await this.getContacts();
-                        console.log("contacts:", this.chat.contacts);
-                        if( this.chat.contacts.length > 0 ){
-                            this.$router.push('/message');
-                        }
-                        else {
-                            this.messageSnackbarError = "Aucun passager n'a reserver ce trajet";
-                            this.showSnackbarError = true;
-                        }
-                    }
-                }
-                else {
-                    if( ! this.infos.is_accepted && ! this.infos.is_refused)
-                        this.messageSnackbarError = "Trajet en attente de validation par le chauffeur";
-                    else
-                        this.messageSnackbarError = "Trajet refusé par le chauffeur";
+                if( this.mode == 'trajets' ){
 
-                    this.showSnackbarError = true;
+                    if( this.infos.is_accepted ){
+                        this.SET_TRIP_SELECTED(this.infos);
+                        this.$router.push('/trip');
+                    }
+                    else {
+                        if( ! this.infos.is_accepted && ! this.infos.is_refused)
+                            this.messageSnackbarError = "Trajet en attente de validation par le chauffeur";
+                        else
+                            this.messageSnackbarError = "Trajet refusé par le chauffeur";
+
+                        this.showSnackbarError = true;
+                    }
+
+                }
+                else{
+                    this.loading = true;
+                    this.SET_TRIP_SELECTED(this.infos);
+                    await this.getContacts();
+                    console.log("contacts:", this.chat.contacts);
+                    if( this.chat.contacts.length > 0 ){
+                        this.loading = false;
+                        this.$router.push('/message');
+                    }
+                    else {
+                        this.messageSnackbarError = "Aucun passager n'a reserver ce trajet";
+                        this.showSnackbarError = true;
+                    }
+                    this.loading = false;
+
                 }
             },
             async headerClick(){
@@ -288,8 +308,10 @@
                 this.SET_TRIP_SELECTED(this.infos);
                 if( this.mode == 'trajets' ){
                     const memberOk = await this.getProfilMember({userUid: this.infos.driver_id});
-                    if( memberOk )
-                        this.$router.push('/member');
+                    if( memberOk ){
+                        // this.$router.push('/member');
+                        this.$emit("open-member");
+                    }
                     else{
                         this.messageSnackbarError = "Nous n'avons pas pu récupérer les informations souhaité, désolé !";
                         this.showSnackbarError = true;

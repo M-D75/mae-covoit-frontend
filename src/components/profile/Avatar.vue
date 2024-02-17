@@ -119,7 +119,7 @@
 <!--  -->
 <script>    
     import { defineComponent } from 'vue';
-    import { mapState, mapMutations } from 'vuex';
+    import { mapMutations } from 'vuex';
     
 
     // Components
@@ -128,7 +128,6 @@
     export default defineComponent({
         name: 'avatar-profil-comp',
         computed: {
-            ...mapState("profil", ["identity"]),
         },
         components: {
         },
@@ -153,6 +152,10 @@
                 type: Boolean,
                 default: true,
             },
+            identity: {
+                type: Boolean,
+                default: false,
+            }
         },
         data() {
             return {

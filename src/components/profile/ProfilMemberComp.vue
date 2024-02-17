@@ -47,7 +47,7 @@
 
     <v-main class="main">
         <!-- Avatar -->
-        <Avatar :avatar="avatar" :modeEdit="false" :name="userName" :subTitle="location"/>
+        <Avatar :avatar="avatar" :modeEdit="false" :name="userName" :subTitle="location" :identity="identity"/>
 
         <!-- ? -->
         <PanneauInfo :infos_panneau="infos_panneau"/>
@@ -81,10 +81,13 @@
                 avatar: state => state.member.avatar,
                 userName: state => state.member.userName,
                 location: state => state.member.location,
+                identity: state => state.member.identity,
+                payouts_enabled: state => state.member.payouts_enabled,
                 // notation
                 nbTrip: state => state.member.notation.nbTrip,
                 avis: state => state.member.notation.avis,
                 satisfaction: state => state.member.notation.satisfaction,
+                
             }),
             ...mapState("trip", {
                 preferences: state => state.member.preferences,
@@ -108,19 +111,19 @@
                 modeBottomMenu: "select-model-car",
                 infos_panneau: [
                     {
-                        btn:false,
-                        label: "expert",
-                        text:"trajets",
+                        btn: false,
+                        label: "0",
+                        text: "TRAJETS",
                     },
                     {
-                        btn:false,
-                        label:"0/5",
-                        text:"avis",
+                        btn: false,
+                        label: "0/5",
+                        text: "avis",
                     },
                     {
-                        btn:false,
-                        label:"0%",
-                        text:"satisfaction",
+                        btn: false,
+                        label: "0%",
+                        text: "satisfaction",
                     },
                 ],
                 groupeParameters: [
@@ -133,7 +136,7 @@
                                 text:"Identité & coordonnées",
                                 chip:true,
                                 chipIcon: null,
-                                chipText: "3/3",
+                                chipText: "1/3",
                             },
                         ],
                     },
@@ -160,38 +163,32 @@
         mounted() {
             if(this.toolbarDouble)
                 $(".main").css({position: "absolute", top: "0px"})
-            //this.$refs.BottomMenuRefPreference.open();
             this.updateGrouparameterPreference();
-            // this.$refs.ToolbarRef.needToComeBack = true;
+            this.infos_panneau[0].label = formatNumber(this.nbTrip);
+
+            console.log("pa:", this.payouts_enabled, this.identity);
+
+            if(this.payouts_enabled || this.identity)
+                this.groupeParameters[0].parameters[0].chipText = "2/3";
+            if(this.payouts_enabled && this.identity)
+                this.groupeParameters[0].parameters[0].chipText = "3/3";
         },
         methods: {
-            selectModel(){
-                if( this.$refs.BottomMenuRef ){
-                    this.overlay = this.$refs.BottomMenuRef.open();
-                }
-            },
-            selectPreference(about){
-                this.about = about;
-                if(this.$refs.BottomMenuRefPreference){
-                    this.overlay = this.$refs.BottomMenuRefPreference.open();
-                }
-            },
             updateGrouparameterPreference(){
                 if(this.preferences[0] != undefined){
                     this.groupeParameters[1].parameters = this.groupeParameters[1].parameters.map(
                         (pref) => { 
                             if('about' in pref){
                                 // Assigne methode select
-                                this.preferences.filter((prefs) => prefs && prefs["about"] != undefined && prefs.about == pref.about)[0].fun = () => this.selectPreference(pref.about);
-                                return this.preferences.filter((prefs) => prefs && prefs["about"] != undefined && prefs.about == pref.about)[0];
+                                let current_pref = this.preferences.find((prefs) => prefs && prefs["about"] != undefined && prefs.about == pref.about);
+                                if(current_pref){
+                                    return current_pref;
+                                }
                             }
                             return pref;
                         }
                     )
                 }
-            },
-            back(){
-                this.$router.push("/profil")
             },
         },
         watch: {
@@ -208,11 +205,24 @@
                 }
             },
             preferences(){
-                console.log("pref modifierd");
+                console.log("pref-modified");
                 this.updateGrouparameterPreference();
             },
             nbTrip(){
+                console.log("nbTrip-modified");
                 this.infos_panneau[0].label = formatNumber(this.nbTrip);
+            },
+            payouts_enabled(){
+                if(this.payouts_enabled || this.identity)
+                    this.groupeParameters[0].parameters[0].chipText = "2/3";
+                if(this.payouts_enabled && this.identity)
+                    this.groupeParameters[0].parameters[0].chipText = "3/3";
+            },
+            identity(){
+                if(this.payouts_enabled || this.identity)
+                    this.groupeParameters[0].parameters[0].chipText = "2/3";
+                if(this.payouts_enabled && this.identity)
+                    this.groupeParameters[0].parameters[0].chipText = "3/3";
             }
         }
     });

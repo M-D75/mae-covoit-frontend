@@ -217,6 +217,7 @@
     <BottomMenuTrip
         mode="map"
         :class-name="['alert']"
+        :mapInfos="{time: itin.duration, distance: itin.distance, depart: itineraire['origin'].infos.commune, destination: itineraire['destination'].infos.commune, infosSup: 'Le plus rapide selon l\'etat actuel de la circulation'}"
         ref="BottomMenuRef"
         v-on:close="open_b = false"
         v-on:opened="open_b = true"
@@ -431,16 +432,16 @@
             }
         },
         beforeMount(){
-            // let _tmp_village = this.getVillagesByName(this.tripSelected.depart);
-            // this.setItineraire("origin", _tmp_village[0]);
+            let _tmp_village = this.getVillagesByName(this.tripSelected.depart);
+            this.setItineraire("origin", _tmp_village);
 
-            // _tmp_village = this.getVillagesByName(this.tripSelected.destination);
-            // this.setItineraire("destination", _tmp_village[0]);
+            _tmp_village = this.getVillagesByName(this.tripSelected.destination);
+            this.setItineraire("destination", _tmp_village);
 
-            // console.log(this.itineraire);
+            console.log(this.itineraire);
         },
         async mounted(){
-            SafeAreaController.injectCSSVariables();
+            SafeAreaController.injectCSSVariables
 
             await this.getContacts();
 
@@ -451,14 +452,14 @@
 
                     const coordinates = await Geolocation.getCurrentPosition();
                     const { latitude, longitude } = coordinates.coords;
-                    if(this.$refs.mapRef){
+                    if( this.$refs.mapRef ){
                         this.currentLocation.current = [latitude, longitude];
                     }
                 }
                 else{
                     const coordinates = await Geolocation.getCurrentPosition();
                     const { latitude, longitude } = coordinates.coords;
-                    if(this.$refs.mapRef){
+                    if( this.$refs.mapRef ){
                         this.currentLocation.current = [latitude, longitude];
                     }
                 }
@@ -481,7 +482,11 @@
             // this.askNewMessage();
             
             console.log("itineraire", this.itineraire);
-            this.$refs.BottomMenuRef.open();
+            this.$nextTick(function(){
+                if(this.$refs.BottomMenuRef)
+                    this.$refs.BottomMenuRef.open();
+            })
+            
 
             // real-time
             const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
@@ -812,12 +817,12 @@
                 //     });
                 // }
                 
-                //await this.getRouteInfos();
-                // console.log(this.tripSelected);
-                // this.routes = [this.tripSelected.route];
-                // this.itin.duration = this.tripSelected.route.duration;
-                // this.itin.distance = this.tripSelected.route.distance;
-                // this.routeAvail = true;
+                // await this.getRouteInfos();
+                console.log("this.tripSelected:", this.tripSelected);
+                this.routes = [this.tripSelected.route];
+                this.itin.duration = this.tripSelected.route.duration;
+                this.itin.distance = this.tripSelected.route.distance;
+                this.routeAvail = true;
                 this.updateLoc();
                 // this.getRouteInfos();
             },

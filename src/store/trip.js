@@ -5,6 +5,8 @@ import supabase from '@/utils/supabaseClient.js';
 // import router from '@/router';
 // import store from '@/store'; 
 
+import stripe from '@/utils/stripe.js'
+
 
 export default {
     namespaced: true,
@@ -17,6 +19,8 @@ export default {
         },
         tripSelected: {},
         member: {
+            identity: false,
+            payouts_enabled: false,
             avatar: "",
             userName: "",
             location: "",
@@ -246,6 +250,8 @@ export default {
                 return false;
             }
 
+            console.log("account=", account);
+
             // Notation... TODO : add others informations
             const { count, error: error_count } = await supabase
                 .from('trip')
@@ -265,6 +271,11 @@ export default {
                 state.member.avatar = account[0].avatar;
                 state.member.userName = `${account[0].firstname} ${account[0].lastname}`;
                 state.member.location = account[0].village != null && account[0].village != "" ? account[0].village : "";
+                state.member.identity = account[0].identity;
+
+                const provider = await stripe.accounts.retrieve(account[0].provider_id);
+                console.log("retrieve provider:", provider);
+                state.member.payouts_enabled = provider.payouts_enabled;
 
                 let outPreferences = [];
                 
@@ -278,6 +289,8 @@ export default {
             else{
                 return false;
             }
+
+            console.log("state.member", state.member);
 
             return true;
 
