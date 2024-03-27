@@ -149,7 +149,7 @@
 
                 const vue = this;                
 
-                $(classPaneApearNameJquery).animate({left: `0px`}, 'fast', 
+                $(classPaneApearNameJquery).animate({left: `0px`}, 145, 
                                 function(){
                                     $(this).css("top", `0px`);
                                     vue.opened = true;

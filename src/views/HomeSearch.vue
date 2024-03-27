@@ -4,10 +4,10 @@
         .home-search-view {
             // calendar
             .trajet-search {
-                z-index: 100 !important;
+                z-index: 0;
             }
             .pile-search {
-                z-index: 0 !important;
+                z-index: 0;
             }
 
             .v-col{
@@ -47,8 +47,6 @@
                 padding: 0 39px 0px 39px;
                 margin: auto;
             }
-
-            
         }
 
         .contain-btn {
@@ -76,7 +74,7 @@
         v-model="overlay" 
         contained
         persistent
-        style="z-index: 30;"
+        style="z-index: 50;"
         @click="close()"
     ></v-overlay>
 
@@ -84,7 +82,7 @@
         
         <v-row 
             class="home-search-view mt-40 mb-0"
-            style="margin-top: 40px;"
+            style="margin-top: 40px; z-index: 1;"
         >
             <!-- Title -->
             <div
@@ -92,9 +90,9 @@
             >Prix mini, voyage maxi</div>
 
             <!-- image -->
-            <v-col style="z-index: 900;">
+            <v-col style="z-index: 30;">
                 <v-img
-                    style="margin: auto; z-index: 24; overflow: visible;"
+                    style="margin: auto; z-index: 2; overflow: visible;"
                     :width="200"
                     aspect-ratio="16/9"
                     cover
@@ -113,6 +111,8 @@
             v-on:open-dep="openSearch('dep')"
             v-on:open-dest="openSearch('dest')"
             v-on:open-nb-passenger="openSelectNumber()"
+
+            style="z-index: 0 !important;"
         />
 
         <!-- Find Fast Trajet -->
@@ -121,6 +121,8 @@
             ref="PileRef"
             v-on:reserve="reserve()"
             v-on:fast-get-trip="getFastInfo"
+
+            style="z-index: 0 !important;"
         />
 
         <!-- Go to trip history -->

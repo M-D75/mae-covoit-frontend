@@ -212,6 +212,7 @@
 
                 <div class="publish blc-text mx-auto">
                     <v-text-field
+                        v-if="focus_deley"
                         v-model="saisi"
                         label=""
                         :placeholder="label"
@@ -282,6 +283,11 @@
 <script>
     import { defineComponent } from 'vue';
 
+    import { Capacitor } from '@capacitor/core';
+
+    //const isAndroid = Capacitor.getPlatform() === 'android';
+    const isIOS = Capacitor.getPlatform() === 'ios';
+
     // Components
     //...
 
@@ -319,9 +325,18 @@
             return {
                 saisi: "",
                 modeWork: false,
+                focus_deley: false,
             }
         },
         mounted(){
+            if(isIOS){
+                setTimeout(function(){
+                    this.focus_deley = true;
+                }.bind(this), 146)
+            }
+            else{
+                this.focus_deley = true;
+            }
         },
         methods: {
             select(val){
@@ -333,7 +348,7 @@
         watch: {
             saisi(){
                 this.$emit("saisi");
-            }
+            },
         }
     });
 </script>

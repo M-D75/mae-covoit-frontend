@@ -119,7 +119,7 @@
 
     // import { FirebaseMessaging } from '@capacitor-firebase/messaging';
 
-    // import axios from 'axios';
+    //import axios from 'axios';
     import { mapMutations, mapState, mapActions } from 'vuex';
 
     const isAndroid = Capacitor.getPlatform() === 'android';
@@ -137,6 +137,7 @@
         },
         computed: {
             ...mapState("profil", ["darkMode", "userUid", "notification", "profil"]),
+            ...mapState("search", ["villages"]),
             isMobileOrSmallScreen() {
                 return this.isMobile || this.isSmallScreen;
             },
@@ -150,6 +151,8 @@
         }),
         async mounted(){
 
+            this.getVillages();
+            console.log("Get Villages Already done !", this.villages);
             // const account = await stripe.accounts.retrieve('acct_1OUWQcI3Nt412vf3');
 
             // await stripe.charges.create({
@@ -429,7 +432,7 @@
             //$("link[rel*='icon']").attr("href", "/favicon-old.ico");
         },
         methods: {
-            ...mapActions("search", ["getOwnTrajetsEk", "getTrajetsEk"]),
+            ...mapActions("search", ["getOwnTrajetsEk", "getTrajetsEk", "getVillages"]),
             ...mapMutations("profil", ["SET_DARKMODE"]),
             ...mapMutations("auth", ["SET_TOKEN", "SET_REGISTER_DEVICE_TOKEN"]),
             ...mapMutations("general", ["SET_IS_NATIVE"]),

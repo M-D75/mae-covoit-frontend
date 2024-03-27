@@ -1,16 +1,44 @@
 <!-- scss -->
+<style lang="scss" model>
+     .v-app-bar.profil-member-comp {
+
+        &.v-toolbar {
+            top: 0px !important;
+        }
+    }
+</style>
+
 <style lang="scss" scoped>
-    .v-toolbar {
-        z-index: 27;
-        background-color: var(--bg-app-color);
-        color: var(--font-color-label);
-        border-bottom: 1px solid #4d4d4d45;
-        .v-toolbar-title{
-            color: var(--font-color-label);
+    // toolbar
+    .v-app-bar {
+        box-shadow: var(--box-shadow-card);
+        .v-toolbar {
+            z-index: 27;
+            background-color: var(--bg-app-color);
+            box-shadow: var(--box-shadow-card);
+
+            // natif
+            padding-top: var(--safe-area-inset-top);
+            margin-top: var(--safe-area-inset-top);
+            .v-btn {
+                color: var(--gray-icon-color);
+                i.v-icon {
+                    margin-right: 0 !important;
+                    color: var(--gray-icon-color);
+                }
+            }
+            .v-toolbar-title {
+                font-size: var(--font-size-h1-toolbar);
+                color: var(--font-color-label);
+            }
+            
+            .label-filter.text-caption {
+                width: 85%;
+            }
         }
     }
 
-    .main {
+    .main.profil-member {
         z-index: 26;
         height: 100%;
         margin-bottom: 13px;
@@ -34,18 +62,24 @@
         @click="overlay = false"
     ></v-overlay>
 
-    <v-toolbar >
-        <v-btn 
-            variant="text" 
-            icon="mdi-chevron-left"
-            @click="$emit('go-back')"    
-        ></v-btn>
+    <v-app-bar
+        extended
+        :extension-height="barHeight"
+        class="profil-member-comp"
+    >
+        <v-toolbar >
+            <v-btn 
+                variant="text" 
+                icon="mdi-chevron-left"
+                @click="$emit('go-back')"    
+            ></v-btn>
 
-        <v-toolbar-title>Profil</v-toolbar-title>
-        <v-spacer></v-spacer>
-    </v-toolbar>
+            <v-toolbar-title>Profil</v-toolbar-title>
+            <v-spacer></v-spacer>
+        </v-toolbar>
+    </v-app-bar>
 
-    <v-main class="main">
+    <v-main class="main profil-member">
         <!-- Avatar -->
         <Avatar :avatar="avatar" :modeEdit="false" :name="userName" :subTitle="location" :identity="identity"/>
 
@@ -65,6 +99,7 @@
     import $ from 'jquery';
     import { defineComponent } from 'vue';
     import { mapState } from 'vuex';
+    import { SafeAreaController, SafeArea } from '@aashu-dubey/capacitor-statusbar-safe-area';
 
     import { formatNumber } from '@/utils/utils.js'
 
@@ -106,6 +141,7 @@
         },
         data() {
             return {
+                barHeight: 0,
                 overlay: false,
                 about: "discution",
                 modeBottomMenu: "select-model-car",
@@ -161,8 +197,15 @@
             }
         },
         mounted() {
-            if(this.toolbarDouble)
-                $(".main").css({position: "absolute", top: "0px"})
+            if(this.toolbarDouble){
+                $(".main").css({position: "absolute", top: "0px"});
+                $(".v-app-bar.profil-member-comp").css({position: "absolute", top: "0px"});
+            }
+
+            SafeAreaController.injectCSSVariables();
+
+            this.initStatusBarHeight();
+
             this.updateGrouparameterPreference();
             this.infos_panneau[0].label = formatNumber(this.nbTrip);
 
@@ -189,6 +232,15 @@
                         }
                     )
                 }
+            },
+            async initStatusBarHeight(){
+                const insets = await this.getSafeAreaInsets();
+                this.barHeight = insets["top"];
+                console.log("barHeight:", this.barHeight);
+            },
+            async getSafeAreaInsets () {
+                const insets = await SafeArea.getSafeAreaInsets();
+                return insets; // Ex. { "bottom":34, "top":47, "right":0, "left":0 }
             },
         },
         watch: {

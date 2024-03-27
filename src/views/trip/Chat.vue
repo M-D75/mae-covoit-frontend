@@ -118,6 +118,18 @@
         height: 100vh;
         overflow: auto;
         .messages {
+            height: 100%;
+            .message-info-no-data {
+                display: flex;
+                height: 100%;
+                justify-content: center;
+                align-content: center;
+                align-items: center;
+                text-align: center;
+                padding: 20px;
+                color: var(--font-color-label);
+            }
+
             .in{
                 overflow-y: auto; /* Active le défilement vertical si nécessaire */
                 display: flex;
@@ -305,12 +317,17 @@
     <v-main>
 
         <div class="messages">
+            <div v-if="messages.length == 0" class="message-info-no-data">
+                <span>⚠️ Attention : Cette messagerie n'est pas privée. Veuillez éviter de communiquer toute donnée sensible. 🚫</span>
+            </div>
+
             <div class="in">
                 <div
                     v-for="(message, index) in messages.slice().reverse().filter((msg) => msg)" 
                     :key="index"
                     class="contain-mess"
                 >
+                    
                     <div 
                         class="mess-chip"
                         :class="{ 'send': userUid == message.from, 'recipe': userUid != message.from }"

@@ -95,21 +95,36 @@ export default {
         },
         async getVillages({ state, commit }) {
             
-            if(state.villages.length == 0)
-                axios.get(`${process.env.VUE_APP_API_MBABUF_URL}/villages`, {
-                        params:{
-                            jwt: store.state.auth.token,
-                        }
-                    })
-                    .then(response => {
-                        commit('SET_VILLAGES', response.data.result);
-                        console.log("get-villages:", response.data.result);
-                    })
-                    .catch(error => {
-                        console.error(error);
-                    });
+            // if(state.villages.length == 0)
+            //     axios.get(`${process.env.VUE_APP_API_MBABUF_URL}/villages`, {
+            //             params:{
+            //                 jwt: store.state.auth.token,
+            //             }
+            //         })
+            //         .then(response => {
+            //             commit('SET_VILLAGES', response.data.result);
+            //             console.log("get-villages:", response.data.result);
+            //         })
+            //         .catch(error => {
+            //             console.error(error);
+            //         });
+            // else
+            //     console.log("Get Villages Already done !", state.villages);
+
+            if( state.villages.length == 0 ){
+                let { data: village_list, error } = await supabase
+                    .from('village_list')
+                    .select('*');
+
+                if(error){
+                    console.error("Error, impossible de récuperer les villages :", error)
+                }
+
+                commit('SET_VILLAGES', village_list);
+            }
             else
-                console.log("Get Villages Already done !");
+                console.log("Get Villages Already done !", state.villages);            
+        
         },
         // async getTrajets({ commit, state, dispatch }) {
         //     const sessionChecked = await store.dispatch("auth/checkSession");

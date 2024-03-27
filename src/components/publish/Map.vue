@@ -211,12 +211,36 @@
         emits: ["trajet-selected"],
         computed: {
             center() {
-                const latitudes =  [this.itineraire.origin.location.latLng.latitude, this.itineraire.destination.location.latLng.latitude];
-                const longitudes = [this.itineraire.origin.location.latLng.longitude, this.itineraire.destination.location.latLng.longitude];
+                // const latitudes =  [this.itineraire.origin.location.latLng.latitude, this.itineraire.destination.location.latLng.latitude];
+                // const longitudes = [this.itineraire.origin.location.latLng.longitude, this.itineraire.destination.location.latLng.longitude];
+                // const minLat = Math.min(...latitudes);
+                // const maxLat = Math.max(...latitudes);
+                // const minLon = Math.min(...longitudes);
+                // const maxLon = Math.max(...longitudes);
+                // console.log("min-max", [(minLat + maxLat) / 2, (minLon + maxLon) / 2]);
+                // return [(minLat + maxLat) / 2, (minLon + maxLon) / 2];
+                //return [ -12.830601788401163, 45.14134475613337 ];
+                if(this.routes.length == 0){
+                    return [ -12.7850694, 45.1658908 ]
+                }
+                const polylinePoints = this.routes.slice().reverse()[this.routes.length - 1].polylineDecoded // Vous devrez remplir ceci en fonction de vos données
+
+
+                const latitudes = [
+                    this.itineraire.origin.location.latLng.latitude, 
+                    this.itineraire.destination.location.latLng.latitude,
+                    ...polylinePoints.map(point => point[0])
+                ];
+                const longitudes = [
+                    this.itineraire.origin.location.latLng.longitude, 
+                    this.itineraire.destination.location.latLng.longitude,
+                    ...polylinePoints.map(point => point[1])
+                ];
                 const minLat = Math.min(...latitudes);
                 const maxLat = Math.max(...latitudes);
                 const minLon = Math.min(...longitudes);
                 const maxLon = Math.max(...longitudes);
+
                 return [(minLat + maxLat) / 2, (minLon + maxLon) / 2];
             },
         },
@@ -269,7 +293,7 @@
             return {
                 open_b: true, //open bottom menu
                 overlayLoad: false,
-                zoom: 10,
+                zoom: 11,
                 routes: [],
                 customIcon: L.icon({
                     iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Map-circle-black.svg/2048px-Map-circle-black.svg.png', // Remplacez cela par le chemin d'accès ou l'URL de l'image
@@ -515,12 +539,12 @@
                 return arr;
             },
             isLoaded(){
-                const bounds = [this.itineraire.origin.location.latLng.latLngTab, this.itineraire.destination.location.latLng.latLngTab]
-                if(this.$refs.mapRef){
-                    this.$refs.mapRef.leafletObject.fitBounds(bounds, {
-                        padding: [18, 18] // padding en pixels autour des limites.
-                    });
-                }
+                //const bounds = [this.itineraire.origin.location.latLng.latLngTab, this.itineraire.destination.location.latLng.latLngTab]
+                // if(this.$refs.mapRef){
+                //     this.$refs.mapRef.leafletObject.fitBounds(bounds, {
+                //         padding: [18, 18] // padding en pixels autour des limites.
+                //     });
+                // }
                 
                 this.getRouteInfos();
             },

@@ -88,7 +88,7 @@
                 >
                     <div>{{ item.title }}</div>
 
-                    <div style="display: flex;" >
+                    <div v-if="item.seats.length != undefined" style="display: flex;" >
                         <v-icon
                             v-for="n in item.seats"
                             :key="n"
@@ -123,7 +123,7 @@
                             <div @click="goToProfil(item.userUid)" v-html="subtitle"></div>
                         </div>
 
-                        <div style="display: flex;">
+                        <div v-if="item.seats.length != undefined != undefined" style="display: flex;">
                             <v-icon
                                 v-for="n in item.seats"
                                 :key="n"
@@ -226,7 +226,7 @@
             ...mapState("profil", ["darkMode"]),
             ...mapState("trip", ["chat", "tripSelected"]),
             itemsContacts(){
-                // console.log(this.tripSelected, this.chat.contacts);
+                console.log("trippppp-", this.tripSelected, this.chat.contacts);
                 let items = [];
                 const contacts = this.chat.contacts;
                 // console.log("contacts-items", contacts, this.tripSelected);
