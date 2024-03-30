@@ -215,4 +215,18 @@ export function getFutureTime(hours) {
     now.setHours(now.getHours() + hours);
     return now.toISOString();
 }
+
+//tomorow
+export function tomorowDate(date) {
+    // Créer un nouvel objet Date basé sur la date fournie
+    let dateDemain = new Date(date);
+  
+    // Ajouter 1 jour
+    dateDemain.setDate(dateDemain.getDate() + 1);
+  
+    // Réinitialiser les heures, minutes, secondes, et millisecondes à 0
+    dateDemain.setHours(0, 0, 0, 0);
+  
+    return dateDemain;
+}
   

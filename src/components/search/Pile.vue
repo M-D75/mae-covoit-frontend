@@ -210,7 +210,7 @@
         },
         methods: {
             ...mapMutations("search", ["SET_TRAJET_SELECTED"]),
-            ...mapActions("search", ["getTrajets", "getTrajetsFake"]),
+            ...mapActions("search", ["getTrajets", "getTrajetsFake", "getTrajetsDate"]),
             reserve(index){
                 if( this.trajetFiltered.length > index ){
                     this.SET_TRAJET_SELECTED(this.trajetFiltered[index]);
@@ -222,7 +222,8 @@
                 this.info = {};
                 this.load = true;
 
-                await this.getTrajets();
+                //await this.getTrajets();
+                await this.getTrajetsDate({date: new Date()});
                 // await this.getTrajetsFake();
                 
                 setTimeout(function(){

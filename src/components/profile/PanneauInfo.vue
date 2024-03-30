@@ -33,7 +33,7 @@
     .inf-comp {
         border-radius: 24px;
         border: solid var(--border-color) 10px;
-        margin-top: 30px;
+        // margin-top: 30px;
         margin-bottom: 15px;
         background-color: var(--white-bg-color);
         width: 82.7%;

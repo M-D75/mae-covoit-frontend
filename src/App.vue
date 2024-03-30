@@ -96,8 +96,8 @@
 
 <template>
     <v-app class="ligth-mode">
-        <router-view v-if="isMobileOrSmallScreen" ref="routerViewRef"/>
-        <MobileOnly v-else></MobileOnly>
+        <router-view ref="routerViewRef"/>
+        <!-- <MobileOnly v-else></MobileOnly> -->
         <!-- Menu Nav -->
         <BottomNav v-if="isMobileOrSmallScreen && bottomNav"/>
     </v-app>
@@ -113,7 +113,7 @@
     import { Capacitor } from '@capacitor/core';
     import { Plugins } from '@capacitor/core';
 
-    // import stripe from '@/utils/stripe.js'
+    import stripe from '@/utils/stripe.js'
 
     const { LocalNotifications } = Plugins;
 
@@ -126,13 +126,13 @@
     const isIOS = Capacitor.getPlatform() === 'ios';
 
     //Component
-    import MobileOnly from './views/MobileOnly.vue';
+    //import MobileOnly from './views/MobileOnly.vue';
     import BottomNav from './components/menus/BottomNav.vue';
 
     export default {
         name: 'App',
         components: {
-            MobileOnly,
+            //MobileOnly,
             BottomNav,
         },
         computed: {
@@ -149,10 +149,10 @@
             isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
             isSmallScreen: window.innerWidth <= 600,
         }),
+        beforeMount(){
+            console.log("beforeMount App")
+        },
         async mounted(){
-
-            this.getVillages();
-            console.log("Get Villages Already done !", this.villages);
             // const account = await stripe.accounts.retrieve('acct_1OUWQcI3Nt412vf3');
 
             // await stripe.charges.create({
@@ -163,8 +163,8 @@
             // });
 
 
-            // const balance = await stripe.balance.retrieve();
-            // console.log("balance", balance);
+            const balance = await stripe.balance.retrieve();
+            console.log("balance", balance);
 
             // const accountLink = await stripe.accountLinks.create({
             //     account: 'acct_1OUWQcI3Nt412vf3', // ID du compte Stripe de l'utilisateur

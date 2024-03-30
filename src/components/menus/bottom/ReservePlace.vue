@@ -439,7 +439,7 @@
                                 )
                         ) || !customer.metadata.source_selected
                         ){
-                        console.log("no-source-founded");
+                        console.log("no-source-founded", customer);
                         this.$emit("no-source-founded");
                         this.overlayLoad = false;
                         return;

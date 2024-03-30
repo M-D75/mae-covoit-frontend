@@ -1,40 +1,33 @@
 <!-- scss -->
 <style lang="scss" model>
-     .v-app-bar.profil-member-comp {
-
-        &.v-toolbar {
-            top: 0px !important;
-        }
-    }
+    
 </style>
 
 <style lang="scss" scoped>
-    // toolbar
-    .v-app-bar {
+    // toolbar        
+    .v-toolbar {
         box-shadow: var(--box-shadow-card);
-        .v-toolbar {
-            z-index: 27;
-            background-color: var(--bg-app-color);
-            box-shadow: var(--box-shadow-card);
+        z-index: 27;
+        background-color: var(--bg-app-color);
+        box-shadow: var(--box-shadow-card);
 
-            // natif
-            padding-top: var(--safe-area-inset-top);
-            margin-top: var(--safe-area-inset-top);
-            .v-btn {
+        // natif
+        // padding-top: var(--safe-area-inset-top);
+        // margin-top: var(--safe-area-inset-top);
+        .v-btn {
+            color: var(--gray-icon-color);
+            i.v-icon {
+                margin-right: 0 !important;
                 color: var(--gray-icon-color);
-                i.v-icon {
-                    margin-right: 0 !important;
-                    color: var(--gray-icon-color);
-                }
             }
-            .v-toolbar-title {
-                font-size: var(--font-size-h1-toolbar);
-                color: var(--font-color-label);
-            }
-            
-            .label-filter.text-caption {
-                width: 85%;
-            }
+        }
+        .v-toolbar-title {
+            font-size: var(--font-size-h1-toolbar);
+            color: var(--font-color-label);
+        }
+        
+        .label-filter.text-caption {
+            width: 85%;
         }
     }
 
@@ -43,12 +36,9 @@
         height: 100%;
         margin-bottom: 13px;
         overflow: scroll;
+        padding-top: 0 !important;
         // top: 0;
         // position: absolute;
-    }
-
-    .grouP {
-        margin-top: 50px;
     }
 </style>
    
@@ -62,22 +52,16 @@
         @click="overlay = false"
     ></v-overlay>
 
-    <v-app-bar
-        extended
-        :extension-height="barHeight"
-        class="profil-member-comp"
-    >
-        <v-toolbar >
-            <v-btn 
-                variant="text" 
-                icon="mdi-chevron-left"
-                @click="$emit('go-back')"    
-            ></v-btn>
+    <v-toolbar class="profil-member-comp">
+        <v-btn 
+            variant="text" 
+            icon="mdi-chevron-left"
+            @click="$emit('go-back')"    
+        ></v-btn>
 
-            <v-toolbar-title>Profil</v-toolbar-title>
-            <v-spacer></v-spacer>
-        </v-toolbar>
-    </v-app-bar>
+        <v-toolbar-title>Profil</v-toolbar-title>
+        <v-spacer></v-spacer>
+    </v-toolbar>
 
     <v-main class="main profil-member">
         <!-- Avatar -->
@@ -96,7 +80,7 @@
 
 <!--  -->
 <script>
-    import $ from 'jquery';
+    //import $ from 'jquery';
     import { defineComponent } from 'vue';
     import { mapState } from 'vuex';
     import { SafeAreaController, SafeArea } from '@aashu-dubey/capacitor-statusbar-safe-area';
@@ -197,10 +181,10 @@
             }
         },
         mounted() {
-            if(this.toolbarDouble){
-                $(".main").css({position: "absolute", top: "0px"});
-                $(".v-app-bar.profil-member-comp").css({position: "absolute", top: "0px"});
-            }
+            // if(this.toolbarDouble){
+            //     $(".main").css({position: "absolute", top: "0px"});
+            //     $(".v-app-bar.profil-member-comp").css({position: "absolute", top: "0px"});
+            // }
 
             SafeAreaController.injectCSSVariables();
 

@@ -108,17 +108,23 @@
     }
 
     .v-application{
-        height: 100vh !important;
+        height: 100% !important;
         .v-application__wrap{
             overflow: auto !important;
         }
     }
 
     .v-main{
-        height: 100vh;
+        height: auto !important;
         overflow: auto;
+        width: 100vw !important;
+        transform: inherit !important;
+        z-index: 0 !important;
+        background-color: var(--bg-app-color);
         .messages {
             height: 100%;
+            overflow: auto;
+            padding-bottom: calc(80px + var(--safe-area-inset-bottom)); // 80 taille du champ de text
             .message-info-no-data {
                 display: flex;
                 height: 100%;
@@ -197,6 +203,7 @@
             display: flex;
             flex: auto;
             .v-text-field{
+                
                 .v-input__control {
                     .v-field{
                         .v-field__field{
@@ -223,6 +230,8 @@
 <template>
     <!--  -->
     <v-app-bar
+        absolute
+        permanent
         extended
         :extension-height="barHeight"
     >
@@ -314,9 +323,10 @@
     </v-app-bar>
 
     <!--  -->
-    <v-main>
-
-        <div class="messages">
+    <v-navigation-drawer 
+        class="v-main"
+    >
+        <div id="messages" class="messages">
             <div v-if="messages.length == 0" class="message-info-no-data">
                 <span>⚠️ Attention : Cette messagerie n'est pas privée. Veuillez éviter de communiquer toute donnée sensible. 🚫</span>
             </div>
@@ -352,14 +362,14 @@
             <v-progress-circular color="blue" indeterminate size="64"></v-progress-circular>
         </v-overlay>
 
-    </v-main>
+    </v-navigation-drawer>
 
     <!--  -->
     <v-footer
         app
         name="footer"
-        height="80"
-        permanent
+        :height="80 + (footerDown ? barBottom :  0)"
+        class="down"
     >
         <div
             class="card-foot"
@@ -412,9 +422,13 @@
     import io from 'socket.io-client';
     import supabase from '@/utils/supabaseClient.js';
     import { SafeAreaController, SafeArea } from '@aashu-dubey/capacitor-statusbar-safe-area';
+    import { Keyboard } from '@capacitor/keyboard';
 
-    import { Plugins } from '@capacitor/core';
+    import { Plugins, Capacitor } from '@capacitor/core';
     const { App } = Plugins;
+
+    const isAndroid = Capacitor.getPlatform() === 'android';
+    const isIOS = Capacitor.getPlatform() === 'ios';
 
     // Components
 
@@ -430,6 +444,9 @@
         data() {
             return {
                 barHeight: 0,
+                barBottom: 0,
+                footerDown: true,
+                sizeScreen: 0,
                 mode_driver: false,
                 currentContact: {
                     username: "Username",
@@ -488,6 +505,46 @@
             SafeAreaController.injectCSSVariables();
 
             this.initStatusBarHeight();
+
+            this.sizeScreen = $(window).innerHeight();
+            console.log("H,", $('#messages')[0].clientHeight);
+
+            if(isAndroid || isIOS){
+                Keyboard.addListener('keyboardWillShow', info => {
+                    console.log('keyboard will show with height:', info.keyboardHeight);
+                    $(window).innerHeight(this.sizeScreen-info.keyboardHeight-this.barHeight-this.barBottom-80)
+                });
+
+                Keyboard.addListener('keyboardDidShow', info => {
+                    console.log('keyboard did show with height:', info.keyboardHeight);
+                    $(window).innerHeight(this.sizeScreen-info.keyboardHeigh-this.barHeight-this.barBottom-80)
+                    this.footerDown = false;
+
+                    var hauteurDiv = $('#messages')[0].clientHeight;
+                    console.log("hauteurDiv", hauteurDiv);
+                    //$('#message').scrollTop(hauteurDiv);
+                    $(".v-main").animate({ scrollTop: hauteurDiv+80 }, "fast");
+                    $("#messages").animate({ scrollTop: hauteurDiv+80 }, "fast");
+
+                    // setTimeout(function(){
+                        
+                    // }.bind(this), 1000);
+                    
+                    console.log("interre heigh-----", $(window).innerHeight());
+                });
+
+                Keyboard.addListener('keyboardWillHide', () => {
+                    console.log('keyboard will hide');
+                    $(window).innerHeight(this.sizeScreen)
+                });
+
+                Keyboard.addListener('keyboardDidHide', () => {
+                    console.log('keyboard did hide');
+                    $(window).innerHeight(this.sizeScreen)
+                    console.log("interre heigh---_____", $(window).innerHeight());
+                    this.footerDown = true;
+                });
+            }
 
             // this.messages = [
             //         { from: this.userUid, message: "Bonjour, c'est Marc. Je suis votre conducteur pour le covoiturage de demain.", type: 0, time: "08:22", status: "vue" },
@@ -716,6 +773,7 @@
             async initStatusBarHeight(){
                 const insets = await this.getSafeAreaInsets();
                 this.barHeight = insets["top"];
+                this.barBottom = insets["bottom"];
             },
             async getSafeAreaInsets () {
                 const insets = await SafeArea.getSafeAreaInsets();
@@ -745,7 +803,8 @@
                 this.$nextTick(() => {
                     const container = $(".messages")[0];
                     // console.log("scoll", container.clientHeight);
-                    $(".v-main").animate({ scrollTop: container.clientHeight }, "slow");
+                    $(".v-main").animate({ scrollTop: container.clientHeight }, "fast");
+                    $("#messages").animate({ scrollTop: container.clientHeight }, "fast");
                 });
             },
             timeNow() {

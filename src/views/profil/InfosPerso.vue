@@ -3,10 +3,6 @@
     .main {
         margin-bottom: 13px;
     }
-
-    .grouP {
-        margin-top: 50px;
-    }
 </style>
    
 <!--  -->

@@ -66,7 +66,7 @@
 
             <v-btn
                 :icon=" shareLocalisation ? 'mdi-map-marker-outline' : 'mdi-map-marker-off-outline'"
-                @click="shareLocalisation = !shareLocalisation"  
+                @click="shareLocalisation = !shareLocalisation; checkSharedLoc()"  
             />
         </div>
 
@@ -302,12 +302,27 @@
             ...mapState("trip", ["tripSelected", "notMessageVue", "chat"]),
             ...mapGetters("search", ["getVillagesByName", "GET_ID_VILLAGE_BY_NAME"]),
             center() {
-                const latitudes =  [this.itineraire.origin.location.latLng.latitude, this.itineraire.destination.location.latLng.latitude];
-                const longitudes = [this.itineraire.origin.location.latLng.longitude, this.itineraire.destination.location.latLng.longitude];
+                if(this.routes.length == 0){
+                    return [ -12.7850694, 45.1658908 ]
+                }
+                const polylinePoints = this.routes.slice().reverse()[this.routes.length - 1].polylineDecoded // Vous devrez remplir ceci en fonction de vos données
+
+
+                const latitudes = [
+                    this.itineraire.origin.location.latLng.latitude, 
+                    this.itineraire.destination.location.latLng.latitude,
+                    ...polylinePoints.map(point => point[0])
+                ];
+                const longitudes = [
+                    this.itineraire.origin.location.latLng.longitude, 
+                    this.itineraire.destination.location.latLng.longitude,
+                    ...polylinePoints.map(point => point[1])
+                ];
                 const minLat = Math.min(...latitudes);
                 const maxLat = Math.max(...latitudes);
                 const minLon = Math.min(...longitudes);
                 const maxLon = Math.max(...longitudes);
+
                 return [(minLat + maxLat) / 2, (minLon + maxLon) / 2];
             },
         },
@@ -567,6 +582,12 @@
                 }
 
             });
+
+            this.socket.on('stop-shared-loc', (infos) => {
+                console.log("shared-stoped", infos);
+                this.localisation = this.localisation.filter((loc) => loc.idTrip != infos.idTrip);
+            });
+            
             
         },
         methods: {
@@ -839,6 +860,28 @@
             openBottomMenuInfos(){
                 if( this.$refs.BottomMenuRef )
                     this.$refs.BottomMenuRef.open();
+            },
+            checkSharedLoc(){
+                if(!this.shareLocalisation){
+                    if(this.mode_driver){
+                        for (let index = 0; index < this.contacts.length; index++) {
+                            let infos = {
+                                idTrip: this.tripSelected.id,
+                                from: this.userUid,
+                                to: this.contacts[index].user_id,
+                            }
+                            this.socket.emit("stop-shared-localisation", infos);
+                        }
+                    }
+                    else{
+                        let infos = {
+                            idTrip: this.tripSelected.id,
+                            from: this.userUid,
+                            to: this.currentContact.userUid,
+                        }
+                        this.socket.emit("stop-shared-localisation", infos);
+                    }
+                }
             },
             async updateLoc(){
                 // Obtention de la position actuelle

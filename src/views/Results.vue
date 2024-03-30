@@ -195,7 +195,6 @@
 
     <PaneApear
         mode="profil-member"
-        :toolbar-double="true"
         :class-name="['profil-member']"
         ref="PaneApearProfilMemberRef"
     />
@@ -257,7 +256,6 @@
         name: 'results-view',
         computed: {
             ...mapState("search", ["trajets", "trajetSelected"]),
-            ...mapActions("search", ["getTrajets"]),
             ...mapState("profil", ["darkMode"]),
             trajetFiltered() {
                 let trips = this.trajets.filter(
@@ -359,7 +357,8 @@
             // console.log("params", this.$route.params);
             this.overlayLoad = true;
             try {
-                await this.getTrajets;
+                //await this.getTrajets();
+                await this.getTrajetsDate({date: this.getDate()})
                 if (this.trajetFiltered.length == 0)
                     this.nothing = true;
             }
@@ -375,6 +374,7 @@
             ...mapMutations("search", ["SET_DEPART", "SET_DESTINATION", "SET_NB_PASSENGER", "SET_TRAJET_SELECTED"]),
             ...mapMutations("trip", ["SET_TRIP_SELECTED"]),
             ...mapActions("trip", ["getProfilMember"]),
+            ...mapActions("search", ["getTrajets", "getTrajetsDate"]),
             reserve(event, index) {
                 this.infos = this.trajetFiltered[index];
                 // TODO: propre

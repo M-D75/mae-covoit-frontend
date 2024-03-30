@@ -6,7 +6,7 @@ import store from '../store';
 import stripe from '@/utils/stripe.js'
 import supabase from '@/utils/supabaseClient.js';
 import router from '@/router';
-import { formaterDateUTC, getRandomInt, getRandomString, getFutureTime } from '@/utils/utils.js'
+import { formaterDateUTC, getRandomInt, getRandomString, getFutureTime, tomorowDate } from '@/utils/utils.js'
 
 
 export default {
@@ -270,6 +270,95 @@ export default {
                     )`
                 )
                 .neq('driver_id', store.state.profil.userUid)
+
+            if ( error ) {
+                console.error(error);
+                return;
+            }
+
+            console.log("Joneess", trips);
+            
+            let _trips = [];
+            for (let index = 0; index < trips.length; index++) {
+                const trip = trips[index];
+
+                let isoDate = trip.departure_time;
+                let date = new Date(isoDate);
+
+                let offset = date.getTimezoneOffset();
+                date = new Date(date.getTime() - (offset * 60000));
+
+                let hours = date.getUTCHours().toString().padStart(2, '0');
+                let minutes = date.getUTCMinutes().toString().padStart(2, '0');
+                let departure_time = `${hours}:${minutes}`;
+
+                date = new Date((date.getTime() + (parseInt(trip.route.infosGoogle.duration.replace("s", "")) * 1000) ) - (offset * 60000));
+
+                hours = date.getUTCHours().toString().padStart(2, '0');
+                minutes = date.getUTCMinutes().toString().padStart(2, '0');
+
+                const arrival_time = `${hours}:${minutes}`;
+                // jointure : account,trip,booking
+                const _trip  = {
+                    id: trip.id,
+                    driver_id: trip.driver_id,
+                    name: `${trip.account.firstname} ${trip.account.lastname}`,
+                    avatar: trip.account.avatar,
+                    depart: getters.GET_VILLAGE_BY_ID(trip.village_departure_id),
+                    destination: getters.GET_VILLAGE_BY_ID(trip.village_arrival_id),
+                    departure_time: trip.departure_time,
+                    hour_start: departure_time,
+                    hour_end: arrival_time,
+                    price: trip.price ? trip.price : (Math.ceil(Math.random()*4)+1),
+                    passenger_number: trip.booking.filter((booking) => booking.is_accepted).length,
+                    bookings: trip.booking,
+                    max_seats: trip.max_seats,
+                    route: trip.route,
+                    car: trip.car,
+                };
+                _trips.push(_trip);
+            }
+
+            console.log("trips-search:", _trips);
+            
+            commit('SET_TRAJETS', _trips);
+
+            return true
+        },
+        async getTrajetsDate({ commit, getters }, infos) {
+            const sessionChecked = await store.dispatch("auth/checkSessionOnly");
+            if(!sessionChecked){
+                router.replace("/login");
+                return;
+            }
+
+            const tomorow = tomorowDate(infos.date);
+
+            console.log("date:", infos, infos.date, tomorow)
+
+            const { data: trips, error } = await supabase
+                .from('trip')
+                .select(`
+                    id, 
+                    driver_id,
+                    village_departure_id,
+                    village_arrival_id,
+                    departure_time,
+                    max_seats,
+                    price,
+                    route,
+                    car_id,
+                    car (*),
+                    account (*),
+                    booking (
+                        passenger_account_id,
+                        is_accepted,
+                        account (*)
+                    )`
+                )
+                .neq('driver_id', store.state.profil.userUid)
+                .gt("departure_time", formaterDateUTC(infos.date))
+                .lt("departure_time", formaterDateUTC(tomorow))
 
             if ( error ) {
                 console.error(error);
@@ -612,15 +701,15 @@ export default {
             const accountStrip = await stripe.accounts.retrieve(account_driver[0].provider_id);
             console.log("accountStrip", accountStrip, (state.trajetSelected.price * 0.59) * 100);
             
-            const balance = await stripe.balance.retrieve();
-            if( balance.available[0].amount < (state.trajetSelected.price * 0.59) * 100 ){
-                await stripe.charges.create({
-                    amount: 2000, // Montant en centimes (ex. 2000 pour 20 EUR/USD)
-                    currency: 'eur', // ou 'usd', etc.
-                    source: 'tok_bypassPending', // ou un autre token de carte de test approprié
-                    description: 'Charge de test pour augmenter le solde',
-                });
-            }
+            // const balance = await stripe.balance.retrieve();
+            // if( balance.available[0].amount < (state.trajetSelected.price * 0.59) * 100 ){
+            //     await stripe.charges.create({
+            //         amount: 2000, // Montant en centimes (ex. 2000 pour 20 EUR/USD)
+            //         currency: 'eur', // ou 'usd', etc.
+            //         source: 'tok_bypassPending', // ou un autre token de carte de test approprié
+            //         description: 'Charge de test pour augmenter le solde',
+            //     });
+            // }
 
             let transfert = null;
             try {

@@ -60,6 +60,7 @@
             font-size: 12px;
             font-weight: bold;
             color: var(--font-color-label);
+            margin-bottom: 15px;
         }
     }
 

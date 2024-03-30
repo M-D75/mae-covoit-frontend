@@ -2,6 +2,7 @@
 
 <style lang="scss" model>
     .v-bottom-navigation {
+        position: absolute !important;
         .v-bottom-navigation__content{
             justify-content: space-evenly !important;
         }

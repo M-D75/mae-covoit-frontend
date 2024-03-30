@@ -226,6 +226,22 @@
                 this.cards = this.cards.slice().filter((card) => card.id != customerSource.id);
 
                 console.log("customerSource", customerSource, this.cards);
+
+                if( customerSource && customerSource.id == id){
+                    let customer = await stripe.customers.update(
+                        this.customer_id,
+                        {
+                            metadata: {
+                                type_source: null,
+                                source_selected: null,
+                            }
+                        }
+                    );
+
+                    console.log("customer", customer);
+                    if(customer)
+                        this.$router.go("/profil")
+                }
             },
         },
     });
