@@ -597,6 +597,35 @@ export default {
                 return;
             }
 
+            const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
+
+            const typeUrl = store.state.profil.modeCo;
+
+            //try ask serveur
+            let testAskAxio = await axios.post(`${adresse[typeUrl]}/testAsk`, {
+                    test: 'ok',
+                })
+                .then(response => {
+                    console.log("testAsk", response.data);
+                    const data = response.data;
+
+                    if(data.status != undefined && data.status == 'ok'){
+                        console.log("testAsk-ok");
+                        return true;
+                    }
+                    else{
+                        return false;
+                    }
+                })
+                .catch(error => {
+                    console.error('ERROR testAsk :', error);
+                    return false;
+                });
+
+            if( ! testAskAxio ){
+                return { valided: false, message: "Nos serveurs sont actuellement indisponible veuillez réessayer plus tard."};
+            }
+
             if( state.nbPassenger + state.trajetSelected.passenger_number > state.trajetSelected.max_seats ){
                 return { valided: false, message: "Pas assez place sur ce trajet !"};
             }
@@ -616,6 +645,7 @@ export default {
                 return { valided: false, message: "Une erreur est survenue !"};
             }
 
+            // get account driver
             let { data: account_driver, error: error_driver } = await supabase
                 .from('account')
                 .select(`
@@ -629,13 +659,15 @@ export default {
                 return { valided: false, message: "Une erreur est survenue !"};
             }
 
-            
+            //build charge ?
+            let charge = null;
             let byCredit = true;
+
             // check soldes enouth
             if( 0 > account_passenger[0].credit - state.trajetSelected.price ){
                 byCredit = false;
                 // return { valided: false, message: "Pas assez de credit !"}
-                //transation stripe
+                
                 const customer = await stripe.customers.retrieve(account_passenger[0].customer_id);
                 console.log("retrieve customer:", customer);
                 
@@ -659,26 +691,15 @@ export default {
                     const paymentIntent = await stripe.paymentIntents.create(obj);
             
                     console.log("paymentIntent [OK]", paymentIntent);
+
+                    //get charge
+                    charge = await stripe.charges.retrieve(paymentIntent.latest_charge);
                 }
                 catch (error) {
                     console.error("Erreur lors de la création de l'intention de paiement:", error);
                     return {valided: false, status: 2, message: "Une erreur s'est produite lors du prélevement sur votre card de credit, veuillez réessayer plus tard."};
                 }
             }
-
-            // get all booking id
-            // let { data: booking, error: error_booking } = await supabase
-            //     .from('booking')
-            //     .select('id')
-
-            // if ( error_booking ) {
-            //     console.error('Erreur lors de la requête :', error_booking);
-            //     return { valided: false, message: "Une erreur est survenue !"};
-            // }
-
-
-            // new id = last_id+1
-            // const newBookingId = booking.length+1;
             
             // debit le montant
             if(byCredit){
@@ -700,48 +721,58 @@ export default {
             //credité driver
             const accountStrip = await stripe.accounts.retrieve(account_driver[0].provider_id);
             console.log("accountStrip", accountStrip, (state.trajetSelected.price * 0.59) * 100);
-            
-            // const balance = await stripe.balance.retrieve();
-            // if( balance.available[0].amount < (state.trajetSelected.price * 0.59) * 100 ){
-            //     await stripe.charges.create({
-            //         amount: 2000, // Montant en centimes (ex. 2000 pour 20 EUR/USD)
-            //         currency: 'eur', // ou 'usd', etc.
-            //         source: 'tok_bypassPending', // ou un autre token de carte de test approprié
-            //         description: 'Charge de test pour augmenter le solde',
-            //     });
-            // }
+           
+            if(charge != null){
 
-            let transfert = null;
-            try {
-                transfert = await stripe.transfers.create({
-                    amount: (state.trajetSelected.price*0.59) * 100, // montant en centimes
-                    currency: 'eur',
-                    destination: accountStrip.id,
+                //record in database
+                const { data: stripe_charge_ins_data, error: stripe_charge_ins_error } = await supabase
+                    .from('strip_charge')
+                    .insert([
+                        { charge_id: charge.balance_transaction, account_id: account_passenger[0].id },
+                    ])
+                    .select();
+
+                if( stripe_charge_ins_error ){
+                    console.error("Error:", stripe_charge_ins_error);
+                }
+
+                console.log("charge saved :", stripe_charge_ins_data);
+        
+                console.log("prep-transfer....", {
+                    balance_transaction: charge.balance_transaction, 
+                    driver_account_id: account_driver[0].provider_id,
                 });
-            } 
-            catch (error) {
-                console.log("Error--:", error);
-                return { valided: false, message: "Une erreur s'est produite veuillez réessayer plus tard."};
-            }
-            
 
-            if(transfert){
-                console.log("transfert-ok", transfert);
-            }
-            else{
-                console.log("Erreur:", transfert);
-                return { valided: false, message: "Une erreur est survenue."};
-            }
+                const balanceTransaction = await stripe.balanceTransactions.retrieve(
+                    charge.balance_transaction,
+                );
 
-            let { data: account_update_driver, error: error_update_driver } = await supabase
-                .from('account')
-                .update({ gain: (account_driver[0].gain + state.trajetSelected.price) })
-                .eq('user_id', state.trajetSelected.driver_id)
-                .select()
+                const outAxio = await axios.post(`${adresse[typeUrl]}/prepTransfer`, {
+                        balance_transaction: charge.balance_transaction,
+                        available_on: balanceTransaction.available_on,
+                        driver_account_id: account_driver[0].provider_id,
+                    })
+                    .then(response => {
+                        console.log("prepTransfer", response.data);
+                        const data = response.data;
 
-            if( error_update_driver ){
-                console.error("Error update", error_update_driver, account_update_driver);
-                return { valided: false, message: "Une erreur est survenue."};
+                        if(data.status != undefined && data.status == 'recieved'){
+                            console.log("prep-transfer-ok");
+                            return true
+                        }
+                        else{
+                            return false
+                        }
+                    })
+                    .catch(error => {
+                        console.error('ERROR prepTransfer :', error);
+                        return false;
+                    });
+                
+                console.log("outAxio", outAxio);
+                if( ! outAxio ) {
+                    return { valided: false, message: "Une erreur est survenue."};
+                }
             }
 
             const user_id = account_passenger[0].id;
@@ -751,7 +782,6 @@ export default {
             for(let index_passenger=0; index_passenger < state.nbPassenger; index_passenger++){
                 list_ins_passenger.push({ trip_id: state.trajetSelected.id, passenger_account_id: user_id, is_accepted: auto_accept_trip })
             }
-
 
             //add +1 reserve
             let { data: data_booking, error: error_booking_update } = await supabase
@@ -768,7 +798,7 @@ export default {
             store.state.trip.rating = true;
             store.state.profil.history.datesTripPassenger.push(state.trajetSelected.departure_time);
             const message_success = auto_accept_trip ? "Votre réservation à été effectué avec succès" : "Votre demande est en attente de validation par le chauffeur !";
-            return {valided: true, message: message_success, accepted: auto_accept_trip };
+            return {valided: true, message: message_success, accepted: auto_accept_trip, data: {id: state.trajetSelected.id, date: state.trajetSelected.departure_time} };
         },
     },
 }

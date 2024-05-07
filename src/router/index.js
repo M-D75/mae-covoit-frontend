@@ -21,7 +21,7 @@ import ProfilMember from '@/views/profil/ProfilMember.vue'
 import Test from '@/views/Test.vue'
 import StripeCheckout from '@/views/StripeCheckout.vue'
 import Rating from '@/views/Rating.vue'
-// import store from '../store'; // Chemin d'accès à votre fichier store
+
 
 const routes = [
     {
@@ -176,6 +176,8 @@ import axios from 'axios';
 // import store from '../store'; 
 
 import { Plugins } from '@capacitor/core';
+//import supabase from '@/utils/supabaseClient.js';
+
 
 // import stripe from '@/utils/stripe.js'
 
@@ -218,10 +220,50 @@ async function sendNotification(title, body, data) {
 let initFireBase = false;
 router.beforeEach(async (to, from, next) => {
     console.log("from", from);
-    if (to.path === '/search') {
+    if ( to.path === '/search' ) {
 
-        // if(store.state.trip.rating){
+        // if( store.state.trip.ratings.rating ){
+        //     let bookings = store.state.trip.ratings.bookings;
+        //     const now = new Date();
+        //     if( bookings.length > 0 ){
+        //         console.log("bookings", bookings);
+        //         bookings = bookings.filter((data) => new Date(data.date).getTime() + 15 * 60000 < now.getTime() );
+        //     }
 
+        //     if( bookings.length > 0 ){
+        //         const { data: trips, error } = await supabase
+        //             .from('booking')
+        //             .select(`
+        //                 id,
+        //                 trip_id,
+        //                 passenger_account_id,
+        //                 is_accepted,
+        //                 is_refused,
+        //                 trip (
+        //                     id, 
+        //                     driver_id,
+        //                     account (*),
+        //                     village_departure_id,
+        //                     village_arrival_id,
+        //                     departure_time,
+        //                     max_seats,
+        //                     price,
+        //                     route
+        //                 )`)
+        //             .eq('id', bookings[0].id);
+                
+        //         if(error){
+        //             console.log("Error : check rating failed no boking gettting : ", error);
+        //             next();
+        //         }
+
+        //         console.log("Get for rating success : ", trips);
+
+        //         store.state.trip.ratings.data = trips;
+
+        //         next('/rating');
+        //     }
+            
         // }
         
         if( (isIOS || isAndroid) && !initFireBase ){

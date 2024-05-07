@@ -294,6 +294,14 @@ export default {
                 return {status: 2, message: "Une erreur s'est produite lors de la récupératioin de votre solde."};
             }
 
+            const balanceConnect = await stripe.balance.retrieve({
+                stripeAccount: store.state.auth.provider_id,
+            });
+
+            console.log("balanceConnect", balanceConnect);
+
+            state.gain = (balanceConnect.available[0].amount + balanceConnect.pending[0].amount)/100;
+
             state.soldes = account[0].credit;
             return {status: 0, message: `Votre solide est de : ${state.soldes}`};
         },
@@ -368,34 +376,34 @@ export default {
             console.log("update-credit", data_update, error_update);
             return {status: 0, message: "Votre compte à bien était crédité !"};
         },
-        async transfertGain({state}, data){
-            // get-credit
-            let { data: account, error: error_account } = await supabase
-                .from('account')
-                .select("*")
-                .eq('user_id', state.userUid);
+        // async transfertGain({state}, data){
+        //     // get-credit
+        //     let { data: account, error: error_account } = await supabase
+        //         .from('account')
+        //         .select("*")
+        //         .eq('user_id', state.userUid);
 
-            if( error_account ){
-                console.error("Error acount:", error_account);
-                return {status: 1, message: "Une erreur s'est produite veulliez réessayez plus tard !"}
-            }
+        //     if( error_account ){
+        //         console.error("Error acount:", error_account);
+        //         return {status: 1, message: "Une erreur s'est produite veulliez réessayez plus tard !"}
+        //     }
 
-            let { data: data_update, error: error_update } = await supabase
-                .from('account')
-                .update({ credit: (account[0].credit + data.credit), gain: account[0].gain - data.credit })
-                .eq('user_id', state.userUid)
-                .select()
+        //     let { data: data_update, error: error_update } = await supabase
+        //         .from('account')
+        //         .update({ credit: (account[0].credit + data.credit), gain: account[0].gain - data.credit })
+        //         .eq('user_id', state.userUid)
+        //         .select()
 
-            if( error_update ){
-                console.error("Error update:", error_update);
-                return {status: 2, message: "Une erreur s'est produite veulliez réessayez plus tard !"}
-            }
+        //     if( error_update ){
+        //         console.error("Error update:", error_update);
+        //         return {status: 2, message: "Une erreur s'est produite veulliez réessayez plus tard !"}
+        //     }
 
-            state.soldes = data_update[0].credit;
-            state.gain = data_update[0].gain;
+        //     state.soldes = data_update[0].credit;
+        //     state.gain = data_update[0].gain;
             
-            return {status: 0, message: "Votre transfert à bien été effectué !"};
-        },
+        //     return {status: 0, message: "Votre transfert à bien été effectué !"};
+        // },
         async getTravels({state}){
 
             state.profil.myTravels = [];
@@ -516,6 +524,22 @@ export default {
             console.log("_trips:", _trips, state.profil.myPublish);
 
             return {status: 0, message: "success"};
+        },
+        async removeBooking({state}, infos){
+
+            const { error } = await supabase
+                .from('booking')
+                .delete()
+                .eq('trip_id', infos.trip_id)
+                .eq('passenger_account_id', state.userId);
+
+            if(error){
+                console.error("Error:", error);
+                return {status: 1, message: "Une erreur s'est produite vueillez réessayer plus tard"}
+            }
+            
+            return {status: 0, message: "Suppression effectuée avec succèes"};
+
         },
         async buildHistoriqueBooking({state}){
 

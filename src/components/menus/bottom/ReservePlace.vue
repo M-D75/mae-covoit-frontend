@@ -299,7 +299,7 @@
     import axios from 'axios';
     import stripe from '@/utils/stripe.js'
     
-    import { mapActions, mapState } from 'vuex';
+    import { mapActions, mapState, mapMutations } from 'vuex';
     import { Plugins, Capacitor } from '@capacitor/core';
 
     const { LocalNotifications } = Plugins;
@@ -350,6 +350,7 @@
         },
         methods: {
             ...mapActions("profil", ["getSoldes"]),
+            ...mapMutations("trip", ["SET_RATINGS_INFO"]),
             updateCar(){
                 if ( this.trajetSelected != undefined && Object.keys(this.trajetSelected).length > 0 && this.trajetSelected.car != undefined && this.trajetSelected.car ) {
                     this.car.model = this.trajetSelected.car.brand != "UNKNOWN" ? this.trajetSelected.car.brand : this.trajetSelected.car.license_plate;
@@ -467,6 +468,13 @@
 
                     this.message = reserved.message;
                     this.accepted = reserved.accepted;
+                    // add for notation later
+                    // TODO : changement après validation du passager et chauffeur ou à la fin du trajet
+                    if( this.accepted ){
+                        this.SET_RATINGS_INFO(reserved.data)
+                    }
+
+
                     this.$emit('test-notif-success');
                 }
             },

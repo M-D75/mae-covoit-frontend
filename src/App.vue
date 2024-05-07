@@ -166,6 +166,72 @@
             const balance = await stripe.balance.retrieve();
             console.log("balance", balance);
 
+            // const balanceTransactions = await stripe.balanceTransactions.list({
+            //     type: 'transfer',
+            // });
+
+            //tr_1PDsKTIKwmrDLewYoqwuJF8s
+
+            const transfer = await stripe.transfers.retrieve('tr_1PDsKTIKwmrDLewYoqwuJF8s');
+
+
+
+            const balanceTransaction = await stripe.balanceTransactions.retrieve(
+                transfer.balance_transaction
+            );
+
+            console.log(":::balanceTransaction", balanceTransaction);
+
+            //acct_1OUWQcI3Nt412vf3
+
+            const person = await stripe.accounts.retrieve('acct_1OUWQcI3Nt412vf3');
+            
+            console.log("person:", person);
+
+            const balanceConnect = await stripe.balance.retrieve({
+                stripeAccount: 'acct_1OUWQcI3Nt412vf3',
+            });
+
+            console.log("balanceConnect", balanceConnect);
+
+            // console.log("balanceTransactions", balanceTransactions);
+
+            // const charge = await stripe.charges.retrieve('ch_3PBQT6IKwmrDLewY158XpEE4');
+
+
+            // const balanceTransaction = await stripe.balanceTransactions.retrieve(
+            //     charge.balance_transaction,
+            // );
+
+
+            // console.log("balanceTransaction==",balanceTransaction);
+
+            //ch_3PBQT6IKwmrDLewY158XpEE4
+
+            // const account = await stripe.accounts.update(
+            //     'acct_1OUWQcI3Nt412vf3',
+            //     {
+            //         payouts_enabled: true
+            //     }
+            // );
+
+            // const capability = await stripe.accounts.retrieveCapability(
+            //     'acct_1OUWQcI3Nt412vf3',
+            // );
+
+            // console.log("capability", capability);
+
+            // const account = await stripe.accounts.retrieve('acct_1OXTqiI6Y77Tw8qo');
+            // console.log("accout-app", account );
+
+            // const transfert = await stripe.payouts.create({
+            //     amount: 8 * 100,
+            //     currency: 'eur',
+            //     destination: "ba_1OVNzwI3Nt412vf3MIzXCITe",
+            // });
+
+            // console.log("tra-", transfert);
+
             // const accountLink = await stripe.accountLinks.create({
             //     account: 'acct_1OUWQcI3Nt412vf3', // ID du compte Stripe de l'utilisateur
             //     refresh_url: 'http://localhost:8080/reauth',
@@ -293,6 +359,8 @@
 
             if(SafeAreaController)
                 SafeAreaController.injectCSSVariables();
+
+            
 
             // if( isIOS || isAndroid ){
             //     // PushNotifications.requestPermissions().then(result => {

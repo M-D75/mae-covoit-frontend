@@ -71,19 +71,32 @@
             size="x-large"
             variant="outlined"
             block
+            @click="callDeleteAccount()"
         >
             Supprimer mon compte
         </v-btn>
     </div>
+
+    <!-- confirm choice -->
+    <BottomMenu
+        :class-name="['confirm-choice-class']"
+        mode="confirm-choice"
+        labelSelectorN1="Souhaitez vous réelement supprimer votre compte ?"
+        ref="BottomMenuRefConfirmChoice"
+        v-on:close="overlay = false"
+        v-on:yes="overlay = false; console.log('yes'); deleteAccount();"
+        v-on:no="overlay = false; console.log('no'); $refs.BottomMenuRefConfirmChoice.close()"
+        />
  </template>
 
 
 
 <script>
-    import { mapMutations, mapState } from 'vuex';
+    import { mapMutations, mapState, mapActions } from 'vuex';
 
 
     // Components
+    import BottomMenu from '@/components/menus/BottomMenu.vue';
 
     export default {
         name: "infos-general-comp",
@@ -91,6 +104,7 @@
             ...mapState("profil", ['cguAccepted']),
         },
         components: {
+            BottomMenu,
         },
         props: {
             mode: {
@@ -114,6 +128,19 @@
         },
         methods: {
             ...mapMutations("profil", ["SET_CGU_ACCEPTED"]),
+            ...mapActions("profil", ["removeAccount", "logout"]),
+            callDeleteAccount(){
+                this.$refs.BottomMenuRefConfirmChoice.open();
+            },
+            async deleteAccount(){
+                this.$refs.BottomMenuRefConfirmChoice.loadingBtn = true;
+                await this.removeAccount();
+                this.$refs.BottomMenuRefConfirmChoice.loadingBtn = false;
+                this.$refs.BottomMenuRefConfirmChoice.close();
+                setTimeout(function(){
+                    this.logout();
+                }.bind(this), 2000);
+            }
         }
     };
 </script>

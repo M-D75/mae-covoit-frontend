@@ -74,6 +74,82 @@ export default {
             state.account_created = true;
             return {status: 0, message: "Votre compte à été crée avec succès"};
         },
+        async removeAccount(){
+            //***REMOVE DATA */
+            //booking
+            
+            let { data: account, error: account_error } = await supabase
+                .from('account')
+                .select(`id, user_id`);
+
+            if(account_error){
+                console.error("Error 1 :", account_error);
+                return {status: 1, message: "Une erreur s'est produite !"}
+            }
+
+            console.log("account-ok", account);
+
+            const accountId = account[0].id;
+            const accountUserId = account[0].user_id;
+
+            //remove all booking
+            const { error: booking_error } = await supabase
+                .from('booking')
+                .delete()
+                .eq('passenger_account_id', accountId);
+
+            if(booking_error){
+                console.error("Error 2 :", booking_error);
+                return {status: 2, message: "Un probléme avec la suppression de vos données, réessayé plus tard"}
+            }
+
+            //remove all trip
+            const { error: trip_error } = await supabase
+                .from('trip')
+                .delete()
+                .eq('driver_id', accountUserId)
+        
+            if(trip_error){
+                console.error("Error 3 :", trip_error);
+                return {status: 3, message: "Un probléme avec la suppression de vos données, réessayé plus tard"}
+            }
+
+
+            //remove all settings
+            const { error: settings_error } = await supabase
+                .from('settings')
+                .delete()
+                .eq('account_id', accountId)
+        
+            if(settings_error){
+                console.error("Error 4 :", settings_error);
+                return {status: 4, message: "Un probléme avec la suppression de vos données, réessayé plus tard"}
+            }
+
+            //remove all car
+            const { error: car_error } = await supabase
+                .from('car')
+                .delete()
+                .eq('driver_id', accountUserId);
+        
+            if(car_error){
+                console.error("Error 5 :", car_error);
+                return {status: 5, message: "Un probléme avec la suppression de vos données, réessayé plus tard"}
+            }
+
+            //remove account
+            const { error: account_del_error } = await supabase
+                .from('account')
+                .delete()
+                .eq('id', accountId);
+        
+            if(account_del_error){
+                console.error("Error 6 :", account_del_error);
+                return {status: 6, message: "Un probléme avec la suppression de vos données, réessayé plus tard"}
+            }
+        
+            
+        },
         async refreshToken({state}){
             const { data, error } = await supabase.auth.refreshSession()
             const { session, user } = data;
@@ -216,7 +292,6 @@ export default {
                     const current_account = account[0];
                     if(current_account){
                         store.state.profil.soldes = current_account.credit;
-                        store.state.profil.gain = current_account.gain;
 
                         //store.state.profil.userName = ! user.user_metadata.full_name ? current_account.username : user.user_metadata.full_name;
                         store.state.profil.userName = `${current_account.lastname} ${current_account.firstname}`;

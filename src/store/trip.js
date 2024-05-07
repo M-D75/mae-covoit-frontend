@@ -11,7 +11,11 @@ import stripe from '@/utils/stripe.js'
 export default {
     namespaced: true,
     state: {
-        rating: false,
+        ratings: {
+            rating: false,
+            bookings: [],
+            data: null, //current booking will be rate
+        },
         driver: true,
         route: {},
         chat: {
@@ -178,7 +182,18 @@ export default {
             state.tripSelected = trip;
         },
         SET_RATING(state, bool) {
-            state.rating = bool;
+            console.log("SET_RATING", bool);
+            state.ratings.rating = bool;
+        },
+        SET_RATINGS_INFO(state, infos) {
+            console.log("SET_RATINGS_INFO", infos);
+            state.ratings.rating = true;
+            state.ratings.bookings.push(infos);
+        },
+        SET_RATINGS_REMOVE(state, infos) {
+            console.log("SET_RATINGS_REMOVE", infos);
+            state.ratings.bookings = state.ratings.bookings.filter((info) => infos.id != info.id);
+            state.ratings.data = null;
         },
     },
     actions: {

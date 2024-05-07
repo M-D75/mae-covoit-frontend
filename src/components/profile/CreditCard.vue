@@ -137,7 +137,7 @@
                 EUR {{ soldeWritable }}
 
                 <v-icon
-                    v-if="load && soldeWritable==0"
+                    v-if="(load || loadIn) && soldeWritable==0"
                 >
                     <!-- <font-awesome-icon :icon="['fas', 'spinner']" spin-pulse /> -->
                     <font-awesome-icon :icon="['fas', 'rotate']" spin />
@@ -211,7 +211,7 @@
 
 
 <script>
-    import { mapState } from 'vuex';
+    import { mapState, mapActions } from 'vuex';
 
 
     // Components
@@ -220,6 +220,7 @@
         emits: ["transfert-gain", "add-card"],
         computed: {
             ...mapState("profil", ["soldes", "gain", "credit_card", "modeDriver"]),
+            ...mapState("auth", ["provider_id"]),
         },
         props: {
             load: {
@@ -233,12 +234,19 @@
                 eyeOff: true,
                 soldeWritable: 0,
                 interUidSolde: null,
+                loadIn: false,
             }
         },
-        mounted(){
+        async mounted(){
+            this.loadIn = true;
+            await this.getSoldes();
+            this.loadIn = false;
+            console.log("BEGIN", this.modeDriver, this.gain, this.soldes);
+            
             this.updateSolde();
         },
         methods: {
+            ...mapActions("profil", ["getSoldes"]),
             portefeuille(){
                 // console.log("portefeuille");
                 this.solde = (new Intl.NumberFormat('de-DE').format(Math.floor(Math.random()*600000)+600)).replaceAll(".", " ");
@@ -265,6 +273,7 @@
                 }
             },
             updateSolde(){
+                console.log("change-mode", this.modeDriver, this.gain, this.soldes);
                 if(this.modeDriver)
                     this.animerNombre(this.soldeWritable, this.gain, 20, 1000);
                 else
@@ -273,7 +282,12 @@
         },
         watch:{
             soldes(){
+                console.log("soldes-changed");
                 this.updateSolde()
+            },
+            gain(){
+                console.log("gain-changed", this.gain);
+                this.updateSolde();
             },
             modeDriver(){
                 this.updateSolde()

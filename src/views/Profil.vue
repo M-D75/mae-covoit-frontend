@@ -126,6 +126,7 @@
 
         <div>
             <!-- <div class="label mx-auto">tableau de board</div> -->
+            <!-- onglets -->
             <div class="label-btn mx-auto">
                 <v-btn class="dashboard" :class="{active: onglet=='table-bord'}" @click="onglet='table-bord'" rounded="xl">{{ labelDashBoard }}</v-btn>
                 <v-btn v-if="modeDriver" :class="{active: onglet=='planning'}" class="calendar" @click="onglet='planning'" rounded="xl">
@@ -159,6 +160,7 @@
                 :mode="onglet"
                 v-on:open-contacts="$refs.PaneApearRef.open()"
                 v-on:open-member="$refs.PaneApearProfilMemberRef.open()"
+                v-on:booking-removed="updateTripInfos()"
             />
         </div>
 
@@ -235,6 +237,17 @@
         v-on:drop-money="onDropMoney()"
         v-on:up-money="overlay = false; $refs.BottomMenuRefMoneyDriver.close()"
         />
+
+    <!-- test confirm choice -->
+    <!-- <BottomMenu
+        :class-name="['confirm-choice-class']"
+        mode="confirm-choice"
+        labelSelectorN1="Souhaitez vous réelement supprimer votre compte ?"
+        ref="BottomMenuRefConfirmChoice"
+        v-on:close="overlay = false"
+        v-on:yes="overlay = false; console.log('yes'); $refs.BottomMenuRefConfirmChoice.close()"
+        v-on:no="overlay = false; console.log('no'); $refs.BottomMenuRefConfirmChoice.close()"
+        /> -->
 
 </template>
 
@@ -392,6 +405,8 @@
         },
         mounted(){
             this.switchModeDriverPanneauInfos();
+
+            //this.$refs.BottomMenuRefConfirmChoice.open()
             // this.askNewMessage();
             if( window.innerWidth <= 366 ){
                 this.labelDashBoard = "synthèse";
@@ -584,7 +599,7 @@
                 }
             },
             checkDateTrip(){
-                console.log("\ncheckDateTrip:");
+                console.log("\ncheckDateTrip:", this.history);
                 const dateToday = new Date();
                 // date passenger
                 for (let index = 0; index < this.history.datesTripPassenger.length; index++) {
@@ -615,7 +630,33 @@
 
                 this.trajetAvail = null;
                 console.log("No Trip Date\n");
-            }
+            },
+            async updateTripInfos(){
+                // TODO : infosTravels need to reloaded every time
+                this.SET_LOAD_GET_TRIP_PUBLISH(true);
+                this.infosTravels = [];
+                if( this.onglet == "trajets" ){
+                    await this.getTravels();
+                    this.infosTravels = this.profil.myTravels;
+                    this.askNewMessage();
+                }
+                else if( this.onglet == "planning" ){
+                    await this.getPublish();
+                    this.infosTravels = this.profil.myPublish;
+                    this.askNewMessage();
+                }
+                // else{
+                //     this.askNewMessage();
+                //     if( this.onglet == "trajets" ){
+                //         this.infosTravels = this.profil.myTravels;
+                //     }
+                //     else if( this.onglet == "planning" ){
+                //         this.infosTravels = this.profil.myPublish;
+                //     }
+                // }
+                this.SET_LOAD_GET_TRIP_PUBLISH(false);
+                console.log("infos-travels:", this.infosTravels);
+            },
         },
         watch: {
             darkMode(){
@@ -643,30 +684,7 @@
                 }
             },
             async onglet(){
-                // TODO : infosTravels need to reloaded every time
-                this.SET_LOAD_GET_TRIP_PUBLISH(true);
-                this.infosTravels = [];
-                if( this.onglet == "trajets" ){
-                    await this.getTravels();
-                    this.infosTravels = this.profil.myTravels;
-                    this.askNewMessage();
-                }
-                else if( this.onglet == "planning" ){
-                    await this.getPublish();
-                    this.infosTravels = this.profil.myPublish;
-                    this.askNewMessage();
-                }
-                // else{
-                //     this.askNewMessage();
-                //     if( this.onglet == "trajets" ){
-                //         this.infosTravels = this.profil.myTravels;
-                //     }
-                //     else if( this.onglet == "planning" ){
-                //         this.infosTravels = this.profil.myPublish;
-                //     }
-                // }
-                this.SET_LOAD_GET_TRIP_PUBLISH(false);
-                console.log("infos-travels:", this.infosTravels);
+                this.updateTripInfos();
             },
             modeDriver(){
                 this.switchModeDriverPanneauInfos();

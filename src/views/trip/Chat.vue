@@ -596,6 +596,8 @@
                 });
 
                 this.currentContact.userUid = this.tripSelected.driver_id;
+                this.currentContact.username = this.tripSelected.name;
+                this.currentContact.avatarContact = this.tripSelected.avatar;
 
                 this.updateName(this.tripSelected.driver_id);
             }

@@ -51,7 +51,7 @@ export default createStore({
                 'trip.chat',
                 'trip.chat.contacts',
                 'trip.member',
-                'trip.rating',
+                'trip.ratings',
             ]
         })
     ],

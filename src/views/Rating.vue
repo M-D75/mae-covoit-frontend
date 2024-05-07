@@ -103,7 +103,7 @@
                         :disabled="btnIco.bad[indexB].select ? true : false"
                         variant="outlined"
                         @mouseenter="goodDescription=(indexB+1)+'. '+btn.description"
-                        @click="btn.select=!btn.select; goodDescription=(indexB+1)+'. '+btn.description"
+                        @click="btn.select=!btn.select; goodDescription=(indexB+1)+'. '+btn.description;"
                     >
                     </v-btn>
                     
@@ -151,6 +151,7 @@
                 variant="flat"
                 color="black"
                 size="large"
+                @click="rated()"
             >
                 XXXXXXXXXXXXXXXX
             </v-btn>
@@ -165,7 +166,7 @@
 <script>
     import $ from 'jquery';
     import { defineComponent } from 'vue';
-    import { mapState, mapActions } from 'vuex';
+    import { mapState, mapActions, mapMutations } from 'vuex';
     import { onMounted, onUnmounted, ref } from 'vue';
 
 
@@ -182,6 +183,7 @@
             ...mapState("profil", {
                 nbTrip: state => state.profil.nbTrip,
             }),
+            ...mapState("trip", ["ratings"]),
         },
         setup(){
             const ratingRef = ref(null);
@@ -331,9 +333,32 @@
         },
         methods: {
             ...mapActions("profil", ["getNotation"]),
+            ...mapMutations("trip", ["SET_RATING", "SET_RATINGS_REMOVE"]),
             back() {
                 this.$router.push("/profil")
             },
+            rated(){
+                if( this.ratings.rating ){
+
+                    //TODO : Notation = get infos selected by users
+                    const tab = this.btnIco.good.map((note) => note.select ? 1 : 0);
+                    console.log("tab-rating", tab);
+
+                    //**update rating store
+                    //*remove data = null
+                    //*remove infos in bookings list
+                    // console.log("Id to remove", this.ratings.data.id);
+                    // this.SET_RATINGS_REMOVE({id: this.ratings.data.id})
+
+                    // console.log("this.ratings.bookings", this.ratings.bookings);
+                    // if( this.ratings.bookings.length == 0 ){
+                    //     this.SET_RATING(false);
+                    // }
+                }
+            },
+            // ratingIcon(index){
+
+            // }
         },
         watch: {
             overlay() {
@@ -353,7 +378,8 @@
             },
             nbTrip(){
                 this.infos_panneau[0].label = formatNumber(this.nbTrip);
-            }
+            },
+            
         }
     });
 </script>

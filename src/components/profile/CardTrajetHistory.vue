@@ -44,6 +44,13 @@
                     white-space: nowrap;
                 }
             }
+            .v-icon.remove-booking {
+                position: absolute;
+                top: -10px;
+                right: -6px;
+                font-size: 27px;
+                // color: #f53939 !important;
+            }
             .v-list {
                 background-color: var(--white-bg-color);
                 color: var(--font-color-label);
@@ -56,6 +63,7 @@
                     color: #f53939;
                     color: var(--font-color-label);
                 }
+                
                 > div {
                     margin-top: 10px;
                     margin-bottom: 10px;
@@ -85,6 +93,14 @@
 </style>
 
 <template>
+
+    <v-overlay 
+        v-model="overlay"
+        contained
+        persistent
+        style="z-index: 10;"
+        @click="overlay = false"
+    ></v-overlay>
 
     <div class="card-trajet-history">
 
@@ -152,11 +168,19 @@
 
                 <span v-if="mode!='planning'" class="name">{{ infos.name }}</span>
             </div>
+
+            <!-- btn-close remove trip -->
+            <v-icon
+                v-if="!driver"
+                class="remove-booking"
+                @click="overlay=true; $refs.BottomMenuRefConfirmChoice.open()"
+            >
+                mdi-close-circle
+            </v-icon>
             
             <v-list
                 @click="selectTrip()"
             >
-
                 <v-icon
                     v-if="infos.notifMessage"
                     class="chat-notif"
@@ -216,18 +240,36 @@
         <v-icon icon="mdi-alert-circle"></v-icon> <span>{{ messageSnackbarError }}</span>
     </v-snackbar>
 
+
+    <!-- test confirm choice -->
+    <BottomMenu
+        :class-name="['confirm-choice-remove-booking-class']"
+        mode="confirm-choice"
+        :labelSelectorN1="'Souhaitez vous réelement annuler cette réservation ?'"
+        ref="BottomMenuRefConfirmChoice"
+        v-on:close="overlay = false"
+        v-on:yes="overlay = false; console.log('yes'); callRemoveBooking();"
+        v-on:no="overlay = false; console.log('no'); $refs.BottomMenuRefConfirmChoice.close()"
+        />
+
 </template>
 
 
 <script>
     import { mapState, mapMutations, mapActions } from 'vuex';
 
-   // Components
+    // Components
+    import BottomMenu from '@/components/menus/BottomMenu.vue';
+
     export default {
         name: 'card-trajet-history-comp',
-        emits: ["card-touched", "open-contacts", "open-member"],
+        emits: ["card-touched", "open-contacts", "open-member", "booking-removed"],
         computed: {
             ...mapState("trip", ['driver', 'chat']),
+            ...mapState("profil", ["userId"]),
+        },
+        components: {
+            BottomMenu,
         },
         props: {
             mode: {
@@ -258,6 +300,7 @@
                 showSnackbarError: false,
                 messageSnackbarError: "",
                 loading: false,
+                overlay: false,
                 // notifMessage: false,
             };
         },
@@ -269,6 +312,7 @@
         methods: {
             ...mapMutations("trip", ["SET_TRIP_SELECTED"]),
             ...mapActions("trip", ["getContacts", "getProfilMember"]),
+            ...mapActions("profil", ["removeBooking"]),
             async selectTrip(){
                 if( this.mode == 'trajets' ){
 
@@ -319,6 +363,24 @@
                 }
                 else {
                     this.$emit("open-contacts");
+                }
+            },
+            async callRemoveBooking(){
+                console.log("Annulation de la reservation", this.userId, this.infos.id);
+                this.$refs.BottomMenuRefConfirmChoice.loadingBtn = true;
+                await this.removeBooking({trip_id: this.infos.id});
+                this.$refs.BottomMenuRefConfirmChoice.loadingBtn = false;
+                //TODO : remove
+                this.$refs.BottomMenuRefConfirmChoice.close();
+                this.$emit('booking-removed');
+            },
+        },
+        watch: {
+            overlay(){
+                if( ! this.overlay ){
+                    if ( this.$refs.BottomMenuRefConfirmChoice ) {
+                        this.$refs.BottomMenuRefConfirmChoice.close();
+                    }
                 }
             },
         }

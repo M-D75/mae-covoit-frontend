@@ -67,6 +67,7 @@
                     v-on:card-touched="$emit('card-touched')"
                     v-on:open-contacts="$emit('open-contacts')"
                     v-on:open-member="$emit('open-member')"
+                    v-on:booking-removed="$emit('booking-removed')"
                 />
             </div>
         </div>
@@ -85,7 +86,7 @@
 
     export default defineComponent({
         name: 'group-cards-history-comp',
-        emits: ["card-touched", "open-contacts", "open-member"],
+        emits: ["card-touched", "open-contacts", "open-member", "booking-removed"],
         components: {
             CardTrajetHistory,
         },

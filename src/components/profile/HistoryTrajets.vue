@@ -109,6 +109,7 @@
                     :mode="mode" 
                     v-on:open-contacts="$emit('open-contacts')" 
                     v-on:open-member="$emit('open-member')"
+                    v-on:booking-removed="$emit('booking-removed')"
                 />
             </div>
         </div>

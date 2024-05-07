@@ -452,6 +452,21 @@
                     color: gray;
                 }
             }
+
+
+            //confirm choice
+            .confirm-choice {
+                padding: 20px;
+                .cont-btn{
+                    display: flex;
+                    justify-content: space-around;
+                    margin: 10px auto;
+                    width: 70%;
+                    .v-btn {
+                        background-color: var(--white-bg-color);
+                    }
+                }
+            }
         }
 
         .sub-cont-sup {
@@ -880,6 +895,28 @@
                 v-on:car-valided="close()"
             />
 
+            <!-- Confime choice -->
+
+            <div
+                v-if="mode=='confirm-choice'"
+                class="confirm-choice"
+            >
+                <div class="label text-center">{{ labelSelectorN1 }}</div>
+                <div class="cont-btn">
+                    <v-btn
+                        icon
+                        
+                        @click="console.log('decliner'); $emit('no')"
+                    ><v-icon color="red" icon="mdi-close-thick"></v-icon></v-btn>
+
+                    <v-btn 
+                        icon
+                        :loading="loadingBtn"
+                        @click="console.log('confirmer'); $emit('yes')"
+                    ><v-icon color="green" icon="mdi-check-bold"></v-icon></v-btn>
+                </div>
+            </div>
+
             <!-- End Pofile -->
 
 
@@ -1015,7 +1052,9 @@
             "opened", "close", "select-price", "drop-money", 
             "up-money", "week-valided", "touched-avatar", 
             "need-payment-intent-reserve", "retry-reserve",
-            "payment-intent-recharge"
+            "payment-intent-recharge",
+            "yes",
+            "no"
         ],
         components: {
             Vue3DraggableResizable,

@@ -286,6 +286,25 @@
                                     source: result.token.id,
                                 }
                             );
+
+                            console.log("card:", card, result.token);
+
+                            let customer = await stripe.customers.update(
+                                    vue.customer_id,
+                                    {
+                                        default_source: card.id,
+                                        invoice_settings: {
+                                            default_payment_method: null,
+                                        },
+                                        metadata: {
+                                            type_source: "card",
+                                            source_selected: card.id,
+                                        }
+                                    }
+                                );
+                            
+                            console.log("customer:", customer);
+
                             vue.$emit("card-registered");
                             vue.loading = false;
                             console.log("card:", card, vue.loading, result.token);
@@ -321,13 +340,11 @@
 
                 console.log("paymentIntent", paymentIntent, this.saveInfo);
 
-                const clientSecret = paymentIntent.client_secret;
-                this.clientSecret = clientSecret;
+                this.clientSecret = paymentIntent.client_secret;
                 this.paymentId = paymentIntent.id;
 
-                
                 stripePromise.then(stripe => {
-                    const elements = stripe.elements({ appearance: this.appearancePaymentIntent, clientSecret });
+                    const elements = stripe.elements({ appearance: this.appearancePaymentIntent, clientSecret: this.clientSecret });
                     this.elements = elements;
 
                     const paymentElementOptions = {
