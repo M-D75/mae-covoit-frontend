@@ -106,6 +106,8 @@ export default {
         },
         preferenceVirementMode: 0,
         cars: [],
+        //panneau-info
+        blockChangingTheme: false,
     },
     getters: {
     },
@@ -165,7 +167,11 @@ export default {
             else{
                 state.history.datesTripDriver.splice(infos.index, 1);
             }
-        }
+        },
+        SET_BLOCK_CHANGING_THEME(state, bool){ //Supprime une date si elle a expiré
+            state.blockChangingTheme = bool;
+        },
+        
     },
     actions: {
         async getNotation({state}){
@@ -298,7 +304,7 @@ export default {
                 stripeAccount: store.state.auth.provider_id,
             });
 
-            console.log("balanceConnect", balanceConnect);
+            console.log("balanceConnect", balanceConnect, balanceConnect.available[0].amount, balanceConnect.pending[0].amount, (balanceConnect.available[0].amount + balanceConnect.pending[0].amount));
 
             state.gain = (balanceConnect.available[0].amount + balanceConnect.pending[0].amount)/100;
 

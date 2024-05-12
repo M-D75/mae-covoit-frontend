@@ -90,7 +90,7 @@
 
                     <v-btn
                         :color="card.select ? 'green' : 'grey-lighten-1'"
-                        :icon="defaultSource == card.id ? 'mdi-check-circle' : 'mdi-check-circle-outline'"
+                        :icon="defaultSource == card.id ? 'mdi-radiobox-marked' : 'mdi-radiobox-blank'"
                         variant="text"
                         @click="select(index)"
                     ></v-btn>

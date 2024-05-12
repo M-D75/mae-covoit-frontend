@@ -4,6 +4,7 @@ import createPersistedState from "vuex-persistedstate";
 // modules
 import auth from './auth';
 import profil from './profil';
+import rating from './rating';
 import publish from './publish';
 import search from './search';
 import general from './general';
@@ -13,6 +14,7 @@ export default createStore({
     modules: {
         auth,
         profil,
+        rating,
         publish,
         search,
         general,

@@ -33,6 +33,7 @@
     .v-bottom-navigation {
         background-color: var(--bg-app-color);
         padding-bottom: 5px;
+        transition: all 0.4s ease-in-out;
         .v-btn {
             color: var(--gray-icon-color);
             font-weight: bold;

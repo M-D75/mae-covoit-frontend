@@ -189,6 +189,8 @@
             v-on:close="overlay = false"
             v-on:retry-reserve="$refs.BottomMenuRefResults.open(); $refs.BottomMenuRefResults.tryReserveRes();"
         />
+
+        
             
     </v-main>
 
@@ -212,6 +214,7 @@
         computed: {
             ...mapState("search", ['depart', "destination", "nbPassenger", "trajetSelected"]),
             ...mapState("profil", ['userUid', 'history']),
+            ...mapState("trip", ['member']),
         },
         components: {
             TrajetSearch,
@@ -233,61 +236,20 @@
             };
         },
         mounted() {
-            if(this.$refs.PaneGetValueRef){
+            if( this.$refs.PaneGetValueRef ){
                 this.date = this.$refs.PaneGetValueRef.getDate();
             }
 
             this.checkDateTrip();
-
-            // this.buildPaymentIntent = true;
-            // this.$nextTick(function(){
-            //     if(this.$refs.BottomMenuPaymentItentRef){
-            //         console.log("open");
-            //         this.$refs.BottomMenuPaymentItentRef.open();
-            //         this.$refs.BottomMenuPaymentItentRef.paymentIntentId = "pi_3OSuTRIKwmrDLewY15HDSoMz";
-            //     }
-            // })
-            
-            
-            // this.$refs.PaneApearProfilMemberRef.open()
-
-            // const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
-
-            // const typeUrl = "local";
-            // fetch(`${adresse[typeUrl]}/ask-new-message`, {
-            //         method: 'POST',
-            //         headers: {
-            //             'Content-Type': 'application/json',
-            //         },
-            //         body: JSON.stringify({
-            //             userUid: this.userUid,
-            //         })
-            //     })
-            //     .then(response => response.json())
-            //     .then(data => {
-            //         console.log("notVue", data);
-            //     })
-            //     .catch(error => console.error('Erreur:', error));
-
-            // axios.post(`${adresse[typeUrl]}/askNewMessage`, {
-            //         userId: this.userUid,
-            //     })
-            //     .then(response => {
-            //         console.log(response.data);
-            //     })
-            //     .catch(error => {
-            //         console.error('Il y a eu une erreur :', error);
-            //     });
-
-
         },
         methods: {
             ...mapMutations("search", ["SET_NB_PASSAGER", "SET_REMOVE_HISTORY_DATES"]),
             ...mapMutations("trip", ["SET_TRIP_SELECTED"]),
             ...mapActions("trip", ["getProfilMember"]),
+            ...mapActions("rating", ["getRating"]),
             // TODO : inutile mode prod
             getTrajet() {
-                if(this.$refs.TrajetSearchRef){
+                if( this.$refs.TrajetSearchRef ){
                     const depart = this.$refs.TrajetSearchRef.depart;
                     const destination = this.$refs.TrajetSearchRef.destination;
                     this.travel = this.$store.state.search.trajets.filter(trajet => trajet.depart == depart && trajet.destination == destination)[0];
@@ -296,7 +258,9 @@
             checkDateTrip(){
                 console.log("\ncheckDateTrip:");
                 const dateToday = new Date();
-                // date passenger
+
+                //date passenger
+                //check trip available passenger near
                 for (let index = 0; index < this.history.datesTripPassenger.length; index++) {
                     const departure_time = this.history.datesTripPassenger[index];
                     const dateTrip = new Date(departure_time);
@@ -310,6 +274,7 @@
                     }
                 }
 
+                //check trip available driver near
                 for (let index = 0; index < this.history.datesTripDriver.length; index++) {
                     const departure_time = this.history.datesTripDriver[index];
                     const dateTrip = new Date(departure_time);
@@ -330,7 +295,10 @@
                 this.SET_TRIP_SELECTED(this.travel);
                 this.$refs.BottomMenuRefResults.loading = true;
                 const result = await this.getProfilMember({userUid: this.travel.driver_id});
-                if(result){
+                
+                const data = await this.getRating({userId: this.member.userId})
+                
+                if( result && data.status == 0 ){
                     this.$refs.PaneApearProfilMemberRef.open();
                 }
                 this.$refs.BottomMenuRefResults.loading = false;

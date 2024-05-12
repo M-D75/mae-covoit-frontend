@@ -23,6 +23,7 @@ export default {
         },
         tripSelected: {},
         member: {
+            userId: null,
             identity: false,
             payouts_enabled: false,
             avatar: "",
@@ -287,6 +288,7 @@ export default {
                 state.member.userName = `${account[0].firstname} ${account[0].lastname}`;
                 state.member.location = account[0].village != null && account[0].village != "" ? account[0].village : "";
                 state.member.identity = account[0].identity;
+                state.member.userId = account[0].id;
 
                 const provider = await stripe.accounts.retrieve(account[0].provider_id);
                 console.log("retrieve provider:", provider);

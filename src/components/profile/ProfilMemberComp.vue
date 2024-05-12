@@ -71,6 +71,14 @@
         <PanneauInfo :infos_panneau="infos_panneau"/>
 
         <!--  -->
+        <IconRating 
+            :class-name="['good-trip']"
+            :type="'good'"
+            :editable="false"
+            ref="iconRatingRefGood"
+        />
+
+        <!--  -->
         <GroupCard class="grouP" :groupeParameters="groupeParameters" />
 
     </v-main>
@@ -82,7 +90,8 @@
 <script>
     //import $ from 'jquery';
     import { defineComponent } from 'vue';
-    import { mapState } from 'vuex';
+    import { mapState, mapActions
+     } from 'vuex';
     import { SafeAreaController, SafeArea } from '@aashu-dubey/capacitor-statusbar-safe-area';
 
     import { formatNumber } from '@/utils/utils.js'
@@ -90,6 +99,7 @@
     // Components
     import Avatar from '@/components/profile/Avatar.vue';
     import PanneauInfo from '@/components/profile/PanneauInfo.vue';
+    import IconRating from '@/components/rating/IconRating.vue';
     import GroupCard from '@/components/menus/setting/GroupCard.vue';
 
     export default defineComponent({
@@ -97,6 +107,7 @@
         emits: ["go-back"],
         computed: {
             ...mapState("trip", {
+                userId: state => state.member.userId,
                 avatar: state => state.member.avatar,
                 userName: state => state.member.userName,
                 location: state => state.member.location,
@@ -115,6 +126,7 @@
         components: {
             Avatar,
             PanneauInfo,
+            IconRating,
             GroupCard,
         },
         props: {
@@ -201,6 +213,7 @@
                 this.groupeParameters[0].parameters[0].chipText = "3/3";
         },
         methods: {
+            ...mapActions("rating", ["getRating"]),
             updateGrouparameterPreference(){
                 if(this.preferences[0] != undefined){
                     this.groupeParameters[1].parameters = this.groupeParameters[1].parameters.map(

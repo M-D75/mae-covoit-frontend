@@ -34,6 +34,7 @@
             // natif
             padding-top: var(--safe-area-inset-top);
             margin-top: var(--safe-area-inset-top);
+            transition: all 0.4s ease-in-out;
             .v-btn i.v-icon {
                 margin-right: 0 !important;
                 color: var(--gray-icon-color);

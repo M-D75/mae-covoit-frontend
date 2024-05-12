@@ -19,9 +19,18 @@
         background-color: var(--bg-app-color);
         clip-path: circle(0% at 75.5% 35%); /* Masque initialement fermé */
         transition: clip-path 0.7s ease-in-out; /* Animation douce */
-        .content {
-            background-color: #1a1a1a;
-        }
+    }
+
+    .content {
+        // position: absolute;
+        // top: 0;
+        // left: 0;
+        // width: 100%;
+        // height: 100%;
+        background-color: #1a1a1a;
+        // display: flex;
+        // align-items: center;
+        // justify-content: center;
     }
 
 </style>
@@ -118,111 +127,65 @@
 <!--  -->
 <template>
 
-    <ToolbarProfil />
+    <!-- <ToolbarProfil /> -->
 
-    <!-- ligth-theme -->
-    <div class="ligth-mode">
-        <CompProfil 
-            v-on:on-add-card="onAddCard()"
-            v-on:on-drop-money="onDropMoney()"
-            v-on:on-up-money="onUpMoney()"
-            v-on:open-member="$refs.PaneApearProfilMemberRef.open()"
-            v-on:transfer-gain-to-soldes="transferGainToSoldes()"
-            v-on:open-contacts="$refs.PaneApearRef.open();"
-            v-on:on-history="onHistory()"
-            v-on:toggle-mask="toggleMask()"
+    <v-main>
+        <!-- Avatar -->
+        <Avatar 
+            :avatar="avatarUrl"
+            :modeEdit="false" 
+            :name="userName"
+            :subTitle="profil.infos_perso.adress.commune"
+            :identity="identity"
+            v-on:avatar-touched="goToInfoPerso()"
         />
-    </div>
-    
+        
+        <!-- ? -->
+        <PanneauInfo :infos_panneau="infos_panneau" v-on:history="$emit('on-history')" v-on:switch-theme-color="$emit('toggle-mask');" />
 
-    <!-- dark-theme -->
-    <div 
-        class="mask-container" 
-    >
-        <div class="content dark-mode">
-            <CompProfil 
-                v-on:on-add-card="onAddCard()"
-                v-on:on-drop-money="onDropMoney()"
-                v-on:on-up-money="onUpMoney()"
-                v-on:open-member="$refs.PaneApearProfilMemberRef.open()"
-                v-on:transfer-gain-to-soldes="transferGainToSoldes()"
-                v-on:open-contacts="$refs.PaneApearRef.open();"
-                v-on:on-history="onHistory()"
-                v-on:toggle-mask="toggleMask()"
+        <!-- Parameter like menu TODO:no activate -->
+        <GroupCard class="grouP" :groupeParameters="groupeParameters" v-if="false"/>
+
+        <div>
+            <!-- <div class="label mx-auto">tableau de board</div> -->
+            <!-- onglets -->
+            <div class="label-btn mx-auto">
+                <v-btn class="dashboard" :class="{active: onglet=='table-bord'}" @click="onglet='table-bord'" rounded="xl">{{ labelDashBoard }}</v-btn>
+                <v-btn v-if="modeDriver" :class="{active: onglet=='planning'}" class="calendar" @click="onglet='planning'" rounded="xl">
+                    <v-icon>mdi-calendar-month</v-icon>
+                    <div v-if="trajetAvail=='driver'" class="notif-point"></div>
+                </v-btn>
+                <v-btn class="my_trip" :class="{active: onglet=='trajets'}" @click="onglet='trajets'" rounded="xl">
+                    mes trajets
+                    <div v-if="trajetAvail=='passenger'" class="notif-point"></div>
+                </v-btn>
+            </div>
+
+            <!-- Tableau de bord -->
+            <!-- Credit Card -->
+            <CreditCard 
+                v-if="onglet=='table-bord'"
+                :load="loadCreaditCard"
+                v-on:up-money="$emit('on-up-money')"
+                v-on:add-card="$emit('on-add-card')"
+                v-on:drop-money="$emit('on-drop-money')"
+                v-on:transfert-gain="$emit('transfer-gain-to-soldes')"
+            />
+
+            <!-- Graph -->
+            <StatsTrajet v-if="onglet=='table-bord'"/>
+
+            <!-- Trajets & publication -->
+            <HistoryTrajets 
+                v-if="onglet=='trajets' || onglet=='planning'" 
+                :infos="infosTravels" 
+                :mode="onglet"
+                v-on:open-contacts="$emit('open-contacts')"
+                v-on:open-member="$emit('open-member')"
+                v-on:booking-removed="updateTripInfos()"
             />
         </div>
-    </div>
-
-    <!-- message error -->
-    <v-snackbar
-        class="error-snackbar"
-        v-model="showSnackbarError"
-        :timeout="4000"
-        color="error"
-    >
-        <div class="contain-ico">
-            <v-icon icon="mdi-alert-circle"></v-icon> 
-        </div>
-        <div>
-            <span>{{ messageSnackbarError }}</span>
-        </div>
-    </v-snackbar>
-
-    <PaneApear ref="PaneApearRef" :class-name="['pan-apear-contact']" mode="contacts"/>
-
-    <PaneApear 
-        ref="PaneApearProfilMemberRef"
-        :class-name="['pan-apear-profil-member']" 
-        mode="profil-member"
-    />
-
-    <v-overlay 
-        v-model="overlay"
-        contained
-        persistent
-        style="z-index: 0;"
-        @click="overlay = false"
-    ></v-overlay>
-
-    <!-- history -->
-    <BottomMenu
-        :class-name="modeBottomMenu=='history' ? ['history'] : ['none']" 
-        mode="history"
-        ref="BottomMenuRefHistory" 
-        v-on:close="overlay = false"
-        />
-
-    <!-- register credit card -->
-    <BottomMenu
-        ref="BottomMenuRefAddCard"
-        :class-name="['register-credit-card']"
-        mode="register-credit-card"
-        v-on:close="overlay = false"
-        />
-
-    <!-- money -->
-    <BottomMenu
-        :class-name="['money']"
-        :mode="modeBottomMenu"
-        labelSelectorN1="Quel montant souhaitez-vous créditer sur votre compte ?"
-        ref="BottomMenuRefMoney"
-        v-on:close="overlay = false"
-        v-on:drop-money="onDropMoney()"
-        v-on:payment-intent-recharge="onPaymentIntentRecharge()"
-        />
-
-    <!-- money driver to passenger -->
-    <BottomMenu
-        :class-name="['money-driver']"
-        mode="up-money"
-        labelSelectorN1="Quel montant souhaitez-vous transferer sur votre compte passager ?"
-        ref="BottomMenuRefMoneyDriver"
-        :params-number="{min:1, max: Math.floor(gain)}"
-        :upMoneyObj="{btn: 'Transferer'}"
-        v-on:close="overlay = false"
-        v-on:drop-money="onDropMoney()"
-        v-on:up-money="overlay = false; $refs.BottomMenuRefMoneyDriver.close()"
-        />
+    </v-main>
 
 </template>
 
@@ -234,25 +197,42 @@
     import { mapState, mapActions, mapMutations } from 'vuex';
     import axios from 'axios';
 
-    import $ from 'jquery';
+    // import $ from 'jquery';
 
     // Components
-    import ToolbarProfil from '@/components/menus/head/ToolbarProfil.vue';
-    import CompProfil from '@/components/profile/CompProfil.vue';
-    import BottomMenu from '@/components/menus/BottomMenu.vue';
-    import PaneApear from '@/components/PaneApear.vue';    
+    // import ToolbarProfil from '@/components/menus/head/ToolbarProfil.vue';
+    import Avatar from '@/components/profile/Avatar.vue';
+    import PanneauInfo from '@/components/profile/PanneauInfo.vue';
+    import GroupCard from '@/components/menus/setting/GroupCard.vue';
+    import CreditCard from '@/components/profile/CreditCard.vue';
+    import StatsTrajet from '@/components/profile/StatsTrajet.vue';
+    import HistoryTrajets from '@/components/profile/HistoryTrajets.vue';
+    // import BottomNav from '@/components/menus/BottomNav.vue';
+    // import BottomMenu from '@/components/menus/BottomMenu.vue';
+    // import PaneApear from '@/components/PaneApear.vue';    
 
     export default defineComponent({
-        name: 'profil-view',
+        name: 'comp-profil',
+        emits: [
+            "on-history", "on-up-money", "on-add-card", "on-drop-money", 
+            "transfer-gain-to-soldes", "open-contacts", "open-member",
+            "toggle-mask"
+        ],
         computed: {
             ...mapState("profil", ["darkMode", "userName", "profil", "history", 'modeDriver', "avatarUrl", "userUid", "modeCo", "gain", "identity"]),
             ...mapState("trip", ["notMessageVue"]),
         },
         components: {
-            ToolbarProfil,
-            CompProfil,
-            BottomMenu,
-            PaneApear,
+            // ToolbarProfil,
+            Avatar,
+            PanneauInfo,
+            GroupCard,
+            CreditCard,
+            StatsTrajet,
+            HistoryTrajets,
+            // BottomNav,
+            // BottomMenu,
+            // PaneApear,
         },
         data() {
             return {
@@ -387,9 +367,6 @@
 
             this.checkDateTrip()
 
-            if(this.darkMode)
-                this.toggleMask();
-
             // this.$refs.PaneApearProfilMemberRef.open()
             // this.$refs.PaneApearRef.open()
         },
@@ -408,20 +385,6 @@
             },
             goToInfoPerso(){
                 this.$router.push("/profil/perso")
-            },
-            onHistory(){
-                this.modeBottomMenu = "history"
-                if ( this.$refs.BottomMenuRefHistory ) {
-                    if( ! this.overlay ){
-                        this.overlay = this.$refs.BottomMenuRefHistory.open();
-                        if(this.overlay && ( this.history.historycalBooking == undefined || Object.keys(this.history.historycalBooking).length == 0 ) ){
-                            this.buildHistoriqueBooking();
-                        }
-                    }
-                    else {
-                        this.overlay = this.$refs.BottomMenuRefHistory.close();
-                    }
-                }
             },
             callCloseBottomChild() {
                 if ( this.$refs.BottomMenuRef ) {
@@ -443,54 +406,6 @@
                         console.log("add-credit-3")
                         this.overlay = this.$refs.BottomMenuRefMoney.open();
                     }
-                }
-            },
-            onAddCard(){
-                if( this.modeBottomMenu != "register-credit-card" ){
-                    this.modeBottomMenu = "register-credit-card";
-                }
-
-                if ( this.$refs.BottomMenuRefAddCard ) {
-                    this.overlay = this.$refs.BottomMenuRefAddCard.open();
-                }
-            },
-            onDropMoney(){
-                if( this.gain == 0 ){
-                    this.messageSnackbarError = "Désolé, vous n'avez pas de gains suffisants pour cette action."
-                    this.showSnackbarError = true;
-                }
-                else{
-                    if( this.modePathNavigation != "drop-money" ){
-                        
-                        this.modePathNavigation = "drop-money";
-                        this.indexModeNavigation = -1;
-                        this.pathNavigationNext();
-
-                        setTimeout(function(){
-                            if ( this.$refs.BottomMenuRefMoney ) {
-                                this.overlay = this.$refs.BottomMenuRefMoney.open();
-                            }
-                        }.bind(this), 500);
-                    }
-                    else {
-                        this.pathNavigationNext();
-                    }
-                }
-            },
-            onUpMoney(){
-                if( this.modePathNavigation != "up-money" ){
-                    this.modePathNavigation = "up-money";
-                    this.indexModeNavigation = -1;
-                    this.pathNavigationNext();
-                    
-                    setTimeout(function(){
-                        if ( this.$refs.BottomMenuRefMoney ) {
-                            this.overlay = this.$refs.BottomMenuRefMoney.open();
-                        }
-                    }.bind(this), 500);
-                }
-                else {
-                    this.pathNavigationNext();
                 }
             },
             pathNavigationNext(){
@@ -545,16 +460,6 @@
                             this.infosTravels[key].infos[keyInfo].notifMessage = false;
                         }
                     }
-                }
-            },
-            transferGainToSoldes(){
-                if( this.gain == 0 ){
-                    this.messageSnackbarError = "Désolé, vous n'avez pas de gains suffisants pour cette action."
-                    this.showSnackbarError = true;
-                }
-                else{
-                    this.overlay = true;
-                    this.$refs.BottomMenuRefMoneyDriver.open();
                 }
             },
             onPaymentIntentRecharge(){
@@ -624,13 +529,6 @@
                 // }
                 this.SET_LOAD_GET_TRIP_PUBLISH(false);
                 console.log("infos-travels:", this.infosTravels);
-            },
-            toggleMask() {
-                $('.mask-container').each(function() {
-                    var $this = $(this);
-                    var isOpen = $this.css('clip-path').includes('120%');
-                    $this.css('clip-path', isOpen ? 'circle(0% at 75.5% 35%)' : 'circle(120% at 75.5% 35%)');
-                });
             },
         },
         watch: {

@@ -36,20 +36,6 @@
             }
         }
 
-        .contain-btn-icon{
-            padding: 10px;
-            display: flex;
-            justify-content: center;
-            margin: 10px auto;
-            flex-wrap: wrap;
-            .v-btn {
-                height: 48px;
-                margin: 7px 15px;
-                background-color: var(--white-bg-color);
-                color: var(--font-color-label);
-            }
-        }
-
         .v-divider{
             color: var(--font-color-label);
             margin: 3px auto;
@@ -92,22 +78,14 @@
             <div class="good-part">
                 <div class="title">Qu'avez vous pensez du service offert par {{ userName }} ?</div>
 
-                <div 
-                    class="contain-btn-icon good-trip"
-                >
-                    <v-btn
-                        v-for="(btn, indexB) in btnIco.good"
-                        :key="indexB"
-                        :icon="btn.icon"
-                        :color="btn.select ? (darkMode ? '#1af2a7' : 'green' ) : ''"
-                        :disabled="btnIco.bad[indexB].select ? true : false"
-                        variant="outlined"
-                        @mouseenter="goodDescription=(indexB+1)+'. '+btn.description"
-                        @click="btn.select=!btn.select; goodDescription=(indexB+1)+'. '+btn.description;"
-                    >
-                    </v-btn>
-                    
-                </div>
+                <IconRating
+                    :class-name="['good-trip']"
+                    :type="'good'"
+                    :editable="true"
+                    ref="iconRatingRefGood"
+                    v-on:description-changed="goodDescription=$refs.iconRatingRefGood.description"
+                />
+               
                 <div class="sub-title" :class="{darkMode: !darkMode}">{{ goodDescription }}</div>
             </div>
 
@@ -128,21 +106,14 @@
                 class="bad-part zoom-bounce">
                 <div class="title">Que sait il passé ?</div>
 
-                <div 
-                    class="contain-btn-icon bad-trip"
-                >
-                    <v-btn
-                        v-for="(btn, indexB) in btnIco.bad"
-                        :key="indexB"
-                        :icon="btn.icon"
-                        :color="btn.select ? 'red' : ''"
-                        :disabled="btnIco.good[indexB].select ? true : false"
-                        variant="outlined"
-                        @mouseenter="badDescription=(indexB+1)+'. '+btn.description"
-                        @click="btn.select=!btn.select; badDescription=(indexB+1)+'. '+btn.description"
-                    >
-                    </v-btn>
-                </div>
+                <IconRating
+                    :class-name="['bad-trip']"
+                    :type="'bad'"
+                    :editable="true"
+                    ref="iconRatingRefBad"
+                    v-on:description-changed="badDescription=$refs.iconRatingRefBad.description"
+                />
+
                 <div class="sub-title">{{ badDescription }}</div>
             </div>
 
@@ -153,7 +124,7 @@
                 size="large"
                 @click="rated()"
             >
-                XXXXXXXXXXXXXXXX
+                VALIDER
             </v-btn>
 
         </div>
@@ -169,17 +140,20 @@
     import { mapState, mapActions, mapMutations } from 'vuex';
     import { onMounted, onUnmounted, ref } from 'vue';
 
+    import supabase from '@/utils/supabaseClient.js';
+
 
     import { formatNumber } from '@/utils/utils.js'
 
     // Components
     import Avatar from '@/components/profile/Avatar.vue';
     import PanneauInfo from '@/components/profile/PanneauInfo.vue';
+    import IconRating from '@/components/rating/IconRating.vue';
 
     export default defineComponent({
         name: 'rating-view',
         computed: {
-            ...mapState("profil", ["profil", "userName", "modeDriver", "avatarUrl", "darkMode"]),
+            ...mapState("profil", ["profil", "userName", "userId", "modeDriver", "avatarUrl", "darkMode"]),
             ...mapState("profil", {
                 nbTrip: state => state.profil.nbTrip,
             }),
@@ -212,6 +186,7 @@
         components: {
             Avatar,
             PanneauInfo,
+            IconRating,
         },
         props: {
         },
@@ -241,91 +216,6 @@
                         text: "satisfaction",
                     },
                 ],
-                btnIco: {
-                    good: [
-                        {
-                            icon: "mdi-emoticon-dead",
-                            select: false,
-                            description: "Gentille",
-                            fun: ()=>console.log("click"),
-                        },
-                        {
-                            icon: "mdi-alert-octagon", 
-                            select: false,
-                            description: "Bon communiquant",
-                            fun: ()=>console.log("click"),
-                        },
-                        {
-                            icon: "mdi-map-marker-alert", 
-                            select: false,
-                            description: "Bon conducteur",
-                            fun: ()=>console.log("click"),
-                        },
-                        {
-                            icon: "mdi-train-car-flatbed-tank", 
-                            select: false,
-                            fun: ()=>console.log("click"),
-                        },
-                        {
-                            icon: "mdi-alert-octagon", 
-                            select: false,
-                            fun: ()=>console.log("click"),
-                        },
-                        {
-                            icon: "mdi-map-marker-alert", 
-                            select: false,
-                            fun: ()=>console.log("click"),
-                        
-                        },
-                        {
-                            icon: "mdi-train-car-flatbed-tank", 
-                            select: false,
-                            fun: ()=>console.log("click"),
-                        },
-                    ],
-                    bad: [
-                        {
-                            icon: "mdi-emoticon-dead", 
-                            select: false,
-                            description: "Pas gentille",
-                            fun: ()=>console.log("click"),
-                        },
-                        {
-                            icon: "mdi-alert-octagon", 
-                            select: false,
-                            description: "Pas bon communiquant",
-                            fun: ()=>console.log("click"),
-                        },
-                        {
-                            icon: "mdi-map-marker-alert", 
-                            select: false,
-                            description: "Pas bon conducteur",
-                            fun: ()=>console.log("click"),
-                        
-                        },
-                        {
-                            icon: "mdi-train-car-flatbed-tank", 
-                            select: false,
-                            fun: ()=>console.log("click"),
-                        },
-                        {
-                            icon: "mdi-alert-octagon", 
-                            select: false,
-                            fun: ()=>console.log("click"),
-                        },
-                        {
-                            icon: "mdi-map-marker-alert", 
-                            select: false,
-                            fun: ()=>console.log("click"),
-                        
-                        },
-                        {
-                            icon: "mdi-train-car-flatbed-tank", 
-                            select: false,
-                            fun: ()=>console.log("click"),
-                        },
-                    ],
-                }
             }
         },
         mounted() {
@@ -337,28 +227,83 @@
             back() {
                 this.$router.push("/profil")
             },
-            rated(){
+            async rated(){
                 if( this.ratings.rating ){
 
                     //TODO : Notation = get infos selected by users
-                    const tab = this.btnIco.good.map((note) => note.select ? 1 : 0);
+                    const tab = this.$refs.iconRatingRefGood.btnIco.good.map((note) => note.select ? 1 : 0);
                     console.log("tab-rating", tab);
+
+                    //get rating
+                    
+                    let { data: settings, error } = await supabase
+                        .from('settings')
+                        .select('rating')
+                        .eq("account_id", this.userId)
+          
+                    if( error ){
+                        console.err("Error:", error);
+
+                        // ------------- exit
+                        this.SET_RATINGS_REMOVE({id: this.ratings.data.id})
+
+                        console.log("this.ratings.bookings", this.ratings.bookings);
+                        if( this.ratings.bookings.length == 0 ){
+                            this.SET_RATING(false);
+                        }
+
+                        this.$router.push("/");
+
+                        return;
+                    }
+
+                    console.log("settings", settings);
+
+                    let newRatingGood = settings[0].rating.good.map((value, index) => this.$refs.iconRatingRefGood.btnIco.good[index] ? value + 1 : value)
+                    let newRatingBad = settings[0].rating.bad.map((value, index) => this.$refs.iconRatingRefBad.btnIco.bad[index] ? value + 1 : value)
+
+                    //update rating
+
+                    const { data: setting_update, error: error_update } = await supabase
+                        .from('settings')
+                        .update({ "rating": {bad: newRatingBad, good: newRatingGood } })
+                        .eq("account_id", this.userId)
+                        .select()
+          
+                    if( error_update ){
+                        console.err("Error update:", error_update);
+                        console.log("Id to remove", this.ratings.data.id);
+
+                        // ------------- exit
+                        this.SET_RATINGS_REMOVE({id: this.ratings.data.id})
+
+                        console.log("this.ratings.bookings", this.ratings.bookings);
+                        if( this.ratings.bookings.length == 0 ){
+                            this.SET_RATING(false);
+                        }
+
+                        this.$router.push("/");
+                        return;
+                    }
+
+                    console.log("setting_update", setting_update);
+
+
 
                     //**update rating store
                     //*remove data = null
                     //*remove infos in bookings list
-                    // console.log("Id to remove", this.ratings.data.id);
-                    // this.SET_RATINGS_REMOVE({id: this.ratings.data.id})
+                    console.log("Id to remove", this.ratings.data.id);
+                    this.SET_RATINGS_REMOVE({id: this.ratings.data.id})
 
-                    // console.log("this.ratings.bookings", this.ratings.bookings);
-                    // if( this.ratings.bookings.length == 0 ){
-                    //     this.SET_RATING(false);
-                    // }
+                    console.log("this.ratings.bookings", this.ratings.bookings);
+                    if( this.ratings.bookings.length == 0 ){
+                        this.SET_RATING(false);
+                    }
+
+                    this.$router.push("/");
                 }
             },
-            // ratingIcon(index){
-
-            // }
         },
         watch: {
             overlay() {

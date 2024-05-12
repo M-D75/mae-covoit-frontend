@@ -100,7 +100,9 @@
                 @click="choiceFunctionBtnInfo(info.text)"
             >
                 <div v-if="info.label && ! info.icon" class="label text-body-2">{{ info.label }}</div>
-                <v-icon v-if="info.icon">
+                <v-icon 
+                    v-if="info.icon"
+                >
                     {{info.icon}}
                 </v-icon>
                 <div class="text-subtitle">{{info.text}}</div>
@@ -123,9 +125,9 @@
 
     export default defineComponent({
         name: 'info-comp',
-        emits: ["history"],
+        emits: ["history", "switch-theme-color"],
         computed: {
-            ...mapState("profil", ['modeDriver']),
+            ...mapState("profil", ['modeDriver', 'darkMode', "blockChangingTheme"]),
         },
         components: {
         },
@@ -161,11 +163,31 @@
             }
         },
         methods: {
-            ...mapMutations("profil", ["SET_DARKMODE", "SET_MODE_DRIVER"]),
+            ...mapMutations("profil", ["SET_DARKMODE", "SET_MODE_DRIVER", "SET_BLOCK_CHANGING_THEME"]),
             choiceFunctionBtnInfo(name){
                 switch (name.toLowerCase()) {
                     case 'mode':
-                        this.ligthToDarkness();
+                        if(!this.blockChangingTheme){
+                            this.$emit("switch-theme-color");
+                            this.SET_BLOCK_CHANGING_THEME(true)
+                            if(!this.darkMode){
+                                setTimeout(function(){
+                                    this.ligthToDarkness();
+                                }.bind(this), 300)
+
+                                setTimeout(function(){
+
+                                    this.SET_BLOCK_CHANGING_THEME(false)
+                                }.bind(this), 700)
+                            }
+                            else{
+                                this.ligthToDarkness();
+                                setTimeout(function(){ 
+                                    this.SET_BLOCK_CHANGING_THEME(false)
+                                }.bind(this), 700)
+                            }
+                        }
+                            
                         break;
                     case 'historique':
                         this.history();

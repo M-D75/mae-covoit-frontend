@@ -217,7 +217,7 @@
     // Components
     export default {
         name: 'credit-card-comp',
-        emits: ["transfert-gain", "add-card"],
+        emits: ["transfert-gain", "add-card", "up-money", "drop-money", "add-credit"],
         computed: {
             ...mapState("profil", ["soldes", "gain", "credit_card", "modeDriver"]),
             ...mapState("auth", ["provider_id"]),
@@ -242,7 +242,7 @@
             await this.getSoldes();
             this.loadIn = false;
             console.log("BEGIN", this.modeDriver, this.gain, this.soldes);
-            
+
             this.updateSolde();
         },
         methods: {

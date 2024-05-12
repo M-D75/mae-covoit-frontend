@@ -113,7 +113,7 @@
     import { Capacitor } from '@capacitor/core';
     import { Plugins } from '@capacitor/core';
 
-    import stripe from '@/utils/stripe.js'
+    //import stripe from '@/utils/stripe.js'
 
     const { LocalNotifications } = Plugins;
 
@@ -163,36 +163,36 @@
             // });
 
 
-            const balance = await stripe.balance.retrieve();
-            console.log("balance", balance);
+            // const balance = await stripe.balance.retrieve();
+            // console.log("balance", balance);
 
-            // const balanceTransactions = await stripe.balanceTransactions.list({
-            //     type: 'transfer',
+            // // const balanceTransactions = await stripe.balanceTransactions.list({
+            // //     type: 'transfer',
+            // // });
+
+            // //tr_1PDsKTIKwmrDLewYoqwuJF8s
+
+            // const transfer = await stripe.transfers.retrieve('tr_1PDsKTIKwmrDLewYoqwuJF8s');
+
+
+
+            // const balanceTransaction = await stripe.balanceTransactions.retrieve(
+            //     transfer.balance_transaction
+            // );
+
+            // console.log(":::balanceTransaction", balanceTransaction);
+
+            // //acct_1OUWQcI3Nt412vf3
+
+            // const person = await stripe.accounts.retrieve('acct_1OUWQcI3Nt412vf3');
+            
+            // console.log("person:", person);
+
+            // const balanceConnect = await stripe.balance.retrieve({
+            //     stripeAccount: 'acct_1OUWQcI3Nt412vf3',
             // });
 
-            //tr_1PDsKTIKwmrDLewYoqwuJF8s
-
-            const transfer = await stripe.transfers.retrieve('tr_1PDsKTIKwmrDLewYoqwuJF8s');
-
-
-
-            const balanceTransaction = await stripe.balanceTransactions.retrieve(
-                transfer.balance_transaction
-            );
-
-            console.log(":::balanceTransaction", balanceTransaction);
-
-            //acct_1OUWQcI3Nt412vf3
-
-            const person = await stripe.accounts.retrieve('acct_1OUWQcI3Nt412vf3');
-            
-            console.log("person:", person);
-
-            const balanceConnect = await stripe.balance.retrieve({
-                stripeAccount: 'acct_1OUWQcI3Nt412vf3',
-            });
-
-            console.log("balanceConnect", balanceConnect);
+            // console.log("balanceConnect", balanceConnect);
 
             // console.log("balanceTransactions", balanceTransactions);
 
