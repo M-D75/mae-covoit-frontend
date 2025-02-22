@@ -120,6 +120,12 @@ const routes = [
         meta: { requiresAuth: true },
     },
     {
+        path: '/results/shared/:user_uid/:ids',
+        component: Results,
+        props: true,
+        meta: { requiresAuth: true },
+    },
+    {
         path: '/publish',
         component: Publish,
         meta: { requiresAuth: true, bottomNav: true },
@@ -172,13 +178,13 @@ const router = createRouter({
 
 import { FirebaseMessaging } from '@capacitor-firebase/messaging';
 import { Capacitor } from '@capacitor/core';
-import axios from 'axios';
-// import store from '../store'; 
 
 import { Plugins } from '@capacitor/core';
-//import supabase from '@/utils/supabaseClient.js';
 
 
+import supabase from '@/utils/supabaseClient.js';
+import store from '../store'; 
+import axios from 'axios';
 // import stripe from '@/utils/stripe.js'
 
 const { LocalNotifications } = Plugins;
@@ -213,67 +219,74 @@ async function sendNotification(title, body, data) {
         });
     }
     else{
-        console.log("permission non accordé");
+        console.log("[index.js] permission non accordé");
     }
 }
 
 let initFireBase = false;
 router.beforeEach(async (to, from, next) => {
-    console.log("from", from);
+    console.log("[index.js] from", from);
     if ( to.path === '/search' ) {
 
-        // if( store.state.trip.ratings.rating ){
-        //     let bookings = store.state.trip.ratings.bookings;
-        //     const now = new Date();
-        //     if( bookings.length > 0 ){
-        //         console.log("bookings", bookings);
-        //         bookings = bookings.filter((data) => new Date(data.date).getTime() + 15 * 60000 < now.getTime() );
-        //     }
+        if( store.state.trip.ratings.rating ){
+            let bookings = store.state.trip.ratings.bookings;
+            const now = new Date();
+            if( bookings.length > 0 ){
+                console.log("[index.js] bookings-data", bookings);
+                bookings = bookings.filter((data) => new Date(data.date).getTime() + 15 * 60000 < now.getTime() );
+            }
 
-        //     if( bookings.length > 0 ){
-        //         const { data: trips, error } = await supabase
-        //             .from('booking')
-        //             .select(`
-        //                 id,
-        //                 trip_id,
-        //                 passenger_account_id,
-        //                 is_accepted,
-        //                 is_refused,
-        //                 trip (
-        //                     id, 
-        //                     driver_id,
-        //                     account (*),
-        //                     village_departure_id,
-        //                     village_arrival_id,
-        //                     departure_time,
-        //                     max_seats,
-        //                     price,
-        //                     route
-        //                 )`)
-        //             .eq('id', bookings[0].id);
+            // TODO : à évaluer
+            if( bookings.length > 0 ){
+                const { data: trips, error } = await supabase
+                    .from('booking')
+                    .select(`
+                        id,
+                        trip_id,
+                        passenger_account_id,
+                        is_accepted,
+                        is_refused,
+                        trip (
+                            id, 
+                            driver_id,
+                            account (
+                                firstname,
+                                lastname,
+                                avatar
+                            ),
+                            village_departure_id,
+                            village_arrival_id,
+                            departure_time,
+                            max_seats,
+                            price,
+                            route
+                        )`)
+                    .eq('id', bookings[0].id);
                 
-        //         if(error){
-        //             console.log("Error : check rating failed no boking gettting : ", error);
-        //             next();
-        //         }
+                if( error ){
+                    console.log("[index.js] Error : check rating failed no boking gettting : ", error);
+                    next();
+                }
 
-        //         console.log("Get for rating success : ", trips);
+                console.log("[index.js] Get for rating success : ", trips);
 
-        //         store.state.trip.ratings.data = trips;
-
-        //         next('/rating');
-        //     }
+                store.state.trip.ratings.data = trips;
+                if(trips.length > 0)
+                    next('/rating');
+            }
             
-        // }
+        }
         
+
+        // ----------------------------- ------------------------------
         if( (isIOS || isAndroid) && !initFireBase ){
             initFireBase = true;
             FirebaseMessaging.requestPermissions().then(result => {
-                console.log("FirebaseMessaging Access :", result.receive);
+                console.log("[index.js] FirebaseMessaging Access :", result.receive);
                 if ( result.receive === 'granted' ) { 
                     const addTokenReceivedListener = async () => {
                         await FirebaseMessaging.addListener('tokenReceived', event => {
-                            console.log('tokenReceived', { event }, event.token);
+                            console.log('[index.js] tokenReceived', { event }, event.token);
 
                             this.SET_REGISTER_DEVICE_TOKEN(event.token);
                         
@@ -283,10 +296,10 @@ router.beforeEach(async (to, from, next) => {
                                 userId: this.userUid,
                             })
                             .then(response => {
-                                console.log(response.data);
+                                console.log("[index.js] data:", response.data);
                             })
                             .catch(error => {
-                                console.error('Il y a eu une erreur :', error);
+                                console.error('[index.js] Il y a eu une erreur :', error);
                             });
                         });
                     };
@@ -295,7 +308,7 @@ router.beforeEach(async (to, from, next) => {
 
                     const addNotificationReceivedListener = async () => {
                         await FirebaseMessaging.addListener('notificationReceived', async (event) => {
-                            console.log('notificationReceived', { event });
+                            console.log('[index.js] notificationReceived', { event });
                             await sendNotification(event.notification.title, event.notification.body, event.notification.data);
                         });
                     };
@@ -304,7 +317,7 @@ router.beforeEach(async (to, from, next) => {
 
                     const addNotificationActionPerformedListener = async () => {
                         await FirebaseMessaging.addListener('notificationActionPerformed', event => {
-                            console.log('notificationActionPerformed', { event });
+                            console.log('[index.js] notificationActionPerformed', { event });
 
                             // actions:
                             if( event.notification.data.actions != undefined ){
@@ -321,7 +334,7 @@ router.beforeEach(async (to, from, next) => {
                     addNotificationActionPerformedListener();
                 }
                 else {
-                    console.log("Autoriasation Messaging failed:");
+                    console.log("[index.js] Autoriasation Messaging failed:");
                 }
             });
         }
@@ -331,16 +344,16 @@ router.beforeEach(async (to, from, next) => {
     // const requiresAuth = to.meta.requiresAuth;
     // const isUserAuthenticated = store.getters['auth/isAuthenticated'];
     
-    // console.log("beforeEach...")
-    // console.log("to.name", to.name)
-    // console.log("isUserAuthenticated", isUserAuthenticated)
+    // console.log("[index.js] beforeEach...")
+    // console.log("[index.js] to.name", to.name)
+    // console.log("[index.js] isUserAuthenticated", isUserAuthenticated)
     // if ( requiresAuth && !isUserAuthenticated ) {
     //     next('/login');
     // }
     // else if ( requiresAuth && isUserAuthenticated ) {
     //     const tokenCloseToExpiry = (store.state.auth.tokenExpiry - new Date().getTime()) < (5 * 60 * 1000); // 5 minutes, par exemple
 
-    //     console.log("close-to-expire:", tokenCloseToExpiry, store.state.auth.tokenExpiry, new Date(store.state.auth.tokenExpiry))
+    //     console.log("[index.js] close-to-expire:", tokenCloseToExpiry, store.state.auth.tokenExpiry, new Date(store.state.auth.tokenExpiry))
     //     // if (tokenCloseToExpiry) {
     //     //     await store.dispatch('auth/refreshToken');
     //     // }

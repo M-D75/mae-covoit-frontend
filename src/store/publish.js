@@ -1,5 +1,5 @@
 // import { createStore } from 'vuex'
-// import axios from 'axios'
+import axios from 'axios'
 
 import supabase from '@/utils/supabaseClient.js';
 import router from '@/router';
@@ -45,54 +45,90 @@ export default {
                 return ;
             }
 
-            console.log("tripDriver", tripDriver, state)
+            if( process.env.VUE_APP_MODE == 'local' ){
+                
+                // let infos = {
+                //     villageDep: this.GET_ID_VILLAGE_BY_NAME(this.infosPublish.work.depart), 
+                //     villageDest: this.GET_ID_VILLAGE_BY_NAME(this.infosPublish.work.destination), 
+                //     driverId: this.$store.state.profil.userUid, 
+                //     maxSeats: this.infosPublish.work.nbPassager,
+                //     price: this.infosPublish.work.price,
+                //     route: this.infosPublish.work.route,
+                //     daysHour: this.infosPublish.work.daysHour,
+                //     weeksSelected: this.infosPublish.work.weeksSelected,
+                //     car_id: this.infosPublish.work.car,
+                // };
 
-            // let { data: trip, errorTrip } = await supabase
-            //     .from('trip')
-            //     .select('id')
+                const res = await axios.get(`${process.env.VUE_APP_API_MBABUF_URL}/trips`, {
+                        params:{
+                            "village_departure_id": tripDriver.villageDep,
+                            "village_arrival_id": tripDriver.villageDest,
+                            "driver_id": store.state.profil.userId,
+                            "departure_time": tripDriver.daysHour,
+                            "max_seats": tripDriver.maxSeats,
+                            "auto_accept_trip": store.state.profil.auto_accept_trip,
+                        }
+                    })
+                    .then(response => {
+                        console.log("trips:", response.data.result);
+                        return {status: 0, message: "Votre trajet à bien été publié !"}
+                    })
+                    .catch(error => {
+                        console.error(error);
+                    });
 
-            // console.log("Error : ", errorTrip, trip.length, tripDriver.driverId);
-
-            // if( errorTrip ){
-            //     console.error("Error : ", errorTrip)
-            //     return false;
-            // }
-
-            // const idMax = trip.reduce((max, objet) => {
-            //         return objet.id > max ? objet.id : max;
-            //     }, 1);
-
-            if( tripDriver.driverId ){
-
-                var dataNewTrip =  {
-                    village_departure_id: tripDriver.villageDep,
-                    village_arrival_id: tripDriver.villageDest,
-                    driver_id: tripDriver.driverId,
-                    departure_time: tripDriver.timeDep,
-                    max_seats: tripDriver.maxSeats,
-                    price: tripDriver.price,
-                    route: tripDriver.route,
-                    car_id: tripDriver.car_id,
-                };
-
-                console.log("data : ", dataNewTrip);
-
-                const { data, error } = await supabase
-                    .from('trip')
-                    .insert([
-                        dataNewTrip,
-                    ])
-                    .select()
-
-                console.log("new-trip-published : ", data, error);
-
-                if( error ){
-                    console.error("Error : ", error);
-                    return {status: 1, message: "Votre trajet n'a pas pu être publié !"}
-                }
+                return res;
             }
+            else{
+                console.log("tripDriver", tripDriver, state)
 
-            return {status: 0, message: "Votre trajet à bien été publié !"}
+                // let { data: trip, errorTrip } = await supabase
+                //     .from('trip')
+                //     .select('id')
+
+                // console.log("Error : ", errorTrip, trip.length, tripDriver.driverId);
+
+                // if( errorTrip ){
+                //     console.error("Error : ", errorTrip)
+                //     return false;
+                // }
+
+                // const idMax = trip.reduce((max, objet) => {
+                //         return objet.id > max ? objet.id : max;
+                //     }, 1);
+
+                if( tripDriver.driverId ){
+
+                    var dataNewTrip =  {
+                        village_departure_id: tripDriver.villageDep,
+                        village_arrival_id: tripDriver.villageDest,
+                        driver_id: tripDriver.driverId,
+                        departure_time: tripDriver.timeDep,
+                        max_seats: tripDriver.maxSeats,
+                        price: tripDriver.price,
+                        route: tripDriver.route,
+                        car_id: tripDriver.car_id,
+                    };
+
+                    console.log("data : ", dataNewTrip);
+
+                    const { data, error } = await supabase
+                        .from('trip')
+                        .insert([
+                            dataNewTrip,
+                        ])
+                        .select()
+
+                    console.log("new-trip-published : ", data, error);
+
+                    if( error ){
+                        console.error("Error : ", error);
+                        return {status: 1, message: "Votre trajet n'a pas pu être publié !"}
+                    }
+                }
+
+                return {status: 0, message: "Votre trajet à bien été publié !"}
+            }
         },
         async newTripMultple({state}, tripDriver){
             const sessionChecked = await store.dispatch("auth/checkSessionOnly");

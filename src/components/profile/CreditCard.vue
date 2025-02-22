@@ -119,8 +119,27 @@
       class="credit-card-profil mx-auto"
     >
         <div class="row-item infos">
-            <div class="label"> {{ modeDriver ? 'Gain' : 'Solde' }} Disponible</div>
+
+            <div class="label"> 
+                {{ modeDriver ? 'Gain' + (pending>0 ? ' en attente' : ' en Transit') : 'Solde' }} 
+                
+                <v-icon 
+                    v-if="modeDriver && pending>0"
+                    color="orange"
+                >
+                    mdi-clock-time-eight-outline
+                </v-icon>
+
+                <v-icon 
+                    v-if="modeDriver && pending==0"
+                    color="green"
+                >
+                    mdi-bank-transfer-in
+                </v-icon>
+            </div>
+
             <div class="solde">
+
                 <v-icon 
                     class="zoom-bounce"
                     v-if="!modeDriver"
@@ -132,7 +151,12 @@
                     style="opacity: 0.3;"
                 >mdi-wallet-bifold</v-icon> -->
 
-                <v-icon class="zoom-bounce" :class="{ icon_disabled: gain==0}" v-if="modeDriver" @click="emit('transfert-gain')">mdi-transfer</v-icon>
+                <v-icon 
+                    v-if="modeDriver" 
+                    class="zoom-bounce" 
+                    :class="{ icon_disabled: gain==0}"  
+                    @click="emit('transfert-gain')"
+                >mdi-transfer</v-icon>
                 
                 EUR {{ soldeWritable }}
 
@@ -163,7 +187,7 @@
 
                     <v-icon 
                         v-if="modeDriver" 
-                        :class="{ icon_disabled: gain==0}" 
+                        :class="{ icon_disabled: gain.pending==0 && gain.transit==0}" 
                         style="height: 22px; line-height: 10; position: relative; top: -3px;"
                         @click="emit('drop-money')"
                         class="zoom-bounce"
@@ -220,6 +244,10 @@
         emits: ["transfert-gain", "add-card", "up-money", "drop-money", "add-credit"],
         computed: {
             ...mapState("profil", ["soldes", "gain", "credit_card", "modeDriver"]),
+            ...mapState("profil", {
+                pending: state => state.gain.pending,
+                transit: state => state.gain.transit,
+            }),
             ...mapState("auth", ["provider_id"]),
         },
         props: {
@@ -275,9 +303,9 @@
             updateSolde(){
                 console.log("change-mode", this.modeDriver, this.gain, this.soldes);
                 if(this.modeDriver)
-                    this.animerNombre(this.soldeWritable, this.gain, 20, 1000);
+                    this.animerNombre(parseInt(this.soldeWritable), this.gain.pending > 0 ? this.gain.pending :  this.gain.transit, 20, 1000);
                 else
-                    this.animerNombre(this.soldeWritable, this.soldes, 20, 1000);
+                    this.animerNombre(parseInt(this.soldeWritable), this.soldes, 20, 1000);
             }
         },
         watch:{
@@ -285,8 +313,12 @@
                 console.log("soldes-changed");
                 this.updateSolde()
             },
-            gain(){
-                console.log("gain-changed", this.gain);
+            transit(){
+                console.log("transit-gain-changed", this.gain);
+                this.updateSolde();
+            },
+            pending(){
+                console.log("gain-pending-changed", this.gain);
                 this.updateSolde();
             },
             modeDriver(){

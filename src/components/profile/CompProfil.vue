@@ -11,27 +11,27 @@
         visibility: hidden;
     }
 
-    .mask-container {
-        position: absolute;
-        top: 0;
-        width: 100vw;
-        height: 100vh;
-        background-color: var(--bg-app-color);
-        clip-path: circle(0% at 75.5% 35%); /* Masque initialement fermé */
-        transition: clip-path 0.7s ease-in-out; /* Animation douce */
-    }
+    // .mask-container {
+    //     position: absolute;
+    //     top: 0;
+    //     width: 100vw;
+    //     height: 100vh;
+    //     background-color: var(--bg-app-color);
+    //     clip-path: circle(0% at 75.5% 35%); /* Masque initialement fermé */
+    //     transition: clip-path 0.7s ease-in-out;
+    // }
 
-    .content {
-        // position: absolute;
-        // top: 0;
-        // left: 0;
-        // width: 100%;
-        // height: 100%;
-        background-color: #1a1a1a;
-        // display: flex;
-        // align-items: center;
-        // justify-content: center;
-    }
+    // .content {
+    //     // position: absolute;
+    //     // top: 0;
+    //     // left: 0;
+    //     // width: 100%;
+    //     // height: 100%;
+    //     background-color: #1a1a1a;
+    //     // display: flex;
+    //     // align-items: center;
+    //     // justify-content: center;
+    // }
 
 </style>
 
@@ -141,7 +141,12 @@
         />
         
         <!-- ? -->
-        <PanneauInfo :infos_panneau="infos_panneau" v-on:history="$emit('on-history')" v-on:switch-theme-color="$emit('toggle-mask');" />
+        <PanneauInfo 
+            :infos_panneau="infos_panneau" 
+            v-on:history="$emit('on-history')" 
+            v-on:switch-theme-color="$emit('toggle-mask');" 
+            v-on:icon-coordinates="forwardCoordinates"
+            />
 
         <!-- Parameter like menu TODO:no activate -->
         <GroupCard class="grouP" :groupeParameters="groupeParameters" v-if="false"/>
@@ -169,11 +174,11 @@
                 v-on:up-money="$emit('on-up-money')"
                 v-on:add-card="$emit('on-add-card')"
                 v-on:drop-money="$emit('on-drop-money')"
-                v-on:transfert-gain="$emit('transfer-gain-to-soldes')"
+                v-on:transfert-gain="$emit('transfert-gain-to-soldes')"
             />
 
             <!-- Graph -->
-            <StatsTrajet v-if="onglet=='table-bord'"/>
+            <StatsTrajet v-if="onglet=='table-bord' && 2==4"/>
 
             <!-- Trajets & publication -->
             <HistoryTrajets 
@@ -200,39 +205,31 @@
     // import $ from 'jquery';
 
     // Components
-    // import ToolbarProfil from '@/components/menus/head/ToolbarProfil.vue';
     import Avatar from '@/components/profile/Avatar.vue';
     import PanneauInfo from '@/components/profile/PanneauInfo.vue';
     import GroupCard from '@/components/menus/setting/GroupCard.vue';
     import CreditCard from '@/components/profile/CreditCard.vue';
     import StatsTrajet from '@/components/profile/StatsTrajet.vue';
     import HistoryTrajets from '@/components/profile/HistoryTrajets.vue';
-    // import BottomNav from '@/components/menus/BottomNav.vue';
-    // import BottomMenu from '@/components/menus/BottomMenu.vue';
-    // import PaneApear from '@/components/PaneApear.vue';    
 
     export default defineComponent({
         name: 'comp-profil',
         emits: [
             "on-history", "on-up-money", "on-add-card", "on-drop-money", 
-            "transfer-gain-to-soldes", "open-contacts", "open-member",
-            "toggle-mask"
+            "transfert-gain-to-soldes", "open-contacts", "open-member",
+            "toggle-mask", "icon-coordinates"
         ],
         computed: {
             ...mapState("profil", ["darkMode", "userName", "profil", "history", 'modeDriver', "avatarUrl", "userUid", "modeCo", "gain", "identity"]),
             ...mapState("trip", ["notMessageVue"]),
         },
         components: {
-            // ToolbarProfil,
             Avatar,
             PanneauInfo,
             GroupCard,
             CreditCard,
             StatsTrajet,
             HistoryTrajets,
-            // BottomNav,
-            // BottomMenu,
-            // PaneApear,
         },
         data() {
             return {
@@ -375,6 +372,9 @@
             ...mapActions("auth", ["checkSession"]),
             ...mapMutations("profil", ["SET_LOAD_GET_TRIP_PUBLISH", "SET_MODE_DRIVER", "SET_REMOVE_HISTORY_DATES", "SET_NB_PASSAGER"]),
             ...mapMutations("trip", ["SET_NOT_MESSAGE_VUE"]),
+            forwardCoordinates(coordinates){
+                this.$emit('icon-coordinates', coordinates);
+            },
             async checkSessionIn(){
                 this.loadCreaditCard = true
                 const sessionValided = await this.$store.dispatch("auth/checkSession");

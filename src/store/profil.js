@@ -29,7 +29,10 @@ export default {
         userName: "",
         avatarUrl: 'https://avataaars.io/?avatarStyle=Circle&topType=ShortHairDreads01&accessoriesType=Blank&hairColor=PastelPink&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Wink&eyebrowType=DefaultNatural&mouthType=Serious&skinColor=Tanned',
         soldes: 0,
-        gain: 0,
+        gain: {
+            pending: 0,
+            transit: 0,
+        },
         cguAccepted: false,
         identity: false,
         payouts_enabled: false,
@@ -112,6 +115,9 @@ export default {
     getters: {
     },
     mutations: {
+        SET_USER_UID(state, userUid) {
+            state.userUid = userUid;
+        },
         SET_INFOS(state, data){
             state.profil.infos_perso.civilite = data.civilite;
             state.profil.infos_perso.nom = data.nom;
@@ -306,7 +312,46 @@ export default {
 
             console.log("balanceConnect", balanceConnect, balanceConnect.available[0].amount, balanceConnect.pending[0].amount, (balanceConnect.available[0].amount + balanceConnect.pending[0].amount));
 
-            state.gain = (balanceConnect.available[0].amount + balanceConnect.pending[0].amount)/100;
+            state.gain.transit = (balanceConnect.available[0].amount + balanceConnect.pending[0].amount)/100;
+
+            // pending
+
+            let { data: strip_charge, error: error_strip_charge } = await supabase
+                .from('strip_charge')
+                .select('*')
+                .neq("account_id", state.userId)
+                .eq("transfered", false);
+        
+            if(error_strip_charge){
+                console.error("Error:", error_strip_charge);
+            }
+
+            console.log("strip_charge", strip_charge);
+            state.gain.pending = 0;
+
+            if(strip_charge.length > 0){    
+                for (let index = 0; index < strip_charge.length; index++) {
+                    const element = strip_charge[index];
+                    const balanceTransaction = await stripe.balanceTransactions.retrieve(
+                        element.charge_id
+                    );
+
+                    console.log("balanceTransaction", balanceTransaction);
+
+                    // const charge = await stripe.charges.retrieve(balanceTransaction.source);
+                    
+                    // console.log("charge", charge, charge.customer, account[0].customer_id);
+                    console.log("driver_id:${state.userUid}", `driver_id:${state.userUid}`);
+                    console.log("description:", balanceTransaction.description);
+                    if(balanceTransaction.description.includes(`driver_id:${state.userUid}`)){
+                        state.gain.pending += (balanceTransaction.net * 0.59)/100;
+                    }
+                }
+                state.gain.pending = parseFloat(state.gain.pending).toFixed(2)
+                console.log("pending", state.gain.pending);
+            }
+
+            // console.log("state.gain", state.gain);
 
             state.soldes = account[0].credit;
             return {status: 0, message: `Votre solide est de : ${state.soldes}`};

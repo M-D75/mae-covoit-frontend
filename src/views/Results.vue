@@ -116,19 +116,29 @@
 <template>
     <!-- toolbar -->
     <Toolbar 
-        :trajet="{ depart: depart, destination: destination }"
+        v-if="mode=='date-dep-dest'"
+        :mode="mode"
+        :trajet="{ depart: depart, destination: destination } "
         :nombre_trajet="trajets.filter(trajet => trajet.depart == depart && trajet.destination == destination).length"
         :nbPassenger="nbPassenger" 
         :date="date.replaceAll('-', '/')"
         :filterOpen="filterOpen"
-        v-on:open-filter="filterOpen=true"    
+        v-on:open-filter="filterOpen=true" 
+    />
+
+    <Toolbar 
+        v-if="mode=='shared-ids'"
+        :mode="mode"
+        :user_shared="user_shared_data ? user_shared_data : {firstname: '', lastname: ''}"
+        :filterOpen="filterOpen"
+        v-on:open-filter="filterOpen=true"
     />
 
     <!--  -->
     <v-main class="container-trajet-member">
         <div class="label-filter text-caption text-uppercase mx-auto">{{ date.replaceAll("-", "/") }}</div>
         <TrajetMember 
-            v-for="(infos, index) in trajetFiltered" 
+            v-for="(infos, index) in mode=='date-dep-dest' ? trajetFiltered : trajets" 
             :key="index" 
             :infos="infos"
             :data-index="index"
@@ -314,7 +324,9 @@
         },
         data() {
             return {
+                mode: 'date-dep-dest', //date-dep-dest; shared-ids
                 filterOpen: false,
+                user_shared_data: null,
                 triers: [
                     {
                         id: 0,
@@ -356,25 +368,51 @@
             
             // console.log("params", this.$route.params);
             this.overlayLoad = true;
-            try {
-                //await this.getTrajets();
-                await this.getTrajetsDate({date: this.getDate()})
+
+            console.log("this.$route", this.$route, this.$route.path.includes("shared"));
+            // if( this.$route.params.action == 'open-trip-passenger' ){
+            //     this.onglet = "trajets";
+            // }
+            // else if( this.$route.params.action == 'open-trip-driver' ){
+            //     this.SET_MODE_DRIVER(true);
+            //     this.onglet = "planning";
+            // }
+
+            if(this.$route.path.includes("shared")){
+                this.mode = 'shared-ids'
+                const ids = this.$route.params.ids;
+                console.log("ids", ids);
+                const res = await this.getTrajetsId({user_uid: this.$route.params.user_uid, ids:ids});
+                if(res.status == 0){
+                    this.user_shared_data = res.data[0]
+                }
+
+                console.log("rees:::::", res);
+                
+
                 if (this.trajetFiltered.length == 0)
                     this.nothing = true;
             }
-            catch (error) {
-                console.error("Error:", error)
-                this.nothing = true;
+            else{
+                this.nothing = false;
+                try {
+                    //await this.getTrajets();
+                    await this.getTrajetsDate({date: this.getDate()})
+                    if (this.trajetFiltered.length == 0)
+                        this.nothing = true;
+                }
+                catch (error) {
+                    console.error("Error:", error)
+                    this.nothing = true;
+                }
             }
-            // console.log("trrrrr", this.trajets);
-            // this.nothing = true;
             this.overlayLoad = false;
         },
         methods: {
             ...mapMutations("search", ["SET_DEPART", "SET_DESTINATION", "SET_NB_PASSENGER", "SET_TRAJET_SELECTED"]),
             ...mapMutations("trip", ["SET_TRIP_SELECTED"]),
             ...mapActions("trip", ["getProfilMember"]),
-            ...mapActions("search", ["getTrajets", "getTrajetsDate"]),
+            ...mapActions("search", ["getTrajets", "getTrajetsDate", "getTrajetsId"]),
             reserve(event, index) {
                 this.infos = this.trajetFiltered[index];
                 // TODO: propre

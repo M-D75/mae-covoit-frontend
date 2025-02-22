@@ -1,21 +1,21 @@
 
 <style lang="scss" model>
 
-    .v-main.ligth-mode * {
-        --bg-app-color: #f5f5f5;
-        --white-bg-color: #FBFBFB;
-        --gray-bg-icon-color: #b1b1b1;
-        --blue-color: #2E8DFF;
-        --gray-icon-color: #B1B1B1;
+    // .v-main.ligth-mode * {
+    //     --bg-app-color: #f5f5f5;
+    //     --white-bg-color: #FBFBFB;
+    //     --gray-bg-icon-color: #b1b1b1;
+    //     --blue-color: #2E8DFF;
+    //     --gray-icon-color: #B1B1B1;
         
-        // font
-        --font-color-label: #1E1F26;
-        --font-size-h1: 24px;
-        --font-size-h1-toolbar: 16px;
-        --font-size-subtitle-toolbar: 8px;
-        --box-shadow-card: 0px 2px 24px rgba(17,17,17,0.04);
-        --box-shadow-card-v2: 0px 0px 16px rgba(17,17,17,0.16);
-    }
+    //     // font
+    //     --font-color-label: #1E1F26;
+    //     --font-size-h1: 24px;
+    //     --font-size-h1-toolbar: 16px;
+    //     --font-size-subtitle-toolbar: 8px;
+    //     --box-shadow-card: 0px 2px 24px rgba(17,17,17,0.04);
+    //     --box-shadow-card-v2: 0px 0px 16px rgba(17,17,17,0.16);
+    // }
 
     
     // mask
@@ -92,11 +92,6 @@
             margin: auto;
             height: 100vh;
             display: grid;
-            // .v-img{
-            //     position: relative;
-            //     top: 50%;
-            //     transform: translateY(-50%);
-            // }
         }
     }
    
@@ -106,7 +101,8 @@
 <template>
   
     <v-main class="ligth-mode home">
-        <v-container >
+
+        <v-container>
             <v-img
                 class="zoom-bounce"
                 style="margin: auto;"
@@ -116,21 +112,6 @@
                 src="../assets/logo.png"
             ></v-img>
         </v-container>
-
-        <!-- <div class="mask display">
-            <div class="img">
-                <v-img
-                :width="217"
-                aspect-ratio="16/9"
-                cover
-                src="@/assets/model-finaliser.png"
-                ></v-img>
-            </div>
-            
-            <h1>
-                M'BABUF
-            </h1>
-        </div> -->
 
     </v-main>
 
@@ -157,7 +138,7 @@
         name: 'home-view',
         computed: {
             ...mapState("auth", ["logged_in"]),
-            ...mapActions("auth", ["refreshToken", "checkSession"]),
+            ...mapActions("auth", ["checkSession"]),
         },
         data() {
             return {
@@ -166,7 +147,7 @@
         },
         methods: {
             goToLoginSign(){
-                this.$router.push({ path: '/login' })
+                this.$router.push({ path: '/login' });
             },
             async checkSessionIn(){
                 await this.checkSession;
@@ -175,7 +156,7 @@
                     this.$router.replace("/search");
                 else{
                     setTimeout(function(){
-                        this.$router.push("/login")
+                        this.$router.push("/login");
                     }.bind(this), 2000);
                 }
             },
@@ -184,17 +165,6 @@
             this.checkSessionIn();
         },
         mounted() {
-            // force ligth-mode
-            // $("#app .v-application").addClass("ligth-mode");
-            // $("#app .v-application").removeClass("dark-mode");
-            
-            //effet mask
-            // setTimeout(function(){
-            //     $(".mask").toggleClass("display");
-            //     setTimeout(function(){
-            //         $(".mask").css("display", "none");
-            //     }, 1400);
-            // }, 2500)
         },
         watch: {
         },

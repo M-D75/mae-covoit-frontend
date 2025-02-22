@@ -16,7 +16,12 @@
                 color: var(--font-color-label);
                 position: relative !important;
                 .number {
-                    background-color: rgb(0 236 249 / 78%);
+                    &.good {
+                        background-color: rgb(0 116 255 / 74%);
+                    }
+                    &.bad {
+                        background-color: rgba(255, 0, 0, 0.74);
+                    }
                     width: -moz-fit-content;
                     width: fit-content;
                     min-width: 20px;
@@ -24,7 +29,7 @@
                     text-align: center;
                     padding: 3px;
                     font-size: 10px;
-                    color: rgb(0, 0, 0);
+                    color: white;
                     border-radius: 10px;
                     position: absolute;
                     top: 0px;
@@ -73,7 +78,7 @@
                 icon
                 variant="outlined"
             >
-                <div class="number">{{ btn.numberOfVote }}</div>
+                <div class="number" :class="type">{{ btn.numberOfVote }}</div>
                 <v-icon :icon="btn.icon"></v-icon>
             </v-btn>
         </div>
@@ -92,9 +97,10 @@
     // Components
 
     export default defineComponent({
-        name: 'rating-view',
+        name: 'icon-rating-comp',
         emits: ['description-changed'],
         computed: {
+            ...mapState("profil", ["darkMode"]),
             ...mapState("rating", ["btnIco"]),
         },
         components: {

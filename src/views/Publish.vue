@@ -584,7 +584,7 @@
                         _tmp_village = this.getVillagesByName(this.itineraire.origin.infos.village);
                         this.setItineraire("origin", _tmp_village);
                         console.log("Name origin", this.itineraire.origin)
-
+                        
                         this.nextStepMode();
                         break;
 
@@ -825,6 +825,13 @@
                     this.overlay = false;
                 }
 
+                if(this.indexMode == -1){
+                    //this.$router.go(this.$router.currentRoute)
+                    //go to publish
+                    this.$router.push("/profil/open-trip-driver")
+                    return;
+                }
+
                 const typePath = this.modeWork ? "work" : "default";
                 let found = false;
                 while( ! found ){
@@ -837,6 +844,7 @@
 
                 //Reinit
                 if(this.mode == this.modePublish.default[0].mode || this.mode == this.modePublish.work[0].mode){
+
                     $(".mode-publish").css("display", "flex");
                 }
 
@@ -982,7 +990,6 @@
                 else{
                     this.$router.push('/profil/perso/open-add-vehicle');
                 }
-                
             },
         },
         watch: {

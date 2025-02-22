@@ -62,7 +62,7 @@
     <v-main class="rating" >
         <div ref="ratingRef">
             <!-- Avatar -->
-            <Avatar :name="userName" :modeEdit="false" :avatar="avatarUrl" :sub-title="profil.infos_perso.adress.commune" />
+            <Avatar :name="ratings.data[0].trip[0].account[0].firstname + ' ' +  ratings.data[0].trip[0].account[0].lastname" :modeEdit="false" :avatar="ratings.data[0].trip[0].account[0].avatar" :sub-title="'Non spécifié'" />
 
             <!-- ? -->
             <PanneauInfo v-if="modeDriver" :infos_panneau="infos_panneau" />
@@ -76,7 +76,7 @@
             />
 
             <div class="good-part">
-                <div class="title">Qu'avez vous pensez du service offert par {{ userName }} ?</div>
+                <div class="title">Qu'avez vous pensez du service offert par {{ ratings.data[0].trip[0].account[0].firstname }} {{ ratings.data[0].trip[0].account[0].lastname }} ?</div>
 
                 <IconRating
                     :class-name="['good-trip']"
@@ -158,6 +158,7 @@
                 nbTrip: state => state.profil.nbTrip,
             }),
             ...mapState("trip", ["ratings"]),
+            ...mapState("rating", ["btnIco"]),
         },
         setup(){
             const ratingRef = ref(null);
@@ -231,7 +232,7 @@
                 if( this.ratings.rating ){
 
                     //TODO : Notation = get infos selected by users
-                    const tab = this.$refs.iconRatingRefGood.btnIco.good.map((note) => note.select ? 1 : 0);
+                    const tab = this.btnIco.good.map((note) => note.select ? 1 : 0);
                     console.log("tab-rating", tab);
 
                     //get rating
@@ -259,8 +260,8 @@
 
                     console.log("settings", settings);
 
-                    let newRatingGood = settings[0].rating.good.map((value, index) => this.$refs.iconRatingRefGood.btnIco.good[index] ? value + 1 : value)
-                    let newRatingBad = settings[0].rating.bad.map((value, index) => this.$refs.iconRatingRefBad.btnIco.bad[index] ? value + 1 : value)
+                    let newRatingGood = settings[0].rating.good.map((value, index) => this.btnIco.good[index] ? value + 1 : value)
+                    let newRatingBad = settings[0].rating.bad.map((value, index) => this.btnIco.bad[index] ? value + 1 : value)
 
                     //update rating
 

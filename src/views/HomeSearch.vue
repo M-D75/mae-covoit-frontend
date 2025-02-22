@@ -63,6 +63,11 @@
                 }
             }
         }
+
+        .contain-shared-trip {
+            display: flex;
+            justify-content: center;
+        }
     }
 
 </style>
@@ -164,6 +169,7 @@
 
         <!-- member-profil -->
         <PaneApear
+            v-if="this.$refs.BottomMenuRefResults && this.$refs.BottomMenuRefResults.open_b"
             mode="profil-member"
             :class-name="['profil-member']"
             ref="PaneApearProfilMemberRef"
@@ -189,8 +195,6 @@
             v-on:close="overlay = false"
             v-on:retry-reserve="$refs.BottomMenuRefResults.open(); $refs.BottomMenuRefResults.tryReserveRes();"
         />
-
-        
             
     </v-main>
 
@@ -215,6 +219,7 @@
             ...mapState("search", ['depart', "destination", "nbPassenger", "trajetSelected"]),
             ...mapState("profil", ['userUid', 'history']),
             ...mapState("trip", ['member']),
+            ...mapState("general", ['appIsActive']),
         },
         components: {
             TrajetSearch,
@@ -240,11 +245,21 @@
                 this.date = this.$refs.PaneGetValueRef.getDate();
             }
 
-            this.checkDateTrip();
+            if( ! this.appIsActive.search ){
+
+                //task
+                this.checkDateTrip();
+
+                this.SET_APP_IS_ACTIVE({search: true});
+                this.goToHistory();
+            }
+
+            
         },
         methods: {
             ...mapMutations("search", ["SET_NB_PASSAGER", "SET_REMOVE_HISTORY_DATES"]),
             ...mapMutations("trip", ["SET_TRIP_SELECTED"]),
+            ...mapMutations("general", ["SET_APP_IS_ACTIVE"]),
             ...mapActions("trip", ["getProfilMember"]),
             ...mapActions("rating", ["getRating"]),
             // TODO : inutile mode prod
@@ -267,7 +282,7 @@
                     if( dateTrip.getTime() + ((60*1000)*10) < dateToday.getTime() ){
                         this.SET_REMOVE_HISTORY_DATES({ type: "passenger", index: index });
                     }
-                    else if( dateTrip.getTime() > dateToday.getTime() - ((60*1000)*30) ){
+                    else if( dateTrip.getTime() - ((60*1000)*30) < dateToday.getTime() ){
                         this.trajetAvail = "passenger";
                         console.log("Trip Passenger Founded\n");
                         return;
@@ -367,11 +382,14 @@
                 }.bind(this), 1000);
             },
             goToHistory(){
-                if(this.trajetAvail == 'passenger'){
+                if( this.trajetAvail == 'passenger' ){
                     this.$router.push('/profil/open-trip-passenger');
                 }
-                else{
+                else if( this.trajetAvail == 'driver' ){
                     this.$router.push('/profil/open-trip-driver');
+                }
+                else{
+                    console.log("nothing-to-go");
                 }
             },
         },

@@ -21,17 +21,15 @@ export default {
         registerDeviceToken: "",
     },
     mutations: {
+        SET_LOGGED_IN(state, status) {
+            state.logged_in = status;
+        },
+        SET_PROVIDER(state, provider) {
+            state.provider = provider;
+        },
         SET_REGISTER_DEVICE_TOKEN(state, token) {
             state.registerDeviceToken = token;
         },
-        SET_TOKEN(state, payload) {
-            state.token = payload.token;
-            state.tokenExpiry = payload.expiry;
-        },
-        CLEAR_TOKEN(state) {
-            state.token = null;
-            state.tokenExpiry = null;
-        }
     },
     actions: {
         async createAccount({state}, info){
@@ -162,18 +160,16 @@ export default {
             console.log("refreshToken", error, user)
             
         },
-        async checkSession({ state }){
+        async checkSession({ state, commit }){
             let { data, error } = await supabase.auth.getSession();
 
             console.log("checkSession data.session:", data.session)
-            state.logged_in = false;
-            if( data.session ){
-                
-                state.logged_in = true;
-
+            commit('SET_LOGGED_IN', false);
+            if(data.session){
+                commit('SET_LOGGED_IN', true);
                 const user = data.session.user;
-                store.state.profil.userUid = user.id;
-                state.provider = user.app_metadata.provider;
+                commit('profil/SET_USER_UID', user.id, { root: true });
+                commit('SET_PROVIDER', user.app_metadata.provider);
                 console.log('User is already connected:', user);
 
                 //Check if account are created
@@ -348,6 +344,7 @@ export default {
         },
     },
     getters: {
+        getUserUid: (state) => state.userUid,
         async isAuthenticated() {
             let { data, error } = await supabase.auth.getSession();
 

@@ -17,8 +17,9 @@
         width: 100vw;
         height: 100vh;
         background-color: var(--bg-app-color);
-        clip-path: circle(0% at 75.5% 35%); /* Masque initialement fermé */
-        transition: clip-path 0.7s ease-in-out; /* Animation douce */
+        // clip-path: circle(0% at 75.5% 35%); /* Masque initialement fermé */
+        clip-path: circle(0% at 317.855px 322.35px);
+        transition: clip-path 0.7s ease-in-out;
         .content {
             background-color: #1a1a1a;
         }
@@ -121,37 +122,38 @@
     <ToolbarProfil />
 
     <!-- ligth-theme -->
-    <div class="ligth-mode">
+    <!-- <div class="ligth-mode"> -->
         <CompProfil 
             v-on:on-add-card="onAddCard()"
             v-on:on-drop-money="onDropMoney()"
             v-on:on-up-money="onUpMoney()"
             v-on:open-member="$refs.PaneApearProfilMemberRef.open()"
-            v-on:transfer-gain-to-soldes="transferGainToSoldes()"
+            v-on:transfert-gain-to-soldes="transferGainToSoldes()"
             v-on:open-contacts="$refs.PaneApearRef.open();"
             v-on:on-history="onHistory()"
-            v-on:toggle-mask="toggleMask()"
         />
-    </div>
+    <!-- </div> -->
     
 
     <!-- dark-theme -->
-    <div 
-        class="mask-container" 
+    <!-- <div 
+        class="mask-container"
+        ref="maskContainer"
     >
         <div class="content dark-mode">
-            <CompProfil 
+            <CompProfil
+                v-on:icon-coordinates="adjustClipPathV2"
                 v-on:on-add-card="onAddCard()"
                 v-on:on-drop-money="onDropMoney()"
                 v-on:on-up-money="onUpMoney()"
                 v-on:open-member="$refs.PaneApearProfilMemberRef.open()"
-                v-on:transfer-gain-to-soldes="transferGainToSoldes()"
+                v-on:transfert-gain-to-soldes="transferGainToSoldes()"
                 v-on:open-contacts="$refs.PaneApearRef.open();"
                 v-on:on-history="onHistory()"
                 v-on:toggle-mask="toggleMask()"
             />
         </div>
-    </div>
+    </div> -->
 
     <!-- message error -->
     <v-snackbar
@@ -217,10 +219,9 @@
         mode="up-money"
         labelSelectorN1="Quel montant souhaitez-vous transferer sur votre compte passager ?"
         ref="BottomMenuRefMoneyDriver"
-        :params-number="{min:1, max: Math.floor(gain)}"
+        :params-number="{min:1, max: Math.ceil(Math.floor(pending))}"
         :upMoneyObj="{btn: 'Transferer'}"
         v-on:close="overlay = false"
-        v-on:drop-money="onDropMoney()"
         v-on:up-money="overlay = false; $refs.BottomMenuRefMoneyDriver.close()"
         />
 
@@ -233,6 +234,12 @@
     import { defineComponent } from 'vue';
     import { mapState, mapActions, mapMutations } from 'vuex';
     import axios from 'axios';
+    // import { SafeArea } from '@aashu-dubey/capacitor-statusbar-safe-area';
+    import { Capacitor } from '@capacitor/core';
+
+    const isAndroid = Capacitor.getPlatform() === 'android';
+    const isIOS = Capacitor.getPlatform() === 'ios';
+
 
     import $ from 'jquery';
 
@@ -240,12 +247,16 @@
     import ToolbarProfil from '@/components/menus/head/ToolbarProfil.vue';
     import CompProfil from '@/components/profile/CompProfil.vue';
     import BottomMenu from '@/components/menus/BottomMenu.vue';
-    import PaneApear from '@/components/PaneApear.vue';    
+    import PaneApear from '@/components/PaneApear.vue';
 
     export default defineComponent({
         name: 'profil-view',
         computed: {
             ...mapState("profil", ["darkMode", "userName", "profil", "history", 'modeDriver', "avatarUrl", "userUid", "modeCo", "gain", "identity"]),
+            ...mapState("profil", {
+                pending: state => state.gain.pending,
+                transit: state => state.gain.transit,
+            }),
             ...mapState("trip", ["notMessageVue"]),
         },
         components: {
@@ -256,6 +267,7 @@
         },
         data() {
             return {
+                anime: false,
                 labelDashBoard: "tableau de bord",
                 modeBottomMenu: "password",
                 modeEdit: false,
@@ -363,10 +375,12 @@
                 showSnackbarError: false,
                 messageSnackbarError: "",
                 trajetAvail: "",
+                insets: { top: 0, bottom: 0, left: 0, right: 0 },
             }
         },
         beforeMount(){
             this.checkSessionIn();
+            window.removeEventListener('resize', this.adjustClipPath);
         },
         mounted(){
             this.switchModeDriverPanneauInfos();
@@ -387,8 +401,20 @@
 
             this.checkDateTrip()
 
-            if(this.darkMode)
-                this.toggleMask();
+            console.log("this.darkMode", this.darkMode);
+            // if(this.darkMode){
+            //     console.log("tootlemasl");
+            //     this.toggleMask();
+            // }
+
+            //this.adjustClipPath();
+            // window.addEventListener('resize', this.adjustClipPath);
+
+            // Pour ajuster lorsque SafeArea change
+            // SafeArea.getSafeAreaInsets().then(insets => {
+            //     this.insets = insets;
+            //     this.adjustClipPath();
+            // });
 
             // this.$refs.PaneApearProfilMemberRef.open()
             // this.$refs.PaneApearRef.open()
@@ -548,8 +574,8 @@
                 }
             },
             transferGainToSoldes(){
-                if( this.gain == 0 ){
-                    this.messageSnackbarError = "Désolé, vous n'avez pas de gains suffisants pour cette action."
+                if( this.gain.pending < 1 ){
+                    this.messageSnackbarError = "Désolé, vous n'avez pas de gain en attente suffisant."
                     this.showSnackbarError = true;
                 }
                 else{
@@ -626,11 +652,93 @@
                 console.log("infos-travels:", this.infosTravels);
             },
             toggleMask() {
-                $('.mask-container').each(function() {
-                    var $this = $(this);
+                if(!this.anime && 2!=2){
+                    this.anime = true;
+                    // $('.mask-container').each(function() {
+                    //     var $this = $(this);
+                    //     var isOpen = $this.css('clip-path').includes('120%');
+                    //     $this.css('clip-path', isOpen ? 'circle(0% at 75.5% 35%)' : 'circle(120% at 75.5% 35%)');
+                    // });
+                    const maskContainer = this.$refs.maskContainer;
+                    const insets = this.insets;
+
+                    console.log("adjustClipPath toogle:", this.insets, JSON.stringify(this.insets));
+
+                    // Calculer les nouvelles valeurs de clip-path
+                    const maskWidth = window.innerWidth - insets.left - insets.right;
+                    // const maskHeight = window.innerHeight;
+
+                    // Calculer les positions en fonction des nouvelles dimensions
+                    const xPos = (75.5 / 100) * maskWidth + insets.left;
+                    // const yPos = (35 / 100) * maskHeight + insets.top;
+
+                    // const xPos = 317.855 + insets.left;
+                    const yPos = 322.35 + insets.top + ( isAndroid || isIOS ? 40 : 0 );
+
+                    console.log("xPos:", xPos, "yPos:", yPos);
+
+                    // Appliquer le nouveau clip-path
+                    // var $this = $('.mask-container');
+                    // var isOpen = $this.css('clip-path').includes('120%');
+                    //$this.css('clip-path', isOpen ? 'circle(0% at 75.5% 35%)' : 'circle(120% at 75.5% 35%)');
+                    maskContainer.style.clipPath = this.darkMode ? `circle(0% at ${xPos}px ${yPos}px)` : `circle(120% at ${xPos}px ${yPos}px)`;
+                    
+                    setTimeout(function(){
+                        this.anime = false;
+                    }.bind(this), 700)
+                    //this.adjustClipPath();
+                }
+            },
+            adjustClipPathV2(coordinates) {
+                console.log("adjustClipPathV2======", coordinates);
+                if (!coordinates || 2==2) return;
+
+                this.buttonCoordinates = coordinates;
+                const maskContainer = this.$refs.maskContainer;
+
+                const { top, bottom, left, right } = this.insets;
+
+                console.log(bottom, right);
+
+                // Calculer les nouvelles valeurs de clip-path
+                const xPos = coordinates.x + left;
+                const yPos = coordinates.y + top;
+
+                // Appliquer le nouveau clip-path
+                maskContainer.style.clipPath = `circle(0% at ${xPos}px ${yPos}px)`;
+            },
+            adjustClipPath() {
+                if(!this.anime){
+                    this.anime = true;
+                    const maskContainer = this.$refs.maskContainer;
+                    const insets = this.insets;
+
+                    console.log("adjustClipPath v1:", this.insets, JSON.stringify(this.insets));
+
+                    // Calculer les nouvelles valeurs de clip-path
+                    const maskWidth = window.innerWidth - insets.left - insets.right;
+                    // const maskHeight = window.innerHeight;
+
+                    // Calculer les positions en fonction des nouvelles dimensions
+                    // 317.855px 322.35px
+                    const xPos = (75.5 / 100) * maskWidth + insets.left;
+                    // const yPos = (35 / 100) * maskHeight + insets.top;
+
+                    // const xPos = 317.855 + insets.left;
+                    //const yPos = 322.35  + insets.top;
+                    const yPos = 322.35 + insets.top + ( isAndroid || isIOS ? 40 : 0 );
+                    console.log("xPos:", xPos, "yPos:", yPos);
+
+                    // Appliquer le nouveau clip-path
+                    var $this = $('.mask-container');
                     var isOpen = $this.css('clip-path').includes('120%');
-                    $this.css('clip-path', isOpen ? 'circle(0% at 75.5% 35%)' : 'circle(120% at 75.5% 35%)');
-                });
+                    //$this.css('clip-path', isOpen ? 'circle(0% at 75.5% 35%)' : 'circle(120% at 75.5% 35%)');
+                    maskContainer.style.clipPath = !isOpen ? `circle(0% at ${xPos}px ${yPos}px)` : `circle(120% at ${xPos}px ${yPos}px)`;
+
+                    setTimeout(function(){
+                        this.anime = false;
+                    }.bind(this), 700)
+                }
             },
         },
         watch: {

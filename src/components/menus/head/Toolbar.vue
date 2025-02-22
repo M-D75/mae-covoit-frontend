@@ -80,10 +80,19 @@
             </v-btn>
             
             <v-toolbar-title
+                v-if="mode=='date-dep-dest'"
                 class="ml-5 mr-5"
             >
                 {{trajet.depart}} vers {{trajet.destination}} 
                 <div class="text-subtitle-2 font-weight-medium">{{date}}, {{nbPassenger}} passager</div>
+            </v-toolbar-title>
+
+            <v-toolbar-title
+                v-if="mode=='shared-ids'"
+                class="ml-5 mr-5"
+            >
+                Partagé par {{ user_shared.firstname }} {{ user_shared.lastname }}
+                <!-- <div class="text-subtitle-2 font-weight-medium">{{date}}, {{nbPassenger}} passager</div> -->
             </v-toolbar-title>
 
             <v-btn 
@@ -110,6 +119,16 @@
         components: {
         },
         props: {
+            mode: {
+                type: String,
+                default: "date-dep-dest",
+            },
+            user_shared: {
+                type: Object,
+                default (){
+                    return {firstname: "prénom", lastname: "nom"};
+                },
+            },
             trajet: {
                 type: Object,
                 default (){
@@ -122,7 +141,7 @@
             },
             nombre_trajet: {
                 type: Number,
-                default: 0,
+                default: 1,
             },
             nbPassenger: {
                 type: String,

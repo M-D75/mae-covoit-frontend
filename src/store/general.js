@@ -3,6 +3,7 @@ export default {
     namespaced: true,
     state: {
         isNative: false,
+        appIsActive: {app: true, search: false},
         cgu: {
             title: "CGU/CGV",
             text: `1. Objet
@@ -16,7 +17,7 @@ export default {
             text: `1. Généralités
 
             MAE Solutions SARL (dont le siège social est situé au 84, avenue de la République, 97640 Sada, Mayotte), en sa qualité de responsable du traitement, attache une grande importance à la protection et au respect de votre vie privée. La présente politique (la « Politique de Confidentialité ») vise à vous informer de nos pratiques concernant la collecte, l’utilisation et le partage des informations que vous êtes amenés à nous fournir par le biais de notre plateforme (la « Plateforme ») accessible depuis le site internet www.tcha-tchap.yt  ou nos applications mobiles. Dans le cas où vous souscrivez à des produits d’assurance par l’intermédiaire de la Plateforme ou des produits d’assurance distribués par BlaBlaCar, le responsable du traitement des données collectées et/ou traitées dans le cadre de cette souscription est la société BlaBla Insurance, filiale à 100% de MAE Solutions SARL, dont le siège social est situé au 84, avenue de la République, 97640 Sada. Comuto SA et/ou BlaBla Insurance seront désignées par la suite en tant que « TchapTchap », « nous » ou « notre ». En ce qui concerne d’autres responsables en charge de certaines activités de traitement, veuillez vous référer à l’article 4 ci-dessous.`,
-        }
+        },
     },
     getters: {
         
@@ -24,6 +25,11 @@ export default {
     mutations: {
         SET_IS_NATIVE(state, bool){
             state.isNative = bool;
+        },
+        SET_APP_IS_ACTIVE(state, infos){
+            for(const key in infos){
+                state.appIsActive[key] = infos[key];
+            }
         },
     },
     actions: {

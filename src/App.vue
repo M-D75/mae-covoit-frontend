@@ -95,9 +95,9 @@
 </style>
 
 <template>
-    <v-app class="ligth-mode">
+    <!-- ligth-mode or dark-mode init ligth-mode -->
+    <v-app class="ligth-mode"> 
         <router-view ref="routerViewRef"/>
-        <!-- <MobileOnly v-else></MobileOnly> -->
         <!-- Menu Nav -->
         <BottomNav v-if="isMobileOrSmallScreen && bottomNav"/>
     </v-app>
@@ -106,18 +106,18 @@
 <script>
 
     import $ from 'jquery';
-    // natif
+    
+    // nativ
     import { StatusBar } from '@capacitor/status-bar';
-    import { SafeAreaController, SafeArea } from '@aashu-dubey/capacitor-statusbar-safe-area';
-    // import { PushNotifications } from '@capacitor/push-notifications';
+    import { SafeAreaController } from '@aashu-dubey/capacitor-statusbar-safe-area';
     import { Capacitor } from '@capacitor/core';
     import { Plugins } from '@capacitor/core';
+    import { App } from '@capacitor/app';
 
-    //import stripe from '@/utils/stripe.js'
+    // TODO : à supprimé quand eddine aura finit
+    // import stripe from '@/utils/stripe.js'
 
     const { LocalNotifications } = Plugins;
-
-    // import { FirebaseMessaging } from '@capacitor-firebase/messaging';
 
     //import axios from 'axios';
     import { mapMutations, mapState, mapActions } from 'vuex';
@@ -126,13 +126,11 @@
     const isIOS = Capacitor.getPlatform() === 'ios';
 
     //Component
-    //import MobileOnly from './views/MobileOnly.vue';
     import BottomNav from './components/menus/BottomNav.vue';
 
     export default {
         name: 'App',
         components: {
-            //MobileOnly,
             BottomNav,
         },
         computed: {
@@ -147,12 +145,13 @@
         },
         data: () => ({
             isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
-            isSmallScreen: window.innerWidth <= 600,
+            isSmallScreen: window.matchMedia("(max-width: 600px)").matches,
         }),
         beforeMount(){
-            console.log("beforeMount App")
+            // console.log("[App] beforeMount")
         },
         async mounted(){
+            App.addListener('appStateChange', this.handleAppStateChange);
             // const account = await stripe.accounts.retrieve('acct_1OUWQcI3Nt412vf3');
 
             // await stripe.charges.create({
@@ -174,6 +173,15 @@
 
             // const transfer = await stripe.transfers.retrieve('tr_1PDsKTIKwmrDLewYoqwuJF8s');
 
+            // txn_3PFmEnIKwmrDLewY0WtIybgR ; txn_3PSO18IKwmrDLewY0dCzve4W
+            // const balanceTransaction = await stripe.balanceTransactions.retrieve(
+            //     'txn_3PSO18IKwmrDLewY0dCzve4W'
+            // );
+
+            // console.log("balanceTransaction------------", balanceTransaction);
+
+            // const charge = await stripe.charges.retrieve(balanceTransaction.source);
+            // console.log("charge", charge);
 
 
             // const balanceTransaction = await stripe.balanceTransactions.retrieve(
@@ -337,14 +345,14 @@
 
             // console.log("customer", customers, card);
             
-            console.log("isMobile:", this.isMobile, window.location);
-            console.log("isSmallScreen:", this.isSmallScreen);
+            console.log("[App] isMobile:", this.isMobile, window.location);
+            console.log("[App] isSmallScreen:", this.isSmallScreen);
             if(isAndroid)
-                console.log("You are on Android");
+                console.log("[App] You are on Android");
             else if(isIOS)
-                console.log("You are on IOS");
+                console.log("[App] You are on IOS");
             else
-                console.log("You are on Web");
+                console.log("[App] You are on Web");
 
             this.SET_IS_NATIVE(isIOS || isAndroid);
 
@@ -353,170 +361,44 @@
                 $("#app .v-application").addClass("dark-mode");
             }
 
-            console.log("theme-mode:", $("#app .v-application").hasClass("dark-mode") ? "dark" : "ligth");
+            console.log("[App] theme-mode:", $("#app .v-application").hasClass("dark-mode") ? "dark" : "ligth");
             
             window.addEventListener('resize', this.updateIsSmallScreen); 
 
             if(SafeAreaController)
                 SafeAreaController.injectCSSVariables();
 
-            
-
-            // if( isIOS || isAndroid ){
-            //     // PushNotifications.requestPermissions().then(result => {
-            //     //     console.log("requestPermissions Pusg [OK]");
-            //     //     if (result.receive === 'granted') {
-            //     //         console.log("in-register");
-            //     //         PushNotifications.register();
-            //     //         PushNotifications.addListener('pushNotificationReceived', (notification) => {
-            //     //             // Gérer la réception de la notification
-            //     //             console.log("Notification reçu", JSON.stringify(notification));
-            //     //             this.sendNotification(notification.title, notification.body, notification.data);
-            //     //         });
-
-            //     //         PushNotifications.addListener('pushNotificationActionPerformed', notification => {
-            //     //             // Gérer l'action de l'utilisateur sur la notification
-            //     //             console.log("Notification action user", JSON.stringify(notification));
-            //     //         });
-
-            //     //         PushNotifications.addListener('registration', token => {
-            //     //             console.info('Registration token: ', token.value);
-            //     //             this.SET_REGISTER_DEVICE_TOKEN(token.value);
-                            
-            //     //             const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
-            //     //             axios.post(`${adresse.online}/registerDeviceToken`, {
-            //     //                 registerDeviceToken: token.value,
-            //     //                 userId: this.userUid,
-            //     //             })
-            //     //             .then(response => {
-            //     //                 console.log(response.data);
-            //     //             })
-            //     //             .catch(error => {
-            //     //                 console.error('Il y a eu une erreur :', error);
-            //     //             });
-            //     //         });
-
-            //     //         PushNotifications.addListener('registrationError', err => {
-            //     //             console.error('Registration error: ', err.error);
-            //     //         });
-            //     //     } 
-            //     //     else {
-            //     //         console.log("Autoriasation failed:");
-            //     //     }
-            //     // });
-
-            //     FirebaseMessaging.requestPermissions().then(result => {
-            //         console.log("FirebaseMessaging Access :", result.receive);
-            //         if ( result.receive === 'granted' ) {
-            //             // const getToken = async () => {
-            //             //     const result = await FirebaseMessaging.getToken();
-            //             //     return result.token;
-            //             // };
-
-            //             // getToken();
-                        
-            //             const addTokenReceivedListener = async () => {
-            //                 await FirebaseMessaging.addListener('tokenReceived', event => {
-            //                     console.log('tokenReceived', { event }, event.token);
-
-            //                     this.SET_REGISTER_DEVICE_TOKEN(event.token);
-                            
-            //                     const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
-            //                     axios.post(`${adresse.online}/registerDeviceToken`, {
-            //                         registerDeviceToken: event.token,
-            //                         userId: this.userUid,
-            //                     })
-            //                     .then(response => {
-            //                         console.log(response.data);
-            //                     })
-            //                     .catch(error => {
-            //                         console.error('Il y a eu une erreur :', error);
-            //                     });
-            //                 });
-            //             };
-
-            //             addTokenReceivedListener();
-
-            //             const addNotificationReceivedListener = async () => {
-            //                 await FirebaseMessaging.addListener('notificationReceived', event => {
-            //                     console.log('notificationReceived', { event });
-            //                     this.sendNotification(event.notification.title, event.notification.body, event.notification.data);
-            //                 });
-            //             };
-
-            //             addNotificationReceivedListener();
-
-            //             const addNotificationActionPerformedListener = async () => {
-            //                 await FirebaseMessaging.addListener('notificationActionPerformed', event => {
-            //                     console.log('notificationActionPerformed', { event });
-            //                 });
-            //             };
-
-            //             addNotificationActionPerformedListener();
-            //         }
-            //         else {
-            //             console.log("Autoriasation Messaging failed:");
-            //         }
-            //     });
-            // }
-
             if(isAndroid || isIOS)
                 StatusBar.setOverlaysWebView({ overlay: true });
 
-            console.log("Platforme", isAndroid ? 'isAndroid': 'isNotAndroid', isIOS ? 'isIOS' : 'isNotIOS');
+            console.log("[App] Platforme", isAndroid ? 'isAndroid': 'isNotAndroid', isIOS ? 'isIOS' : 'isNotIOS');
 
-            // cordova.plugins.notification.local.schedule([
-            //     { id: 1, title: 'My first notification' },
-            //     { id: 2, title: 'My firstss notification' }
-            // ]);
-
-            // LocalNotifications.schedule({
-            //     id: 15,
-            //     title: 'Chat with Irish',
-            //     icon: 'http://climberindonesia.com/assets/icon/ionicons-2.0.1/png/512/android-chat.png',
-            //     text: [
-            //         { message: 'I miss you' },
-            //         { person: 'Irish', message: 'I miss you more!' },
-            //         { message: 'I always miss you more by 10%' }
-            //     ]
-            // });
-            // if(isAndroid || isIOS)
-            //     LocalNotifications.schedule({
-            //         notifications: [
-            //             {
-            //                 id: 1,
-            //                 title: "title",
-            //                 body: "body",
-            //                 largeBody: "Incenderat autem audaces usque ad insaniam homines ad haec, quae nefariis egere conatibus, Luscus quidam curator urbis subito visus: eosque ut heiulans baiolorum praecentor ad expediendum quod orsi sunt incitans vocibus crebris. qui haut longe postea ideo vivus exustus est.",
-            //                 summaryText: "sumaryText!",
-            //                 schedule: { at: new Date(Date.now() + 2000) }, // dans 5 secondes
-            //                 iconColor: "red",
-            //                 smallIcon: "res://icon",
-            //                 largeIcon: "res://icon",
-            //             }
-            //         ]
-            //     });
-            
-            //$("link[rel*='icon']").attr("href", "/favicon-old.ico");
+            console.log("[App] END : mounted App.vue\n\n");
+        },
+        beforeUnmount() {
+            window.removeEventListener('resize', this.updateIsSmallScreen);
+            App.removeListener('appStateChange', this.handleAppStateChange);
         },
         methods: {
             ...mapActions("search", ["getOwnTrajetsEk", "getTrajetsEk", "getVillages"]),
             ...mapMutations("profil", ["SET_DARKMODE"]),
             ...mapMutations("auth", ["SET_TOKEN", "SET_REGISTER_DEVICE_TOKEN"]),
-            ...mapMutations("general", ["SET_IS_NATIVE"]),
+            ...mapMutations("general", ["SET_IS_NATIVE", "SET_APP_IS_ACTIVE"]),
+            handleAppStateChange(state) {
+                if (state.isActive) {
+                    console.log("L'application est au premier plan");
+                    this.SET_APP_IS_ACTIVE({app: state.isActive});
+                } 
+                else {
+                    console.log("[App] L'application est en arrière-plan");
+                    this.SET_APP_IS_ACTIVE({app: state.isActive, search: false});
+                }
+            },
             updateIsSmallScreen() {
                 this.isSmallScreen = window.innerWidth <= 600;
             },
             async hideStatusBar(){
                 await StatusBar.hide();
-            },
-            async getStatusBarHeight() {
-                const { height } = await SafeArea.getStatusBarHeight();
-                return height; // Ex. 29.090909957885742
-            },
-            async getSafeAreaInsets () {
-                const insets = await SafeArea.getSafeAreaInsets();
-                return insets; // Ex. { "bottom":34, "top":47, "right":0, "left":0 }
             },
             async sendNotification(title, body, data) {
                 const permission = await LocalNotifications.requestPermissions();
@@ -544,12 +426,11 @@
                     });
                 }
                 else{
-                    console.log("permission non accordé");
+                    console.log("[App] permission non accordé");
                 }
             },
         },
-        beforeUnmount() {
-            window.removeEventListener('resize', this.updateIsSmallScreen);
-        }
+        
+
     }
 </script>

@@ -173,9 +173,12 @@ export default {
         notMessageVue: [],//list id trip pour notification chat
     },
     getters: {
-        
+        getTripSelected: (state) => state.tripSelected,
     },
     mutations: { 
+        SET_CONTACTS(state, contacts) {
+            state.chat.contacts = contacts;
+        },
         SET_NOT_MESSAGE_VUE(state, idTrips) {
             state.notMessageVue = idTrips;
         },
@@ -198,7 +201,7 @@ export default {
         },
     },
     actions: {
-        async getContacts({ state }){
+        async getContacts({ state, commit }){
             if(state.tripSelected != undefined && state.tripSelected.bookings != undefined) {
                 console.log("getConctats", state.tripSelected.bookings.length);
             }
@@ -252,7 +255,7 @@ export default {
                 }
             }
             
-            state.chat.contacts = contacts;
+            commit('SET_CONTACTS', contacts);
         },
         async getProfilMember({state}, member){
             

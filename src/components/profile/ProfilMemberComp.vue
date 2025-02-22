@@ -39,6 +39,10 @@
         padding-top: 0 !important;
         // top: 0;
         // position: absolute;
+        .v-divider{
+            color: var(--font-color-label);
+            margin: 3px auto;
+        }
     }
 </style>
    
@@ -76,6 +80,15 @@
             :type="'good'"
             :editable="false"
             ref="iconRatingRefGood"
+        />
+
+        <v-divider inset></v-divider>
+
+        <IconRating
+            :class-name="['bad-trip']"
+            :type="'bad'"
+            :editable="false"
+            ref="iconRatingRefBad"
         />
 
         <!--  -->

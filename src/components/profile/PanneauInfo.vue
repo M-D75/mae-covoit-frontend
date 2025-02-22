@@ -1,9 +1,19 @@
 <!-- scss -->
 <!-- scss -->
 <style lang="scss" model>
+
+    .ligth-mode * {
+        --border-color: white;
+        --bg-color: #f5f5f5;
+    }
+    .dark-mode * {
+        --border-color: #333333;
+        --bg-color: #292929;
+    }
     
 
     .inf-comp {
+        border: solid var(--border-color) 10px;
         .blc-btn {
             div.label {
                 width: 100% !important;
@@ -85,6 +95,10 @@
    
 <!--  -->
 <template>
+    <!-- sound -->
+    <audio ref="audioPlayer">
+        <source src="/audios/click.wav" type="audio/wav">
+    </audio>
 
     <!-- ? -->
     <div
@@ -101,7 +115,15 @@
             >
                 <div v-if="info.label && ! info.icon" class="label text-body-2">{{ info.label }}</div>
                 <v-icon 
-                    v-if="info.icon"
+                    v-if="info.icon && !(info.icon=='mdi-lightbulb-on' || info.icon=='mdi-moon-waning-crescent')"
+                >
+                    {{info.icon}}
+                </v-icon>
+
+                <v-icon 
+                    v-if="info.icon && (info.icon=='mdi-lightbulb-on' || info.icon=='mdi-moon-waning-crescent')"
+                    ref="targetIconLightbulb"
+                    class="theme"
                 >
                     {{info.icon}}
                 </v-icon>
@@ -119,13 +141,19 @@
     import { defineComponent } from 'vue';
     import $ from 'jquery'
     import { mapMutations, mapState } from 'vuex';
+    import { ref, watch, nextTick } from 'vue';
+
+
+    import { Plugins } from '@capacitor/core';
+
+    const { Vibration } = Plugins;
 
     // Components
     // ...
 
     export default defineComponent({
         name: 'info-comp',
-        emits: ["history", "switch-theme-color"],
+        emits: ["history", "switch-theme-color", "icon-coordinates"],
         computed: {
             ...mapState("profil", ['modeDriver', 'darkMode', "blockChangingTheme"]),
         },
@@ -162,14 +190,76 @@
                 //mdi-seat-passenger
             }
         },
+        setup(props, { emit }) {
+            const targetIconCoordinates = ref(null);
+
+            const getIconCoordinates = () => {
+                nextTick(() => {
+                    const targetIcon = document.querySelector('.theme');
+                    console.log("[PanneauInfo] targetIcon", targetIcon);
+                    if (targetIcon) {
+                        const rect = targetIcon.getBoundingClientRect();
+                        console.log("[PanneauInfo] rect", rect);
+                        targetIconCoordinates.value = {
+                            x: rect.left + rect.width / 2,
+                            y: rect.top + rect.height / 2,
+                        };
+
+                        emit('icon-coordinates', {
+                            x: rect.left + rect.width / 2,
+                            y: rect.top + rect.height / 2,
+                        });
+                        console.log('[PanneauInfo] Icon Coordinates:', targetIconCoordinates.value);
+                    }
+                });
+            };
+
+            watch(
+                () => props.infos_panneau,
+                (newVal, oldVal) => {
+                    console.log("[PanneauInfo] newVal:", newVal, oldVal);
+                    getIconCoordinates();
+                },
+                { immediate: true }
+            );
+
+            return {
+                targetIconCoordinates,
+                getIconCoordinates,
+            };
+        },
+        mounted(){
+            this.getIconCoordinates();
+            // this.$nextTick(() => {
+            //     console.log("[PanneauInfo] this.$refs.targetIconLightbulb", this.$refs.targetIconLightbulb);
+            //     const targetIcon = this.$refs.targetIconLightbulb;
+            //     if (targetIcon) {
+            //         const rect = targetIcon.$el.getBoundingClientRect();
+            //         console.log("[PanneauInfo] rect:", rect);
+            //         this.$emit('icon-coordinates', {
+            //             x: rect.left + rect.width / 2,
+            //             y: rect.top + rect.height / 2
+            //         });
+            //     } 
+            //     else {
+            //         console.warn('[PanneauInfo] targetIconLightbulb ref is not found');
+            //     }
+            // });
+        },
         methods: {
             ...mapMutations("profil", ["SET_DARKMODE", "SET_MODE_DRIVER", "SET_BLOCK_CHANGING_THEME"]),
+            playAudio() {
+                const audio = this.$refs.audioPlayer;
+                audio.play();
+            },
             choiceFunctionBtnInfo(name){
                 switch (name.toLowerCase()) {
                     case 'mode':
                         if(!this.blockChangingTheme){
                             this.$emit("switch-theme-color");
-                            this.SET_BLOCK_CHANGING_THEME(true)
+                            this.SET_BLOCK_CHANGING_THEME(true);
+                            this.playAudio();
+                            this.vibratePhone();
                             if(!this.darkMode){
                                 setTimeout(function(){
                                     this.ligthToDarkness();
@@ -199,11 +289,11 @@
                         this.SET_MODE_DRIVER( ! this.modeDriver );
                         break;
                     default:
-                        console.log(`Sorry, we are out of ${name}.`);
+                        console.log(`[PanneauInfo] Sorry, we are out of ${name}.`);
                 }
             },
             history(){
-                console.log("text2")
+                console.log("[PanneauInfo] text2")
                 this.$emit('history');
             },
             ligthToDarkness(){
@@ -235,7 +325,22 @@
                 //     $(".conti.dark-mode").addClass("mask");
                 //     this.$store.state.darkMode = false;
                 // }
-            }
+            },
+            vibratePhone() {
+                if (navigator.vibrate) {
+                    navigator.vibrate(2);
+                } 
+                else {
+                    console.log("[PanneauInfo] L'API Vibration PWA n'est pas prise en charge sur cet appareil.");
+                }
+
+                if(Vibration){
+                    Vibration.vibrate({duration: 2});
+                }
+                else {
+                    console.log("[PanneauInfo] L'API Vibration Android, IOS n'est pas prise en charge sur cet appareil.");
+                }
+            },
         }
     });
 </script>

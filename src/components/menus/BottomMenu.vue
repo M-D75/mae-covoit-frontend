@@ -305,6 +305,31 @@
                 }
             }
 
+            // drop-money
+            .contain-drop-money {
+                .v-card {
+                    background-color: var(--white-bg-color);
+                    .v-list{
+                        .v-list-subheader{
+                            color: var(--font-color-label) !important;
+                        }
+
+                        .v-list-item {
+                            .v-list-item-title {
+                                color: var(--font-color-label) !important;
+                            }
+                            .v-list-item-subtitle {
+                                color: var(--font-color-label) !important;
+                                display: block !important;
+                            }
+                            .v-icon {
+                                color: var(--font-color-label);
+                            }
+                        }
+                    }
+                }
+            }
+
 
             //car
             div.card-contain{
@@ -729,7 +754,7 @@
             <GroupListCardsHistory v-if="!notif && mode=='history'"/>
 
             <!-- Drop Money -->
-            <Notification 
+            <!-- <Notification 
                 v-if="mode=='drop-money'"
                 :mode="mode"
                 label-head="Souhaitez-vous déposer l'argent dans votre compte ?" 
@@ -743,7 +768,46 @@
                 v-if="mode=='confirme-drop-money'"
                 :mode="mode"
                 message="Votre dépôt a été effectué sur votre compte. Il sera disponible dans les 48 à 72 heures." 
-                />
+                /> -->
+
+            <!-- update just show credit are coming -->
+            <div 
+                v-if="mode=='drop-money'"
+                class="contain-drop-money"
+            >
+                <v-card
+                    class="mx-auto pa-2"
+                >
+                    <v-list>
+                        <v-list-subheader>Gains</v-list-subheader>
+
+                        <v-list-item
+                            color="primary"
+                            rounded="shaped"
+                        >
+                            <template v-slot:prepend>
+                                <v-icon icon="mdi-clock-time-eight-outline"></v-icon>
+                            </template>
+
+                            <v-list-item-title > {{ pending }} €</v-list-item-title>
+                            <v-list-item-subtitle color="orange">Gain en attente de transfert vers votre compte</v-list-item-subtitle>
+                        </v-list-item>
+
+                        <v-list-item
+                            color="primary"
+                            rounded="shaped"
+                        >
+                            <template v-slot:prepend>
+                                <v-icon icon="mdi-bank-transfer-in"></v-icon>
+                            </template>
+
+                            <v-list-item-title >{{ transit }} €</v-list-item-title>
+                            <v-list-item-subtitle color="blue">En cours de transfert vers votre compte bancaire</v-list-item-subtitle>
+                        </v-list-item>
+                    </v-list>
+                </v-card>
+
+            </div>
             
             <!-- Up Money -->
             <div
@@ -767,6 +831,7 @@
                     </template>
                 </v-btn>
             </div>
+            
             <Notification 
                 v-if="mode=='confirme-up-money'"
                 :mode="mode"
@@ -1073,6 +1138,10 @@
         },
         computed: {
             ...mapState("profil", ["aboutPrefs", "modeDriver", "userUid", "userName"]),
+            ...mapState("profil", {
+                pending: state => state.gain.pending,
+                transit: state => state.gain.transit,
+            }),
             ...mapState("publish", ["priceRecommended"]),
             ...mapState("auth", ["customer_id"]),
             ...mapState("search", ["trajetSelected"]),
@@ -1397,42 +1466,42 @@
                 this.move = false;
             },
             open(){
-                
-                this.subContHeigth = this.$refs.subCont.clientHeight;
+                if( this.$refs.subCont ){
+                    this.subContHeigth = this.$refs.subCont.clientHeight;
 
-                console.log("open_b", this.open_b, this.subContHeigth);
-                if ( ! this.open_b ) {
-                    if( ! this.move ){
-                        //console.log("will-open")
-                        const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
-                        $(classBottomMenuNameJquery).removeClass("closed");
+                    console.log("open_b", this.open_b, this.subContHeigth);
+                    if ( ! this.open_b ) {
+                        if( ! this.move ){
+                            //console.log("will-open")
+                            const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
+                            $(classBottomMenuNameJquery).removeClass("closed");
 
-                        // open
-                        this.move = true;
-                        this.disabledY = false;
-                        this.y = this.sizeScreen - ( this.subContHeigth + 50 );
-                        const _this = this;
-                        
-                        $(classBottomMenuNameJquery).animate({"top": `${_this.y}px`}, "fast", function(){
-                            // $(this).animate({"top": "auto"}, 1000);
-                            _this.y = parseInt($(this).css("top").replace("px", ""));
-                            _this.move = false;
-                            _this.$emit('opened');
-                            const classBottomMenuNameJqueryDraggable = _this.className != "" && _this.className != null ? `.draggable.${_this.className.join(".")}` : ".draggable";
-                            $(classBottomMenuNameJqueryDraggable).addClass("open");
-                            console.log("opeeeeeneddd");
-                        });
+                            // open
+                            this.move = true;
+                            this.disabledY = false;
+                            this.y = this.sizeScreen - ( this.subContHeigth + 50 );
+                            const _this = this;
+                            
+                            $(classBottomMenuNameJquery).animate({"top": `${_this.y}px`}, "fast", function(){
+                                // $(this).animate({"top": "auto"}, 1000);
+                                _this.y = parseInt($(this).css("top").replace("px", ""));
+                                _this.move = false;
+                                _this.$emit('opened');
+                                const classBottomMenuNameJqueryDraggable = _this.className != "" && _this.className != null ? `.draggable.${_this.className.join(".")}` : ".draggable";
+                                $(classBottomMenuNameJqueryDraggable).addClass("open");
+                                console.log("opeeeeeneddd");
+                            });
 
-                        this.open_b = true;
-                        console.log("opened ?222", this.open_b);
+                            this.open_b = true;
+                            console.log("opened ?222", this.open_b);
+                        }
+                        else{
+                            this.open_b = false;
+                        }
                     }
-                    else{
-                        this.open_b = false;
-                    }
+
+                    console.log("opened ?", this.open_b);
                 }
-
-                console.log("opened ?", this.open_b);
-
                 return this.open_b;
             },
             openMiddle(){
@@ -1660,6 +1729,9 @@
 
                 this.color = "#9fcb66";
                 this.notif = !this.notif;
+
+                console.log("go go go");
+                this.$router.push("/profil/open-trip-passenger")
             },
             reserveNotifFailed(){
                 this.reserve.message = this.$refs.ReservePlaceRef.message;
