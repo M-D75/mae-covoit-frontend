@@ -80,7 +80,7 @@
                 box-shadow: none;
                 font-size: 12px;
                 font-weight: 700;
-                background-color: var(--bg-color);
+                background-color: var(--border-color);
                 color: var(--font-color-label);
                 &.dashboard{
                     content: "nbonjo";
