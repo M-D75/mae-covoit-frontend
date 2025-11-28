@@ -68,6 +68,37 @@
                 :icon=" shareLocalisation ? 'mdi-map-marker-outline' : 'mdi-map-marker-off-outline'"
                 @click="shareLocalisation = !shareLocalisation; checkSharedLoc()"  
             />
+
+            <!-- <v-btn 
+                v-if="isBeforeThreshold"
+                icon
+            >
+                <v-icon>mdi-check</v-icon>
+            </v-btn> -->
+
+            <!-- <v-btn 
+                v-else-if="mode_driver"
+                icon
+                @click="console.log('test')"
+            >
+                <v-icon>mdi-check</v-icon>
+            </v-btn> -->
+
+            <v-btn 
+                v-if="!mode_driver && !isBeforeThreshold"
+                icon
+                @click="dialog_annuler = true"
+            >
+                <v-icon>mdi-close</v-icon>
+            </v-btn>
+
+            <v-btn 
+                v-else-if="!mode_driver"
+                icon
+                @click="InCar()"
+            >
+                <v-icon>mdi-check</v-icon>
+            </v-btn>
         </div>
 
         <div class="menu left">
@@ -267,7 +298,42 @@
         </template>
     </v-dialog>
 
+    <!-- annuler trajet dialog -->
+    <v-dialog 
+        v-model="dialog_annuler"
+        style="z-index: 9999;"
+    >
+        <template v-slot:activator="{ props }">
+            <v-btn v-bind="props" text="Open Dialog"> </v-btn>
+        </template>
 
+        <template v-slot:default="{ isActive }">
+            <v-card>
+                <v-card-title>
+                    Annuer trajet
+                    <v-icon icon="mdi-map-marker-off-outline"></v-icon>
+                </v-card-title>
+
+                <v-card-text>
+                    êtes-vous sûr de vouloir annuler ce trajet ?
+                </v-card-text>
+
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+
+                    <v-btn
+                        text="Non"
+                        @click="isActive.value = false"
+                    ></v-btn>
+
+                    <v-btn
+                        text="Oui"
+                        @click="isActive.value = false; annulerTrajet()"
+                    ></v-btn>
+                </v-card-actions>
+            </v-card>
+        </template>
+    </v-dialog>
 </template>
 
 <script>
@@ -298,7 +364,7 @@
         name: 'results-view',
         emits: ["trajet-selected"],
         computed: {
-            ...mapState("profil", ["modeCo", "userUid"]),
+            ...mapState("profil", ["modeCo", "userUid", "userId"]),
             ...mapState("trip", ["tripSelected", "notMessageVue", "chat"]),
             ...mapGetters("search", ["getVillagesByName", "GET_ID_VILLAGE_BY_NAME"]),
             center() {
@@ -373,7 +439,13 @@
         },
         data() {
             return {
-                dialog: false,
+                
+                nowDate: new Date(),
+                timer: null,
+                isBeforeThreshold: false,
+                minutesBefore: 15,
+                dialog: false, //localisation dialog
+                dialog_annuler: false,
                 notifChat: false,
                 open_b: true, //open bottom menu
                 overlayLoad: false,
@@ -587,13 +659,119 @@
                 console.log("shared-stoped", infos);
                 this.localisation = this.localisation.filter((loc) => loc.idTrip != infos.idTrip);
             });
+
+            this.socket.on('check-passenger-in-car', (infos) => {
+                console.log("check-passenger-in-car", infos);
+                if( infos.from == this.userUid ){
+                    this.tripSelected.bookings.map((booking) => {
+                        if( booking.id == infos.idBooking ){
+                            booking.in_car = true;
+                        }
+                    });
+                }
+            });
             
+            console.log("tripSelected", this.tripSelected);
+
+            this.now = new Date();
+            this.updateThresholdCheck();
+            this.timer = setInterval(() => {
+                this.now = new Date();
+                this.updateThresholdCheck();
+            }, 10000);
+
+            console.log("this.tripSelected", this.tripSelected);
             
+        },
+        beforeUnmount() {
+            clearInterval(this.timer);
         },
         methods: {
             ...mapActions("search", ['getVillages']),
             ...mapActions("trip", ["getContacts"]),
             ...mapMutations("trip", ["SET_NOT_MESSAGE_VUE"]),
+            updateThresholdCheck() {
+                const departure = new Date(this.tripSelected.departure_time);
+                const diffInMs = departure - this.now;
+                const diffInMin = diffInMs / (1000 * 60);
+                this.isBeforeThreshold = diffInMin <= this.minutesBefore;
+                console.log("updateThresholdCheck", this.isBeforeThreshold, departure, diffInMin, this.minutesBefore);
+                
+            },
+            /***
+             * Mark the user as in car for the selected trip
+             */
+            async InCar(){
+                console.log("InCar", this.tripSelected);
+
+                const trip_id = this.tripSelected.id;
+                let { data, error } = await supabase
+                    .from('booking')
+                    .eq('passenger_account_id', this.userId)
+                    .eq('trip_id', trip_id)
+                    .update({ in_car: true })
+                    .select();
+
+
+                if(error){
+                    console.error("Error updating booking in-car:", error);
+                }
+                else{
+                    console.log("Booking updated successfully", data);
+
+                    const infos = {
+                        idBooking: data.id,
+                        from: this.userUid,
+                        to: this.currentContact.userUid,
+                    };
+                    this.socket.emit("in_car", infos);
+                }
+
+            },
+            async annulerTrajet(){
+                // suppression avant un certains temps
+
+                console.log("annuler", this.tripSelected, this.userId);
+
+                const trip_id = this.tripSelected.id;
+                let { error: error_booking } = await supabase
+                    .from('booking')
+                    .delete()
+                    .eq('passenger_account_id', this.userId)
+                    .eq('trip_id', trip_id);
+
+                console.log("Error booking", error_booking);
+                if(error_booking){
+                    console.error("Error deleting booking:", error_booking);
+                }
+                else{
+                    console.log("Booking deleted successfully");
+                }
+                
+                // for (let index = 0; index < this.tripSelected.bookings.length; index++) {
+                //     const passenger_account_id = this.tripSelected.bookings[index].passenger_account_id;
+                //     const trip_id = this.tripSelected.id;
+
+                //     console.log("annulerTrajet", passenger_account_id, trip_id);
+                    
+
+                //     let { error: error_booking } = await supabase
+                //         .from('booking')
+                //         .delete()
+                //         .eq('passenger_account_id', this.userId)
+                //         .eq('trip_id', trip_id);
+
+                //     console.log("Error booking", error_booking);
+                //     if(error_booking){
+                //         console.error("Error deleting booking:", error_booking);
+                //     }
+                //     else{
+                //         console.log("Booking deleted successfully");
+                //     }
+                    
+                // }
+               
+            },
             askNewMessage(){
                 const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
 
@@ -612,6 +790,7 @@
                         console.error('Il y a eu une erreur :', error);
                     });
             },
+
             trajetSelected(index){
                 // console.log("trajetSelectd", index)
                 if(index == this.routes.length - 1){
@@ -953,6 +1132,30 @@
                     }
 
                 }.bind(this), 5000); // Met à jour toutes les secondes, par exemple
+            },
+            sendIsIn(){
+                if(this.mode_driver){
+                    for (let index = 0; index < this.contacts.length; index++) {
+                        let newLoc = {
+                            idTrip: this.tripSelected.id,
+                            from: this.userUid,
+                            to: this.contacts[index].user_id,
+                            latLng: this.currentLocation.current, 
+                            status: "send=:-",
+                        }
+                        this.socket.emit("send-is-in", newLoc);
+                    }
+                }
+                else{
+                    let newLoc = {
+                        idTrip: this.tripSelected.id,
+                        from: this.userUid,
+                        to: this.currentContact.userUid,
+                        latLng: this.currentLocation.current, 
+                        status: "send=--",
+                    }
+                    this.socket.emit("send-localisation", newLoc);
+                }
             },
             shareLoc(){
                 if( this.getGeolocalisation ){

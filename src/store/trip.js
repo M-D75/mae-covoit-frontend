@@ -2,12 +2,29 @@
 // import axios from 'axios'
 
 import supabase from '@/utils/supabaseClient.js';
+
 // import router from '@/router';
 // import store from '@/store'; 
 
+// import { defineStore } from 'pinia';
+
 import stripe from '@/utils/stripe.js'
 
+// store/trips.js
+// export const useTripsStore = defineStore('trips', {
+//     state: () => ({
+//       list: []  // vos courses
+//     }),
+//     actions: {
+//       async fetchTrips() { /* ... */ },
+//       updateRefundStatus(tripId, status) {
+//         const t = this.list.find(t => t.id === tripId);
+//         if (t) t.refundStatus = status;
+//       }
+//     }
+//   });
 
+  
 export default {
     namespaced: true,
     state: {

@@ -20,7 +20,7 @@ export default {
             animal: "animal",
         },
         auto_accept_trip: true,
-        modeCo: "online", //online, local
+        modeCo: "local", //online, local
         notification: true,
         modeDriver: false,
         darkMode: false,

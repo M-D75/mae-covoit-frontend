@@ -737,6 +737,7 @@ export default {
             }
 
             //credité driver
+            // TODO : à faire dans le serveur après trajet
             const accountStrip = await stripe.accounts.retrieve(account_driver[0].provider_id);
             console.log("accountStrip", accountStrip, (state.trajetSelected.price * 0.59) * 100);
            
@@ -802,6 +803,7 @@ export default {
             }
 
             //add +1 reserve
+            
             let { data: data_booking, error: error_booking_update } = await supabase
                 .from('booking')
                 .insert(list_ins_passenger)
