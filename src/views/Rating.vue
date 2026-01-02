@@ -224,84 +224,65 @@
         },
         methods: {
             ...mapActions("profil", ["getNotation"]),
-            ...mapMutations("trip", ["SET_RATING", "SET_RATINGS_REMOVE"]),
+            ...mapMutations("trip", ["SET_RATINGS_REMOVE"]),
             back() {
                 this.$router.push("/profil")
             },
             async rated(){
-                if( this.ratings.rating ){
+                if( !this.ratings.rating || !this.ratings.data || !this.ratings.data[0] ){
+                    return;
+                }
 
-                    //TODO : Notation = get infos selected by users
-                    const tab = this.btnIco.good.map((note) => note.select ? 1 : 0);
-                    console.log("tab-rating", tab);
+                const bookingData = this.ratings.data[0];
+                const driverAccount = bookingData.trip && bookingData.trip[0] && bookingData.trip[0].account && bookingData.trip[0].account[0]
+                    ? bookingData.trip[0].account[0]
+                    : null;
+                const driverAccountId = bookingData.driverAccountId || (driverAccount ? driverAccount.id : null);
 
-                    //get rating
-                    
+                if( !driverAccountId ){
+                    this.SET_RATINGS_REMOVE({id: bookingData.trip_id || (bookingData.trip && bookingData.trip[0] && bookingData.trip[0].id)});
+                    this.$router.push("/");
+                    return;
+                }
+
+                try {
                     let { data: settings, error } = await supabase
                         .from('settings')
                         .select('rating')
-                        .eq("account_id", this.userId)
-          
-                    if( error ){
-                        console.err("Error:", error);
-
-                        // ------------- exit
-                        this.SET_RATINGS_REMOVE({id: this.ratings.data.id})
-
-                        console.log("this.ratings.bookings", this.ratings.bookings);
-                        if( this.ratings.bookings.length == 0 ){
-                            this.SET_RATING(false);
-                        }
-
+                        .eq("account_id", driverAccountId);
+        
+                    if( error || !settings || settings.length === 0 ){
+                        console.error("rating fetch error:", error);
+                        this.SET_RATINGS_REMOVE({id: bookingData.trip_id || (bookingData.trip && bookingData.trip[0] && bookingData.trip[0].id)});
                         this.$router.push("/");
-
                         return;
                     }
-
-                    console.log("settings", settings);
-
-                    let newRatingGood = settings[0].rating.good.map((value, index) => this.btnIco.good[index] ? value + 1 : value)
-                    let newRatingBad = settings[0].rating.bad.map((value, index) => this.btnIco.bad[index] ? value + 1 : value)
-
-                    //update rating
-
-                    const { data: setting_update, error: error_update } = await supabase
+        
+                    const newRatingGood = settings[0].rating.good.map((value, index) => this.btnIco.good[index].select ? value + 1 : value);
+                    const newRatingBad = settings[0].rating.bad.map((value, index) => this.btnIco.bad[index].select ? value + 1 : value);
+        
+                    const { error: error_update } = await supabase
                         .from('settings')
                         .update({ "rating": {bad: newRatingBad, good: newRatingGood } })
-                        .eq("account_id", this.userId)
-                        .select()
-          
+                        .eq("account_id", driverAccountId)
+                        .select();
+        
                     if( error_update ){
-                        console.err("Error update:", error_update);
-                        console.log("Id to remove", this.ratings.data.id);
-
-                        // ------------- exit
-                        this.SET_RATINGS_REMOVE({id: this.ratings.data.id})
-
-                        console.log("this.ratings.bookings", this.ratings.bookings);
-                        if( this.ratings.bookings.length == 0 ){
-                            this.SET_RATING(false);
-                        }
-
+                        console.error("rating update error:", error_update);
+                        this.SET_RATINGS_REMOVE({id: bookingData.trip_id || (bookingData.trip && bookingData.trip[0] && bookingData.trip[0].id)});
                         this.$router.push("/");
                         return;
                     }
-
-                    console.log("setting_update", setting_update);
-
-
-
-                    //**update rating store
-                    //*remove data = null
-                    //*remove infos in bookings list
-                    console.log("Id to remove", this.ratings.data.id);
-                    this.SET_RATINGS_REMOVE({id: this.ratings.data.id})
-
-                    console.log("this.ratings.bookings", this.ratings.bookings);
-                    if( this.ratings.bookings.length == 0 ){
-                        this.SET_RATING(false);
-                    }
-
+        
+                    this.SET_RATINGS_REMOVE({
+                        id: bookingData.trip_id || (bookingData.trip && bookingData.trip[0] && bookingData.trip[0].id),
+                        markRated: true,
+                    });
+                    this.$router.push("/");
+                }
+                catch(error){
+                    console.error("rating error:", error);
+                    this.SET_RATINGS_REMOVE({id: bookingData.trip_id || (bookingData.trip && bookingData.trip[0] && bookingData.trip[0].id)});
                     this.$router.push("/");
                 }
             },

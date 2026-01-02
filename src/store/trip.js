@@ -31,6 +31,7 @@ export default {
         ratings: {
             rating: false,
             bookings: [],
+            ratedTripIds: [],
             data: null, //current booking will be rate
         },
         driver: true,
@@ -200,6 +201,24 @@ export default {
             state.notMessageVue = idTrips;
         },
         SET_TRIP_SELECTED(state, trip) {
+            if( trip ){
+                const originalBookings = Array.isArray(trip.bookings)
+                    ? trip.bookings
+                    : (Array.isArray(trip.booking) ? trip.booking : null);
+
+                if( originalBookings ){
+                    const sanitizedBookings = originalBookings.filter((booking) => !booking.passenger_no_show);
+                    const passengerNumber = sanitizedBookings.filter((booking) => booking.is_accepted).length;
+                    state.tripSelected = {
+                        ...trip,
+                        passenger_number: passengerNumber,
+                        bookings: sanitizedBookings,
+                        booking: sanitizedBookings,
+                    };
+                    return;
+                }
+            }
+
             state.tripSelected = trip;
         },
         SET_RATING(state, bool) {
@@ -208,13 +227,68 @@ export default {
         },
         SET_RATINGS_INFO(state, infos) {
             console.log("SET_RATINGS_INFO", infos);
+            if(!infos || !infos.id){
+                return;
+            }
+
+            if(state.ratings.ratedTripIds.includes(infos.id)){
+                return;
+            }
+
+            const alreadyQueued = state.ratings.bookings.some((booking) => booking.id == infos.id);
+            if(alreadyQueued){
+                return;
+            }
+
+            const driverAccountId = infos.driverAccountId || infos.driver_account_id || null;
+            const normalizedInfos = {
+                ...infos,
+                driverAccountId,
+            };
+
             state.ratings.rating = true;
-            state.ratings.bookings.push(infos);
+            state.ratings.bookings.push(normalizedInfos);
         },
         SET_RATINGS_REMOVE(state, infos) {
             console.log("SET_RATINGS_REMOVE", infos);
-            state.ratings.bookings = state.ratings.bookings.filter((info) => infos.id != info.id);
-            state.ratings.data = null;
+            const bookingId = infos?.id;
+            const markRated = Boolean(infos?.markRated);
+
+            state.ratings.bookings = state.ratings.bookings.filter((info) => info.id != bookingId);
+
+            const currentTripId = state.ratings.data && state.ratings.data[0]
+                ? (state.ratings.data[0].trip_id || (state.ratings.data[0].trip && state.ratings.data[0].trip[0] && state.ratings.data[0].trip[0].id))
+                : null;
+
+            if( currentTripId && bookingId == currentTripId ){
+                state.ratings.data = null;
+            }
+
+            if(markRated && bookingId && !state.ratings.ratedTripIds.includes(bookingId)){
+                state.ratings.ratedTripIds.push(bookingId);
+            }
+
+            if(state.ratings.bookings.length == 0){
+                state.ratings.rating = false;
+                state.ratings.data = null;
+            }
+        },
+        CLEAR_RATINGS_BY_TRIP_IDS(state, ids){
+            const validIds = Array.isArray(ids) ? ids : [];
+            state.ratings.bookings = state.ratings.bookings.filter((info) => validIds.includes(info.id));
+
+            const currentTripId = state.ratings.data && state.ratings.data[0]
+                ? (state.ratings.data[0].trip_id || (state.ratings.data[0].trip && state.ratings.data[0].trip[0] && state.ratings.data[0].trip[0].id))
+                : null;
+
+            if( currentTripId && !validIds.includes(currentTripId) ){
+                state.ratings.data = null;
+            }
+
+            if(state.ratings.bookings.length == 0){
+                state.ratings.rating = false;
+                state.ratings.data = null;
+            }
         },
     },
     actions: {

@@ -171,7 +171,15 @@
 
             <!-- btn-close remove trip -->
             <v-icon
-                v-if="!driver"
+                v-if="mode!='planning'"
+                class="remove-booking"
+                @click="overlay=true; $refs.BottomMenuRefConfirmChoice.open()"
+            >
+                mdi-close-circle
+            </v-icon>
+
+            <v-icon
+                v-else
                 class="remove-booking"
                 @click="overlay=true; $refs.BottomMenuRefConfirmChoice.open()"
             >
@@ -245,10 +253,10 @@
     <BottomMenu
         :class-name="['confirm-choice-remove-booking-class']"
         mode="confirm-choice"
-        :labelSelectorN1="'Souhaitez vous réelement annuler cette réservation ?'"
+        :labelSelectorN1="confirmLabel"
         ref="BottomMenuRefConfirmChoice"
         v-on:close="overlay = false"
-        v-on:yes="overlay = false; console.log('yes'); callRemoveBooking();"
+        v-on:yes="handleConfirm"
         v-on:no="overlay = false; console.log('no'); $refs.BottomMenuRefConfirmChoice.close()"
         />
 
@@ -267,6 +275,11 @@
         computed: {
             ...mapState("trip", ['driver', 'chat']),
             ...mapState("profil", ["userId"]),
+            confirmLabel(){
+                return this.mode === 'planning'
+                    ? "Souhaitez vous annuler ce trajet ?"
+                    : "Souhaitez vous réelement annuler cette réservation ?";
+            }
         },
         components: {
             BottomMenu,
@@ -312,7 +325,7 @@
         methods: {
             ...mapMutations("trip", ["SET_TRIP_SELECTED"]),
             ...mapActions("trip", ["getContacts", "getProfilMember"]),
-            ...mapActions("profil", ["removeBooking"]),
+            ...mapActions("profil", ["removeBooking", "cancelTripPublication"]),
             async selectTrip(){
                 if( this.mode == 'trajets' ){
 
@@ -374,6 +387,29 @@
                 this.$refs.BottomMenuRefConfirmChoice.close();
                 this.$emit('booking-removed');
             },
+            async callCancelTrip(){
+                console.log("Annulation du trajet", this.infos.id);
+                this.$refs.BottomMenuRefConfirmChoice.loadingBtn = true;
+                const response = await this.cancelTripPublication(this.infos);
+                this.$refs.BottomMenuRefConfirmChoice.loadingBtn = false;
+                this.$refs.BottomMenuRefConfirmChoice.close();
+                if( !response || response.status !== 0 ){
+                    this.messageSnackbarError = response?.message || "Impossible d'annuler ce trajet.";
+                    this.showSnackbarError = true;
+                }
+                else{
+                    this.$emit('booking-removed');
+                }
+            },
+            async handleConfirm(){
+                this.overlay = false;
+                if( this.mode === 'planning' ){
+                    await this.callCancelTrip();
+                }
+                else{
+                    await this.callRemoveBooking();
+                }
+            }
         },
         watch: {
             overlay(){

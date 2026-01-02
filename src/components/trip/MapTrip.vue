@@ -31,6 +31,12 @@
                     top: 0;
                 }
             }
+
+            .confirmation-chip{
+                margin-top: 6px;
+                font-weight: 600;
+                color: white;
+            }
         }
 
         .leaflet-control-zoom {
@@ -39,6 +45,25 @@
 
         .overlay-load {
             z-index: 9999;
+        }
+
+        .passenger-status-panel {
+            position: absolute;
+            right: 15px;
+            top: 80px;
+            width: 280px;
+            z-index: 1000;
+
+            .v-card {
+                max-height: 60vh;
+                overflow-y: auto;
+                background-color: var(--white-bg-color);
+                color: var(--font-color-label);
+
+                .v-list-item-title {
+                    color: var(--font-color-label);
+                }
+            }
         }
     }
 </style>
@@ -69,6 +94,12 @@
                 @click="shareLocalisation = !shareLocalisation; checkSharedLoc()"  
             />
 
+            <v-btn 
+                v-if="mode_driver"
+                icon="mdi-account-group"
+                @click="showPassengerStatus = !showPassengerStatus"
+            />
+
             <!-- <v-btn 
                 v-if="isBeforeThreshold"
                 icon
@@ -93,12 +124,22 @@
             </v-btn>
 
             <v-btn 
-                v-else-if="!mode_driver"
+                v-else-if="!mode_driver && !passengerConfirmedInCar"
                 icon
                 @click="InCar()"
             >
                 <v-icon>mdi-check</v-icon>
             </v-btn>
+
+            <v-chip
+                v-if="!mode_driver && passengerConfirmedInCar"
+                size="small"
+                color="green-darken-2"
+                prepend-icon="mdi-check-circle"
+                class="confirmation-chip"
+            >
+                Présence validée
+            </v-chip>
         </div>
 
         <div class="menu left">
@@ -111,6 +152,74 @@
                 icon="mdi-information-slab-circle-outline"
                 @click="openBottomMenuInfos()"
             />
+        </div>
+
+        <div 
+            v-if="mode_driver && showPassengerStatus"
+            class="passenger-status-panel"
+        >
+            <v-card class="pa-3" elevation="6">
+                <div class="d-flex align-center mb-2">
+                    <span class="font-weight-bold">Passagers</span>
+                    <v-spacer />
+                    <v-btn icon="mdi-close" size="x-small" variant="text" @click="showPassengerStatus=false"/>
+                </div>
+                <div 
+                    v-if="passengerBookings.length === 0"
+                    class="text-caption text-center"
+                >
+                    Aucun passager confirmé.
+                </div>
+                <v-list
+                    v-else
+                    density="compact"
+                >
+                    <v-list-item
+                        v-for="booking in passengerBookings"
+                        :key="booking.id"
+                    >
+                        <template #prepend>
+                            <v-avatar size="28">
+                                <template v-if="booking.account && booking.account.avatar">
+                                    <v-img :src="booking.account.avatar"/>
+                                </template>
+                                <template v-else>
+                                    <span class="text-caption">{{ passengerInitials(booking) }}</span>
+                                </template>
+                            </v-avatar>
+                        </template>
+                        <v-list-item-title>{{ passengerName(booking) }}</v-list-item-title>
+                        <template #append>
+                            <v-chip
+                                :color="booking.in_car ? 'green' : 'orange'"
+                                size="small"
+                                variant="flat"
+                                label
+                            >
+                                <v-icon
+                                    start
+                                    size="16"
+                                >
+                                    {{ booking.in_car ? 'mdi-check-circle' : 'mdi-timer-sand' }}
+                                </v-icon>
+                                {{ booking.in_car ? 'Confirmé' : 'En attente' }}
+                            </v-chip>
+                            <v-btn
+                                v-if="!booking.in_car"
+                                size="small"
+                                variant="text"
+                                color="red"
+                                icon
+                                :loading="noShowProcessingId === booking.id"
+                                :disabled="noShowProcessingId === booking.id"
+                                @click.stop="markPassengerNoShow(booking)"
+                            >
+                                <v-icon>mdi-account-off</v-icon>
+                            </v-btn>
+                        </template>
+                    </v-list-item>
+                </v-list>
+            </v-card>
         </div>
 
         <!-- L-map -->
@@ -334,6 +443,28 @@
             </v-card>
         </template>
     </v-dialog>
+
+    <v-snackbar
+        v-model="snackbarError"
+        :timeout="4000"
+        color="error"
+        location="top"
+        style="z-index: 12000;"
+    >
+        <v-icon icon="mdi-alert-circle"></v-icon>
+        <span>{{ snackbarMessage }}</span>
+    </v-snackbar>
+
+    <v-snackbar
+        v-model="snackbarSuccess"
+        :timeout="4000"
+        color="green-darken-1"
+        location="top"
+        style="z-index: 12000;"
+    >
+        <v-icon icon="mdi-check-circle-outline"></v-icon>
+        <span>{{ snackbarSuccessMessage }}</span>
+    </v-snackbar>
 </template>
 
 <script>
@@ -344,6 +475,7 @@
     import axios from 'axios';
     import io from 'socket.io-client';
     import supabase from '@/utils/supabaseClient.js';
+    import { sendServerNotification } from '@/utils/notifications.js';
 
     import L from "leaflet";
     
@@ -364,9 +496,19 @@
         name: 'results-view',
         emits: ["trajet-selected"],
         computed: {
-            ...mapState("profil", ["modeCo", "userUid", "userId"]),
+            ...mapState("profil", ["modeCo", "userUid", "userId", "userName", "profil"]),
             ...mapState("trip", ["tripSelected", "notMessageVue", "chat"]),
             ...mapGetters("search", ["getVillagesByName", "GET_ID_VILLAGE_BY_NAME"]),
+            passengerBookings(){
+                if(!this.tripSelected || !Array.isArray(this.tripSelected.bookings)){
+                    return [];
+                }
+                return this.tripSelected.bookings.filter((booking) => !booking.passenger_no_show);
+            },
+            passengerConfirmedInCar(){
+                const booking = this.getPassengerBooking();
+                return booking ? Boolean(booking.in_car) : false;
+            },
             center() {
                 if(this.routes.length == 0){
                     return [ -12.7850694, 45.1658908 ]
@@ -515,9 +657,15 @@
                 colorsLoc: ["red", "black", "green", "yellow"],
                 localisation: [
                     // {type: "driver", latLng: [-12.7997252, 45.1038055]}, {type: "passenger", latLng: [-12.7797252, 45.1038055]}
-                ]
-            }
-        },
+                ],
+            showPassengerStatus: false,
+                snackbarError: false,
+                snackbarMessage: "",
+                snackbarSuccess: false,
+                snackbarSuccessMessage: "",
+                noShowProcessingId: null,
+        }
+    },
         beforeMount(){
             let _tmp_village = this.getVillagesByName(this.tripSelected.depart);
             this.setItineraire("origin", _tmp_village);
@@ -530,7 +678,21 @@
         async mounted(){
             SafeAreaController.injectCSSVariables
 
+            const isPassenger = this.tripSelected && this.tripSelected.driver_id
+                ? this.userUid != this.tripSelected.driver_id
+                : false;
+            this.mode_driver = !isPassenger;
+
             await this.getContacts();
+            await this.ensurePassengerBookings();
+
+            if( isPassenger && !this.getPassengerBooking() ){
+                this.showError("Ce trajet n'est plus disponible.");
+                if( this.$router ){
+                    this.$router.replace('/profil');
+                }
+                return;
+            }
 
             try {
                 if( isAndroid || isIOS ){
@@ -662,12 +824,19 @@
 
             this.socket.on('check-passenger-in-car', (infos) => {
                 console.log("check-passenger-in-car", infos);
-                if( infos.from == this.userUid ){
+                const markBooking = () => {
                     this.tripSelected.bookings.map((booking) => {
                         if( booking.id == infos.idBooking ){
                             booking.in_car = true;
                         }
                     });
+                };
+
+                if( this.mode_driver ){
+                    markBooking();
+                }
+                else if( infos.from == this.userUid ){
+                    markBooking();
                 }
             });
             
@@ -689,7 +858,7 @@
         methods: {
             ...mapActions("search", ['getVillages']),
             ...mapActions("trip", ["getContacts"]),
-            ...mapMutations("trip", ["SET_NOT_MESSAGE_VUE"]),
+            ...mapMutations("trip", ["SET_NOT_MESSAGE_VUE", "SET_TRIP_SELECTED"]),
             updateThresholdCheck() {
                 const departure = new Date(this.tripSelected.departure_time);
                 const diffInMs = departure - this.now;
@@ -704,29 +873,91 @@
             async InCar(){
                 console.log("InCar", this.tripSelected);
 
-                const trip_id = this.tripSelected.id;
-                let { data, error } = await supabase
-                    .from('booking')
-                    .eq('passenger_account_id', this.userId)
-                    .eq('trip_id', trip_id)
-                    .update({ in_car: true })
-                    .select();
+                try{
+                    const trip_id = this.tripSelected.id;
+                    let { data, error } = await supabase
+                        .from('booking')
+                        .update({ in_car: true })
+                        .eq('passenger_account_id', this.userId)
+                        .eq('trip_id', trip_id)
+                        .select();
 
 
-                if(error){
-                    console.error("Error updating booking in-car:", error);
-                }
-                else{
+                    if(error){
+                        throw new Error("Impossible de confirmer votre présence. Réessayez.");
+                    }
+
                     console.log("Booking updated successfully", data);
+                    const updatedBooking = Array.isArray(data) && data.length > 0 ? data[0] : null;
+                    const passengerBooking = updatedBooking || this.getPassengerBooking();
+
+                    if( !passengerBooking ){
+                        throw new Error("Réservation introuvable pour ce trajet.");
+                    }
+
+                    if( passengerBooking && passengerBooking.payment_intent_id ){
+                        await this.captureDeferredPayment(passengerBooking.payment_intent_id);
+                    }
+
+                    if( passengerBooking ){
+                        passengerBooking.in_car = true;
+                    }
+
+                    this.showSuccess("Présence validée, bon trajet !");
 
                     const infos = {
-                        idBooking: data.id,
+                        idBooking: passengerBooking ? passengerBooking.id : null,
                         from: this.userUid,
                         to: this.currentContact.userUid,
                     };
                     this.socket.emit("in_car", infos);
                 }
+                catch(error){
+                    this.handleServerError(error, error?.message || "Nous n'avons pas pu valider votre présence.");
+                }
 
+            },
+            async ensurePassengerBookings(){
+                if(this.mode_driver || !this.tripSelected){
+                    return;
+                }
+
+                if(Array.isArray(this.tripSelected.bookings) && this.tripSelected.bookings.length > 0){
+                    return;
+                }
+
+                try{
+                    const { data, error } = await supabase
+                        .from('trip')
+                        .select(`
+                            id,
+                            booking (
+                                *,
+                                account (*)
+                            )
+                        `)
+                        .eq('id', this.tripSelected.id)
+                        .single();
+
+                    if(error){
+                        this.handleServerError(error, "Impossible de récupérer les passagers du trajet.");
+                        return;
+                    }
+
+                    const bookings = data?.booking || [];
+                    const sanitizedBookings = bookings.filter((booking) => !booking.passenger_no_show);
+                    const updatedTrip = {
+                        ...this.tripSelected,
+                        passenger_number: sanitizedBookings.filter((booking) => booking.is_accepted).length,
+                        bookings: sanitizedBookings,
+                        booking: sanitizedBookings,
+                    };
+
+                    this.SET_TRIP_SELECTED(updatedTrip);
+                }
+                catch(error){
+                    this.handleServerError(error, "Impossible de récupérer les passagers du trajet.");
+                }
             },
             async annulerTrajet(){
                 // suppression avant un certains temps
@@ -734,6 +965,28 @@
                 console.log("annuler", this.tripSelected, this.userId);
 
                 const trip_id = this.tripSelected.id;
+                const passengerBooking = this.getPassengerBooking();
+                const passengerBookings = Array.isArray(this.tripSelected.bookings)
+                    ? this.tripSelected.bookings.filter((booking) => booking.passenger_account_id == this.userId)
+                    : [];
+                const bookingIds = passengerBookings.map((booking) => booking.id);
+                const seatsCount = passengerBookings.length > 0 ? passengerBookings.length : (passengerBooking ? 1 : 0);
+                const rawSeatPrice = Number(this.tripSelected.price || 0) || Number(passengerBookings[0]?.price || passengerBooking?.price || 0) || 0;
+                const walletRefundAmount = rawSeatPrice * seatsCount;
+
+                if( passengerBooking && passengerBooking.payment_intent_id && passengerBooking.payment_status === 'requires_capture' ){
+                    await this.cancelDeferredPayment(passengerBooking.payment_intent_id);
+                }
+
+                if(
+                    passengerBooking &&
+                    passengerBooking.payment_status === 'wallet_reserved' &&
+                    walletRefundAmount > 0
+                ){
+                    const targetIds = bookingIds.length > 0 ? bookingIds : (passengerBooking.id ? [passengerBooking.id] : []);
+                    await this.releaseWalletReservation(targetIds, walletRefundAmount);
+                }
+
                 let { error: error_booking } = await supabase
                     .from('booking')
                     .delete()
@@ -742,10 +995,22 @@
 
                 console.log("Error booking", error_booking);
                 if(error_booking){
-                    console.error("Error deleting booking:", error_booking);
+                    this.handleServerError(error_booking, "Impossible d'annuler votre réservation.");
                 }
                 else{
                     console.log("Booking deleted successfully");
+                }
+
+                await this.notifyDriverCancellation();
+                if(this.tripSelected && this.tripSelected.departure_time){
+                    this.$store.commit('profil/REMOVE_HISTORY_DATE_BY_VALUE', {
+                        type: 'passenger',
+                        departure_time: this.tripSelected.departure_time,
+                    });
+                }
+
+                if(this.$router){
+                    this.$router.replace('/profil');
                 }
                 
                 // for (let index = 0; index < this.tripSelected.bookings.length; index++) {
@@ -787,8 +1052,296 @@
                         this.notifChat = this.notMessageVue.includes(this.tripSelected.id + "");
                     })
                     .catch(error => {
-                        console.error('Il y a eu une erreur :', error);
+                        this.handleServerError(error, "Impossible de charger les messages.");
                     });
+            },
+            getPassengerBooking(){
+                console.log("getPassengerBooking", this.tripSelected, this.userId);
+
+                if( !this.tripSelected || !this.tripSelected.bookings ){
+                    return null;
+                }
+
+                return this.tripSelected.bookings.find((booking) => booking.passenger_account_id == this.userId && !booking.passenger_no_show) || null;
+            },
+            passengerDisplayName(){
+                const infosPerso = this.profil && this.profil.infos_perso ? this.profil.infos_perso : {};
+                const composed = `${infosPerso.prenom || ''} ${infosPerso.nom || ''}`.trim();
+                return composed || this.userName || "Passager";
+            },
+            async notifyDriverCancellation(){
+                if( !this.tripSelected || !this.tripSelected.driver_id ){
+                    return;
+                }
+
+                const passengerName = this.passengerDisplayName();
+                const departureName = this.tripSelected.depart || (this.tripSelected.itineraire?.origin?.infos?.village) || "Départ";
+                const destinationName = this.tripSelected.destination || (this.tripSelected.itineraire?.destination?.infos?.village) || "Destination";
+                const departureTime = this.tripSelected.departure_time ? new Date(this.tripSelected.departure_time) : null;
+                const formattedHour = departureTime ? `${departureTime.getHours().toString().padStart(2, '0')}:${departureTime.getMinutes().toString().padStart(2, '0')}` : "";
+
+                await sendServerNotification({
+                    mode: this.modeCo,
+                    userId: this.tripSelected.driver_id,
+                    title: "Réservation annulée",
+                    body: `${passengerName} s'est désisté pour ${departureName} → ${destinationName}.`,
+                    data: {
+                        largeBody: formattedHour
+                            ? `${passengerName} ne participera plus au trajet ${departureName} → ${destinationName} (${formattedHour}).`
+                            : `${passengerName} ne participera plus au trajet ${departureName} → ${destinationName}.`,
+                        actions: {
+                            goTo: "/profil/open-trip-driver",
+                        }
+                    }
+                });
+            },
+            async markPassengerNoShow(booking){
+                if(
+                    !this.mode_driver ||
+                    !booking ||
+                    booking.in_car ||
+                    booking.passenger_no_show ||
+                    this.noShowProcessingId === booking.id
+                ){
+                    return;
+                }
+
+                const confirmation = typeof window !== 'undefined'
+                    ? window.confirm("Signaler ce passager comme absent ? Cette action annule sa réservation.")
+                    : true;
+
+                if( !confirmation ){
+                    return;
+                }
+
+                this.noShowProcessingId = booking.id;
+
+                try{
+                    if( booking.payment_status === 'requires_capture' && booking.payment_intent_id ){
+                        await this.cancelDeferredPayment(booking.payment_intent_id);
+                    }
+
+                    const walletAmount = booking.payment_status === 'wallet_reserved'
+                        ? this.resolveBookingPrice(booking)
+                        : 0;
+
+                    if( walletAmount > 0 && booking.passenger_account_id ){
+                        await this.releaseWalletReservation([booking.id], walletAmount, booking.passenger_account_id);
+                    }
+
+                    const { error } = await supabase
+                        .from('booking')
+                        .update({
+                            passenger_no_show: true,
+                            passenger_no_show_at: new Date().toISOString(),
+                            is_refused: true,
+                        })
+                        .eq('id', booking.id);
+
+                    if( error ){
+                        throw error;
+                    }
+
+                    const remainingBookings = (this.tripSelected.bookings || []).filter((item) => item.id !== booking.id);
+                    const updatedTrip = {
+                        ...this.tripSelected,
+                        passenger_number: remainingBookings.filter((item) => item.is_accepted).length,
+                        bookings: remainingBookings,
+                        booking: remainingBookings,
+                    };
+                    this.SET_TRIP_SELECTED(updatedTrip);
+
+                    await this.notifyPassengerNoShow(booking);
+
+                    this.showSuccess("Passager marqué absent. Les montants ont été libérés.");
+                }
+                catch(error){
+                    this.handleServerError(error, "Impossible de signaler l'absence du passager.");
+                }
+                finally{
+                    this.noShowProcessingId = null;
+                }
+            },
+            async notifyPassengerNoShow(booking){
+                if( !booking ){
+                    return;
+                }
+
+                let passengerAccount = booking.account;
+                if( (!passengerAccount || !passengerAccount.user_id) && booking.passenger_account_id ){
+                    const { data } = await supabase
+                        .from('account')
+                        .select('user_id, firstname, lastname, username')
+                        .eq('id', booking.passenger_account_id)
+                        .single();
+                    if( data ){
+                        passengerAccount = { ...passengerAccount, ...data };
+                    }
+                }
+
+                if( !passengerAccount?.user_id ){
+                    return;
+                }
+
+                const nameFromAccount = `${passengerAccount.firstname || ''} ${passengerAccount.lastname || ''}`.trim();
+                const infosPerso = this.profil?.infos_perso || {};
+                const driverName = `${infosPerso.prenom || ''} ${infosPerso.nom || ''}`.trim() || "Votre chauffeur";
+                const departureName = this.tripSelected?.depart || this.tripSelected?.itineraire?.origin?.infos?.village || "Départ";
+                const destinationName = this.tripSelected?.destination || this.tripSelected?.itineraire?.destination?.infos?.village || "Destination";
+                const departureTime = this.tripSelected?.departure_time ? new Date(this.tripSelected.departure_time) : null;
+                const formattedHour = departureTime
+                    ? `${departureTime.getHours().toString().padStart(2, '0')}:${departureTime.getMinutes().toString().padStart(2, '0')}`
+                    : "";
+
+                await sendServerNotification({
+                    mode: this.modeCo,
+                    userId: passengerAccount.user_id,
+                    title: "Absence signalée",
+                    body: `${driverName} a indiqué que ${nameFromAccount || 'vous'} étiez absent pour ${departureName} → ${destinationName}.`,
+                    data: {
+                        largeBody: formattedHour
+                            ? `${driverName} a clôturé le trajet (${formattedHour}) en signalant votre absence.`
+                            : `${driverName} a clôturé ce trajet en signalant votre absence.`,
+                        actions: {
+                            goTo: "/profil/open-trip-passenger",
+                        }
+                    }
+                });
+            },
+            async captureDeferredPayment(paymentIntentId){
+                const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
+                const typeUrl = this.modeCo;
+
+                try {
+                    const { data } = await axios.post(`${adresse[typeUrl]}/payments/capture-now`, {
+                        paymentIntentId,
+                        tripId: this.tripSelected.id,
+                    });
+                    console.log("capture-now result:", data);
+                    await this.$store.dispatch("profil/getSoldes");
+                }
+                catch(error){
+                    this.handleServerError(error, "Nous n'avons pas pu valider le paiement.");
+                }
+            },
+            async cancelDeferredPayment(paymentIntentId){
+                const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
+                const typeUrl = this.modeCo;
+
+                try {
+                    const { data } = await axios.post(`${adresse[typeUrl]}/payments/cancel`, {
+                        paymentIntentId,
+                        tripId: this.tripSelected.id,
+                    });
+                    console.log("cancel deferred result:", data);
+                    await this.$store.dispatch("profil/getSoldes");
+                }
+                catch(error){
+                    this.handleServerError(error, "Nous n'avons pas pu annuler le paiement.");
+                }
+            },
+            async releaseWalletReservation(bookingIds, amount, targetAccountId = null){
+                if(!amount || amount <= 0){
+                    return;
+                }
+
+                const accountId = targetAccountId || this.userId;
+
+                try {
+                    const { data: accountRow, error: accountError } = await supabase
+                        .from('account')
+                        .select('credit')
+                        .eq('id', accountId)
+                        .single();
+
+                    if(accountError){
+                        this.handleServerError(accountError, "Impossible de rembourser vos crédits.");
+                        return;
+                    }
+
+                    const currentCredit = accountRow?.credit || 0;
+                    const newCredit = currentCredit + amount;
+
+                    const { error: creditUpdateError } = await supabase
+                        .from('account')
+                        .update({ credit: newCredit })
+                        .eq('id', accountId);
+
+                    if(creditUpdateError){
+                        this.handleServerError(creditUpdateError, "Impossible de mettre à jour vos crédits.");
+                        return;
+                    }
+
+                    if(Array.isArray(bookingIds) && bookingIds.length > 0){
+                        const { error: bookingUpdateError } = await supabase
+                            .from('booking')
+                            .update({ payment_status: 'wallet_released' })
+                            .in('id', bookingIds);
+
+                        if(bookingUpdateError){
+                            this.handleServerError(bookingUpdateError, "Impossible de libérer la réservation.");
+                        }
+                    }
+
+                    if( accountId === this.userId ){
+                        await this.$store.dispatch('profil/getSoldes');
+                    }
+                }
+                catch(error){
+                    this.handleServerError(error, "Erreur lors du remboursement.");
+                }
+            },
+            showError(message){
+                this.snackbarMessage = message || "Une erreur est survenue.";
+                this.snackbarError = true;
+            },
+            showSuccess(message){
+                this.snackbarSuccessMessage = message || "Action effectuée avec succès.";
+                this.snackbarSuccess = true;
+            },
+            handleServerError(error, fallback){
+                console.error(fallback || 'Server error', error);
+                this.showError(fallback || "Une erreur serveur est survenue.");
+            },
+            passengerName(booking){
+                if(booking.account){
+                    if(booking.account.firstname || booking.account.lastname){
+                        return `${booking.account.firstname || ''} ${booking.account.lastname || ''}`.trim() || booking.account.username || "Passager";
+                    }
+                    return booking.account.username || "Passager";
+                }
+                return "Passager";
+            },
+            passengerInitials(booking){
+                if(booking.account){
+                    const first = booking.account.firstname ? booking.account.firstname.charAt(0) : '';
+                    const last = booking.account.lastname ? booking.account.lastname.charAt(0) : '';
+                    const initials = `${first}${last}`.trim();
+                    if(initials.length > 0){
+                        return initials.toUpperCase();
+                    }
+                    if(booking.account.username){
+                        return booking.account.username.substring(0, 2).toUpperCase();
+                    }
+                }
+                return "P";
+            },
+            resolveBookingPrice(booking){
+                if( booking && typeof booking.price !== 'undefined' ){
+                    const parsed = Number(booking.price);
+                    if( !isNaN(parsed) ){
+                        return parsed;
+                    }
+                }
+
+                if( this.tripSelected && typeof this.tripSelected.price !== 'undefined' ){
+                    const tripPrice = Number(this.tripSelected.price);
+                    if( !isNaN(tripPrice) ){
+                        return tripPrice;
+                    }
+                }
+
+                return 0;
             },
 
             trajetSelected(index){
@@ -903,9 +1456,7 @@
                     this.overlayLoad = false;
                     
                 }).catch(error => {
-                    console.error(error);
-                    console.log("Error", error.message);
-
+                    this.handleServerError(error, "Impossible de calculer l'itinéraire.");
                     this.overlayLoad = false;
                 });
             },
@@ -982,9 +1533,7 @@
                     this.overlayLoad = false;
                     
                 }).catch(error => {
-                    console.error(error);
-                    console.log("Error", error.message);
-
+                    this.handleServerError(error, "Impossible de calculer l'itinéraire.");
                     this.overlayLoad = false;
                 });
             },
@@ -1161,7 +1710,7 @@
                 if( this.getGeolocalisation ){
                     this.watchId = Geolocation.watchPosition({}, async (position, err) => {
                         if (err) {
-                            console.error('Error watching position:', err);
+                            this.handleServerError(err, "Erreur lors de la mise à jour de votre position.");
                             return;
                         }
 
@@ -1421,13 +1970,16 @@
                     .eq('user_id', userUid);
                 
                 if(error_account){
-                    console.error("Error:", error_account);
+                    this.handleServerError(error_account, "Impossible de récupérer le profil du conducteur.");
                 }
 
                 this.currentContact.username = account[0].username;
             }
         },
         watch: {
+            tripSelected(){
+                this.ensurePassengerBookings();
+            }
         },
     });
 </script>

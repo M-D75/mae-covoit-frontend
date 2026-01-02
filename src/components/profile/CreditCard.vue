@@ -26,6 +26,9 @@
             width: 100%;
             height: 33%;
             &.infos {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
                 .label {
                     font-size: 12px;
                     color: var(--font-color-label);
@@ -38,6 +41,11 @@
                         margin-right: 5px;
                         margin-top: -3px;
                     }
+                }
+                .pending-info {
+                    font-size: 12px;
+                    color: var(--font-color-label);
+                    opacity: 0.8;
                 }
             }
             &.code-card{
@@ -167,6 +175,12 @@
                     <font-awesome-icon :icon="['fas', 'rotate']" spin />
                 </v-icon>
             </div>
+            <div 
+                v-if="!modeDriver && reservedDebit > 0"
+                class="pending-info"
+            >
+                Réservé : {{ reservedDebitLabel }}
+            </div>
         </div>
 
         <div class="row-item code-card">
@@ -247,8 +261,12 @@
             ...mapState("profil", {
                 pending: state => state.gain.pending,
                 transit: state => state.gain.transit,
+                reservedDebit: state => state.pendingDebit,
             }),
             ...mapState("auth", ["provider_id"]),
+            reservedDebitLabel(){
+                return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(this.reservedDebit || 0);
+            }
         },
         props: {
             load: {

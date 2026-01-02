@@ -95,6 +95,27 @@
         &.reserve {
             box-shadow: none;
             border-radius: none;
+            .wallet-infos {
+                border: 1px solid rgba(0,0,0,0.05);
+                border-radius: 12px;
+                padding: 16px;
+                margin-bottom: 16px;
+                background-color: var(--bg-app-color);
+                .wallet-line {
+                    display: flex;
+                    justify-content: space-between;
+                    font-size: 0.95rem;
+                    margin-bottom: 6px;
+                    strong {
+                        font-weight: 600;
+                    }
+                }
+                .wallet-hint {
+                    font-size: 0.85rem;
+                    color: var(--font-color-label);
+                    margin: 8px 0 0;
+                }
+            }
             .v-btn {
                 margin: 15px 0px;
                 margin-top: 0;
@@ -142,6 +163,19 @@
     <v-card
         class="reserve mx-auto mt-5"
     >
+        <div class="wallet-infos">
+            <div class="wallet-line">
+                <span>Crédits disponibles</span>
+                <strong>{{ formatCurrency(soldes || 0) }}</strong>
+            </div>
+            <div class="wallet-line">
+                <span>Coût total ({{ $store.state.search.nbPassenger || 1 }} place<span v-if="($store.state.search.nbPassenger || 1)>1">s</span>)</span>
+                <strong>{{ formatCurrency(totalPrice) }}</strong>
+            </div>
+            <p class="wallet-hint">
+                {{ paymentHint }}
+            </p>
+        </div>
         <v-btn
             class="text-none"
             prepend-icon="mdi-export-variant" 
@@ -288,6 +322,25 @@
         </div>
     </v-snackbar>
 
+    <v-snackbar
+        v-model="showRetrySnackbar"
+        :timeout="4000"
+        color="warning"
+        style="z-index: 9999;"
+    >
+        <div class="contain-ico">
+            <v-icon icon="mdi-server-off"></v-icon> 
+        </div>
+        <div>
+            <span>{{ messageSnackbarError }}</span>
+        </div>
+        <template #actions>
+            <v-btn color="black" variant="text" @click="retryReservation">
+                Réessayer
+            </v-btn>
+        </template>
+    </v-snackbar>
+
     <!-- loading -->
     <v-overlay style="z-index: 9999;" disabled :model-value="overlayLoad" class="align-center justify-center">
         <v-progress-circular color="blue" indeterminate size="64"></v-progress-circular>
@@ -316,7 +369,17 @@
             ...mapState("profil", ["userUid", "notification", "soldes", "customer_id", "darkMode", "modeCo"]),
             ...mapState("auth", ["customer_id"]),
             ...mapState("search", ["trajetSelected"]),
-            ...mapActions("search", ["reserveTrajet"]),
+            totalPrice(){
+                const nbPassengers = this.$store.state.search.nbPassenger || 1;
+                const price = this.trajetSelected && this.trajetSelected.price ? this.trajetSelected.price : 0;
+                return price * nbPassengers;
+            },
+            paymentHint(){
+                if( this.soldes >= this.totalPrice ){
+                    return "Vos crédits seront réservés puis débités une fois votre présence confirmée au départ.";
+                }
+                return "Votre carte sera débitée une heure après le départ, seulement si vous avez validé votre présence dans le véhicule.";
+            }
         },
         data() {
             return {
@@ -326,6 +389,7 @@
                 overlayLoad: false,
                 message: "",
                 accepted: false,
+                showRetrySnackbar: false,
                 car: {
                     model: "AUCUN VEHICULE",
                     color: 'var(--bg-app-color)',
@@ -431,8 +495,8 @@
                 const res = await this.getSoldes();
                 console.log(res);
                 this.updateCar();
-                if( this.soldes < this.trajetSelected.price ){
-                    console.log("pas assez de soldes...", this.soldes, this.trajetSelected.price);
+                if( this.soldes < this.totalPrice ){
+                    console.log("pas assez de soldes...", this.soldes, this.totalPrice);
                     const customer = await stripe.customers.retrieve(this.customer_id);
                     if( !(customer.metadata.source_selected 
                             && (customer.metadata.source_selected == customer.default_source 
@@ -458,6 +522,7 @@
                 if( ! reserved.valided ){
                     this.messageSnackbarError=reserved.message;
                     this.showSnackbarError=true;
+                    this.showRetrySnackbar = Boolean(reserved.retriable);
 
                     this.message = reserved.message;
                     this.$emit("notif-failed");
@@ -474,10 +539,19 @@
                         this.SET_RATINGS_INFO(reserved.data)
                     }
 
+                    this.showRetrySnackbar = false;
 
                     this.$emit('test-notif-success');
                 }
             },
+            retryReservation(){
+                this.showRetrySnackbar = false;
+                this.tryReserve();
+            },
+            formatCurrency(amount){
+                const value = typeof amount === "number" ? amount : parseFloat(amount) || 0;
+                return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value);
+            }
         },
         watch: {
             trajetSelected(){

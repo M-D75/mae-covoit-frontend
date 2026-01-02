@@ -250,6 +250,7 @@ router.beforeEach(async (to, from, next) => {
                             id, 
                             driver_id,
                             account (
+                                id,
                                 firstname,
                                 lastname,
                                 avatar

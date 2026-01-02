@@ -4,9 +4,11 @@ import axios from 'axios'
 import store from '../store'; 
 
 import stripe from '@/utils/stripe.js'
+import { sendServerNotification } from '@/utils/notifications.js';
 import supabase from '@/utils/supabaseClient.js';
 import router from '@/router';
 import { formaterDateUTC, getRandomInt, getRandomString, getFutureTime, tomorowDate } from '@/utils/utils.js'
+import { humanizeSupabaseError } from '@/utils/errorMessages.js';
 
 
 export default {
@@ -191,8 +193,7 @@ export default {
                     car (*),
                     account (*),
                     booking (
-                        passenger_account_id,
-                        is_accepted,
+                        *,
                         account (*)
                     )`
                 )
@@ -226,6 +227,7 @@ export default {
 
                 const arrival_time = `${hours}:${minutes}`;
                 // jointure : account,trip,booking
+                const sanitizedBookings = (trip.booking || []).filter((booking) => !booking.passenger_no_show);
                 const _trip  = {
                     id: trip.id,
                     driver_id: trip.driver_id,
@@ -237,8 +239,8 @@ export default {
                     hour_start: departure_time,
                     hour_end: arrival_time,
                     price: trip.price ? trip.price : (Math.ceil(Math.random()*4)+1),
-                    passenger_number: trip.booking.filter((booking) => booking.is_accepted).length,
-                    bookings: trip.booking,
+                    passenger_number: sanitizedBookings.filter((booking) => booking.is_accepted).length,
+                    bookings: sanitizedBookings,
                     max_seats: trip.max_seats,
                     route: trip.route,
                     car: trip.car,
@@ -278,8 +280,7 @@ export default {
                     car (*),
                     account (*),
                     booking (
-                        passenger_account_id,
-                        is_accepted,
+                        *,
                         account (*)
                     )`
                 )
@@ -315,6 +316,7 @@ export default {
 
                 const arrival_time = `${hours}:${minutes}`;
                 // jointure : account,trip,booking
+                const sanitizedBookings = (trip.booking || []).filter((booking) => !booking.passenger_no_show);
                 const _trip  = {
                     id: trip.id,
                     driver_id: trip.driver_id,
@@ -326,8 +328,8 @@ export default {
                     hour_start: departure_time,
                     hour_end: arrival_time,
                     price: trip.price ? trip.price : (Math.ceil(Math.random()*4)+1),
-                    passenger_number: trip.booking.filter((booking) => booking.is_accepted).length,
-                    bookings: trip.booking,
+                    passenger_number: sanitizedBookings.filter((booking) => booking.is_accepted).length,
+                    bookings: sanitizedBookings,
                     max_seats: trip.max_seats,
                     route: trip.route,
                     car: trip.car,
@@ -365,8 +367,7 @@ export default {
                     car (*),
                     account (*),
                     booking (
-                        passenger_account_id,
-                        is_accepted,
+                        *,
                         account (*)
                     )`
                 )
@@ -404,6 +405,7 @@ export default {
 
                 const arrival_time = `${hours}:${minutes}`;
                 // jointure : account,trip,booking
+                const sanitizedBookings = (trip.booking || []).filter((booking) => !booking.passenger_no_show);
                 const _trip  = {
                     id: trip.id,
                     driver_id: trip.driver_id,
@@ -415,8 +417,8 @@ export default {
                     hour_start: departure_time,
                     hour_end: arrival_time,
                     price: trip.price ? trip.price : (Math.ceil(Math.random()*4)+1),
-                    passenger_number: trip.booking.filter((booking) => booking.is_accepted).length,
-                    bookings: trip.booking,
+                    passenger_number: sanitizedBookings.filter((booking) => booking.is_accepted).length,
+                    bookings: sanitizedBookings,
                     max_seats: trip.max_seats,
                     route: trip.route,
                     car: trip.car,
@@ -448,87 +450,6 @@ export default {
 
             return {status: 0, data: account}
         },
-        async getBookings({ getters, commit }) {
-            const sessionChecked = await store.dispatch("auth/checkSessionOnly");
-            if( ! sessionChecked ){
-                router.replace("/login");
-                return;
-            }
-
-            const { data: trips, error } = await supabase
-                .from('booking')
-                .select(`
-                    trip_id,
-                    passenger_account_id,
-                    is_accepted,
-                    is_refused,
-                    trip (
-                        id, 
-                        driver_id,
-                        account (*),
-                        village_departure_id,
-                        village_arrival_id,
-                        departure_time,
-                        max_seats,
-                        price,
-                        route
-                    )`)
-                .eq('passenger_account_id', store.state.profil.userId)
-
-            if ( error ) {
-                console.error(error);
-                return;
-            }
-
-            // console.log("Jon", trips);
-            let _trips = [];
-            for (let index = 0; index < trips.length; index++) {
-                const trip = trips[index].trip;
-                const booking = trips[index];
-
-                let isoDate = trip.departure_time;
-                let date = new Date(isoDate);
-
-                let offset = date.getTimezoneOffset();
-                date = new Date(date.getTime() - (offset * 60000));
-
-                let hours = date.getUTCHours().toString().padStart(2, '0');
-                let minutes = date.getUTCMinutes().toString().padStart(2, '0');
-                let departure_time = `${hours}:${minutes}`;
-
-                date = new Date((date.getTime() + (parseInt(trip.route.infosGoogle.duration.replace("s", "")) * 1000) ) - (offset * 60000));
-
-                hours = date.getUTCHours().toString().padStart(2, '0');
-                minutes = date.getUTCMinutes().toString().padStart(2, '0');
-
-                const arrival_time = `${hours}:${minutes}`;
-
-                // jointure : account,trip,booking
-                const _trip  = {
-                    id: trip.id,
-                    is_accepted: booking.is_accepted,
-                    is_refused: booking.is_refused,
-                    driver_id: trip.driver_id,
-                    avatar: trip.account.avatar,
-                    name: trip.account.username,
-                    depart: getters.GET_VILLAGE_BY_ID(trip.village_departure_id),
-                    destination: getters.GET_VILLAGE_BY_ID(trip.village_arrival_id),
-                    departure_time: trip.departure_time,
-                    hour_start: departure_time,
-                    hour_end: arrival_time,
-                    price: trip.price ? trip.price : (Math.ceil(Math.random()*4)+1),
-                    max_seats: trip.max_seats,
-                    route: trip.route,
-                };
-
-                _trips.push(_trip);
-            }
-
-            console.log("SET_TRAJETS EKKO", _trips); 
-            commit('SET_TRAJETS', _trips);   
-            
-            return {status: 0, message: "publish ok"}
-        },
         async getOwnTrip({ getters, commit }) {
             const sessionChecked = await store.dispatch("auth/checkSessionOnly");
             if(!sessionChecked){
@@ -537,6 +458,7 @@ export default {
             }
 
             const currentDate = new Date();
+            const oneHourAgo = new Date(currentDate.getTime() - (60 * 60 * 1000));
 
             const { data: trips, error } = await supabase
                 .from('trip')
@@ -550,11 +472,11 @@ export default {
                     price,
                     route,
                     booking (
-                        passenger_account_id, 
+                        *,
                         account (*)
                     )`)
                 .eq('driver_id', store.state.profil.userUid)
-                .gt("departure_time", formaterDateUTC(currentDate))
+                .gt("departure_time", formaterDateUTC(oneHourAgo))
 
             if ( error ) {
                 console.error(error);
@@ -584,6 +506,7 @@ export default {
                 const arrival_time = `${hours}:${minutes}`;
 
                 // jointure : account,trip,booking
+                const sanitizedBookings = (trip.booking || []).filter((booking) => !booking.passenger_no_show);
                 const _trip  = {
                     id: trip.id,
                     driver_id: trip.driver_id,
@@ -593,8 +516,8 @@ export default {
                     hour_start: departure_time,
                     hour_end: arrival_time,
                     price: trip.price ? trip.price : (Math.ceil(Math.random()*4)+1),
-                    passenger_number: trip.booking.length,
-                    bookings: trip.booking,
+                    passenger_number: sanitizedBookings.length,
+                    bookings: sanitizedBookings,
                     max_seats: trip.max_seats,
                     route: trip.route,
                 };
@@ -641,7 +564,7 @@ export default {
                 });
 
             if( ! testAskAxio ){
-                return { valided: false, message: "Nos serveurs sont actuellement indisponible veuillez réessayer plus tard."};
+                return { valided: false, message: "Nos serveurs sont actuellement indisponible veuillez réessayer plus tard.", retriable: true };
             }
 
             if( state.nbPassenger + state.trajetSelected.passenger_number > state.trajetSelected.max_seats ){
@@ -677,121 +600,42 @@ export default {
                 return { valided: false, message: "Une erreur est survenue !"};
             }
 
-            //build charge ?
-            let charge = null;
-            let byCredit = true;
+            // define payment strategy
+            const seatsRequested = state.nbPassenger;
+            const totalPrice = state.trajetSelected.price * seatsRequested;
+            let byCredit = account_passenger[0].credit >= totalPrice;
+            let paymentMethodId = null;
 
-            // check soldes enouth
-            if( 0 > account_passenger[0].credit - state.trajetSelected.price ){
-                byCredit = false;
-                // return { valided: false, message: "Pas assez de credit !"}
-                
+            if( !byCredit ){
                 const customer = await stripe.customers.retrieve(account_passenger[0].customer_id);
                 console.log("retrieve customer:", customer);
-                
-                //const cardId = customer.default_source;
                 const cardId = customer.metadata.source_selected;
-                try {
-                    const obj = {
-                        amount: state.trajetSelected.price*100,
-                        currency: 'eur',
-                        customer: customer.id,
-                        payment_method: cardId,
-                        confirm: true,
-                        description: `reservation de trajet ${state.trajetSelected.depart} vers ${state.trajetSelected.destination} à ${state.trajetSelected.departure_time} pour ${account_passenger[0].username}; driver_id:${account_driver[0].user_id}; userUid : ${account_passenger[0].user_id};`,
-                        // return_url: 'http://localhost:8080/profil',
-                        automatic_payment_methods: {
-                            enabled: true,
-                            allow_redirects: 'never'
-                        },
-                    };
-                    console.log("build-payment-intent", obj);
-                    const paymentIntent = await stripe.paymentIntents.create(obj);
-            
-                    console.log("paymentIntent [OK]", paymentIntent);
 
-                    //get charge
-                    charge = await stripe.charges.retrieve(paymentIntent.latest_charge);
+                if( !cardId ){
+                    return {valided: false, status: 2, message: "Aucun moyen de paiement n'est sélectionné. Veuillez enregistrer une carte."};
                 }
-                catch (error) {
-                    console.error("Erreur lors de la création de l'intention de paiement:", error);
-                    return {valided: false, status: 2, message: "Une erreur s'est produite lors du prélevement sur votre card de credit, veuillez réessayer plus tard."};
-                }
+
+                paymentMethodId = cardId;
             }
             
             // debit le montant
             if(byCredit){
+                const newCredit = account_passenger[0].credit - totalPrice;
                 let { data: account_update, error: error_update } = await supabase
                     .from('account')
-                    .update({ credit: (account_passenger[0].credit - state.trajetSelected.price) })
+                    .update({ credit: newCredit })
                     .eq('user_id', playload.user_id)
                     .select()
 
                 if( error_update ){
                     console.error("Error update", error_update)
-                    return { valided: false, message: "Nous avons pas pu debiter votre solde veuillez réessayer plus tard."};
+                    return { valided: false, message: humanizeSupabaseError(error_update, "Nous n'avons pas pu débiter votre solde, veuillez réessayer plus tard.")};
                 }
 
                 store.state.profil.soldes = account_update[0].credit;
+                const currentPendingDebit = store.state.profil.pendingDebit || 0;
+                store.state.profil.pendingDebit = parseFloat((currentPendingDebit + totalPrice).toFixed(2));
                 console.log("new-soldes:", account_update[0].credit);
-            }
-
-            //credité driver
-            // TODO : à faire dans le serveur après trajet
-            const accountStrip = await stripe.accounts.retrieve(account_driver[0].provider_id);
-            console.log("accountStrip", accountStrip, (state.trajetSelected.price * 0.59) * 100);
-           
-            if(charge != null){
-
-                //record in database
-                const { data: stripe_charge_ins_data, error: stripe_charge_ins_error } = await supabase
-                    .from('strip_charge')
-                    .insert([
-                        { charge_id: charge.balance_transaction, account_id: account_passenger[0].id },
-                    ])
-                    .select();
-
-                if( stripe_charge_ins_error ){
-                    console.error("Error:", stripe_charge_ins_error);
-                }
-
-                console.log("charge saved :", stripe_charge_ins_data);
-        
-                console.log("prep-transfer....", {
-                    balance_transaction: charge.balance_transaction, 
-                    driver_account_id: account_driver[0].provider_id,
-                });
-
-                const balanceTransaction = await stripe.balanceTransactions.retrieve(
-                    charge.balance_transaction,
-                );
-
-                const outAxio = await axios.post(`${adresse[typeUrl]}/prepTransfer`, {
-                        balance_transaction: charge.balance_transaction,
-                        available_on: balanceTransaction.available_on,
-                        driver_account_id: account_driver[0].provider_id,
-                    })
-                    .then(response => {
-                        console.log("prepTransfer", response.data);
-                        const data = response.data;
-
-                        if(data.status != undefined && data.status == 'recieved'){
-                            console.log("prep-transfer-ok");
-                            return true
-                        }
-                        else{
-                            return false
-                        }
-                    })
-                    .catch(error => {
-                        console.error('ERROR prepTransfer :', error);
-                        return false;
-                    });
-                
-                console.log("outAxio", outAxio);
-                if( ! outAxio ) {
-                    return { valided: false, message: "Une erreur est survenue."};
-                }
             }
 
             const user_id = account_passenger[0].id;
@@ -815,10 +659,114 @@ export default {
             }
 
             console.log("reserveTrajet:", data_booking);
+
+            const bookingIds = data_booking.map((booking) => booking.id);
+
+            if(byCredit){
+                const { error: wallet_booking_error } = await supabase
+                    .from('booking')
+                    .update({
+                        payment_status: 'wallet_reserved'
+                    })
+                    .in('id', bookingIds);
+
+                if(wallet_booking_error){
+                    console.warn("wallet booking update failed:", wallet_booking_error);
+                }
+            }
+
+            if( !byCredit ){
+                try {
+                    const totalAmount = Math.round(totalPrice * 100);
+                    const holdResponse = await axios.post(`${adresse[typeUrl]}/payments/hold`, {
+                        amount: totalAmount,
+                        customerId: account_passenger[0].customer_id,
+                        paymentMethodId,
+                        passengerAccountId: account_passenger[0].id,
+                        driverAccountId: account_driver[0].provider_id,
+                        tripId: state.trajetSelected.id,
+                        bookingIds,
+                        departureTime: state.trajetSelected.departure_time,
+                        description: `Reservation de trajet ${state.trajetSelected.depart} vers ${state.trajetSelected.destination} pour ${account_passenger[0].username}`,
+                    });
+
+                    if( !holdResponse.data || holdResponse.data.status !== 'ok' ){
+                        await supabase.from('booking').delete().in('id', bookingIds);
+                        return { valided: false, message: "Impossible de préparer le paiement différé. Aucun débit n'a été effectué.", retriable: true };
+                    }
+
+                    const { paymentIntentId, captureAfter } = holdResponse.data;
+                    const totalAmountEuro = totalAmount / 100;
+                    const currentPendingDebit = store.state.profil.pendingDebit || 0;
+                    store.state.profil.pendingDebit = parseFloat((currentPendingDebit + totalAmountEuro).toFixed(2));
+
+                    const { error: booking_payment_error } = await supabase
+                        .from('booking')
+                        .update({
+                            payment_intent_id: paymentIntentId,
+                            payment_status: 'requires_capture',
+                            payment_capture_after: captureAfter
+                        })
+                        .in('id', bookingIds);
+
+                    if( booking_payment_error ){
+                        console.warn("booking payment update failed:", booking_payment_error);
+                    }
+                }
+                catch(error){
+                    console.error("Deferred payment error:", error);
+                    await supabase.from('booking').delete().in('id', bookingIds);
+                    const fallback = "Nous n'avons pas pu sécuriser le paiement. Réessayez plus tard.";
+                    if(axios.isAxiosError?.(error) && error.response?.data?.message){
+                        return { valided: false, message: error.response.data.message, retriable: true };
+                    }
+                    return { valided: false, message: fallback, retriable: true };
+                }
+            }
+
             store.state.trip.rating = true;
             store.state.profil.history.datesTripPassenger.push(state.trajetSelected.departure_time);
-            const message_success = auto_accept_trip ? "Votre réservation à été effectué avec succès" : "Votre demande est en attente de validation par le chauffeur !";
-            return {valided: true, message: message_success, accepted: auto_accept_trip, data: {id: state.trajetSelected.id, date: state.trajetSelected.departure_time} };
+            const baseMessage = auto_accept_trip ? "Votre réservation a été effectuée avec succès." : "Votre demande est en attente de validation par le chauffeur.";
+            const paymentMessage = byCredit ? " Vos crédits seront débités à la validation du départ." : " Le prélèvement sera confirmé une fois votre présence validée au départ.";
+            const message_success = `${baseMessage}${paymentMessage}`;
+
+            const passengerName = `${account_passenger[0].firstname || ''} ${account_passenger[0].lastname || ''}`.trim() || account_passenger[0].username || "Un passager";
+            const departureName = state.trajetSelected.depart || store.getters["search/GET_VILLAGE_BY_ID"](state.trajetSelected.village_departure_id) || "Départ";
+            const destinationName = state.trajetSelected.destination || store.getters["search/GET_VILLAGE_BY_ID"](state.trajetSelected.village_arrival_id) || "Destination";
+            const departureTime = new Date(state.trajetSelected.departure_time);
+            const formattedHour = `${departureTime.getHours().toString().padStart(2, '0')}:${departureTime.getMinutes().toString().padStart(2, '0')}`;
+            const driverTitle = auto_accept_trip ? "Nouvelle réservation" : "Demande de réservation";
+            const driverBody = auto_accept_trip
+                ? `${passengerName} rejoint votre trajet ${departureName} → ${destinationName}.`
+                : `${passengerName} souhaite rejoindre votre trajet ${departureName} → ${destinationName}.`;
+
+            await sendServerNotification({
+                mode: typeUrl,
+                userId: state.trajetSelected.driver_id,
+                title: driverTitle,
+                body: driverBody,
+                data: {
+                    largeBody: `${passengerName} pour ${departureName} → ${destinationName} (${formattedHour}).`,
+                    actions: {
+                        goTo: "/profil/open-trip-driver",
+                    },
+                },
+            });
+
+            return {
+                valided: true,
+                message: message_success,
+                accepted: auto_accept_trip,
+                data: {
+                    id: state.trajetSelected.id,
+                    date: state.trajetSelected.departure_time,
+                    driverAccountId: account_driver[0].id,
+                },
+                payment: {
+                    mode: byCredit ? "wallet" : "card_deferred",
+                    amount: totalPrice
+                }
+            };
         },
     },
 }

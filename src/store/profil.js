@@ -1,5 +1,5 @@
 // import { createStore } from 'vuex'
-// import axios from 'axios'
+import axios from 'axios'
 // import { createClient } from '@supabase/supabase-js'
 
 
@@ -9,6 +9,70 @@ import { dateConverter, groupByDate, mapToObject } from '@/utils/utils.js';
 import router from '@/router';
 
 import stripe from '@/utils/stripe.js'
+import { fetchPassengerTrips, normalizePassengerTrips } from '@/services/travels.js';
+import { humanizeSupabaseError } from '@/utils/errorMessages.js';
+import { sendServerNotification } from '@/utils/notifications.js';
+
+async function releaseExpiredWalletReservations(state, accountRow) {
+    const cutoff = new Date(Date.now() - (60 * 60 * 1000)).toISOString();
+
+    const { data: expiredBookings, error: expiredError } = await supabase
+        .from('booking')
+        .select(`
+            id,
+            trip:trip_id (
+                price,
+                departure_time
+            )
+        `)
+        .eq('passenger_account_id', accountRow.id)
+        .eq('payment_status', 'wallet_reserved')
+        .eq('in_car', false)
+        .lt('trip.departure_time', cutoff);
+
+    if (expiredError) {
+        console.error('releaseExpiredWalletReservations error:', expiredError);
+        throw new Error(humanizeSupabaseError(expiredError));
+    }
+
+    if (!expiredBookings || expiredBookings.length === 0) {
+        return accountRow.credit;
+    }
+
+    const refundAmount = expiredBookings.reduce((sum, booking) => {
+        const price = booking.trip && booking.trip.price ? booking.trip.price : 0;
+        return sum + price;
+    }, 0);
+
+    if (refundAmount <= 0) {
+        return accountRow.credit;
+    }
+
+    const { data: updatedAccount, error: updateError } = await supabase
+        .from('account')
+        .update({ credit: accountRow.credit + refundAmount })
+        .eq('id', accountRow.id)
+        .select();
+
+    if (updateError) {
+        console.error('releaseExpiredWalletReservations update error:', updateError);
+        throw new Error(humanizeSupabaseError(updateError));
+    }
+
+    const bookingIds = expiredBookings.map((booking) => booking.id);
+
+    const { error: bookingUpdateError } = await supabase
+        .from('booking')
+        .update({ payment_status: 'wallet_released' })
+        .in('id', bookingIds);
+
+    if (bookingUpdateError) {
+        console.error('releaseExpiredWalletReservations booking update error:', bookingUpdateError);
+        throw new Error(humanizeSupabaseError(bookingUpdateError));
+    }
+
+    return updatedAccount[0].credit;
+}
 
 export default {
     namespaced: true,
@@ -29,6 +93,7 @@ export default {
         userName: "",
         avatarUrl: 'https://avataaars.io/?avatarStyle=Circle&topType=ShortHairDreads01&accessoriesType=Blank&hairColor=PastelPink&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Wink&eyebrowType=DefaultNatural&mouthType=Serious&skinColor=Tanned',
         soldes: 0,
+        pendingDebit: 0,
         gain: {
             pending: 0,
             transit: 0,
@@ -174,6 +239,13 @@ export default {
                 state.history.datesTripDriver.splice(infos.index, 1);
             }
         },
+        REMOVE_HISTORY_DATE_BY_VALUE(state, infos){
+            const type = infos?.type === 'driver' ? 'datesTripDriver' : 'datesTripPassenger';
+            if(!infos?.departure_time || !Array.isArray(state.history[type])){
+                return;
+            }
+            state.history[type] = state.history[type].filter((date) => date !== infos.departure_time);
+        },
         SET_BLOCK_CHANGING_THEME(state, bool){ //Supprime une date si elle a expiré
             state.blockChangingTheme = bool;
         },
@@ -298,13 +370,23 @@ export default {
             // get-credit
             let { data: account, error: error_account } = await supabase
                 .from('account')
-                .select("credit, customer_id")
+                .select("id, credit, customer_id")
                 .eq('user_id', state.userUid);
 
             if(error_account){
                 console.log("Error2:", error_account);
-                return {status: 2, message: "Une erreur s'est produite lors de la récupératioin de votre solde."};
+                return {status: 2, message: humanizeSupabaseError(error_account, "Une erreur s'est produite lors de la récupération de votre solde.")};
             }
+
+            try {
+                account[0].credit = await releaseExpiredWalletReservations(state, account[0]);
+            }
+            catch(error){
+                console.error("releaseExpiredWalletReservations failed:", error);
+                return {status: 2, message: error.message || "Impossible de mettre à jour vos crédits. Réessayez plus tard."};
+            }
+            const accountId = account[0].id;
+            let refreshedCredit = account[0].credit;
 
             const balanceConnect = await stripe.balance.retrieve({
                 stripeAccount: store.state.auth.provider_id,
@@ -353,7 +435,145 @@ export default {
 
             // console.log("state.gain", state.gain);
 
-            state.soldes = account[0].credit;
+            state.soldes = refreshedCredit;
+            state.pendingDebit = 0;
+
+            let cardHold = 0;
+            const { data: pending_debits, error: pending_error } = await supabase
+                .from('stripe_pending_capture')
+                .select('amount, payment_intent_id, capture_after, trip_id, booking_ids')
+                .eq('passenger_account_id', account[0].id)
+                .eq('status', 'requires_capture');
+
+            if(pending_error){
+                console.error("pending debit error:", pending_error);
+            }
+            else if(pending_debits && pending_debits.length > 0){
+                const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
+                const typeUrl = state.modeCo;
+                let totalHold = 0;
+                const now = new Date();
+                const parseBookingIds = (rawValue) => {
+                    if(Array.isArray(rawValue)){
+                        return rawValue;
+                    }
+                    if(typeof rawValue === 'string'){
+                        try {
+                            const parsed = JSON.parse(rawValue);
+                            return Array.isArray(parsed) ? parsed : [];
+                        }
+                        catch(parseError){
+                            console.error("pending debit booking_ids parse error:", parseError);
+                            return [];
+                        }
+                    }
+                    return [];
+                };
+
+                for (const record of pending_debits) {
+                    const amount = record.amount || 0;
+                    const bookingIds = parseBookingIds(record.booking_ids);
+                    let mustCancel = record.capture_after ? new Date(record.capture_after) < now : false;
+
+                    if(bookingIds.length === 0){
+                        mustCancel = true;
+                    }
+                    else if(!mustCancel){
+                        const { data: bookingStatuses, error: bookingStatusError } = await supabase
+                            .from('booking')
+                            .select('id, is_refused')
+                            .in('id', bookingIds);
+
+                        if(bookingStatusError){
+                            console.error("pending debit booking status error:", bookingStatusError);
+                        }
+                        else if(!bookingStatuses || bookingStatuses.length === 0 || bookingStatuses.every((booking) => booking.is_refused)){
+                            mustCancel = true;
+                        }
+                    }
+
+                    if(mustCancel){
+                        try {
+                            console.log("Cancelling pending capture:", record.payment_intent_id);
+                            await axios.post(`${adresse[typeUrl]}/payments/cancel`, {
+                                paymentIntentId: record.payment_intent_id,
+                                tripId: record.trip_id,
+                            });
+                        }
+                        catch(error){
+                            console.error("Failed to cancel pending capture:", error);
+                        }
+                        continue;
+                    }
+
+                    totalHold += amount;
+                }
+
+                cardHold = totalHold / 100;
+            }
+
+            let walletHold = 0;
+            const { data: wallet_reserved, error: wallet_error } = await supabase
+                .from('booking')
+                .select(`
+                    id,
+                    is_refused,
+                    trip:trip_id (
+                        price
+                    )
+                `)
+                .eq('passenger_account_id', account[0].id)
+                .eq('payment_status', 'wallet_reserved');
+
+            if(wallet_error){
+                console.error("wallet reserved error:", wallet_error);
+            }
+            else if(wallet_reserved && wallet_reserved.length > 0){
+                let walletRefund = 0;
+                const walletReleaseIds = [];
+
+                wallet_reserved.forEach((booking) => {
+                    const price = booking.trip && booking.trip.price ? booking.trip.price : 0;
+                    const numericPrice = Number(price) || 0;
+                    if(booking.is_refused || !booking.trip){
+                        walletRefund += numericPrice;
+                        walletReleaseIds.push(booking.id);
+                    }
+                    else{
+                        walletHold += numericPrice;
+                    }
+                });
+
+                if(walletRefund > 0){
+                    const { data: updatedAccount, error: walletCreditError } = await supabase
+                        .from('account')
+                        .update({ credit: refreshedCredit + walletRefund })
+                        .eq('id', accountId)
+                        .select();
+
+                    if(walletCreditError){
+                        console.error("wallet refund credit update error:", walletCreditError);
+                    }
+                    else if(updatedAccount && updatedAccount.length > 0){
+                        refreshedCredit = updatedAccount[0].credit;
+                    }
+
+                    if(walletReleaseIds.length > 0){
+                        const { error: walletReleaseError } = await supabase
+                            .from('booking')
+                            .update({ payment_status: 'wallet_released' })
+                            .in('id', walletReleaseIds);
+
+                        if(walletReleaseError){
+                            console.error("wallet release update error:", walletReleaseError);
+                        }
+                    }
+                }
+            }
+
+            state.pendingDebit = parseFloat((cardHold + walletHold).toFixed(2));
+            state.soldes = refreshedCredit;
+
             return {status: 0, message: `Votre solide est de : ${state.soldes}`};
         },
         async addCredit({state}, infosLoad){
@@ -455,73 +675,72 @@ export default {
             
         //     return {status: 0, message: "Votre transfert à bien été effectué !"};
         // },
-        async getTravels({state}){
+        async getTravels({state, commit}){
 
             state.profil.myTravels = [];
-            
-            const currentDate = new Date();
+            state.history.datesTripPassenger = [];
 
-            await store.dispatch("search/getBookings", false);
+            try{
+                const resolveVillage = (id) => store.getters["search/GET_VILLAGE_BY_ID"](id);
+                const bookings = await fetchPassengerTrips({ passengerAccountId: state.userId, includeHistory: false });
+                const normalizedTrips = normalizePassengerTrips(bookings, resolveVillage);
 
-            if( ! store.state.search.trajets ){
-                console.error("Error getTravels 1")
+                if( normalizedTrips.length === 0 ){
+                    console.error("Error : Aucun trajets; code 2")
+                    state.history.datesTripPassenger = [];
+                    commit('trip/CLEAR_RATINGS_BY_TRIP_IDS', [], { root: true });
+                    return {status: 2, message: "Aucun trajets"};
+                }
+
+                const groupedInfos = normalizedTrips.reduce((acc, info) => {
+                    if( store.state.trip.notMessageVue.includes(info.id + "") )
+                        info.notifMessage = true;
+
+                    const departureDate = new Date(info.departure_time);
+                    const formattedDate = dateConverter(departureDate);
+                    
+                    const existingGroup = acc.find(group => group.date === formattedDate);
+                    if ( existingGroup ) {
+                        existingGroup.infos.push(info);
+                    }
+                    else {
+                        acc.push({
+                            date: formattedDate,
+                            infos: [info],
+                        });
+                    }
+                    
+                    return acc;
+                }, []);
+                
+                console.log("groupedInfos", groupedInfos);
+    
+                state.profil.myTravels = groupedInfos;
+                state.history.datesTripPassenger = normalizedTrips.map((trip) => trip.departure_time);
+                commit('trip/CLEAR_RATINGS_BY_TRIP_IDS', normalizedTrips.map((trip) => trip.id), { root: true });
+                console.log("_trips:", normalizedTrips, state.profil.myTravels);
+    
+                return {status: 0, message: "success"};
+            }
+            catch(error){
+                console.error("getTravels error:", error);
+                state.history.datesTripPassenger = [];
+                commit('trip/CLEAR_RATINGS_BY_TRIP_IDS', [], { root: true });
                 return {status: 1, message: "Aucun trajet"};
             }
-
-            let bokings = store.state.search.trajets;
-
-            let _trips = [];
-            for (let index = 0; index < bokings.length; index++) {
-                const booking = bokings[index]; 
-
-                if( booking ){
-                    if( store.state.trip.notMessageVue.includes(booking.id + "") )
-                        booking.notifMessage = true;
-
-                    if( currentDate.getTime() <= new Date(booking.departure_time).getTime() )
-                        _trips.push(booking);
-                }
-            }
-
-            if( _trips.length == 0 ){
-                console.error("Error : Aucun trajets; code 2")
-                return {status: 2, message: "Aucun trajets"};
-            }
-
-            const groupedInfos = _trips.reduce((acc, info) => {
-                const departureDate = new Date(info.departure_time);
-                const formattedDate = dateConverter(departureDate);
-                
-                const existingGroup = acc.find(group => group.date === formattedDate);
-                if ( existingGroup ) {
-                    existingGroup.infos.push(info);
-                }
-                else {
-                    acc.push({
-                        date: formattedDate,
-                        infos: [info],
-                    });
-                }
-                
-                return acc;
-            }, []);
-            
-            console.log("groupedInfos", groupedInfos);
-
-            state.profil.myTravels = groupedInfos;
-            console.log("_trips:", _trips, state.profil.myTravels);
-
-            return {status: 0, message: "success"};
         },
         async getPublish({state}){
             const currentDate = new Date();
+            const minDisplayDate = currentDate.getTime() - (60 * 60 * 1000);
 
             state.profil.myPublish = [];
+            state.history.datesTripDriver = [];
 
             await store.dispatch("search/getOwnTrip");
 
             if( ! store.state.search.trajets ){
                 console.error("Error getPush 1")
+                state.history.datesTripDriver = [];
                 return {status: 1, message: "Aucun trajet"};
             }
 
@@ -534,14 +753,15 @@ export default {
                     // trajet.name = "Vous";
                     if( store.state.trip.notMessageVue.includes(trajet.id + "") )
                         trajet.notifMessage = true;
-
-                    if( currentDate.getTime() <= new Date(trajet.departure_time).getTime() )
+                    const tripTime = new Date(trajet.departure_time).getTime();
+                    if( tripTime >= minDisplayDate )
                         _trips.push(trajet);
                 }
             }
 
             if( _trips.length == 0 ){
                 console.error("Error getPush 2, Aucune publication")
+                state.history.datesTripDriver = [];
                 return {status: 2, message: "Aucun trajets"};
             }
 
@@ -570,13 +790,30 @@ export default {
             }, []);
             
             console.log("groupedInfos:", groupedInfos);
-
+    
             state.profil.myPublish = groupedInfos;
+            state.history.datesTripDriver = _trips.map((trip) => trip.departure_time);
             console.log("_trips:", _trips, state.profil.myPublish);
 
             return {status: 0, message: "success"};
         },
-        async removeBooking({state}, infos){
+        async removeBooking({state, commit}, infos){
+
+            let tripInfos = null;
+            if(infos.trip_id){
+                const { data: tripData, error: tripError } = await supabase
+                    .from('trip')
+                    .select('id, driver_id, village_departure_id, village_arrival_id, departure_time')
+                    .eq('id', infos.trip_id)
+                    .limit(1);
+
+                if(!tripError && Array.isArray(tripData) && tripData.length > 0){
+                    tripInfos = tripData[0];
+                }
+                else if(tripError){
+                    console.error("removeBooking trip fetch error:", tripError);
+                }
+            }
 
             const { error } = await supabase
                 .from('booking')
@@ -588,46 +825,182 @@ export default {
                 console.error("Error:", error);
                 return {status: 1, message: "Une erreur s'est produite vueillez réessayer plus tard"}
             }
+
+            if(tripInfos && tripInfos.driver_id){
+                const villageGetter = store.getters["search/GET_VILLAGE_BY_ID"];
+                const resolveVillage = (id) => typeof villageGetter === 'function' ? villageGetter(id) : "";
+                const departureName = resolveVillage(tripInfos.village_departure_id) || "Départ";
+                const destinationName = resolveVillage(tripInfos.village_arrival_id) || "Destination";
+                const departureTime = new Date(tripInfos.departure_time);
+                const formattedHour = `${departureTime.getHours().toString().padStart(2, '0')}:${departureTime.getMinutes().toString().padStart(2, '0')}`;
+                const passengerName = `${state.profil.infos_perso.prenom || ''} ${state.profil.infos_perso.nom || ''}`.trim() || state.userName || "Un passager";
+
+                await sendServerNotification({
+                    mode: state.modeCo,
+                    userId: tripInfos.driver_id,
+                    title: "Réservation annulée",
+                    body: `${passengerName} s'est désisté pour ${departureName} → ${destinationName}.`,
+                    data: {
+                        largeBody: `${passengerName} a annulé sa place pour le trajet ${departureName} → ${destinationName} prévu à ${formattedHour}.`,
+                        actions: {
+                            goTo: "/profil/open-trip-driver",
+                        }
+                    }
+                });
+            }
+
+            if(tripInfos && tripInfos.departure_time){
+                commit('REMOVE_HISTORY_DATE_BY_VALUE', { type: 'passenger', departure_time: tripInfos.departure_time });
+            }
+
+            commit('trip/SET_RATINGS_REMOVE', { id: infos.trip_id }, { root: true });
             
             return {status: 0, message: "Suppression effectuée avec succèes"};
 
+        },
+        async cancelTripPublication({state, commit, dispatch}, tripInfos){
+            const sessionChecked = await store.dispatch("auth/checkSessionOnly");
+            if( ! sessionChecked ){
+                router.replace("/login");
+                return {status: 1, message: "Session expirée"};
+            }
+
+            const tripId = tripInfos?.id;
+            if( !tripId ){
+                return {status: 2, message: "Trajet introuvable"};
+            }
+
+            const { data: trip, error: tripError } = await supabase
+                .from('trip')
+                .select(`
+                    id,
+                    price,
+                    departure_time,
+                    driver_id,
+                    village_departure_id,
+                    village_arrival_id,
+                    booking (
+                        id,
+                        passenger_account_id,
+                        payment_status,
+                        payment_intent_id,
+                        account (
+                            id,
+                            credit,
+                            firstname,
+                            lastname,
+                            user_id
+                        )
+                    )
+                `)
+                .eq('id', tripId)
+                .single();
+
+            if(tripError || !trip){
+                console.error("cancelTripPublication trip error:", tripError);
+                return {status: 2, message: "Impossible de récupérer le trajet."};
+            }
+
+            const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
+            const typeUrl = state.modeCo;
+            const resolveVillage = store.getters["search/GET_VILLAGE_BY_ID"];
+            const departureName = typeof resolveVillage === 'function' ? resolveVillage(trip.village_departure_id) : "";
+            const destinationName = typeof resolveVillage === 'function' ? resolveVillage(trip.village_arrival_id) : "";
+            const departureTime = new Date(trip.departure_time);
+            const formattedHour = `${departureTime.getHours().toString().padStart(2, '0')}:${departureTime.getMinutes().toString().padStart(2, '0')}`;
+
+            const activeBookings = (trip.booking || []).filter((booking) => !booking.passenger_no_show);
+            for (const booking of activeBookings) {
+                if( booking.payment_status === 'requires_capture' && booking.payment_intent_id ){
+                    try{
+                        await axios.post(`${adresse[typeUrl]}/payments/cancel`, {
+                            paymentIntentId: booking.payment_intent_id,
+                            tripId: tripId,
+                        });
+                    }
+                    catch(error){
+                        console.error("cancelTripPublication payment cancel error:", error);
+                    }
+                }
+                else if( booking.payment_status === 'wallet_reserved' ){
+                    try{
+                        const currentCredit = booking.account?.credit || 0;
+                        const newCredit = currentCredit + (trip.price || 0);
+                        await supabase
+                            .from('account')
+                            .update({ credit: newCredit })
+                            .eq('id', booking.passenger_account_id);
+                    }
+                    catch(error){
+                        console.error("cancelTripPublication wallet refund error:", error);
+                    }
+                }
+
+                if( booking.account && booking.account.user_id ){
+                    const passengerName = `${booking.account.firstname || ''} ${booking.account.lastname || ''}`.trim() || "Le passager";
+                    await sendServerNotification({
+                        mode: state.modeCo,
+                        userId: booking.account.user_id,
+                        title: "Trajet annulé",
+                        body: "Le conducteur a annulé votre trajet.",
+                        data: {
+                            largeBody: `${passengerName}, le trajet ${departureName} → ${destinationName} (${formattedHour}) a été annulé par le chauffeur.`,
+                            actions: {
+                                goTo: "/profil/open-trip-passenger",
+                            }
+                        }
+                    });
+                }
+            }
+
+            await supabase.from('booking').delete().eq('trip_id', tripId);
+            await supabase.from('trip').delete().eq('id', tripId);
+
+            commit('REMOVE_HISTORY_DATE_BY_VALUE', { type: 'driver', departure_time: trip.departure_time });
+            state.profil.myPublish = state.profil.myPublish.reduce((acc, group) => {
+                const remaining = group.infos.filter((info) => info.id != tripId);
+                if( remaining.length > 0 ){
+                    acc.push({
+                        ...group,
+                        infos: remaining,
+                    });
+                }
+                return acc;
+            }, []);
+            await store.dispatch("profil/getSoldes");
+            await dispatch('getPublish');
+
+            return {status: 0, message: "Trajet annulé"};
         },
         async buildHistoriqueBooking({state}){
 
             state.history.load = true;
 
-            await store.dispatch("search/getBookings", true);
+            try{
+                const resolveVillage = (id) => store.getters["search/GET_VILLAGE_BY_ID"](id);
+                const bookings = await fetchPassengerTrips({ passengerAccountId: state.userId, includeHistory: true });
+                const normalized = normalizePassengerTrips(bookings, resolveVillage);
 
-            if( ! store.state.search.trajets ){
-                console.error("Error getTravels 1")
-                return {status: 1, message: "Aucun trajet"};
-            }
-
-            let bookings = store.state.search.trajets;
-
-            let _bookings = [];
-            //let ensemble = [];
-            for (let index = 0; index < bookings.length; index++) {
-
-                const trip_current = bookings[index];
-
-                const data = {
+                const simplified = normalized.map((trip_current) => ({
                     depart: trip_current.depart,
                     destination: trip_current.destination,
                     departure_time: trip_current.departure_time,
                     avatar: trip_current.avatar != null ? trip_current.avatar : "https://avataaars.io/?avatarStyle=Circle&topType=ShortHairDreads01&accessoriesType=Blank&hairColor=PastelPink&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Wink&eyebrowType=DefaultNatural&mouthType=Serious&skinColor=Tanned",
                     price: trip_current.price,
-                }
-                _bookings.push(data);
+                }));
+    
+                console.log("_bookings", simplified);
+    
+                const bookingGrouped = mapToObject(groupByDate(simplified));
+                console.log("grouped: ", bookingGrouped);
+                state.history.historycalBooking = bookingGrouped;
             }
-
-            console.log("_bookings", _bookings);
-
-            const bookingGrouped = mapToObject(groupByDate(_bookings));
-            console.log("grouped: ", bookingGrouped);
-            state.history.historycalBooking = bookingGrouped;
-
-            state.history.load = false;
+            catch(error){
+                console.error("buildHistoriqueBooking error:", error);
+            }
+            finally{
+                state.history.load = false;
+            }
         },
         // stripe
         async getProvider({state}){
