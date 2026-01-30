@@ -6,7 +6,7 @@
 </style>
 
 <style lang="scss" scoped>
-    @import '@/styles/mixins.scss';
+    @use '@/styles/mixins.scss' as mixins;
     .gray{
         color: gray;
     }
@@ -14,13 +14,13 @@
     .credit-card-profil {
         height: 207px;
         width: 82.7%;
-        @include respond-to('small') {
-            width: 90%;
-        }
         padding: 30px;
         border-radius: 12px;
         box-shadow: var(--box-shadow-card);
         background-color: var(--white-bg-color);
+        @include mixins.respond-to('small') {
+            width: 90%;
+        }
         .row-item {
             position: relative;
             width: 100%;
@@ -166,7 +166,7 @@
                     @click="emit('transfert-gain')"
                 >mdi-transfer</v-icon>
                 
-                EUR {{ soldeWritable }}
+                EUR {{ formattedSolde }}
 
                 <v-icon
                     v-if="(load || loadIn) && soldeWritable==0"
@@ -264,6 +264,13 @@
                 reservedDebit: state => state.pendingDebit,
             }),
             ...mapState("auth", ["provider_id"]),
+            formattedSolde() {
+                const value = Number(this.soldeWritable) || 0;
+                return new Intl.NumberFormat('fr-FR', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                }).format(value);
+            },
             reservedDebitLabel(){
                 return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(this.reservedDebit || 0);
             }

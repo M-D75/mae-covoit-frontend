@@ -29,7 +29,7 @@
 
 <style lang="scss" scoped>
 
-    @import "@/styles/mixins.scss";
+    @use "@/styles/mixins.scss" as mixins;
 
     .ligth-mode * {
         --bg-color: #E5E5E5;
@@ -42,38 +42,38 @@
         margin-bottom: 15px;
         div .label {
             width: 82.7%;
-            @include respond-to('small') {
-                width: 90%;
-            }
             text-transform: uppercase;
             font-size: 12px;
             font-weight: 450;
             margin-top: 30px;
             margin-bottom: 20px;
             color: #616161;
+            @include mixins.respond-to('small') {
+                width: 90%;
+            }
         }
         .label-btn {
             margin-top: 20px;
             margin-bottom: 20px;
             width: 82.7%;
-            @include respond-to('small') {
-                width: 90%;
-            }
 
             display: flex;
             justify-content: space-between;
+            @include mixins.respond-to('small') {
+                width: 90%;
+            }
 
             .v-btn {
                 width: 138px;
-                @include respond-to('small') {
-                    width: 40%;
-                }
                 height: 32px;
                 box-shadow: none;
                 font-size: 12px;
                 font-weight: 700;
                 background-color: var(--bg-color);
                 color: var(--font-color-label);
+                @include mixins.respond-to('small') {
+                    width: 40%;
+                }
                 &.dashboard{
                     content: "nbonjo";
                 }

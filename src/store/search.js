@@ -209,6 +209,7 @@ export default {
             let _trips = [];
             for (let index = 0; index < trips.length; index++) {
                 const trip = trips[index];
+                const tripAccount = trip.account || {};
 
                 let isoDate = trip.departure_time;
                 let date = new Date(isoDate);
@@ -228,11 +229,15 @@ export default {
                 const arrival_time = `${hours}:${minutes}`;
                 // jointure : account,trip,booking
                 const sanitizedBookings = (trip.booking || []).filter((booking) => !booking.passenger_no_show);
+                const driverFirstname = tripAccount.firstname || "Chauffeur";
+                const driverLastname = tripAccount.lastname || "";
+                const driverAvatar = tripAccount.avatar || null;
+
                 const _trip  = {
                     id: trip.id,
                     driver_id: trip.driver_id,
-                    name: `${trip.account.firstname} ${trip.account.lastname}`,
-                    avatar: trip.account.avatar,
+                    name: `${driverFirstname} ${driverLastname}`.trim(),
+                    avatar: driverAvatar,
                     depart: getters.GET_VILLAGE_BY_ID(trip.village_departure_id),
                     destination: getters.GET_VILLAGE_BY_ID(trip.village_arrival_id),
                     departure_time: trip.departure_time,
@@ -298,6 +303,7 @@ export default {
             let _trips = [];
             for (let index = 0; index < trips.length; index++) {
                 const trip = trips[index];
+                const tripAccount = trip.account || {};
 
                 let isoDate = trip.departure_time;
                 let date = new Date(isoDate);
@@ -320,8 +326,8 @@ export default {
                 const _trip  = {
                     id: trip.id,
                     driver_id: trip.driver_id,
-                    name: `${trip.account.firstname} ${trip.account.lastname}`,
-                    avatar: trip.account.avatar,
+                    name: `${tripAccount.firstname || ''} ${tripAccount.lastname || ''}`.trim() || "Chauffeur",
+                    avatar: tripAccount.avatar || null,
                     depart: getters.GET_VILLAGE_BY_ID(trip.village_departure_id),
                     destination: getters.GET_VILLAGE_BY_ID(trip.village_arrival_id),
                     departure_time: trip.departure_time,
@@ -387,6 +393,7 @@ export default {
             let _trips = [];
             for (let index = 0; index < trips.length; index++) {
                 const trip = trips[index];
+                const tripAccount = trip.account || {};
 
                 let isoDate = trip.departure_time;
                 let date = new Date(isoDate);
@@ -409,8 +416,8 @@ export default {
                 const _trip  = {
                     id: trip.id,
                     driver_id: trip.driver_id,
-                    name: `${trip.account.firstname} ${trip.account.lastname}`,
-                    avatar: trip.account.avatar,
+                    name: `${tripAccount.firstname || ''} ${tripAccount.lastname || ''}`.trim() || "Chauffeur",
+                    avatar: tripAccount.avatar || null,
                     depart: getters.GET_VILLAGE_BY_ID(trip.village_departure_id),
                     destination: getters.GET_VILLAGE_BY_ID(trip.village_arrival_id),
                     departure_time: trip.departure_time,

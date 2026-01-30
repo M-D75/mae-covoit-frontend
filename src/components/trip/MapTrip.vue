@@ -12,6 +12,7 @@
             margin-top: var(--safe-area-inset-top);
             &.rigth {
                 right: 15px;
+                align-items: flex-end;
             }
             &.left {
                 left: 15px;
@@ -36,6 +37,8 @@
                 margin-top: 6px;
                 font-weight: 600;
                 color: white;
+                align-self: flex-end;
+                white-space: nowrap;
             }
         }
 
@@ -64,6 +67,30 @@
                     color: var(--font-color-label);
                 }
             }
+        }
+
+        .alert-marker-wrapper {
+            .alert-marker {
+                width: 28px;
+                height: 28px;
+                border-radius: 50%;
+                color: #fff;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 12px;
+                font-weight: 700;
+                border: 2px solid #fff;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+            }
+        }
+
+        .alert-tooltip {
+            font-size: 12px;
+        }
+
+        .alert-menu-card {
+            min-width: 240px;
         }
     }
 </style>
@@ -94,11 +121,24 @@
                 @click="shareLocalisation = !shareLocalisation; checkSharedLoc()"  
             />
 
+            <v-btn
+                icon
+                @click="openAlertMenu"
+            >
+                <v-icon :color="activeAlerts.length ? 'red-darken-1' : undefined">
+                    {{ currentModeButton === 'alert' ? 'mdi-arrow-u-left-bottom' : 'mdi-map-marker-alert' }}
+                </v-icon>
+            </v-btn>
+
             <v-btn 
                 v-if="mode_driver"
                 icon="mdi-account-group"
-                @click="showPassengerStatus = !showPassengerStatus"
-            />
+                @click="openPassengerMenu"
+            >
+                <v-icon>
+                    {{ currentModeButton === 'passengers' ? 'mdi-arrow-u-left-bottom' : 'mdi-account-group' }}
+                </v-icon>
+            </v-btn>
 
             <!-- <v-btn 
                 v-if="isBeforeThreshold"
@@ -154,74 +194,6 @@
             />
         </div>
 
-        <div 
-            v-if="mode_driver && showPassengerStatus"
-            class="passenger-status-panel"
-        >
-            <v-card class="pa-3" elevation="6">
-                <div class="d-flex align-center mb-2">
-                    <span class="font-weight-bold">Passagers</span>
-                    <v-spacer />
-                    <v-btn icon="mdi-close" size="x-small" variant="text" @click="showPassengerStatus=false"/>
-                </div>
-                <div 
-                    v-if="passengerBookings.length === 0"
-                    class="text-caption text-center"
-                >
-                    Aucun passager confirmé.
-                </div>
-                <v-list
-                    v-else
-                    density="compact"
-                >
-                    <v-list-item
-                        v-for="booking in passengerBookings"
-                        :key="booking.id"
-                    >
-                        <template #prepend>
-                            <v-avatar size="28">
-                                <template v-if="booking.account && booking.account.avatar">
-                                    <v-img :src="booking.account.avatar"/>
-                                </template>
-                                <template v-else>
-                                    <span class="text-caption">{{ passengerInitials(booking) }}</span>
-                                </template>
-                            </v-avatar>
-                        </template>
-                        <v-list-item-title>{{ passengerName(booking) }}</v-list-item-title>
-                        <template #append>
-                            <v-chip
-                                :color="booking.in_car ? 'green' : 'orange'"
-                                size="small"
-                                variant="flat"
-                                label
-                            >
-                                <v-icon
-                                    start
-                                    size="16"
-                                >
-                                    {{ booking.in_car ? 'mdi-check-circle' : 'mdi-timer-sand' }}
-                                </v-icon>
-                                {{ booking.in_car ? 'Confirmé' : 'En attente' }}
-                            </v-chip>
-                            <v-btn
-                                v-if="!booking.in_car"
-                                size="small"
-                                variant="text"
-                                color="red"
-                                icon
-                                :loading="noShowProcessingId === booking.id"
-                                :disabled="noShowProcessingId === booking.id"
-                                @click.stop="markPassengerNoShow(booking)"
-                            >
-                                <v-icon>mdi-account-off</v-icon>
-                            </v-btn>
-                        </template>
-                    </v-list-item>
-                </v-list>
-            </v-card>
-        </div>
-
         <!-- L-map -->
         <l-map 
             id="map-id" 
@@ -260,6 +232,21 @@
                 >
                 </l-circle-marker>
             </div>
+
+            <l-marker
+                v-for="alert in activeAlerts"
+                :key="alert.id"
+                :lat-lng="alert.coordinates"
+                :icon="resolveAlertIcon(alert.type)"
+            >
+                <l-tooltip :options="{ direction: 'top', offset: [0, -10] }">
+                    <div class="alert-tooltip">
+                        <strong>{{ alertLabel(alert.type) }}</strong><br>
+                        Signalé à {{ formatAlertCreation(alert.createdAt) }} h<br>
+                        Expire à {{ formatAlertExpiration(alert.expiresAt) }} h
+                    </div>
+                </l-tooltip>
+            </l-marker>
 
             <!-- origin -->
             <l-marker 
@@ -355,12 +342,24 @@
     /> -->
 
     <BottomMenuTrip
-        mode="map"
+        :mode="bottomMenuMode"
         :class-name="['alert']"
         :mapInfos="{time: itin.duration, distance: itin.distance, depart: itineraire['origin'].infos.commune, destination: itineraire['destination'].infos.commune, infosSup: 'Le plus rapide selon l\'etat actuel de la circulation'}"
+        :alert-types="alertTypeItems"
+        :selected-alert-type="selectedAlertType"
+        :alert-duration-label="alertDurationLabel"
+        :can-signal="canCreateAlert"
+        :share-localisation="shareLocalisation"
+        :passenger-bookings="passengerBookings"
+        :no-show-processing-id="noShowProcessingId"
+        :is-driver="mode_driver"
+        :is-dark-mode="darkMode"
         ref="BottomMenuRef"
-        v-on:close="open_b = false"
-        v-on:opened="open_b = true"
+        @select-alert-type="selectedAlertType = $event"
+        @confirm-alert="createLocalAlert"
+        @mark-passenger-no-show="markPassengerNoShow"
+        @close="handleBottomMenuClose"
+        @opened="open_b = true"
     />
 
     <!-- Load -->
@@ -496,7 +495,7 @@
         name: 'results-view',
         emits: ["trajet-selected"],
         computed: {
-            ...mapState("profil", ["modeCo", "userUid", "userId", "userName", "profil"]),
+            ...mapState("profil", ["modeCo", "userUid", "userId", "userName", "profil", "darkMode"]),
             ...mapState("trip", ["tripSelected", "notMessageVue", "chat"]),
             ...mapGetters("search", ["getVillagesByName", "GET_ID_VILLAGE_BY_NAME"]),
             passengerBookings(){
@@ -532,6 +531,21 @@
                 const maxLon = Math.max(...longitudes);
 
                 return [(minLat + maxLat) / 2, (minLon + maxLon) / 2];
+            },
+            alertTypeItems(){
+                return this.alertTypes;
+            },
+            alertDurationLabel(){
+                const minutes = Math.round(this.alertDurationMs / 60000);
+                const hours = Math.floor(minutes / 60);
+                const remainingMinutes = minutes % 60;
+                if(hours > 0){
+                    return remainingMinutes ? `${hours}h${remainingMinutes.toString().padStart(2, '0')}` : `${hours}h`;
+                }
+                return `${minutes} min`;
+            },
+            canCreateAlert(){
+                return this.shareLocalisation && Array.isArray(this.currentLocation.current) && this.currentLocation.current.length >= 2;
             },
         },
         components: {
@@ -590,6 +604,8 @@
                 dialog_annuler: false,
                 notifChat: false,
                 open_b: true, //open bottom menu
+                bottomMenuMode: "map",
+                currentModeButton: null,
                 overlayLoad: false,
                 zoom: 10,
                 routes: [],
@@ -658,8 +674,19 @@
                 localisation: [
                     // {type: "driver", latLng: [-12.7997252, 45.1038055]}, {type: "passenger", latLng: [-12.7797252, 45.1038055]}
                 ],
-            showPassengerStatus: false,
-                snackbarError: false,
+                alertTypes: [
+                    { value: 'traffic', label: 'Bouchon', color: '#ff9800', icon: 'mdi-traffic-light', abbr: 'B' },
+                    { value: 'danger', label: 'Menace', color: '#d32f2f', icon: 'mdi-shield-cross', abbr: '!' },
+                    { value: 'works', label: 'Travaux', color: '#ffa726', icon: 'mdi-traffic-cone', abbr: 'T' },
+                    { value: 'weather', label: 'Intempérie', color: '#4fc3f7', icon: 'mdi-weather-pouring', abbr: '~' },
+                ],
+                selectedAlertType: 'traffic',
+                activeAlerts: [],
+                alertDurationMs: 60 * 60 * 1000,
+                alertCleanupTimer: null,
+                alertIconCache: {},
+                alertChannel: null,
+            snackbarError: false,
                 snackbarMessage: "",
                 snackbarSuccess: false,
                 snackbarSuccessMessage: "",
@@ -850,10 +877,14 @@
             }, 10000);
 
             console.log("this.tripSelected", this.tripSelected);
+
+            await this.initializeAlertSync();
             
         },
         beforeUnmount() {
             clearInterval(this.timer);
+            this.stopAlertCleanupTimer();
+            this.unsubscribeAlertChannel();
         },
         methods: {
             ...mapActions("search", ['getVillages']),
@@ -1586,8 +1617,234 @@
                 }
             },
             openBottomMenuInfos(){
-                if( this.$refs.BottomMenuRef )
+                this.setBottomMenuMode('map');
+            },
+            openAlertMenu(){
+                this.setBottomMenuMode('alert');
+            },
+            openPassengerMenu(){
+                if( !this.mode_driver ){
+                    return;
+                }
+                this.setBottomMenuMode('passengers');
+            },
+            setBottomMenuMode(mode){
+                const shouldToggleToMap = this.bottomMenuMode === mode && mode !== 'map' && this.open_b;
+                this.bottomMenuMode = shouldToggleToMap ? 'map' : mode;
+                this.currentModeButton = shouldToggleToMap ? null : (mode === 'map' ? null : mode);
+                if( this.$refs.BottomMenuRef ){
                     this.$refs.BottomMenuRef.open();
+                }
+            },
+            handleBottomMenuClose(){
+                this.open_b = false;
+                this.bottomMenuMode = 'map';
+                this.currentModeButton = null;
+            },
+            async createLocalAlert(){
+                if( !this.canCreateAlert ){
+                    if( !this.shareLocalisation ){
+                        this.showError("Activez le partage de localisation pour créer un signalement.");
+                    }
+                    else{
+                        this.showError("Localisation indisponible. Réessayez dans un instant.");
+                    }
+                    return;
+                }
+
+                const typeDef = this.alertTypes.find((item) => item.value === this.selectedAlertType) || this.alertTypes[0];
+                const now = Date.now();
+                const coordinates = [...this.currentLocation.current];
+                const expiresAt = new Date(now + this.alertDurationMs).toISOString();
+
+                try{
+                    const { data, error } = await supabase
+                        .from('road_alert')
+                        .insert({
+                            trip_id: this.tripSelected.id,
+                            account_id: this.userId,
+                            alert_type: typeDef.value,
+                            lat: coordinates[0],
+                            lng: coordinates[1],
+                            expires_at: expiresAt,
+                            metadata: {
+                                created_from: 'app',
+                            },
+                        })
+                        .select()
+                        .single();
+
+                    if( error ){
+                        throw error;
+                    }
+
+                    const alert = this.mapAlertRow(data);
+                    this.addOrReplaceAlert(alert);
+                    this.showSuccess(`Signalement "${typeDef.label}" ajouté sur la carte.`);
+                }
+                catch(error){
+                    this.handleServerError(error, "Impossible d'enregistrer le signalement.");
+                }
+            },
+            alertLabel(type){
+                const typeDef = this.alertTypes.find((item) => item.value === type);
+                return typeDef ? typeDef.label : "Alerte";
+            },
+            formatAlertExpiration(timestamp){
+                const date = new Date(timestamp);
+                return date.toLocaleTimeString('fr-FR', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                });
+            },
+            formatAlertCreation(timestamp){
+                const date = new Date(timestamp);
+                return date.toLocaleTimeString('fr-FR', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                });
+            },
+            resolveAlertIcon(type){
+                if( this.alertIconCache[type] ){
+                    return this.alertIconCache[type];
+                }
+
+                const typeDef = this.alertTypes.find((item) => item.value === type) || this.alertTypes[0];
+                this.alertIconCache[type] = L.divIcon({
+                    className: 'alert-marker-wrapper',
+                    html: `<div class="alert-marker" style="background:${typeDef.color};">${typeDef.abbr || '!'}</div>`,
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15],
+                });
+
+                return this.alertIconCache[type];
+            },
+            startAlertCleanupTimer(){
+                if( this.alertCleanupTimer ){
+                    return;
+                }
+                this.alertCleanupTimer = setInterval(() => {
+                    this.cleanupExpiredAlerts();
+                }, 60000);
+            },
+            stopAlertCleanupTimer(){
+                if( this.alertCleanupTimer ){
+                    clearInterval(this.alertCleanupTimer);
+                    this.alertCleanupTimer = null;
+                }
+            },
+            cleanupExpiredAlerts(){
+                const now = Date.now();
+                const filtered = this.activeAlerts.filter((alert) => alert.expiresAt > now);
+                if( filtered.length !== this.activeAlerts.length ){
+                    this.activeAlerts = filtered;
+                }
+                if( this.activeAlerts.length === 0 ){
+                    this.stopAlertCleanupTimer();
+                }
+            },
+            async initializeAlertSync(){
+                if( !this.tripSelected?.id ){
+                    return;
+                }
+                await this.fetchRemoteAlerts();
+                this.subscribeToAlertChannel();
+            },
+            async fetchRemoteAlerts(){
+                try{
+                    const { data, error } = await supabase
+                        .from('road_alert')
+                        .select('*')
+                        .eq('trip_id', this.tripSelected.id)
+                        .gt('expires_at', new Date().toISOString())
+                        .order('created_at', { ascending: true });
+                    if( error ){
+                        throw error;
+                    }
+                    const alerts = (data || []).map((row) => this.mapAlertRow(row));
+                    this.activeAlerts = alerts;
+                    if( alerts.length ){
+                        this.startAlertCleanupTimer();
+                    }
+                }
+                catch(error){
+                    console.error("fetchRemoteAlerts error", error);
+                }
+            },
+            subscribeToAlertChannel(){
+                this.unsubscribeAlertChannel();
+                if( !this.tripSelected?.id ){
+                    return;
+                }
+                const tripId = this.tripSelected.id;
+                this.alertChannel = supabase.channel(`road_alert_trip_${tripId}`);
+
+                this.alertChannel.on(
+                    'postgres_changes',
+                    { event: 'INSERT', schema: 'public', table: 'road_alert', filter: `trip_id=eq.${tripId}` },
+                    (payload) => {
+                        if( payload?.new ){
+                            const alert = this.mapAlertRow(payload.new);
+                            this.addOrReplaceAlert(alert);
+                        }
+                    }
+                );
+
+                this.alertChannel.on(
+                    'postgres_changes',
+                    { event: 'DELETE', schema: 'public', table: 'road_alert', filter: `trip_id=eq.${tripId}` },
+                    (payload) => {
+                        const alertId = payload?.old?.id;
+                        if( alertId ){
+                            this.removeAlertById(alertId);
+                        }
+                    }
+                );
+
+                this.alertChannel.subscribe();
+            },
+            unsubscribeAlertChannel(){
+                if( this.alertChannel ){
+                    this.alertChannel.unsubscribe();
+                    this.alertChannel = null;
+                }
+            },
+            mapAlertRow(row){
+                if( !row ){
+                    return null;
+                }
+                return {
+                    id: row.id,
+                    type: row.alert_type,
+                    coordinates: [row.lat, row.lng],
+                    createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
+                    expiresAt: row.expires_at ? new Date(row.expires_at).getTime() : Date.now() + this.alertDurationMs,
+                    accountId: row.account_id || null,
+                };
+            },
+            addOrReplaceAlert(alert){
+                if( !alert || alert.expiresAt <= Date.now() ){
+                    return;
+                }
+                const index = this.activeAlerts.findIndex((item) => item.id === alert.id);
+                if( index !== -1 ){
+                    const updated = [...this.activeAlerts];
+                    updated[index] = alert;
+                    this.activeAlerts = updated;
+                }
+                else{
+                    this.activeAlerts = [...this.activeAlerts, alert];
+                }
+                this.startAlertCleanupTimer();
+            },
+            removeAlertById(alertId){
+                const filtered = this.activeAlerts.filter((alert) => alert.id !== alertId);
+                if( filtered.length !== this.activeAlerts.length ){
+                    this.activeAlerts = filtered;
+                }
+                if( this.activeAlerts.length === 0 ){
+                    this.stopAlertCleanupTimer();
+                }
             },
             checkSharedLoc(){
                 if(!this.shareLocalisation){
@@ -1977,9 +2234,15 @@
             }
         },
         watch: {
-            tripSelected(){
-                this.ensurePassengerBookings();
-            }
+            tripSelected: {
+                handler(newTrip, oldTrip){
+                    this.ensurePassengerBookings();
+                    if( newTrip?.id && (!oldTrip || newTrip.id !== oldTrip.id) ){
+                        this.initializeAlertSync();
+                    }
+                },
+                deep: false,
+            },
         },
     });
 </script>

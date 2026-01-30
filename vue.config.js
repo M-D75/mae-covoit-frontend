@@ -1,6 +1,18 @@
 const { defineConfig } = require('@vue/cli-service')
+const sassEmbedded = require('sass-embedded')
+
 module.exports = defineConfig({
     transpileDependencies: true,
+    css: {
+        loaderOptions: {
+            sass: {
+                implementation: sassEmbedded,
+            },
+            scss: {
+                implementation: sassEmbedded,
+            },
+        },
+    },
     pwa: {
         name: "Shima-GoGoGo",
         themeColor: '#1a1a1a',

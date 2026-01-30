@@ -22,7 +22,7 @@
 
 
 <style lang="scss" scoped>
-    @import "@/styles/checkout.scss";
+    @use "@/styles/checkout.scss" as *;
 
     form#payment-form, form#card-form {
         width: 100%;

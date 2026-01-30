@@ -1,7 +1,7 @@
 <!-- scss -->
 
 <style lang="scss" scoped>
-     @import "@/styles/mixins.scss";
+     @use "@/styles/mixins.scss" as mixins;
 
     .history-trajets {
         overflow: visible;
@@ -17,7 +17,7 @@
                     margin-top: 10px;
                     margin-bottom: 15px;
                     padding-left: 35px;
-                    @include respond-to('small') {
+                    @include mixins.respond-to('small') {
                         padding-left: 15px;
                     }
                 }

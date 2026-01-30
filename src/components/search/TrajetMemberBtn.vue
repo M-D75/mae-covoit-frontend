@@ -1,6 +1,6 @@
 
 <style lang="scss" model>
-    @import "@/styles/mixins.scss";
+    @use "@/styles/mixins.scss" as mixins;
 
     .card-trajet-member-btn {
         .v-list-item {
@@ -19,7 +19,7 @@
             .comune {
                 .v-list-item {
                     padding: auto;
-                    @include respond-to('tiny') {
+                    @include mixins.respond-to('tiny') {
                         padding: 0;
                     }
                 }
@@ -36,12 +36,12 @@
             height: 38px;
             position: absolute;
             left: 17px;
-            @include respond-to('tiny') {
-                left: 17px;
-            }
             top: 21px;
             z-index: 0;
             opacity: var(--v-medium-emphasis-opacity);
+            @include mixins.respond-to('tiny') {
+                left: 17px;
+            }
         }
         .flex {
             display: flex;
@@ -62,7 +62,7 @@
             color: #eee !important;
             border-radius: 5px;
             right: 8px;
-            @include respond-to('tiny') {
+            @include mixins.respond-to('tiny') {
                 right: 2px;
             }
             &.prix {
@@ -99,7 +99,7 @@
 </style>
 
 <style lang="scss" scoped>
-    @import "@/styles/mixins.scss";
+    @use "@/styles/mixins.scss" as mixins;
     .v-card {
         background-color: var(--white-bg-color);
         margin: 20px;
@@ -118,10 +118,10 @@
         .hour {
             &.v-list-item {
                 width: 73px;
-                @include respond-to('tiny') {
+                padding-right: 0;
+                @include mixins.respond-to('tiny') {
                     width: 50px;
                 }
-                padding-right: 0;
             }
         }
         .localisation{

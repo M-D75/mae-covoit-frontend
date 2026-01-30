@@ -11,7 +11,7 @@
 
 <!-- scss -->
 <style lang="scss" scoped>
-    @import '@/styles/mixins.scss';
+    @use '@/styles/mixins.scss' as mixins;
     
     .v-main {
         .sub-main{
@@ -40,15 +40,15 @@
         .ctn {
             margin: 10px auto 10px auto;
             width: 82.5% !important;
-            @include respond-to('small') {
-                width: 90% !important;
-            }
             .label {
                 margin-top: 14px;
                 margin-bottom: 5px;
                 font-size: 14px;
                 font-weight: bold;
                 color: #616161;
+            }
+            @include mixins.respond-to('small') {
+                width: 90% !important;
             }
             .invite-card{
                 //height: 58px;

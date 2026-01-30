@@ -2,10 +2,10 @@
 
 <!-- scoped -->
 <style lang="scss" scoped>
-    @import "@/styles/mixins.scss";
+    @use "@/styles/mixins.scss" as mixins;
     .group-card-comp {
         width: 82.5%;
-        @include respond-to('small') {
+        @include mixins.respond-to('small') {
             width: 90%;
         }
         .label {
@@ -139,4 +139,3 @@
         },
     };
 </script>
-

@@ -495,6 +495,8 @@
                     minuteInit: 30,
                     nbPasMinutes: 5,
                 },
+                seatPreferences: {},
+                seatPreferenceStorageKey: 'mae-seat-preferences',
                 showSnackbar: {
                     showError: false,
                     messageError: "",
@@ -532,15 +534,22 @@
             this.overlayLoad = false;
 
             // this.test();
-            let date = new Date();
-
-            let offset = date.getTimezoneOffset();
-            date = new Date(((date.getTime()+(60000*15)) - (offset * 60000)));
-
-            //let hours = date.getUTCHours().toString().padStart(2, '0');
-            //let minutes = date.getUTCMinutes().toString().padStart(2, '0');
-            this.timeInit.hourInit = date.getUTCHours()
-            this.timeInit.minuteInit = (Math.ceil(date.getUTCMinutes()/this.timeInit.nbPasMinutes)*this.timeInit.nbPasMinutes)%60;
+            const futureDate = new Date();
+            futureDate.setMinutes(futureDate.getMinutes() + 15);
+            const step = this.timeInit.nbPasMinutes || 5;
+            let hourInit = futureDate.getHours();
+            let minuteInit = futureDate.getMinutes();
+            let roundedMinutes = Math.ceil(minuteInit / step) * step;
+            if( roundedMinutes >= 60 ){
+                roundedMinutes = 0;
+                hourInit = (hourInit + 1) % 24;
+            }
+            this.timeInit = {
+                ...this.timeInit,
+                hourInit,
+                minuteInit: roundedMinutes,
+            };
+            this.loadSeatPreferences();
             
 
             console.log(this.$store.state.profil.userUid, this.timeInit);
@@ -553,6 +562,42 @@
             ...mapActions("search", ['getVillages']),
             ...mapActions("publish", ["newTrip", "getPriceRecommended"]),
             ...mapActions("profil", ["getCars", "getProvider"]),
+            loadSeatPreferences(){
+                try{
+                    const raw = localStorage.getItem(this.seatPreferenceStorageKey);
+                    this.seatPreferences = raw ? JSON.parse(raw) || {} : {};
+                }
+                catch(error){
+                    console.warn("loadSeatPreferences error", error);
+                    this.seatPreferences = {};
+                }
+            },
+            saveSeatPreference(carId, seats){
+                if( !carId ){
+                    return;
+                }
+                const normalizedSeats = Math.max(1, Math.floor(seats || 1));
+                this.seatPreferences = {
+                    ...this.seatPreferences,
+                    [carId]: normalizedSeats,
+                };
+                try{
+                    localStorage.setItem(this.seatPreferenceStorageKey, JSON.stringify(this.seatPreferences));
+                }
+                catch(error){
+                    console.warn("saveSeatPreference error", error);
+                }
+            },
+            getSeatPreferenceForCar(carId, fallbackSeats){
+                if( !carId ){
+                    return fallbackSeats;
+                }
+                const saved = this.seatPreferences?.[carId];
+                if( typeof saved === 'number' && saved > 0 ){
+                    return saved;
+                }
+                return fallbackSeats;
+            },
             getSaisi(){
                 $(".mode-publish").css("display", "none");
                 if(this.$refs[`SearchRef${this.mode}`])
@@ -629,6 +674,15 @@
                             console.log("car--", this.$refs.SelectCarRef.car);
                             this.infosPublish[typePath].car = this.$refs.SelectCarRef.car;
                             this.max_seats = this.$refs.SelectCarRef.seats;
+                            const seatCapacity = this.$refs.SelectCarRef.seats || this.max_seats || 1;
+                            const defaultSeats = Math.min(seatCapacity, this.getSeatPreferenceForCar(this.infosPublish[typePath].car, seatCapacity));
+                            this.infosPublish[typePath].nbPassager = defaultSeats;
+                            this.$nextTick(() => {
+                                const passengerMenu = this.$refs['BottomMenuRefnb-passenger'];
+                                if( passengerMenu?.setNumberSelected ){
+                                    passengerMenu.setNumberSelected(defaultSeats);
+                                }
+                            });
                         }
                         this.nextStepMode();
                         break;
@@ -636,6 +690,7 @@
                     case "nb-passenger":
                         if (this.$refs[`BottomMenuRef${this.mode}`]) {
                             this.infosPublish[typePath].nbPassager = this.$refs[`BottomMenuRef${this.mode}`].numberSelected;
+                            this.saveSeatPreference(this.infosPublish[typePath].car, this.infosPublish[typePath].nbPassager);
                         }
                         this.nextStepMode();
                         break;

@@ -1,6 +1,6 @@
 
 <style lang="scss" model>
-    @import "@/styles/mixins.scss";
+    @use "@/styles/mixins.scss" as mixins;
 
     .card-trajet-member {
         color: var(--font-color-label) !important;
@@ -37,7 +37,7 @@
             .comune {
                 .v-list-item {
                     padding: auto;
-                    @include respond-to('small') {
+                    @include mixins.respond-to('small') {
                         padding: 7px;
                     }
                 }
@@ -54,12 +54,12 @@
             height: 38px;
             position: absolute;
             left: 26.5px;
-            @include respond-to('small') {
-                left: 17.5px;
-            }
             top: 22px;
             z-index: 0;
             opacity: var(--v-medium-emphasis-opacity);
+            @include mixins.respond-to('small') {
+                left: 17.5px;
+            }
         }
         .flex {
             display: flex;
@@ -70,7 +70,7 @@
             &.avatar {
                 margin-top: 12px;
                 color: var(--font-color-label);
-                @include respond-to('small') {
+                @include mixins.respond-to('small') {
                     width: 60%;
                 }
             }
@@ -82,7 +82,7 @@
             text-align: center;
             display: grid;
             right: 8px;
-            @include respond-to('small') {
+            @include mixins.respond-to('small') {
                 right: 3px;
             }
             

@@ -17,7 +17,7 @@
 </style>
 
 <style lang="scss" scoped>
-    @import "@/styles/mixins.scss";
+    @use "@/styles/mixins.scss" as mixins;
     
     .scrollable-container {
         cursor: pointer;
@@ -43,7 +43,7 @@
                 padding-bottom: 5px;
                 padding-top: 5px;
                 padding-left: 35px;
-                @include respond-to('small') {
+                @include mixins.respond-to('small') {
                     padding-left: 15px;
                 }
                 div {

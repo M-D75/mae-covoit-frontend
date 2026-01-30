@@ -289,12 +289,12 @@ router.beforeEach(async (to, from, next) => {
                         await FirebaseMessaging.addListener('tokenReceived', event => {
                             console.log('[index.js] tokenReceived', { event }, event.token);
 
-                            this.SET_REGISTER_DEVICE_TOKEN(event.token);
+                            store.commit('auth/SET_REGISTER_DEVICE_TOKEN', event.token);
                         
                             const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
                             axios.post(`${adresse.online}/registerDeviceToken`, {
                                 registerDeviceToken: event.token,
-                                userId: this.userUid,
+                                userId: store.state.profil.userUid,
                             })
                             .then(response => {
                                 console.log("[index.js] data:", response.data);

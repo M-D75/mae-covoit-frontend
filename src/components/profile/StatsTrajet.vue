@@ -3,19 +3,19 @@
 </style>
 
 <style lang="scss" scoped>
-    @import '@/styles/mixins.scss';
+    @use '@/styles/mixins.scss' as mixins;
     .stats-trajet-profil {
         background-color: var(--white-bg-color);
         margin-top: 20px;
         height: 242px;
         width: 82.7%;
-        @include respond-to('small') {
-            width: 90%;
-        }
         padding: 25px;
         padding-bottom: 50px;
         border-radius: 24px;
         box-shadow: var(--box-shadow-card);
+        @include mixins.respond-to('small') {
+            width: 90%;
+        }
         .row-item {
             position: relative;
             width: 100%;

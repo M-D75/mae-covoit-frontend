@@ -173,16 +173,40 @@
             }
         },
         mounted(){
-            this.numbers = Array.from({ length: parseInt(this.max) }, (_, i) => (parseInt(i+parseInt(this.min)) ))
-            
-            if( this.initNumber >= this.numbers[0] )
-                this.number = arrondirSpecial(this.initNumber);
-            else
-                this.number = this.numbers[0];
-
-            this.initPos();
+            this.buildNumbers();
+            this.setNumber(this.initNumber);
         },
         methods: {
+            buildNumbers(){
+                const minVal = parseInt(this.min);
+                const maxVal = parseInt(this.max);
+                const total = Math.max(0, maxVal - minVal + 1);
+                this.numbers = total > 0
+                    ? Array.from({ length: total }, (_, i) => (minVal + i))
+                    : [];
+            },
+            setNumber(value){
+                if( !this.numbers.length ){
+                    this.buildNumbers();
+                }
+                if( !this.numbers.length ){
+                    this.number = 0;
+                    return;
+                }
+
+                let target = typeof value === 'number' ? value : this.numbers[0];
+                target = arrondirSpecial(target);
+                const minVal = this.numbers[0];
+                const maxVal = this.numbers[this.numbers.length - 1];
+                if( target < minVal ){
+                    target = minVal;
+                }
+                if( target > maxVal ){
+                    target = maxVal;
+                }
+                this.number = target;
+                this.$nextTick(() => this.initPos());
+            },
             initPos(){
                 const height = parseInt($(".v-card.select-number").css("height").replace("px", ""));
                 const goalTop = (this.number-1)*height;
@@ -249,19 +273,15 @@
                 this.$emit("number-changed");
             },
             initNumber(){
-                // console.log("initNumber:", this.initNumber);
-                if( this.initNumber >= this.numbers[0] )
-                    this.number = this.initNumber;
-                
-                this.initPos();
+                this.setNumber(this.initNumber);
+            },
+            min(){
+                this.buildNumbers();
+                this.setNumber(this.number);
             },
             max(){
-                this.numbers = Array.from({ length: parseInt(this.max) }, (_, i) => (parseInt(i+parseInt(this.min)) ))
-            
-                if( this.initNumber >= this.numbers[0] )
-                    this.number = this.initNumber;
-                else
-                    this.number = this.numbers[0];
+                this.buildNumbers();
+                this.setNumber(this.number);
             }
         }
     });

@@ -299,29 +299,61 @@
 
             .alert{
                 padding: 10px;
-                .v-divider{
-                    margin: 5px auto;
-                }
                 .title{
                     text-align: center;
                     text-transform: capitalize;
                 }
-                .group-btn{
+                .alert-chip-group{
                     display: flex;
-                    justify-content: space-around;
-                    margin: 10px auto;
-                    .descente-btn{
-                        font-size: 12px;
+                    flex-wrap: wrap;
+                    justify-content: center;
+                }
+                .duration-info{
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 8px 14px;
+                    border-radius: 12px;
+                    background: rgba(2, 147, 247, 0.1);
+                    &.is-dark{
+                        background: rgba(255, 255, 255, 0.08);
+                        color: #f5f5f5;
                     }
-                    
-                    .v-btn {
-                        &.last {
-                            width: 35%;
-                        }
-                        height: 48px;
-                        margin: 7px 0;
-                        background-color: var(--white-bg-color);
-                        color: var(--font-color-label);
+                    .label{
+                        text-transform: uppercase;
+                        font-size: 11px;
+                        letter-spacing: 0.08em;
+                        color: inherit;
+                    }
+                    .value{
+                        font-weight: 600;
+                        color: inherit;
+                    }
+                }
+                .confirm-btn{
+                    margin-top: 12px;
+                    .v-btn{
+                        font-weight: 600;
+                        height: 42px;
+                    }
+                }
+            }
+
+            .passengers{
+                padding: 10px;
+                .title{
+                    text-align: center;
+                    text-transform: capitalize;
+                }
+                &.is-dark{
+                    background-color: #1f1f1f;
+                    color: #f5f5f5;
+                    .title,
+                    .text-caption{
+                        color: #f5f5f5;
+                    }
+                    .v-list-item-title{
+                        color: #f5f5f5;
                     }
                 }
             }
@@ -356,6 +388,10 @@
                     }
                 }
             }
+        }
+
+        .passengers-dark-list{
+            background-color: transparent;
         }
     }
 </style>
@@ -409,56 +445,128 @@
                 v-if="mode=='alert'"
                 class="alert"
             >
-                <div class="contain-btn">
-                    <div class="group-btn">
-                        <v-btn
-                            class="descente-btn text-none"
-                            prepend-icon="mdi-hand-back-left"
-                            rounded="xl" 
-                            size="x-large"
-                            variant="outlined"
-                        >
-                            Je descend ici !
-                        </v-btn>
-                        <v-btn
-                            icon="mdi-message-alert"
-                            variant="outlined"
-                        >
-                            <v-icon color="orange">mdi-message-alert</v-icon>
-                        </v-btn>
-                        <v-btn
-                            icon
-                            variant="outlined"
-                        >
-                            <font-awesome-icon :icon="['fas', 'location-dot']" />
-                        </v-btn>
-                        
-                    </div>
-                </div>
-
-                <v-divider inset></v-divider>
-
-                <div class="title">Infos Trafic</div>
-                <div class="contain-btn">
-                    <div
-                        v-for="(floor, index) in alert.groupBtn"
-                        :key="index" 
-                        class="group-btn group-1"
+                <div class="title mb-2">Signaler un problème</div>
+                <v-chip-group
+                    column
+                    class="alert-chip-group mb-3"
+                    :model-value="selectedAlertType"
+                    @update:modelValue="$emit('select-alert-type', $event)"
+                >
+                    <v-chip
+                        v-for="type in alertTypes"
+                        :key="type.value"
+                        :value="type.value"
+                        :color="type.color"
+                        variant="outlined"
+                        class="ma-1 text-none"
                     >
-                            <v-btn
-                                v-for="(btn, indexB) in floor"
-                                :key="indexB"
-                                :icon="indexB != 3 ? btn.icon : false"
-                                :rounded="indexB == 3 ? 'xl' : undefined" 
-                                :size="indexB == 3 ? 'x-large' : 'default'"
-                                :class="indexB == 3 ? 'last' : ''"
-                                variant="outlined"
-                                @click="btn.fun; $emit('alert')"
-                            >
-                                <v-icon>{{ btn.icon }}</v-icon>
-                            </v-btn>
-                    </div>
+                        <v-icon size="16" class="mr-2">{{ type.icon }}</v-icon>
+                        {{ type.label }}
+                    </v-chip>
+                </v-chip-group>
+
+                <div class="duration-info mb-3" :class="{'is-dark': isDarkMode}">
+                    <span class="label">Durée estimée</span>
+                    <span class="value">{{ alertDurationLabel }}</span>
                 </div>
+
+                <v-alert
+                    v-if="!shareLocalisation"
+                    type="warning"
+                    density="comfortable"
+                    variant="tonal"
+                    class="mb-2"
+                >
+                    Activez le partage de localisation pour envoyer un signalement.
+                </v-alert>
+                <v-alert
+                    v-else-if="!canSignal"
+                    type="warning"
+                    density="comfortable"
+                    variant="tonal"
+                    class="mb-2"
+                >
+                    Localisation indisponible. Réessayez dans quelques instants.
+                </v-alert>
+
+                <div class="confirm-btn">
+                    <v-btn
+                        block
+                        rounded="xl"
+                        color="primary"
+                        class="text-none"
+                        :disabled="!canSignal"
+                        @click="$emit('confirm-alert')"
+                    >
+                        Ajouter un marqueur
+                    </v-btn>
+                </div>
+            </div>
+
+            <div
+                v-if="mode=='passengers'"
+                :class="['passengers', {'is-dark': isDarkMode}]"
+            >
+                <div class="title mb-2">Passagers</div>
+                <div 
+                    v-if="passengerBookings.length === 0"
+                    class="text-caption text-medium-emphasis text-center my-4"
+                >
+                    Aucun passager confirmé.
+                </div>
+                <v-list
+                    v-else
+                    density="compact"
+                    :class="{'passengers-dark-list': isDarkMode}"
+                >
+                    <v-list-item
+                        v-for="booking in passengerBookings"
+                        :key="booking.id"
+                    >
+                        <template #prepend>
+                            <v-avatar size="32">
+                                <template v-if="booking.account && booking.account.avatar">
+                                    <v-img :src="booking.account.avatar" />
+                                </template>
+                                <template v-else>
+                                    <span class="text-caption">{{ bookingInitials(booking) }}</span>
+                                </template>
+                            </v-avatar>
+                        </template>
+                        <v-list-item-title>{{ bookingName(booking) }}</v-list-item-title>
+                        <template #append>
+                            <div class="d-flex align-center">
+                                <v-chip
+                                    :color="booking.in_car ? 'green' : 'orange'"
+                                    size="small"
+                                    variant="flat"
+                                    label
+                                    class="mr-2"
+                                >
+                                    <v-icon
+                                        start
+                                        size="16"
+                                    >
+                                        {{ booking.in_car ? 'mdi-check-circle' : 'mdi-timer-sand' }}
+                                    </v-icon>
+                                    {{ booking.in_car ? 'Confirmé' : 'En attente' }}
+                                </v-chip>
+                                <v-btn
+                                    v-if="isDriver && !booking.in_car"
+                                    size="small"
+                                    variant="text"
+                                    color="red"
+                                    icon
+                                    :loading="noShowProcessingId === booking.id"
+                                    :disabled="noShowProcessingId === booking.id"
+                                    @click.stop="$emit('mark-passenger-no-show', booking)"
+                                >
+                                    <v-icon>mdi-account-off</v-icon>
+                                </v-btn>
+                            </div>
+                        </template>
+                    </v-list-item>
+                </v-list>
             </div>
             
         </div>
@@ -543,7 +651,7 @@
 
     export default defineComponent({
         name: 'bottom-menu',
-        emits: ["opened", "close", "alert"], // <--- add this line
+        emits: ["opened", "close", "alert", "select-alert-type", "confirm-alert", "mark-passenger-no-show"],
         components: {
             Vue3DraggableResizable,
         },
@@ -597,6 +705,42 @@
                 type: String,
                 default: "discution",
             },
+            alertTypes: {
+                type: Array,
+                default: () => ([]),
+            },
+            selectedAlertType: {
+                type: String,
+                default: "",
+            },
+            alertDurationLabel: {
+                type: String,
+                default: "",
+            },
+            canSignal: {
+                type: Boolean,
+                default: false,
+            },
+            shareLocalisation: {
+                type: Boolean,
+                default: true,
+            },
+            passengerBookings: {
+                type: Array,
+                default: () => ([]),
+            },
+            noShowProcessingId: {
+                type: [String, Number, null],
+                default: null,
+            },
+            isDriver: {
+                type: Boolean,
+                default: false,
+            },
+            isDarkMode: {
+                type: Boolean,
+                default: false,
+            },
         },
         data() {
             return {
@@ -615,71 +759,6 @@
                 messageSnackbarError: "",
                 showSnackbarSuccess: false,
                 messageSnackbarSuccess: "",
-                // alert
-                alert: {
-                    groupBtn :
-                    [
-                        [
-                            {
-                                icon: "mdi-emoticon-dead", 
-                                fun: ()=>console.log("click"),
-                            },
-                            {
-                                icon: "mdi-alert-octagon", 
-                                fun: ()=>console.log("click"),
-                            },
-                            {
-                                icon: "mdi-map-marker-alert", 
-                                fun: ()=>console.log("click"),
-                            
-                            },
-                            {
-                                icon: "mdi-train-car-flatbed-tank", 
-                                fun: ()=>console.log("click"),
-                            },
-                        ],
-                        // [
-                        //     {
-                        //         icon: "mdi-halloween", 
-                        //         fun: ()=>console.log("click"),
-                        //     },
-                        //     {
-                        //         icon: "mdi-ocarina", 
-                        //         fun: ()=>console.log("click"),
-                        //     },
-                        //     {
-                        //         icon: "mdi-coach-lamp-variant", 
-                        //         fun: ()=>console.log("click"),
-                            
-                        //     },
-                        //     {
-                        //         icon: "mdi-chemical-weapon", 
-                        //         fun: ()=>console.log("click"),
-                        //     },
-                        // ],
-                        // [
-                        //     {
-                        //         icon: "mdi-skull-crossbones", 
-                        //         fun: ()=>console.log("click"),
-                        //     },
-                        //     {
-                        //         icon: "mdi-bone", 
-                        //         fun: ()=>console.log("click"),
-                        //     },
-                        //     {
-                        //         icon: "mdi-account-cowboy-hat", 
-                        //         fun: ()=>console.log("click"),
-                            
-                        //     },
-                        //     {
-                        //         icon: "mdi-drama-masks", 
-                        //         fun: ()=>console.log("click"),
-                        //     },
-                        // ],
-                    ]
-                    
-                }
-                
             }
         },
         mounted() {
@@ -711,6 +790,29 @@
             // }
         },
         methods: {
+            bookingName(booking){
+                if(booking?.account){
+                    if(booking.account.firstname || booking.account.lastname){
+                        return `${booking.account.firstname || ''} ${booking.account.lastname || ''}`.trim() || booking.account.username || "Passager";
+                    }
+                    return booking.account.username || "Passager";
+                }
+                return "Passager";
+            },
+            bookingInitials(booking){
+                if(booking?.account){
+                    const first = booking.account.firstname ? booking.account.firstname.charAt(0) : '';
+                    const last = booking.account.lastname ? booking.account.lastname.charAt(0) : '';
+                    const initials = `${first}${last}`.trim();
+                    if(initials.length > 0){
+                        return initials.toUpperCase();
+                    }
+                    if(booking.account.username){
+                        return booking.account.username.substring(0, 2).toUpperCase();
+                    }
+                }
+                return "P";
+            },
             onDrag(pos) {
                 
                 const posOpenY = this.sizeScreen - ( (this.subContHeigth + this.subContSupHeigth ) + 50 );

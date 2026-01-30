@@ -1,6 +1,6 @@
 
 <style lang="scss" model>
-    @import '@/styles/mixins.scss';
+    @use '@/styles/mixins.scss' as mixins;
     .v-container.bottom-menu {
         position: fixed;
         left: 0;
@@ -51,7 +51,7 @@
                                         letter-spacing: 3px;
                                         text-align: center;
                                         padding-right: 10px;
-                                        @include respond-to('tiny') {
+                                        @include mixins.respond-to('tiny') {
                                             padding-left: 10px;
                                         }
                                     }
@@ -75,7 +75,7 @@
                                                 letter-spacing: 3px;
                                                 // padding-right: 5px;
                                                 text-align: center;
-                                                @include respond-to('tiny') {
+                                                @include mixins.respond-to('tiny') {
                                                     padding-left: 10px;
                                                 }
                                             }
@@ -139,7 +139,7 @@
 </style>
 
 <style lang="scss" scoped>
-    @import '@/styles/mixins.scss';
+    @use '@/styles/mixins.scss' as mixins;
 
     //Animations
     /* The animation code */
@@ -249,7 +249,7 @@
             .select-time, .select-number {
                 width: 85%;
                 min-width: 270px;
-                @include respond-to('tiny') {
+                @include mixins.respond-to('tiny') {
                     width: 100%;
                 }
                 .label {
@@ -266,7 +266,7 @@
 
             .select-day-hour-domicile, .select-day{
                 width: 85%;
-                @include respond-to('tiny') {
+                @include mixins.respond-to('tiny') {
                     width: 90%;
                 }
                 .label {
@@ -1612,6 +1612,12 @@
                             this.warn = 'good';
                         }
                     }
+                }
+            },
+            setNumberSelected(value){
+                this.numberSelected = value;
+                if( this.$refs.SelectNumberRef?.setNumber ){
+                    this.$refs.SelectNumberRef.setNumber(value);
                 }
             },
             async recharger(){
