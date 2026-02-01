@@ -285,23 +285,50 @@ router.beforeEach(async (to, from, next) => {
             FirebaseMessaging.requestPermissions().then(result => {
                 console.log("[index.js] FirebaseMessaging Access :", result.receive);
                 if ( result.receive === 'granted' ) { 
+                    const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
+
+                    const registerToken = (token) => {
+                        if (!token) {
+                            return;
+                        }
+
+                        const userId = store.state.profil.userUid;
+                        if (!userId) {
+                            console.log('[index.js] registerDeviceToken skipped: userId not ready');
+                            return;
+                        }
+
+                        store.commit('auth/SET_REGISTER_DEVICE_TOKEN', token);
+                        axios.post(`${adresse.online}/registerDeviceToken`, {
+                            registerDeviceToken: token,
+                            userId,
+                        })
+                        .then(response => {
+                            console.log("[index.js] data:", response.data);
+                        })
+                        .catch(error => {
+                            console.error('[index.js] Il y a eu une erreur :', error);
+                        });
+                    };
+
+                    const fetchToken = async () => {
+                        try {
+                            const tokenResult = await FirebaseMessaging.getToken();
+                            if (tokenResult && tokenResult.token) {
+                                console.log('[index.js] getToken', tokenResult.token);
+                                registerToken(tokenResult.token);
+                            }
+                        } catch (error) {
+                            console.error('[index.js] getToken error:', error);
+                        }
+                    };
+
+                    fetchToken();
+
                     const addTokenReceivedListener = async () => {
                         await FirebaseMessaging.addListener('tokenReceived', event => {
                             console.log('[index.js] tokenReceived', { event }, event.token);
-
-                            store.commit('auth/SET_REGISTER_DEVICE_TOKEN', event.token);
-                        
-                            const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
-                            axios.post(`${adresse.online}/registerDeviceToken`, {
-                                registerDeviceToken: event.token,
-                                userId: store.state.profil.userUid,
-                            })
-                            .then(response => {
-                                console.log("[index.js] data:", response.data);
-                            })
-                            .catch(error => {
-                                console.error('[index.js] Il y a eu une erreur :', error);
-                            });
+                            registerToken(event.token);
                         });
                     };
 
