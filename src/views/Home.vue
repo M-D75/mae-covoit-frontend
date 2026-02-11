@@ -109,7 +109,7 @@
                 :width="173"
                 aspect-ratio="16/9"
                 cover
-                src="../assets/logo.png"
+                src="../assets/splash.png"
             ></v-img>
         </v-container>
 

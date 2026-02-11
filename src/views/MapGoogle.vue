@@ -67,7 +67,7 @@
                 :position="itineraire.origin.location.latLng.latLngTab"
                 :clickable="true"
                 :icon= '{
-                        url: require("@/assets/icon-only.png"),
+                        url: require("@/assets/splash.png"),
                         scaledSize: {width: 50, height: 50},
                         labelOrigin: {x: -5, y: -5},
                     }'
@@ -130,7 +130,7 @@
                     :clickable="true"
                     :anchorPoint="{x: -10, y: 100}"
                     :icon= '{
-                        url: require("@/assets/icon-only.png"),
+                        url: require("@/assets/splash.png"),
                         scaledSize: {width: 50, height: 50},
                         labelOrigin: {x: -5, y: -5},
                     }'
@@ -141,6 +141,19 @@
                 </GMapMarker>
                 
             </div>
+
+            <GMapMarker
+                v-for="alert in activeAlerts"
+                :key="`alert-${alert.id}`"
+                :position="{ lat: alert.coordinates[0], lng: alert.coordinates[1] }"
+                :icon="resolveAlertIcon(alert.type)"
+            >
+                <GMapInfoWindow>
+                    <strong>{{ alertLabel(alert.type) }}</strong><br>
+                    Signalé à {{ formatAlertCreation(alert.createdAt) }}<br>
+                    Expire à {{ formatAlertExpiration(alert.expiresAt) }}
+                </GMapInfoWindow>
+            </GMapMarker>
 
         </GMapMap>
 
@@ -180,6 +193,7 @@
 <script>
     import polyline from '@mapbox/polyline';
     import { Geolocation } from '@capacitor/geolocation';
+    import supabase from '@/utils/supabaseClient.js';
     
     // Components
     import BottomMenu from '@/components/menus/BottomMenu.vue';
@@ -274,11 +288,27 @@
                 alert: {
                     groupMark: [
                     ],
-                }
+                },
+                alertTypes: [
+                    { value: 'traffic', label: 'Bouchon', color: '#ff9800', abbr: 'B' },
+                    { value: 'danger', label: 'Menace', color: '#d32f2f', abbr: '!' },
+                    { value: 'works', label: 'Travaux', color: '#ffa726', abbr: 'T' },
+                    { value: 'weather', label: 'Intempérie', color: '#4fc3f7', abbr: '~' },
+                ],
+                activeAlerts: [],
+                alertDurationMs: 60 * 60 * 1000,
+                alertCleanupTimer: null,
+                alertChannel: null,
+                alertIconCache: {},
             }
         },
         mounted(){
             this.$refs.BottomMenuRef.open();
+            this.initializeAlertSync();
+        },
+        beforeUnmount(){
+            this.stopAlertCleanupTimer();
+            this.unsubscribeAlertChannel();
         },
         methods: {
             touch(e){
@@ -587,6 +617,155 @@
             openBottomMenuInfos(){
                 if( this.$refs.BottomMenuRef )
                     this.$refs.BottomMenuRef.open();
+            },
+            alertLabel(type){
+                const typeDef = this.alertTypes.find((item) => item.value === type);
+                return typeDef ? typeDef.label : "Alerte";
+            },
+            formatAlertExpiration(timestamp){
+                const date = new Date(timestamp);
+                return date.toLocaleTimeString('fr-FR', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                });
+            },
+            formatAlertCreation(timestamp){
+                const date = new Date(timestamp);
+                return date.toLocaleTimeString('fr-FR', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                });
+            },
+            resolveAlertIcon(type){
+                if( this.alertIconCache[type] ){
+                    return this.alertIconCache[type];
+                }
+                const typeDef = this.alertTypes.find((item) => item.value === type) || this.alertTypes[0];
+                const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30"><circle cx="15" cy="15" r="12" fill="${typeDef.color}"/><text x="15" y="20" text-anchor="middle" font-size="14" font-family="Arial" fill="#fff">${typeDef.abbr || '!'}</text></svg>`;
+                const url = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+                const icon = {
+                    url,
+                    scaledSize: { width: 30, height: 30 },
+                    anchor: { x: 15, y: 15 },
+                };
+                this.alertIconCache[type] = icon;
+                return icon;
+            },
+            startAlertCleanupTimer(){
+                if( this.alertCleanupTimer ){
+                    return;
+                }
+                this.alertCleanupTimer = setInterval(() => {
+                    this.cleanupExpiredAlerts();
+                }, 60000);
+            },
+            stopAlertCleanupTimer(){
+                if( this.alertCleanupTimer ){
+                    clearInterval(this.alertCleanupTimer);
+                    this.alertCleanupTimer = null;
+                }
+            },
+            cleanupExpiredAlerts(){
+                const now = Date.now();
+                const filtered = this.activeAlerts.filter((alert) => alert.expiresAt > now);
+                if( filtered.length !== this.activeAlerts.length ){
+                    this.activeAlerts = filtered;
+                }
+                if( this.activeAlerts.length === 0 ){
+                    this.stopAlertCleanupTimer();
+                }
+            },
+            async initializeAlertSync(){
+                await this.fetchRemoteAlerts();
+                this.subscribeToAlertChannel();
+            },
+            async fetchRemoteAlerts(){
+                try{
+                    const { data, error } = await supabase
+                        .from('road_alert')
+                        .select('*')
+                        .gt('expires_at', new Date().toISOString())
+                        .order('created_at', { ascending: true });
+                    if( error ){
+                        throw error;
+                    }
+                    const alerts = (data || []).map((row) => this.mapAlertRow(row));
+                    this.activeAlerts = alerts;
+                    if( alerts.length ){
+                        this.startAlertCleanupTimer();
+                    }
+                }
+                catch(error){
+                    console.error("fetchRemoteAlerts error", error);
+                }
+            },
+            subscribeToAlertChannel(){
+                this.unsubscribeAlertChannel();
+                this.alertChannel = supabase.channel('road_alert_global');
+
+                this.alertChannel.on(
+                    'postgres_changes',
+                    { event: 'INSERT', schema: 'public', table: 'road_alert' },
+                    (payload) => {
+                        if( payload?.new ){
+                            const alert = this.mapAlertRow(payload.new);
+                            this.addOrReplaceAlert(alert);
+                        }
+                    }
+                );
+
+                this.alertChannel.on(
+                    'postgres_changes',
+                    { event: 'DELETE', schema: 'public', table: 'road_alert' },
+                    (payload) => {
+                        const alertId = payload?.old?.id;
+                        if( alertId ){
+                            this.removeAlertById(alertId);
+                        }
+                    }
+                );
+
+                this.alertChannel.subscribe();
+            },
+            unsubscribeAlertChannel(){
+                if( this.alertChannel ){
+                    this.alertChannel.unsubscribe();
+                    this.alertChannel = null;
+                }
+            },
+            mapAlertRow(row){
+                if( !row ){
+                    return null;
+                }
+                return {
+                    id: row.id,
+                    type: row.alert_type,
+                    coordinates: [row.lat, row.lng],
+                    createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
+                    expiresAt: row.expires_at ? new Date(row.expires_at).getTime() : Date.now() + this.alertDurationMs,
+                    accountId: row.account_id || null,
+                };
+            },
+            addOrReplaceAlert(alert){
+                if( !alert || alert.expiresAt <= Date.now() ){
+                    return;
+                }
+                const index = this.activeAlerts.findIndex((item) => item.id === alert.id);
+                if( index !== -1 ){
+                    const updated = [...this.activeAlerts];
+                    updated[index] = alert;
+                    this.activeAlerts = updated;
+                }
+                else{
+                    this.activeAlerts = [...this.activeAlerts, alert];
+                }
+                this.startAlertCleanupTimer();
+            },
+            removeAlertById(alertId){
+                const filtered = this.activeAlerts.filter((alert) => alert.id !== alertId);
+                if( filtered.length !== this.activeAlerts.length ){
+                    this.activeAlerts = filtered;
+                }
             },
         },
         watch: {

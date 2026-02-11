@@ -627,6 +627,10 @@
                 },
                 infosItin: [],
                 routeAvail: false,
+                updateLocTimerId: null,
+                rerouteCooldownMs: 60000,
+                lastRerouteAt: 0,
+                rerouteDistanceThresholdM: 200,
                 currentLocation: {
                     current: [],
                     passedPoints: [],
@@ -883,6 +887,14 @@
         },
         beforeUnmount() {
             clearInterval(this.timer);
+            if (this.updateLocTimerId) {
+                clearInterval(this.updateLocTimerId);
+                this.updateLocTimerId = null;
+            }
+            if (this.watchId) {
+                Geolocation.clearWatch({ id: this.watchId });
+                this.watchId = null;
+            }
             this.stopAlertCleanupTimer();
             this.unsubscribeAlertChannel();
         },
@@ -1465,7 +1477,8 @@
 
                         tmp_routes.push({
                             id: route, 
-                            polylineDecoded: decoded, 
+                            polylineDecoded: decoded,
+                            originalPolyline: decoded.slice(),
                             infosGoogle: data.routes[route], 
                             duration: duration, 
                             distance: distance, 
@@ -1512,8 +1525,8 @@
                         destination: {
                             location: {
                                 latLng: {
-                                    latitude:  43.60460024300767,
-                                    longitude: 3.8807644833742567,
+                                    latitude: this.itineraire.destination.location.latLng.latitude,
+                                    longitude: this.itineraire.destination.location.latLng.longitude,
                                 }
                             }
                         },
@@ -1542,7 +1555,8 @@
 
                         tmp_routes.push({
                             id: route, 
-                            polylineDecoded: decoded, 
+                            polylineDecoded: decoded,
+                            originalPolyline: decoded.slice(),
                             infosGoogle: data.routes[route], 
                             duration: duration, 
                             distance: distance, 
@@ -1599,9 +1613,18 @@
                 
                 // await this.getRouteInfos();
                 console.log("this.tripSelected:", this.tripSelected);
-                this.routes = [this.tripSelected.route];
-                this.itin.duration = this.tripSelected.route.duration;
-                this.itin.distance = this.tripSelected.route.distance;
+                this.routes = [this.tripSelected.route].map((route, index) => {
+                    const polylineDecoded = Array.isArray(route.polylineDecoded) ? route.polylineDecoded : [];
+                    return {
+                        ...route,
+                        id: typeof route.id !== 'undefined' ? route.id : index,
+                        polylineDecoded,
+                        originalPolyline: polylineDecoded.slice(),
+                        current: index === 0,
+                    };
+                });
+                this.itin.duration = this.routes[0]?.duration || this.itin.duration;
+                this.itin.distance = this.routes[0]?.distance || this.itin.distance;
                 this.routeAvail = true;
                 this.updateLoc();
                 // this.getRouteInfos();
@@ -1661,7 +1684,7 @@
                     const { data, error } = await supabase
                         .from('road_alert')
                         .insert({
-                            trip_id: this.tripSelected.id,
+                            trip_id: this.tripSelected?.id || null,
                             account_id: this.userId,
                             alert_type: typeDef.value,
                             lat: coordinates[0],
@@ -1755,7 +1778,6 @@
                     const { data, error } = await supabase
                         .from('road_alert')
                         .select('*')
-                        .eq('trip_id', this.tripSelected.id)
                         .gt('expires_at', new Date().toISOString())
                         .order('created_at', { ascending: true });
                     if( error ){
@@ -1773,15 +1795,11 @@
             },
             subscribeToAlertChannel(){
                 this.unsubscribeAlertChannel();
-                if( !this.tripSelected?.id ){
-                    return;
-                }
-                const tripId = this.tripSelected.id;
-                this.alertChannel = supabase.channel(`road_alert_trip_${tripId}`);
+                this.alertChannel = supabase.channel('road_alert_global');
 
                 this.alertChannel.on(
                     'postgres_changes',
-                    { event: 'INSERT', schema: 'public', table: 'road_alert', filter: `trip_id=eq.${tripId}` },
+                    { event: 'INSERT', schema: 'public', table: 'road_alert' },
                     (payload) => {
                         if( payload?.new ){
                             const alert = this.mapAlertRow(payload.new);
@@ -1792,7 +1810,7 @@
 
                 this.alertChannel.on(
                     'postgres_changes',
-                    { event: 'DELETE', schema: 'public', table: 'road_alert', filter: `trip_id=eq.${tripId}` },
+                    { event: 'DELETE', schema: 'public', table: 'road_alert' },
                     (payload) => {
                         const alertId = payload?.old?.id;
                         if( alertId ){
@@ -1895,12 +1913,18 @@
 
                 // this.shareLoc();
 
-                setInterval(async function () {
+                if (this.updateLocTimerId) {
+                    clearInterval(this.updateLocTimerId);
+                    this.updateLocTimerId = null;
+                }
+
+                this.updateLocTimerId = setInterval(async function () {
                     if( this.getGeolocalisation ){
                         const coordinates = await Geolocation.getCurrentPosition();
                         const { latitude, longitude } = coordinates.coords;
                         const currentPosition = [latitude, longitude]; // Obtenez la position actuelle
                         this.updatePassedPoints(currentPosition);
+                        this.updateRemainingEstimates(currentPosition);
 
                         // const bounds = [[latitude, longitude], [43.60461578085957, 3.880710839194244]]
                         if(this.$refs.mapRef){
@@ -1935,9 +1959,10 @@
                             //     padding: [18, 18] // padding en pixels autour des limites.
                             // });
                         }
+                        this.checkAndRerouteIfNeeded(currentPosition);
                     }
 
-                }.bind(this), 5000); // Met à jour toutes les secondes, par exemple
+                }.bind(this), 10000); // Met à jour toutes les secondes, par exemple
             },
             sendIsIn(){
                 if(this.mode_driver){
@@ -1973,8 +1998,10 @@
 
                         console.log('New position:', position);
 
-                        const coordinates = await Geolocation.getCurrentPosition();
-                        const { latitude, longitude } = coordinates.coords;
+                        const { latitude, longitude } = position.coords || {};
+                        if (typeof latitude !== 'number' || typeof longitude !== 'number') {
+                            return;
+                        }
                         const currentPosition = [latitude, longitude]; // Obtenez la position actuelle
                         this.updatePassedPoints(currentPosition);
 
@@ -2054,12 +2081,15 @@
 
                 // Parcourir chaque route
                 for (let routeIndex = 0; routeIndex < this.routes.length; routeIndex++) {
+                    const basePolyline = Array.isArray(this.routes[routeIndex].originalPolyline)
+                        ? this.routes[routeIndex].originalPolyline
+                        : this.routes[routeIndex].polylineDecoded;
                     let indexPointSuivant = -1;
 
                     // Identifier le point suivant après le dernier point "passé"
-                    for (let pointIndex = 0; pointIndex < this.routes[routeIndex].polylineDecoded.length - 1; pointIndex++) {
-                        const routePointActuel = this.routes[routeIndex].polylineDecoded[pointIndex];
-                        const routePointSuivant = this.routes[routeIndex].polylineDecoded[pointIndex + 1];
+                    for (let pointIndex = 0; pointIndex < basePolyline.length - 1; pointIndex++) {
+                        const routePointActuel = basePolyline[pointIndex];
+                        const routePointSuivant = basePolyline[pointIndex + 1];
 
                         if (this.isPointCloseToAnyPassedPoint(routePointActuel, this.currentLocation.passedPoints) &&
                             !this.isPointCloseToAnyPassedPoint(routePointSuivant, this.currentLocation.passedPoints)) {
@@ -2070,8 +2100,55 @@
 
                     // Supprimer tous les points jusqu'au point suivant après le dernier point "passé"
                     if (indexPointSuivant !== -1) {
-                        this.routes[routeIndex].polylineDecoded = this.routes[routeIndex].polylineDecoded.slice(indexPointSuivant);
+                        this.routes[routeIndex].polylineDecoded = basePolyline.slice(indexPointSuivant);
                     }
+                }
+            },
+            checkAndRerouteIfNeeded(currentPosition) {
+                if (!this.routes.length || !Array.isArray(this.routes[0].polylineDecoded)) {
+                    return;
+                }
+                const now = Date.now();
+                if (now - this.lastRerouteAt < this.rerouteCooldownMs) {
+                    return;
+                }
+
+                const minDistance = this.getMinDistanceToRoute(currentPosition, this.routes[0].polylineDecoded);
+                if (minDistance > this.rerouteDistanceThresholdM) {
+                    this.lastRerouteAt = now;
+                    this.getCurrentRouteInfos();
+                }
+            },
+            getMinDistanceToRoute(currentPosition, polyline) {
+                let minDistance = Infinity;
+                for (let i = 0; i < polyline.length; i++) {
+                    const point = polyline[i];
+                    const distance = this.calculateDistance(point, currentPosition);
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                    }
+                }
+                return minDistance;
+            },
+            updateRemainingEstimates(currentPosition) {
+                if (!this.routes.length || !Array.isArray(this.routes[0].polylineDecoded)) {
+                    return;
+                }
+                const itineraire = this.routes[0].polylineDecoded;
+                if (!itineraire.length) {
+                    return;
+                }
+                const reste = this.calculerDistanceRestante(currentPosition, itineraire);
+                this.itin.distance = (reste / 1000).toFixed(2);
+
+                const totalDistance = this.routes[0]?.infosGoogle?.distanceMeters || 0;
+                const totalDurationSeconds = this.routes[0]?.infosGoogle?.duration
+                    ? parseInt(this.routes[0].infosGoogle.duration.replaceAll("s", ""))
+                    : 0;
+
+                if (totalDistance > 0 && totalDurationSeconds > 0) {
+                    const percent = Math.min(Math.max(reste / totalDistance, 0), 1);
+                    this.itin.duration = this.convertSecondsToHoursAndMinutes(Math.round(percent * totalDurationSeconds)).toString();
                 }
             },
             isPointCloseToAnyPassedPoint(routePoint, passedPoints) {
