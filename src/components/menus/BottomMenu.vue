@@ -815,7 +815,13 @@
                 class="select-number mx-auto"
             >
                 <div class="label text-center">{{ labelSelectorN1 }}</div>
-                <SelectNumber ref="SelectNumberRef" :min="1" :max="paramsNumber.max" icon="mdi-currency-eur" />
+                <SelectNumber
+                    ref="SelectNumberRef"
+                    :min="1"
+                    :max="paramsNumber.max"
+                    icon="mdi-currency-eur"
+                    v-on:number-changed="resetMoneyAttempt()"
+                />
                 <v-btn 
                     class="text-none"
                     rounded="xl" 
@@ -867,6 +873,7 @@
                     v-on:need-to-add-new-card="creditCard.mode='register-card'; reOpenB();"
                     v-on:no-card-founded="creditCard.mode='register-card'; open_b ? reOpenB() : console.log('not-opened', creditCard.mode);"
                     v-on:card-selected="updateDefaultSourcePayment(); console.log('card-selected')"
+                    v-on:checkout-error="showCheckoutError"
                     v-on:unmount="loading=true"
                     v-on:mount="loading=false"
                 />
@@ -875,7 +882,7 @@
                     v-if="creditCard.mode=='register-card' && open_b"
                     mode="register-card"
                     v-on:card-registered="close(); creditCard.mode='see-card'"
-                    v-on:card-register-failed="close(); registerFailed()"
+                    v-on:card-register-failed="registerFailed"
                     v-on:unmount="loading=true"
                     v-on:mount="loading=false"
                 />
@@ -886,13 +893,20 @@
                 v-if="mode=='payment-intent'"
             >
                 <StripeCheckout 
-                    v-if="paymentIntentId!=null" 
-                    ref="StripeCheckoutPaymentIntentRef" 
-                    mode="payment-card" 
-                    :payment-intent-id="paymentIntentId" 
-                    v-on:checkbox-update="reOpenB()"
-                    v-on:element-mounted="reOpenB()"
-                    v-on:payment-valided="close(); $emit('retry-reserve')"
+                    v-if="open_b && paymentIntentId"
+                    mode="payment-card"
+                    :payment-intent-id="paymentIntentId"
+                    v-on:payment-valided="completeTopup()"
+                    v-on:payment-failed="failTopupAuthentication"
+                    v-on:payment-pending="pendingTopup"
+                    v-on:checkout-error="showCheckoutError"
+                />
+
+                <StripeCheckout
+                    v-else-if="open_b"
+                    mode="register-card"
+                    v-on:card-registered="close(); $emit('retry-reserve')"
+                    v-on:card-register-failed="registerFailed"
                 />
             </div>
 
@@ -1076,6 +1090,20 @@
         </div>
     </v-snackbar>
 
+    <v-snackbar
+        v-model="showSnackbarInfo"
+        :timeout="5000"
+        color="info"
+        style="z-index: 99999;"
+    >
+        <div class="contain-ico">
+            <v-icon icon="mdi-information-outline"></v-icon>
+        </div>
+        <div>
+            <span>{{ messageSnackbarInfo }}</span>
+        </div>
+    </v-snackbar>
+
 
 </template>
 
@@ -1087,7 +1115,8 @@
     import supabase from '@/utils/supabaseClient';
     import { getISOWeekNumber, arrondirSpecial } from '@/utils/utils.js';
     import { mapState, mapActions, mapMutations } from 'vuex';
-    import stripe from '@/utils/stripe.js'
+    import { serverRequest } from '@/utils/serverApi.js';
+    import { createRequestId } from '@/utils/requestId.js';
 
     // Components
     import Vue3DraggableResizable from 'vue3-draggable-resizable';
@@ -1306,10 +1335,14 @@
                     mode: "see-card", //posibility :  "register-card",  "see-card", "pay-card"
                 },
                 paymentIntentId: null,
+                topupAttemptId: null,
+                walletTransferAttemptId: null,
                 showSnackbarError: false,
                 messageSnackbarError: "",
                 showSnackbarSuccess: false,
                 messageSnackbarSuccess: "",
+                showSnackbarInfo: false,
+                messageSnackbarInfo: "",
                 isIOS: false,
             }
         },
@@ -1616,17 +1649,37 @@
             },
             setNumberSelected(value){
                 this.numberSelected = value;
+                this.topupAttemptId = null;
+                this.walletTransferAttemptId = null;
                 if( this.$refs.SelectNumberRef?.setNumber ){
                     this.$refs.SelectNumberRef.setNumber(value);
                 }
             },
+            resetMoneyAttempt(){
+                this.topupAttemptId = null;
+                this.walletTransferAttemptId = null;
+            },
             async recharger(){
                 console.log("number-up", this.$refs.SelectNumberRef.number);
+                this.topupAttemptId = this.topupAttemptId || createRequestId();
                 this.loadingBtn = true;
                 // TODO : get value
                 if(!this.modeDriver){
                     // check-source
-                    const customer = await stripe.customers.retrieve(this.customer_id);
+                    let customer;
+                    try {
+                        const response = await serverRequest('get', '/payments/customer', {
+                            mode: this.modeCo,
+                        });
+                        customer = response.data;
+                    } catch (error) {
+                        console.error("Unable to initialize payment customer:", error);
+                        this.messageSnackbarError = error.response?.data?.message || "Le profil de paiement est indisponible.";
+                        this.showSnackbarError = true;
+                        this.loadingBtn = false;
+                        this.overlayLoad = false;
+                        return;
+                    }
                     if( !(customer.metadata.source_selected 
                             && (customer.metadata.source_selected == customer.default_source 
                                 || customer.metadata.source_selected == customer.invoice_settings.default_payment_method
@@ -1636,30 +1689,26 @@
                         console.log("no-source-founded -> payment with card");
                         
                         try {
-                            const obj = {
-                                amount: this.$refs.SelectNumberRef.number*100,
-                                currency: 'eur',
-                                customer: this.customer_id,
-                                description: `rechargement de soldes pour ${this.userName}`,
-                                setup_future_usage: 'on_session',
-                                // return_url: 'http://localhost:8080/profil',
-                                automatic_payment_methods: {
-                                    enabled: true,
-                                    allow_redirects: 'never'
+                            const { data: paymentIntent } = await serverRequest('post', '/payments/topup-intent', {
+                                mode: this.modeCo,
+                                data: {
+                                    amount: Math.round(this.$refs.SelectNumberRef.number * 100),
+                                    confirmWithSavedMethod: false,
+                                    attemptId: this.topupAttemptId,
                                 },
-                            };
-                            const paymentIntent = await stripe.paymentIntents.create(obj);
+                            });
                             this.paymentIntentId = paymentIntent.id;
                             if(this.paymentIntentId == null)
                                 this.paymentIntentId = paymentIntent.id;
 
-                            console.log("paymentIntent recharche : [OK]", paymentIntent);
                             this.$emit("payment-intent-recharge");
                         } 
                         catch (error) {
                             this.loadingBtn = false;
                             console.error("Erreur lors de la création de l'intention de paiement:", error);
-                            return {valided: false, status: 2, message: "Une erreur s'est produite lors du prélevement sur votre card de credit, veuillez réessayer plus tard."};
+                            this.messageSnackbarError = error.response?.data?.message || "Le paiement n'a pas pu être préparé.";
+                            this.showSnackbarError = true;
+                            return;
                         }
                         this.loadingBtn = false;
                         
@@ -1667,13 +1716,32 @@
                         return;
                     }
                     else{
-                        const result = await this.addCredit({credit: this.$refs.SelectNumberRef.number});
+                        const result = await this.addCredit({
+                            credit: this.$refs.SelectNumberRef.number,
+                            attemptId: this.topupAttemptId,
+                        });
                         if(result.status == 0){
+                            this.topupAttemptId = null;
                             this.messageSnackbarSuccess = result.message;
                             this.showSnackbarSuccess = true;
-                            this.$emit("close");
+                            this.close();
+                        }
+                        else if(result.status == 3 && result.paymentIntentId){
+                            this.paymentIntentId = result.paymentIntentId;
+                            this.$emit("payment-intent-recharge");
+                        }
+                        else if(result.status == 1 && result.pending){
+                            // A processing PaymentIntent is neither failed nor
+                            // credited yet. A later reconciliation applies it.
+                            this.topupAttemptId = null;
+                            this.messageSnackbarInfo = result.message;
+                            this.showSnackbarInfo = true;
+                            this.close();
                         }
                         else{
+                            if( !result.retriable ){
+                                this.topupAttemptId = null;
+                            }
                             this.messageSnackbarError = result.message;
                             this.showSnackbarError = true;
                         }
@@ -1681,8 +1749,13 @@
                     this.loadingBtn = false;
                 }
                 else{
-                    const result = await this.transfertGain({credit: this.$refs.SelectNumberRef.number});
+                    this.walletTransferAttemptId = this.walletTransferAttemptId || createRequestId();
+                    const result = await this.transfertGain({
+                        credit: this.$refs.SelectNumberRef.number,
+                        requestId: this.walletTransferAttemptId,
+                    });
                     if(result.status == 0){
+                        this.walletTransferAttemptId = null;
                         this.messageSnackbarSuccess = result.message;
                         this.showSnackbarSuccess = true;
                         this.$emit("up-money");
@@ -1691,6 +1764,7 @@
                         this.messageSnackbarError = result.message;
                         this.showSnackbarError = true;
                     }
+                    this.loadingBtn = false;
                 }
             },
             emit(value){
@@ -1750,73 +1824,30 @@
             async updateDefaultSourcePayment(){
                 const source = this.$refs.SelectCreditCardRef.cardSelected;
                 if(source != null && source.id != undefined){
-                    let customer = null
-                    if(/^card_/.test(source.id)){
-                        customer = await stripe.customers.update(
-                            this.customer_id,
-                            {
-                                default_source: source.id,
-                                invoice_settings: {
-                                    default_payment_method: null,
-                                },
-                                metadata: {
-                                    type_source: "card",
-                                    source_selected: source.id,
-                                }
-                            }
-                        );
+                    try {
+                        await serverRequest('put', '/payments/default-method', {
+                            mode: this.modeCo,
+                            data: { sourceId: source.id },
+                        });
+                        this.SET_CREDIT_CARD(source);
+                        this.$refs.SelectCreditCardRef.defaultSource = source.id;
+                    } catch (error) {
+                        this.messageSnackbarError = error.response?.data?.message || "La carte n'a pas pu être sélectionnée.";
+                        this.showSnackbarError = true;
+                    } finally {
+                        if (this.$refs.SelectCreditCardRef) {
+                            this.$refs.SelectCreditCardRef.load = false;
+                        }
                     }
-                    else if(/^pm_/.test(source.id)){
-                        customer = await stripe.customers.update(
-                            this.customer_id,
-                            {
-                                invoice_settings: {
-                                    default_payment_method: source.id,
-                                },
-                                metadata: {
-                                    type_source: "pm",
-                                    source_selected: source.id,
-                                }
-                            }
-                        );
-                    }
-
-                    this.SET_CREDIT_CARD(source);
-                    this.$refs.SelectCreditCardRef.defaultSource = source.id;
-                    this.$refs.SelectCreditCardRef.load = false;
-
-                    console.log("update-customer", customer);
                 }
             },
             async buildPaymentIntent(){
-                console.log("buildPaymentIntent");
-                try {
-                    const obj = {
-                        amount: this.trajetSelected.price*100,
-                        currency: 'eur',
-                        customer: this.customer_id,
-                        description: `reservation de trajet ${this.trajetSelected.depart} vers ${this.trajetSelected.destination} à ${this.trajetSelected.departure_time} pour ${this.userName}; userUid : ${this.userUid};`,
-                        setup_future_usage: 'on_session',
-                        // return_url: 'http://localhost:8080/profil',
-                        automatic_payment_methods: {
-                            enabled: true,
-                            allow_redirects: 'never'
-                        },
-                    };
-                    console.log("build-payment-intent", obj);
-                    const paymentIntent = await stripe.paymentIntents.create(obj);
-                    this.paymentIntentId = paymentIntent.id;
-                    if(this.paymentIntentId == null)
-                        this.paymentIntentId = paymentIntent.id;
-
-                    console.log("paymentIntent [OK]", paymentIntent);
-                    
-                    return {valided: true};
-                } 
-                catch (error) {
-                    console.error("Erreur lors de la création de l'intention de paiement:", error);
-                    return {valided: false, status: 2, message: "Une erreur s'est produite lors du prélevement sur votre card de credit, veuillez réessayer plus tard."};
-                }
+                // Missing payment method: register a reusable card first. The
+                // reservation retry will then create its deferred authorization;
+                // no wallet top-up or immediate charge is made here.
+                this.paymentIntentId = null;
+                this.reOpenB();
+                return {valided: true};
             },
             reOpenB(){
                 console.log("reOpen");
@@ -1829,10 +1860,33 @@
                 }.bind(this), 20);
             },
             tryReserveRes(){
-                this.$refs.ReservePlaceRef.tryReserve();
+                this.notif = false;
+                this.$nextTick(() => this.$refs.ReservePlaceRef?.tryReserve());
             },
-            registerFailed(){
-                this.messageSnackbarError = "Une erreur s'est produite, veuillez réessayer plus tard.";
+            completeTopup(){
+                this.paymentIntentId = null;
+                this.topupAttemptId = null;
+                this.messageSnackbarSuccess = "Votre compte a bien été crédité !";
+                this.showSnackbarSuccess = true;
+                this.close();
+            },
+            failTopupAuthentication(message){
+                this.messageSnackbarError = message || "L'authentification bancaire a échoué ou a été annulée.";
+                this.showSnackbarError = true;
+            },
+            pendingTopup(){
+                this.paymentIntentId = null;
+                this.topupAttemptId = null;
+                this.messageSnackbarInfo = "Le paiement est en cours de traitement. Votre solde sera actualisé dès sa validation.";
+                this.showSnackbarInfo = true;
+                this.close();
+            },
+            showCheckoutError(message){
+                this.messageSnackbarError = message || "Le service de paiement est momentanément indisponible.";
+                this.showSnackbarError = true;
+            },
+            registerFailed(message){
+                this.messageSnackbarError = message || "Une erreur s'est produite, veuillez réessayer plus tard.";
                 this.showSnackbarError = true;
             }
         },

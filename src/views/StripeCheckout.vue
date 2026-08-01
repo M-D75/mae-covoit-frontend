@@ -52,7 +52,12 @@
             <!--Stripe.js injects the Payment Element-->
         </div>
 
-        <v-checkbox v-model="saveInfo" label="Enregistrer les informations de carte pour les futurs paiements" @change="updatePaymentIntent()"></v-checkbox>
+        <v-checkbox
+            v-if="allowSaveInfo"
+            v-model="saveInfo"
+            label="Enregistrer les informations de carte pour les futurs paiements"
+            @change="updatePaymentIntent()"
+        ></v-checkbox>
 
         <v-btn
             variant="flat"
@@ -96,18 +101,31 @@
 
 <script>
     import { defineComponent } from 'vue';
-    import { mapState, mapActions } from 'vuex';
+    import { mapState } from 'vuex';
+    import { serverRequest } from '@/utils/serverApi.js';
 
     let stripePromise;
 
-    import stripe from '@/utils/stripe.js'
-
     export default defineComponent({
         name: 'stripe-checkout-view',
-        emits: ["checkbox-update", "payment-valided", "payment-failed", "element-mounted", "card-registered", "card-register-failed", "unmount", "mount"],
+        emits: [
+            "checkbox-update",
+            "payment-valided",
+            "payment-failed",
+            "payment-pending",
+            "checkout-error",
+            "element-mounted",
+            "card-registered",
+            "card-register-failed",
+            "unmount",
+            "mount",
+        ],
         computed: {
             ...mapState("profil", ["darkMode"]),
             ...mapState("auth", ["customer_id"]),
+            activePaymentIntentId(){
+                return this.paymentIntentId || this.$route?.query?.payment_intent || null;
+            },
         },
         components: {
         },
@@ -118,7 +136,7 @@
             },
             paymentIntentId: {
                 type: String,
-                default: "pi_3OSuTRIKwmrDLewY15HDSoMz",
+                default: null,
             },
         },
         data() {
@@ -129,6 +147,7 @@
                 paymentId: null,
                 elements: null,
                 saveInfo: false,
+                allowSaveInfo: true,
                 card: null,
                 price: "",
                 modeIn: "register-card",
@@ -136,7 +155,12 @@
             };
         },
         beforeUnmount(){
+            document.querySelector("#card-form")?.removeEventListener("submit", this.submitCard);
+            document.querySelector("#payment-form")?.removeEventListener("submit", this.submitPayment);
+            this.card?.unmount?.();
+            this.paymentElement?.unmount?.();
             this.card = null;
+            this.paymentElement = null;
             this.loading = false;
             this.elements = null;
             console.log("unmount-stripe-chekcout:", this.modeIn);
@@ -170,33 +194,49 @@
                 } : {}
             }
 
-            //dynamic
-            if (!stripePromise) {
-                const { loadStripe } = await import('@stripe/stripe-js');
-                stripePromise = loadStripe(process.env.VUE_APP_API_STRIPE_PK);
-            }
+            try {
+                if (!stripePromise) {
+                    const { loadStripe } = await import('@stripe/stripe-js');
+                    stripePromise = loadStripe(process.env.VUE_APP_API_STRIPE_PK);
+                }
+                if (!await stripePromise) {
+                    throw new Error("Stripe.js n'a pas pu être chargé.");
+                }
 
-            switch (this.mode) {
-                case 'payment-card':
-                    if(this.paymentIntentId)
-                        this.mountPay();
-                    else
-                        this.mountPayWithoutIntent();
-                    break;
-                case 'register-card':
-                    this.mountCardRegister();
-                    break;
-                default:
-                    break;
+                switch (this.mode) {
+                    case 'payment-card':
+                        if(this.activePaymentIntentId)
+                            await this.mountPay();
+                        else if(this.$route?.name === 'checkout')
+                            this.$router.replace('/profil');
+                        break;
+                    case 'register-card':
+                        await this.mountCardRegister();
+                        break;
+                    default:
+                        break;
+                }
+            } catch (error) {
+                stripePromise = null;
+                const message = error?.message || "Le formulaire de paiement est indisponible.";
+                console.error("Unable to initialize Stripe.js:", error);
+                if (this.mode === 'register-card') {
+                    this.$emit("card-register-failed", message);
+                } else {
+                    this.$emit("checkout-error", message);
+                }
             }
             
         },
         methods: {
-            ...mapActions("profil", ["addCredit"]),
             // ******
             // card
-            mountCardRegister(){
-                stripePromise.then(stripe => {
+            async mountCardRegister(){
+                try {
+                    const stripe = await stripePromise;
+                    if (!stripe) {
+                        throw new Error("Stripe.js n'a pas pu être chargé.");
+                    }
                     const appearance = {
                         theme: this.darkMode ? 'night' : 'stripe',
                     };
@@ -228,10 +268,18 @@
                     const card = elements.create("card", cardElementOption);
                     card.mount("#card-element");
                     this.card = card;
-                    document
-                        .querySelector("#card-form")
-                        .addEventListener("submit", this.submitCard); 
-                });
+                    const cardForm = document.querySelector("#card-form");
+                    if (!cardForm) {
+                        throw new Error("Le formulaire de carte est introuvable.");
+                    }
+                    cardForm.addEventListener("submit", this.submitCard);
+                } catch (error) {
+                    console.error("Unable to mount card form:", error);
+                    this.$emit(
+                        "card-register-failed",
+                        error?.message || "Le formulaire de carte est indisponible."
+                    );
+                }
             },
             updateCardElement(){
                 let style = {};
@@ -264,86 +312,83 @@
             async submitCard(e) {
                 e.preventDefault();
                 this.loading = true;
-                // $(".spinner").removeClass("hidden");
-                const vue = this;
-                const stripePublic = await stripePromise;
-                
-                console.log("creation...", vue.card);
 
                 try {
-                    stripePublic.createToken(vue.card).then(async function(result) {
-                        // Handle result.error or result.token
-                        if (result.error) {
-                            console.log("erro---");
-                            console.error("Error:::", result.error);
-                            vue.$emit("card-register-failed")
-                        } 
-                        else {
-                            // create source card
-                            const card = await stripe.customers.createSource(
-                                vue.customer_id,
-                                {
-                                    source: result.token.id,
-                                }
-                            );
+                    const stripePublic = await stripePromise;
+                    const result = await stripePublic.createToken(this.card);
+                    if (result.error) {
+                        throw result.error;
+                    }
 
-                            console.log("card:", card, result.token);
-
-                            let customer = await stripe.customers.update(
-                                    vue.customer_id,
-                                    {
-                                        default_source: card.id,
-                                        invoice_settings: {
-                                            default_payment_method: null,
-                                        },
-                                        metadata: {
-                                            type_source: "card",
-                                            source_selected: card.id,
-                                        }
-                                    }
-                                );
-                            
-                            console.log("customer:", customer);
-
-                            vue.$emit("card-registered");
-                            vue.loading = false;
-                            console.log("card:", card, vue.loading, result.token);
-                        }
-                        // $(".spinner").addClass("hidden");
-                        vue.loading = false;
+                    const response = await serverRequest('post', '/payments/card-source', {
+                        mode: this.$store.state.profil.modeCo,
+                        data: { token: result.token.id },
                     });
+                    if (!response.data?.card) {
+                        throw new Error("La carte n'a pas été enregistrée.");
+                    }
+
+                    this.$emit("card-registered");
                 }
                 catch (error) {
-                    console.log("ERROR===:", error);
-                    vue.loading = false;
+                    console.error("Card registration failed:", error);
+                    this.$emit(
+                        "card-register-failed",
+                        error.response?.data?.message || error.message || "La carte n'a pas pu être enregistrée."
+                    );
+                }
+                finally {
+                    this.loading = false;
                 }
             },
             // ******
             // payment-intent
             async mountPay(){
-                if( this.paymentIntentId == null ){
+                if( this.activePaymentIntentId == null ){
                     console.log("no paymentItenet Id");
                     return;
                 }
                 else{
-                    console.log("paymentItenet Id", this.paymentIntentId);
+                    console.log("paymentItenet Id", this.activePaymentIntentId);
                 }
 
-                const paymentIntent = await stripe.paymentIntents.retrieve(
-                    this.paymentIntentId
-                );
+                try {
+                    const { data: paymentIntent } = await serverRequest(
+                        'get',
+                        `/payments/topup-intent/${this.activePaymentIntentId}`,
+                        { mode: this.$store.state.profil.modeCo }
+                    );
+                    if(paymentIntent.status === 'succeeded'){
+                        await serverRequest('post', '/payments/topup-finalize', {
+                            mode: this.$store.state.profil.modeCo,
+                            data: { paymentIntentId: paymentIntent.id },
+                        });
+                        await this.$store.dispatch('profil/getSoldes');
+                        this.$emit("payment-valided");
+                        if(this.$route?.name === 'checkout'){
+                            this.$router.replace('/profil');
+                        }
+                        return;
+                    }
+                    if(paymentIntent.status === 'processing'){
+                        this.$emit("payment-pending");
+                        if(this.$route?.name === 'checkout'){
+                            this.$router.replace('/profil');
+                        }
+                        return;
+                    }
+                    if(paymentIntent.status === 'canceled'){
+                        throw new Error("Ce paiement a été annulé.");
+                    }
 
-                this.price = (paymentIntent.amount/100);
+                    this.price = (paymentIntent.amount/100);
+                    this.allowSaveInfo = paymentIntent.confirmation_flow !== 'saved_method';
+                    if(paymentIntent.setup_future_usage != null)
+                        this.saveInfo = true;
+                    this.clientSecret = paymentIntent.client_secret;
+                    this.paymentId = paymentIntent.id;
 
-                if(paymentIntent.setup_future_usage != null)
-                    this.saveInfo = true;
-
-                console.log("paymentIntent", paymentIntent, this.saveInfo);
-
-                this.clientSecret = paymentIntent.client_secret;
-                this.paymentId = paymentIntent.id;
-
-                stripePromise.then(stripe => {
+                    const stripe = await stripePromise;
                     const elements = stripe.elements({ appearance: this.appearancePaymentIntent, clientSecret: this.clientSecret });
                     this.elements = elements;
 
@@ -362,7 +407,16 @@
                         this.$emit("element-mounted");
                     }.bind(this), 1000)
                     console.log("mounted....");
-                });
+                } catch (error) {
+                    console.error("Unable to mount payment form:", error);
+                    this.$emit(
+                        "checkout-error",
+                        error.response?.data?.message || error.message || "Le paiement est indisponible."
+                    );
+                    if(this.$route?.name === 'checkout'){
+                        this.$router.replace('/profil');
+                    }
+                }
             },
             async mountPayWithoutIntent(){
                 stripePromise.then(stripe => {
@@ -397,30 +451,43 @@
                 });
             },
             async updatePaymentIntent(){
-                if(!this.paymentIntentId){
-                    this.elements.update({setupFutureUsage: this.saveInfo ? 'off_session' : null});
-                }
-                else{
-                    const paymentIntent = await stripe.paymentIntents.update(
-                        this.paymentIntentId,
-                        {
-                            setup_future_usage: this.saveInfo ? 'off_session' : null,
-                        }
-                    );
+                try {
+                    if(!this.activePaymentIntentId){
+                        this.elements.update({setupFutureUsage: this.saveInfo ? 'off_session' : null});
+                    }
+                    else{
+                        const { data: paymentIntent } = await serverRequest(
+                            'patch',
+                            `/payments/topup-intent/${this.activePaymentIntentId}`,
+                            {
+                                mode: this.$store.state.profil.modeCo,
+                                data: {
+                                    setupFutureUsage: this.saveInfo ? 'off_session' : null,
+                                },
+                            }
+                        );
 
-                    // console.log("secret", paymentIntent, paymentIntent.client_secret, this.clientSecret, this.elements);
-                    this.clientSecret = paymentIntent.client_secret;
-                    this.paymentIntent = paymentIntent;
-                    
-                    this.elements.update({ clientSecret: paymentIntent.client_secret});   
-                    this.paymentElement.unmount();
-                    const stripePK = await stripePromise;
-                    const paymentElementOptions = {
-                        layout: "tabs",
-                    };
-                    this.elements = stripePK.elements({appearance: this.appearancePaymentIntent, clientSecret: paymentIntent.client_secret})
-                    this.paymentElement = this.elements.create("payment", paymentElementOptions);
-                    this.paymentElement.mount("#payment-element");      
+                        this.clientSecret = paymentIntent.client_secret;
+                        this.paymentIntent = paymentIntent;
+
+                        this.elements.update({ clientSecret: paymentIntent.client_secret});
+                        this.paymentElement.unmount();
+                        const stripePK = await stripePromise;
+                        const paymentElementOptions = {
+                            layout: "tabs",
+                        };
+                        this.elements = stripePK.elements({appearance: this.appearancePaymentIntent, clientSecret: paymentIntent.client_secret})
+                        this.paymentElement = this.elements.create("payment", paymentElementOptions);
+                        this.paymentElement.mount("#payment-element");
+                    }
+                } catch (error) {
+                    this.saveInfo = !this.saveInfo;
+                    console.error("Unable to update payment preference:", error);
+                    this.$emit(
+                        "checkout-error",
+                        error.response?.data?.message || "L'option d'enregistrement de la carte n'a pas pu être modifiée."
+                    );
+                    return;
                 }
 
                 
@@ -431,55 +498,52 @@
             async submitPayment(e){
                 e.preventDefault();
                 this.loading = true; 
-                const vue = this;
-                if(!this.paymentIntentId){
-                    const resultAdd = await vue.addCredit({credit: vue.elements._commonOptions.amount/100, no_source: true});
-                    if(resultAdd.status == 0){
-                        console.log("payment-valided");
-                        vue.$emit("payment-valided");
-                    }
-                    else{
-                        console.log("payment-failed");
-                        vue.$emit("payment-failed")
-                    }
+                if(!this.activePaymentIntentId){
+                    this.$emit("payment-failed");
+                    this.loading = false;
+                    return;
                 }
-                else{
-                    const resultAdd = await vue.addCredit({credit: vue.price, no_source: true});
-                    if(resultAdd.status == 0){
-                        const elements = this.elements;
-                        stripePromise.then(stripe => {
-                            stripe.confirmPayment({
-                                elements,
-                                redirect: 'if_required',
-                                confirmParams: {
-                                    // Make sure to change this to your payment completion page
-                                    return_url: "http://localhost:8080/checkout",
-                                },
-                            }).then(result => {
-                                if (result.error) {
-                                    console.log("Error", result.error);
-                                    vue.$emit("payment-failed");
-                                }
-                                else {
-                                    console.log("results-payment:", result);
-                                    if(result && result.paymentIntent.status == "succeeded"){
-                                        console.log("payment-valided");
-                                        vue.$emit("payment-valided");
-                                    }
-                                    else{
-                                        console.log("payment-failed");
-                                        vue.$emit("payment-failed");
-                                    }
-                                }
-                            });
-                        });
+
+                try {
+                    const stripePublic = await stripePromise;
+                    const result = await stripePublic.confirmPayment({
+                        elements: this.elements,
+                        redirect: 'if_required',
+                        confirmParams: {
+                            return_url: `${window.location.origin}/checkout`,
+                        },
+                    });
+
+                    if (result.error) {
+                        console.error("Payment confirmation failed:", result.error);
+                        this.$emit("payment-failed", result.error.message);
+                        return;
                     }
-                    else{
-                        console.log("payment-failed-2");
-                        vue.$emit("payment-failed")
+                    if (result.paymentIntent?.status === 'processing') {
+                        this.$emit("payment-pending");
+                        return;
                     }
+                    if (result.paymentIntent?.status !== 'succeeded') {
+                        console.error("Payment confirmation failed:", result.paymentIntent?.status);
+                        this.$emit("payment-failed", "Le paiement n'a pas été validé.");
+                        return;
+                    }
+
+                    await serverRequest('post', '/payments/topup-finalize', {
+                        mode: this.$store.state.profil.modeCo,
+                        data: { paymentIntentId: result.paymentIntent.id },
+                    });
+                    await this.$store.dispatch('profil/getSoldes');
+                    this.$emit("payment-valided");
+                } catch (error) {
+                    console.error("Payment finalization failed:", error);
+                    this.$emit(
+                        "checkout-error",
+                        error.response?.data?.message || "Le paiement a été confirmé, mais sa synchronisation a échoué. Actualisez votre solde."
+                    );
+                } finally {
+                    this.loading = false;
                 }
-                this.loading = false;
             },
         },
         watch: {

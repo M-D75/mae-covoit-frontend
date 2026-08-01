@@ -196,10 +196,9 @@
 <script>
     import { defineComponent } from 'vue';
     import { mapState, mapActions } from 'vuex';
+    import { serverRequest } from '@/utils/serverApi.js';
 
     let stripePromise;
-
-    import stripe from '@/utils/stripe.js'
 
     // Components
     // ...
@@ -230,12 +229,11 @@
         methods: {
             ...mapActions("profil", ["getProvider", "identityChecked"]),
             async retrieveIdentity(){
-                // "vs_1OW66BIKwmrDLewYEKwIzTHW"
-                const verificationSession = await stripe.identity.verificationSessions.retrieve(
-                    this.stripe_provider.metadata.vs_id
+                const { data: verificationSession } = await serverRequest(
+                    'get',
+                    `/connect/identity-session/${this.stripe_provider.metadata.vs_id}`,
+                    { mode: this.$store.state.profil.modeCo }
                 );
-                console.log("verificationSession", verificationSession);
-
                 if(verificationSession.status == 'processing'){
                     this.showSnackbarMessage(3, "Une vérification est toujours en cours...");
                     return;
@@ -251,15 +249,6 @@
                     return;
                 }
 
-                await stripe.accounts.update(
-                    this.provider_id,
-                    {
-                        metadata: {
-                            vs_id: verificationSession.id,
-                        },
-                    }
-                );
-                
                 this.clientSecret = verificationSession.client_secret;
                 this.id = verificationSession.id;
                 
@@ -271,33 +260,17 @@
             },
             async checkIdentity(){
                 if( ! this.identity ){
-                    console.log("this.stripe_provider", this.stripe_provider);
                     if( this.stripe_provider && this.stripe_provider.metadata.vs_id ){
                         await this.retrieveIdentity();
                         return;
                     }
                     console.log("new verification identity...");
-                    // back-end create verification
-                    const verificationSession = await stripe.identity.verificationSessions.create({
-                        type: 'document',
-                        metadata: {
-                            user_id: this.userUid,
-                        },
+                    const { data: verificationSession } = await serverRequest('post', '/connect/identity-session', {
+                        mode: this.$store.state.profil.modeCo,
                     });
-
-                    await stripe.accounts.update(
-                        this.provider_id,
-                        {
-                            metadata: {
-                                vs_id: verificationSession.id,
-                            },
-                        }
-                    );
 
                     this.clientSecret = verificationSession.client_secret;
                     this.id = verificationSession.id;
-                    console.log("clientSecret", this.clientSecret);
-
                     const stripePK = await stripePromise;
                     stripePK.verifyIdentity(this.clientSecret).then(() => {
                         console.log("recheck...");
@@ -310,11 +283,11 @@
             },
             async recheck(id){
                 console.log("recheck", id);
-                const verificationSession2 = await stripe.identity.verificationSessions.retrieve(
-                    id
+                const { data: verificationSession2 } = await serverRequest(
+                    'get',
+                    `/connect/identity-session/${id}`,
+                    { mode: this.$store.state.profil.modeCo }
                 );
-                console.log("verificationSession2", verificationSession2);
-
                 if( verificationSession2.status == 'verified' ){
                     const res = await this.identityChecked();
                     if(res.status == 0){
@@ -328,20 +301,17 @@
                     this.showSnackbarMessage(3, "Vérification en cours...")
                 }
                 else{
-                    if( this.verificationSession2.last_error.code == 'document_unverified_other' ){
+                    if( verificationSession2.last_error?.code == 'document_unverified_other' ){
                         this.showSnackbarMessage(2, "Echec de la vérification des documents, veuillez réessayer plus tard.");
                     }
-                    else if( this.verificationSession2.last_error.code == 'consent_declined' ){
+                    else if( verificationSession2.last_error?.code == 'consent_declined' ){
                         this.showSnackbarMessage(2, "Vous avez réfusée les termes de consentement.");
                     }
                 }
             },
             async goToStripe(){
-                const accountLink = await stripe.accountLinks.create({
-                    account: this.provider_id,
-                    refresh_url: 'http://localhost:8080/profil/perso',
-                    return_url: 'http://localhost:8080/profil/perso',
-                    type: 'account_onboarding',
+                const { data: accountLink } = await serverRequest('post', '/connect/onboarding-link', {
+                    mode: this.$store.state.profil.modeCo,
                 });
 
                 console.log("accountLink", accountLink);

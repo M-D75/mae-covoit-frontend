@@ -82,6 +82,8 @@
 
     .v-container.bottom-menu {
         position: fixed;
+        display: flex;
+        flex-direction: column;
         padding: 16px 0;
         bottom: 0;
         border-radius: 30px 30px 0 0;
@@ -89,8 +91,16 @@
         color: var(--font-color-label);
         width: 100%;
         max-width: 100%;
+        max-height: calc(100vh - 16px);
+        overflow: hidden;
         .sub-cont {
             height: max-content;
+            min-height: 0;
+            max-height: calc(100vh - 180px);
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: calc(12px + var(--safe-area-inset-bottom, 0px));
             .bar-up {
                 cursor: pointer;
                 margin: auto;
@@ -303,10 +313,64 @@
                     text-align: center;
                     text-transform: capitalize;
                 }
-                .alert-chip-group{
+                .alert-icon-grid{
+                    display: grid;
+                    grid-template-columns: repeat(4, minmax(0, 1fr));
+                    gap: 12px;
+                    margin-bottom: 18px;
+                }
+                .alert-icon-btn{
+                    min-width: 0;
+                    width: 100%;
+                    height: 58px;
+                    border-radius: 18px;
+                    box-shadow: var(--box-shadow-card);
+                    background-color: var(--white-bg-color);
+                    color: var(--font-color-label);
+                    border: 1px solid rgba(0, 0, 0, 0.04);
+                    &.is-selected{
+                        color: white;
+                        border-color: transparent;
+                    }
+                    .v-icon{
+                        font-size: 24px;
+                    }
+                }
+                .selected-alert-card{
                     display: flex;
-                    flex-wrap: wrap;
-                    justify-content: center;
+                    align-items: center;
+                    gap: 12px;
+                    padding: 12px 14px;
+                    border-radius: 18px;
+                    background: rgba(2, 147, 247, 0.08);
+                    margin-bottom: 14px;
+                    .selected-alert-icon{
+                        width: 44px;
+                        height: 44px;
+                        border-radius: 14px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: #fff;
+                        flex-shrink: 0;
+                        .v-icon{
+                            font-size: 22px;
+                        }
+                    }
+                    .selected-alert-text{
+                        min-width: 0;
+                    }
+                    .selected-alert-label{
+                        font-weight: 700;
+                        color: var(--font-color-label);
+                    }
+                    .selected-alert-description{
+                        margin-top: 2px;
+                        color: var(--font-color-label);
+                        opacity: 0.75;
+                        font-size: 13px;
+                        line-height: 1.3;
+                    }
                 }
                 .duration-info{
                     display: flex;
@@ -337,6 +401,115 @@
                         height: 42px;
                     }
                 }
+                &.is-dark{
+                    .alert-icon-btn{
+                        background-color: #242424;
+                        border-color: rgba(255, 255, 255, 0.06);
+                        color: #f5f5f5;
+                    }
+                    .selected-alert-card{
+                        background: rgba(255, 255, 255, 0.06);
+                        .selected-alert-label,
+                        .selected-alert-description{
+                            color: #f5f5f5;
+                        }
+                    }
+                }
+            }
+
+            .alert-detail{
+                padding: 10px;
+                .title{
+                    text-align: center;
+                    text-transform: capitalize;
+                }
+                .detail-card{
+                    border-radius: 22px;
+                    padding: 16px;
+                    background: rgba(2, 147, 247, 0.08);
+                }
+                .detail-head{
+                    display: flex;
+                    align-items: center;
+                    gap: 14px;
+                    margin-bottom: 14px;
+                }
+                .detail-icon{
+                    width: 52px;
+                    height: 52px;
+                    border-radius: 18px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: #fff;
+                    flex-shrink: 0;
+                    .v-icon{
+                        font-size: 26px;
+                    }
+                }
+                .detail-title{
+                    font-size: 16px;
+                    font-weight: 700;
+                    color: var(--font-color-label);
+                }
+                .detail-subtitle{
+                    margin-top: 2px;
+                    font-size: 13px;
+                    color: var(--font-color-label);
+                    opacity: 0.72;
+                }
+                .detail-meta{
+                    display: grid;
+                    gap: 8px;
+                    margin-bottom: 14px;
+                }
+                .detail-meta-row{
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 12px;
+                    padding: 10px 12px;
+                    border-radius: 14px;
+                    background: rgba(255, 255, 255, 0.58);
+                    color: var(--font-color-label);
+                    .label{
+                        font-size: 12px;
+                        letter-spacing: 0.04em;
+                        text-transform: uppercase;
+                        opacity: 0.7;
+                    }
+                    .value{
+                        font-weight: 700;
+                    }
+                }
+                .detail-votes{
+                    display: grid;
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
+                    gap: 10px;
+                    margin-top: 14px;
+                }
+                .vote-btn{
+                    height: 46px;
+                    border-radius: 16px;
+                    font-weight: 700;
+                    text-transform: none;
+                    &.is-active{
+                        color: white;
+                    }
+                }
+                &.is-dark{
+                    .detail-card{
+                        background: rgba(255, 255, 255, 0.06);
+                    }
+                    .detail-title,
+                    .detail-subtitle{
+                        color: #f5f5f5;
+                    }
+                    .detail-meta-row{
+                        background: rgba(0, 0, 0, 0.18);
+                        color: #f5f5f5;
+                    }
+                }
             }
 
             .passengers{
@@ -360,6 +533,7 @@
         }
 
         .sub-cont-sup {
+            flex-shrink: 0;
             //map
             .map {
                 width: 90%;
@@ -443,27 +617,39 @@
 
             <div 
                 v-if="mode=='alert'"
-                class="alert"
+                :class="['alert', {'is-dark': isDarkMode}]"
             >
                 <div class="title mb-2">Signaler un problème</div>
-                <v-chip-group
-                    column
-                    class="alert-chip-group mb-3"
-                    :model-value="selectedAlertType"
-                    @update:modelValue="$emit('select-alert-type', $event)"
-                >
-                    <v-chip
+                <div class="alert-icon-grid">
+                    <v-btn
                         v-for="type in alertTypes"
                         :key="type.value"
-                        :value="type.value"
-                        :color="type.color"
-                        variant="outlined"
-                        class="ma-1 text-none"
+                        icon
+                        :class="['alert-icon-btn', {'is-selected': selectedAlertType === type.value}]"
+                        :style="selectedAlertType === type.value ? { backgroundColor: type.color } : {}"
+                        @click="$emit('select-alert-type', type.value)"
                     >
-                        <v-icon size="16" class="mr-2">{{ type.icon }}</v-icon>
-                        {{ type.label }}
-                    </v-chip>
-                </v-chip-group>
+                        <v-icon>{{ type.icon }}</v-icon>
+                    </v-btn>
+                </div>
+
+                <div
+                    v-if="selectedAlertTypeDef"
+                    class="selected-alert-card"
+                >
+                    <div
+                        class="selected-alert-icon"
+                        :style="{ backgroundColor: selectedAlertTypeDef.color }"
+                    >
+                        <v-icon>{{ selectedAlertTypeDef.icon }}</v-icon>
+                    </div>
+                    <div class="selected-alert-text">
+                        <div class="selected-alert-label">{{ selectedAlertTypeDef.label }}</div>
+                        <div class="selected-alert-description">
+                            {{ selectedAlertTypeDef.description || 'Choisissez ce type puis ajoutez le marqueur sur votre position actuelle.' }}
+                        </div>
+                    </div>
+                </div>
 
                 <div class="duration-info mb-3" :class="{'is-dark': isDarkMode}">
                     <span class="label">Durée estimée</span>
@@ -501,6 +687,104 @@
                         Ajouter un marqueur
                     </v-btn>
                 </div>
+            </div>
+
+            <div
+                v-if="mode=='alert-detail'"
+                :class="['alert-detail', {'is-dark': isDarkMode}]"
+            >
+                <div class="title mb-2">Signalement</div>
+                <div v-if="selectedAlert && selectedAlertTypeDef" class="detail-card">
+                    <div class="detail-head">
+                        <div
+                            class="detail-icon"
+                            :style="{ backgroundColor: selectedAlertTypeDef.color }"
+                        >
+                            <v-icon>{{ selectedAlertTypeDef.icon }}</v-icon>
+                        </div>
+                        <div>
+                            <div class="detail-title">{{ selectedAlertTypeDef.label }}</div>
+                            <div class="detail-subtitle">
+                                {{ selectedAlertTypeDef.description || 'Signalement en cours sur cet axe.' }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <v-alert
+                        v-if="selectedAlertContextMessage"
+                        type="info"
+                        density="comfortable"
+                        variant="tonal"
+                        class="mb-3"
+                    >
+                        {{ selectedAlertContextMessage }}
+                    </v-alert>
+
+                    <v-alert
+                        v-else-if="selectedAlertIsOwner"
+                        type="info"
+                        density="comfortable"
+                        variant="tonal"
+                        class="mb-3"
+                    >
+                        Vous avez créé ce signalement. Les autres usagers peuvent le confirmer ou l'infirmer.
+                    </v-alert>
+
+                    <div class="detail-meta">
+                        <div class="detail-meta-row">
+                            <span class="label">Signalé</span>
+                            <span class="value">{{ formatAlertTime(selectedAlert.createdAt) }}</span>
+                        </div>
+                        <div class="detail-meta-row">
+                            <span class="label">Expire</span>
+                            <span class="value">{{ formatAlertTime(selectedAlert.expiresAt) }}</span>
+                        </div>
+                        <div class="detail-meta-row">
+                            <span class="label">Validations</span>
+                            <span class="value">{{ selectedAlert.confirmCount || 0 }}</span>
+                        </div>
+                        <div class="detail-meta-row">
+                            <span class="label">Invalidations</span>
+                            <span class="value">{{ selectedAlert.invalidateCount || 0 }}</span>
+                        </div>
+                    </div>
+
+                    <div class="detail-votes">
+                        <v-btn
+                            class="vote-btn"
+                            :class="{ 'is-active': selectedAlertVoteState === 'confirm' }"
+                            :color="selectedAlertVoteState === 'confirm' ? 'green-darken-1' : undefined"
+                            :variant="selectedAlertVoteState === 'confirm' ? 'flat' : 'outlined'"
+                            :disabled="!canVoteSelectedAlert || alertVoteLoading"
+                            :loading="alertVoteLoading && alertVoteAction === 'confirm'"
+                            prepend-icon="mdi-thumb-up"
+                            @click="$emit('vote-alert', 'confirm')"
+                        >
+                            Valider
+                        </v-btn>
+                        <v-btn
+                            class="vote-btn"
+                            :class="{ 'is-active': selectedAlertVoteState === 'invalidate' }"
+                            :color="selectedAlertVoteState === 'invalidate' ? 'red-darken-1' : undefined"
+                            :variant="selectedAlertVoteState === 'invalidate' ? 'flat' : 'outlined'"
+                            :disabled="!canVoteSelectedAlert || alertVoteLoading"
+                            :loading="alertVoteLoading && alertVoteAction === 'invalidate'"
+                            prepend-icon="mdi-thumb-down"
+                            @click="$emit('vote-alert', 'invalidate')"
+                        >
+                            Infirmer
+                        </v-btn>
+                    </div>
+                </div>
+
+                <v-alert
+                    v-else
+                    type="warning"
+                    density="comfortable"
+                    variant="tonal"
+                >
+                    Ce signalement n'est plus disponible.
+                </v-alert>
             </div>
 
             <div
@@ -572,7 +856,7 @@
         </div>
 
         <!-- sub-cont-sup -->
-        <div class="sub-cont-sup" :class="className.join(' ')">
+        <div class="sub-cont-sup" :class="className.join(' ')" ref="subContSup">
             <!-- Map -->
             <div
                 v-if="mode=='map'"
@@ -651,7 +935,7 @@
 
     export default defineComponent({
         name: 'bottom-menu',
-        emits: ["opened", "close", "alert", "select-alert-type", "confirm-alert", "mark-passenger-no-show"],
+        emits: ["opened", "close", "alert", "select-alert-type", "confirm-alert", "mark-passenger-no-show", "vote-alert"],
         components: {
             Vue3DraggableResizable,
         },
@@ -661,6 +945,10 @@
             },
             numericMask() {
                 return { regex: /^[0-9]*$/ };
+            },
+            selectedAlertTypeDef() {
+                const alertType = this.alertTypeByValue(this.mode === 'alert-detail' ? this.selectedAlert?.type : this.selectedAlertType);
+                return alertType || null;
             },
         },
         props: {
@@ -741,6 +1029,34 @@
                 type: Boolean,
                 default: false,
             },
+            selectedAlert: {
+                type: Object,
+                default: null,
+            },
+            selectedAlertContextMessage: {
+                type: String,
+                default: "",
+            },
+            canVoteSelectedAlert: {
+                type: Boolean,
+                default: false,
+            },
+            selectedAlertVoteState: {
+                type: String,
+                default: "",
+            },
+            selectedAlertIsOwner: {
+                type: Boolean,
+                default: false,
+            },
+            alertVoteLoading: {
+                type: Boolean,
+                default: false,
+            },
+            alertVoteAction: {
+                type: String,
+                default: "",
+            },
         },
         data() {
             return {
@@ -754,6 +1070,7 @@
                 move: false,
                 marge_bar: 30,
                 subContHeigth: 0,
+                subContSupHeigth: 0,
                 open_b: false,
                 showSnackbarError: false,
                 messageSnackbarError: "",
@@ -762,22 +1079,11 @@
             }
         },
         mounted() {
-
-            this.sizeScreen = $(window).innerHeight();
+            this.refreshSheetMetrics();
             this.y = this.sizeScreen;
             
             const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
             $(classBottomMenuNameJquery).css("top", `${this.y}px`);
-            
-            const classSubContNameJquery = this.className != "" && this.className != null ? `.sub-cont.${this.className.join(".")}` : ".sub-cont";
-            this.subContHeigth = $(classSubContNameJquery)[0].clientHeight;
-
-            console.log("classe-name", this.className, "screen-height", this.sizeScreen, "subContHeigth", this.subContHeigth, "object", $(classSubContNameJquery));
-
-            const classSubContSupNameJquery = this.className != "" && this.className != null ? `.sub-cont-sup.${this.className.join(".")}` : ".sub-cont-sup";
-            this.subContSupHeigth = $(classSubContSupNameJquery)[0].clientHeight;
-
-            console.log("this.subContSupHeigth", this.subContSupHeigth, $(classSubContSupNameJquery));
 
             
             $(classBottomMenuNameJquery).addClass("closed");
@@ -790,6 +1096,31 @@
             // }
         },
         methods: {
+            refreshSheetMetrics(){
+                this.sizeScreen = $(window).innerHeight();
+                this.subContHeigth = this.$refs.subCont ? this.$refs.subCont.clientHeight : 0;
+                this.subContSupHeigth = this.$refs.subContSup ? this.$refs.subContSup.clientHeight : 0;
+            },
+            getOpenTopPosition(){
+                this.refreshSheetMetrics();
+                const visibleHeight = Math.min(
+                    this.subContHeigth + this.subContSupHeigth,
+                    Math.max(this.sizeScreen - 100, 240)
+                );
+                return Math.max(16, this.sizeScreen - (visibleHeight + 50));
+            },
+            alertTypeByValue(value){
+                return this.alertTypes.find((type) => type.value === value) || null;
+            },
+            formatAlertTime(timestamp){
+                if( !timestamp ){
+                    return "--:--";
+                }
+                return new Date(timestamp).toLocaleTimeString('fr-FR', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                });
+            },
             bookingName(booking){
                 if(booking?.account){
                     if(booking.account.firstname || booking.account.lastname){
@@ -815,7 +1146,7 @@
             },
             onDrag(pos) {
                 
-                const posOpenY = this.sizeScreen - ( (this.subContHeigth + this.subContSupHeigth ) + 50 );
+                const posOpenY = this.getOpenTopPosition();
                 // console.log("pos", pos, posOpenY - 20);
                 if(pos.y > posOpenY - 20){
                     this.move = true;
@@ -867,11 +1198,11 @@
                     }, 100)
                 }
 
-                const posOpenY = this.sizeScreen - ( this.subContHeigth + this.subContSupHeigth + 50 );
+                const posOpenY = this.getOpenTopPosition();
                 if(pos.y <= posOpenY - 20){
                     _this.draggableBar = true;
                     _this.disabledY = false;
-                    this.y = this.sizeScreen - ( this.subContHeigth + this.subContSupHeigth + 50 );
+                    this.y = posOpenY;
 
                     console.log("y", this.y, this.subContHeigth, this.subContSupHeigth);
 
@@ -886,63 +1217,61 @@
 
                 this.move = false;
             },
-            open(){
-                
-                this.subContHeigth = this.$refs.subCont.clientHeight;
-                
-                console.log("open_b", this.open_b);
-                if ( ! this.open_b ) {
-                    if ( this.y >= this.sizeScreen - this.marge_bar ) {
-                        if( ! this.move ){
-                            console.log("will-open")
-                            const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
-                            $(classBottomMenuNameJquery).removeClass("closed");
+            async open(){
+                await this.$nextTick();
+                this.refreshSheetMetrics();
 
-                            // open
-                            this.move = true;
-                            this.disabledY = false;
-                            this.y = this.sizeScreen - ( this.subContHeigth + 50 );
-                            const _this = this;
-                            
-                           
-                            $(classBottomMenuNameJquery).animate({"top": `${_this.y}px`}, "fast", function(){
-                                // $(this).animate({"top": "auto"}, 1000);
-                                _this.y = parseInt($(this).css("top").replace("px", ""));
-                                _this.move = false;
-                                _this.$emit('opened');
-                            });
-
-                            this.open_b = true;
-                        }
-                        else{
-                            this.open_b = false;
-                        }
-                    }
+                if( this.move ){
+                    return this.open_b;
                 }
 
-                return this.open_b;
+                if( this.open_b ){
+                    return true;
+                }
+
+                const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
+                $(classBottomMenuNameJquery).removeClass("closed");
+
+                this.move = true;
+                this.disabledY = false;
+                this.y = this.getOpenTopPosition();
+                const _this = this;
+
+                $(classBottomMenuNameJquery).animate({"top": `${_this.y}px`}, "fast", function(){
+                    _this.y = parseInt($(this).css("top").replace("px", ""));
+                    _this.move = false;
+                    _this.$emit('opened');
+                });
+
+                this.open_b = true;
+                return true;
             },
-            openMiddle(){
-                if ( ! this.open_b ) {
-                    if ( this.y >= this.sizeScreen - this.marge_bar ) {
-                        if( ! this.move ){
-                            this.move = true;
-                            // open
-                            const _this = this;
-                            this.disabledY = false;
-                            this.y = this.sizeScreen/2;
-                            const classBottomMenuNameJquery =  this.className != null && this.className.length != 0 ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
-                            
-                            $(classBottomMenuNameJquery).animate({"top": `${this.y}px`}, "fast", function(){
-                                _this.open_b = true;
-                                _this.move = false;
-                                _this.$emit("opened");
-                            });
-                        }
-                    }
+            async openMiddle(){
+                await this.$nextTick();
+                this.refreshSheetMetrics();
+
+                if( this.move ){
+                    return this.open_b;
                 }
 
-                return this.open_b;
+                if( this.open_b ){
+                    return true;
+                }
+
+                this.move = true;
+                const _this = this;
+                this.disabledY = false;
+                this.y = this.sizeScreen / 2;
+                const classBottomMenuNameJquery =  this.className != null && this.className.length != 0 ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
+
+                $(classBottomMenuNameJquery).removeClass("closed");
+                $(classBottomMenuNameJquery).animate({"top": `${this.y}px`}, "fast", function(){
+                    _this.open_b = true;
+                    _this.move = false;
+                    _this.$emit("opened");
+                });
+
+                return true;
             },
             close(){
                 

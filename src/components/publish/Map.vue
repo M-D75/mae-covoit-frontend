@@ -31,6 +31,14 @@
         .overlay-load {
             z-index: 9999;
         }
+
+        .routing-error {
+            position: absolute;
+            top: calc(75px + var(--safe-area-inset-top));
+            left: 16px;
+            right: 16px;
+            z-index: 1000;
+        }
     }
 </style>
 
@@ -60,120 +68,32 @@
             />
         </div>
 
-        <!-- L-map -->
-        <l-map 
-            id="map-id" 
-            :zoom="zoom" 
-            :center="center" 
-            @ready="isLoaded()" 
-            ref="mapRef"
-        >            
-            <!-- <l-tile-layer url="https://api.maptiler.com/maps/winter-v2/{z}/{x}/{y}.png?key=faY6afh2tnFprZqdoyZP"/> -->
-            <l-tile-layer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"/>
+        <v-alert
+            v-if="routingErrorMessage"
+            class="routing-error"
+            type="error"
+            variant="tonal"
+            closable
+            @click:close="routingErrorMessage = ''"
+        >
+            {{ routingErrorMessage }}
+        </v-alert>
 
-
-            <!-- origin -->
-            <l-marker 
-                :lat-lng="itineraire.origin.location.latLng.latLngTab"
-            >
-                <l-popup>{{ itineraire.origin.infos.village }}, ({{ itineraire.origin.infos.commune }})</l-popup>
-            </l-marker>
-
-            <l-marker
-                v-for="alert in activeAlerts"
-                :key="`alert-${alert.id}`"
-                :lat-lng="alert.coordinates"
-                :icon="resolveAlertIcon(alert.type)"
-            >
-                <l-tooltip :options="{ direction: 'top', offset: [0, -10] }">
-                    <div class="alert-tooltip">
-                        <strong>{{ alertLabel(alert.type) }}</strong><br>
-                        Signalé à {{ formatAlertCreation(alert.createdAt) }} h<br>
-                        Expire à {{ formatAlertExpiration(alert.expiresAt) }} h
-                    </div>
-                </l-tooltip>
-            </l-marker>
-
-            <!-- route -->
-            <div v-if="routeAvail">
-                <l-polyline 
-                    v-for="(route, index) in routes.slice().reverse()"
-                    :key="route.id"
-                    :lat-lngs="route.polylineDecoded" 
-                    :color="index == routes.length - 1 ? '#1b79cc' : '#838383'" 
-                    :weight="8"
-                >
-                    <l-tooltip
-                        v-if="route.current"
-                        :options="{ permanent: true, interactive: false, direction: 'right', offset: [10, 0] }"
-                    >
-                        <span :style="{'font-weight': 800, color: 'red' }"> {{ route.duration }} </span>
-                    </l-tooltip>  
-                </l-polyline>
-
-                <l-polyline 
-                    v-for="(route, index) in routes.slice().reverse()"
-                    :key="index"
-                    :lat-lngs="route.polylineDecoded" 
-                    :color="index == routes.length - 1 ? '#01a9e8' : '#bcbcbc'" 
-                    :weight="4"
-                    @click="trajetSelected(index)"
-                />
-
-                <!-- point -->
-                <l-circle-marker 
-                    :lat-lng="itineraire.destination.location.latLng.latLngTab"
-                    :radius="5"
-                    :weight="2"
-                    :color="'black'"
-                    :fillColor="'white'" 
-                    :fillOpacity="1"
-                >
-                    <!-- <l-popup>{{ itineraire.destination.infos.village }}, ({{ itineraire.destination.infos.commune }})</l-popup> -->
-                    <l-tooltip :options="{ permanent: true, interactive: false, direction: 'right', offset: [10, 0] }">
-                        <span style="font-weight: bold;"> {{ itineraire.destination.infos.village }} </span>, ({{ itineraire.destination.infos.commune }})
-                        <!-- <br>
-                        <span style="font-weight: bold; color:green;">{{ itin.duration }}</span> 
-                        <br> 
-                        <span style="font-weight: bold; color: chocolate;"> {{ itin.distance }}</span> km -->
-                    </l-tooltip>
-                </l-circle-marker>
-            </div>
-
-            <!-- point-dest -->
-            <l-circle-marker 
-                v-if="!routeAvail"
-                :lat-lng="itineraire.destination.location.latLng.latLngTab"
-                :radius="5"
-                :weight="2"
-                :color="'black'"
-                :fillColor="'white'" 
-                :fillOpacity="1"
-                style="z-index: 999;"
-            >
-                <!-- <l-popup>{{ itineraire.destination.infos.village }}, ({{ itineraire.destination.infos.commune }})</l-popup> -->
-                <l-tooltip :options="{ permanent: true, interactive: false, direction: 'right', offset: [10, 0] }">
-                    <span style="font-weight: bold;"> {{ itineraire.destination.infos.village }} </span>, ({{ itineraire.destination.infos.commune }})
-                    <!-- <br>
-                    <span style="font-weight: bold; color:green;">{{ itin.duration }}</span> 
-                    <br> 
-                    <span style="font-weight: bold; color: chocolate;"> {{ itin.distance }}</span> km -->
-                </l-tooltip>
-            </l-circle-marker>
-
-            <!-- point-dest -->
-            <l-circle-marker 
-                v-if="currentLocation.current.length >= 2"
-                :lat-lng="currentLocation.current"
-                :radius="9"
-                :weight="2"
-                :color="'white'"
-                :fillColor="'#33BBFF'" 
-                :fillOpacity="0.7"
-                style="z-index: 9999;"
-            >
-            </l-circle-marker>
-        </l-map>
+        <!-- Le contrôleur métier reste identique ; seul le moteur de rendu change. -->
+        <MapSurface
+            :provider="mapProvider"
+            :zoom="zoom"
+            :center="center"
+            :origin="itineraire.origin"
+            :destination="itineraire.destination"
+            :routes="routes"
+            :route-available="routeAvail"
+            :current-location="currentLocation.current"
+            :alerts="activeAlerts"
+            :alert-types="alertTypes"
+            @ready="isLoaded"
+            @route-select="trajetSelected"
+        />
     </div>
 
     <BottomMenu
@@ -208,19 +128,17 @@
 
 <script>
     import { defineComponent } from 'vue';
-    import polyline from '@mapbox/polyline';
 
     import supabase from '@/utils/supabaseClient.js';
+    import { calculateRoutes } from '@/services/routingService.js';
 
     import L from "leaflet";
-    
-    import "leaflet/dist/leaflet.css";
-    import { LMap, LTileLayer, LMarker, LPopup, LPolyline, LTooltip, LCircleMarker } from "@vue-leaflet/vue-leaflet";
     import { SafeAreaController } from '@aashu-dubey/capacitor-statusbar-safe-area';
     // import $ from 'jquery';
     
     //componants
     import BottomMenu from '../menus/BottomMenu.vue';
+    import MapSurface from '@/components/maps/MapSurface.vue';
 
     export default defineComponent({
         name: 'results-view',
@@ -261,16 +179,14 @@
             },
         },
         components: {
-            LMap,
-            LTileLayer,
-            LMarker,
-            LPopup,
-            LPolyline,
-            LTooltip,
-            LCircleMarker,
             BottomMenu,
+            MapSurface,
         },
         props: {
+            mapProvider: {
+                type: String,
+                default: '',
+            },
             itineraire: {
                 type: Object,
                 default: () => {
@@ -324,6 +240,7 @@
                 },
                 infosItin: [],
                 routeAvail: false,
+                routingErrorMessage: '',
                 currentLocation: {
                     current: [],
                     passedPoints: [],
@@ -346,6 +263,9 @@
             console.log("itineraire", this.itineraire);
             this.$refs.BottomMenuRef.open();
             this.initializeAlertSync();
+            // Une route calculée avant la fin du chargement de la carte sera dessinée
+            // dès que Leaflet ou Google Maps sera prêt.
+            this.$nextTick(() => this.getRouteInfos());
         },
         beforeUnmount(){
             this.stopAlertCleanupTimer();
@@ -353,8 +273,11 @@
         },
         methods: {
             trajetSelected(index){
-                // console.log("trajetSelectd", index)
-                if(index == this.routes.length - 1){
+                const selectedRoute = this.routes[index];
+                if( !selectedRoute ){
+                    return;
+                }
+                if( selectedRoute.current ){
                     this.$emit("trajet-selected");
                 }
                 else{
@@ -362,7 +285,10 @@
 
                     setTimeout(function(){
                         this.routeAvail = false;
-                        this.routes = this.swapWithLast(this.routes, index);
+                        this.routes = [
+                            selectedRoute,
+                            ...this.routes.filter((route) => route !== selectedRoute),
+                        ];
                         this.itin.duration = this.routes[0].duration;
                         this.itin.distance = this.routes[0].distance;
                         
@@ -390,164 +316,55 @@
                     this.overlayLoad = false;
                 }.bind(this), 500); 
             },
-            getRouteInfos(){
+            async getRouteInfos(){
                 this.overlayLoad = true;
-                fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Goog-Api-Key': process.env.VUE_APP_API_GOOGLE_ROUTE_API_KEY,
-                        'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline',
-                    },
-                    body: JSON.stringify({
-                        origin: {
-                            location: {
-                                latLng: {
-                                    latitude: this.itineraire.origin.location.latLng.latitude,
-                                    longitude: this.itineraire.origin.location.latLng.longitude
-                                }
-                            }
-                        },
-                        destination: {
-                            location: {
-                                latLng: {
-                                    latitude: this.itineraire.destination.location.latLng.latitude,
-                                    longitude: this.itineraire.destination.location.latLng.longitude,
-                                }
-                            }
-                        },
-                        travelMode: 'DRIVE',
-                        routingPreference: 'TRAFFIC_AWARE',
+                this.routingErrorMessage = '';
+                try {
+                    const routes = await calculateRoutes({
+                        provider: this.mapProvider,
+                        origin: this.itineraire.origin,
+                        destination: this.itineraire.destination,
                         departureTime: this.itineraire.departureTime,
-                        computeAlternativeRoutes: true,
-                        routeModifiers: {
-                            avoidTolls: true,
-                            avoidHighways: true,
-                            avoidFerries: true
-                        },
-                        languageCode: 'en-US',
-                        units: 'IMPERIAL'
-                    }),
-                }).then(response => response.json()).then(data => { 
-                    console.log(data);
-
+                        alternatives: true,
+                    });
                     this.routeAvail = false;
-
-                    var tmp_routes = [];
-                    var first = true;
-                    for(const route in data.routes){
-                        const decoded  = polyline.decode(data.routes[route].polyline.encodedPolyline);
-                        const duration = (this.convertSecondsToHoursAndMinutes(parseInt(data.routes[route].duration.replaceAll("s", "")))).toString();
-                        const distance = (data.routes[route].distanceMeters/1000).toFixed(2).toString();
-
-                        tmp_routes.push({
-                            id: route, 
-                            polylineDecoded: decoded, 
-                            infosGoogle: data.routes[route], 
-                            duration: duration, 
-                            distance: distance, 
-                            faster: first,
-                            current: first,
-                        });
-                        
-                        if(route == 0){
-                            this.itin.duration = duration;
-                            this.itin.distance = distance;
-                        }
-                        first = false;
-                    }
-
+                    this.routes = routes;
+                    this.itin.duration = routes[0].duration;
+                    this.itin.distance = routes[0].distance;
                     this.routeAvail = true;
-                    console.log("Avail", this.itineraire);
-
-                    this.routes = tmp_routes;
-                    this.overlayLoad = false;
-                    
-                }).catch(error => {
+                }
+                catch (error) {
                     console.error(error);
-                    console.log("Error", error.message);
-
+                    this.routeAvail = false;
+                    this.routes = [];
+                    this.routingErrorMessage = error?.message
+                        || "Impossible de calculer l'itinéraire pour le moment.";
+                }
+                finally {
                     this.overlayLoad = false;
-                });
+                }
             },
-            getCurrentRouteInfos(){
+            async getCurrentRouteInfos(){
                 this.overlayLoad = true;
-                fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Goog-Api-Key': process.env.VUE_APP_API_GOOGLE_ROUTE_API_KEY,
-                        'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline',
-                    },
-                    body: JSON.stringify({
-                        origin: {
-                            location: {
-                                latLng: {
-                                    latitude: this.currentLocation.current[0],
-                                    longitude: this.currentLocation.current[1],
-                                }
-                            }
-                        },
-                        destination: {
-                            location: {
-                                latLng: {
-                                    latitude:  43.60460024300767,
-                                    longitude: 3.8807644833742567,
-                                }
-                            }
-                        },
-                        travelMode: 'DRIVE',
-                        routingPreference: 'TRAFFIC_AWARE',
-                        computeAlternativeRoutes: true,
-                        routeModifiers: {
-                            avoidTolls: true,
-                            avoidHighways: true,
-                            avoidFerries: true
-                        },
-                        languageCode: 'en-US',
-                        units: 'IMPERIAL'
-                    }),
-                }).then(response => response.json()).then(data => { 
-                    console.log(data);
-
+                try {
+                    const routes = await calculateRoutes({
+                        provider: this.mapProvider,
+                        origin: this.currentLocation.current,
+                        destination: this.itineraire.destination,
+                        alternatives: true,
+                    });
                     this.routeAvail = false;
-
-                    var tmp_routes = [];
-                    var first = true;
-                    for(const route in data.routes){
-                        const decoded  = polyline.decode(data.routes[route].polyline.encodedPolyline);
-                        const duration = (this.convertSecondsToHoursAndMinutes(parseInt(data.routes[route].duration.replaceAll("s", "")))).toString();
-                        const distance = (data.routes[route].distanceMeters/1000).toFixed(2).toString();
-
-                        tmp_routes.push({
-                            id: route, 
-                            polylineDecoded: decoded, 
-                            infosGoogle: data.routes[route], 
-                            duration: duration, 
-                            distance: distance, 
-                            faster: first,
-                            current: first,
-                        });
-                        
-                        if(route == 0){
-                            this.itin.duration = duration;
-                            this.itin.distance = distance;
-                        }
-                        first = false;
-                    }
-
+                    this.routes = routes.slice(0, 1);
+                    this.itin.duration = this.routes[0].duration;
+                    this.itin.distance = this.routes[0].distance;
                     this.routeAvail = true;
-                    console.log("Avail", this.itineraire, tmp_routes);
-
-                    this.routes = tmp_routes.slice(0, 1);
-                    this.overlayLoad = false;
-                    
-                }).catch(error => {
+                }
+                catch (error) {
                     console.error(error);
-                    console.log("Error", error.message);
-
+                }
+                finally {
                     this.overlayLoad = false;
-                });
+                }
             },
             swapWithLast(arr, index) {
                 if (index < 0 || index >= arr.length) {
@@ -571,14 +388,8 @@
                 return arr;
             },
             isLoaded(){
-                //const bounds = [this.itineraire.origin.location.latLng.latLngTab, this.itineraire.destination.location.latLng.latLngTab]
-                // if(this.$refs.mapRef){
-                //     this.$refs.mapRef.leafletObject.fitBounds(bounds, {
-                //         padding: [18, 18] // padding en pixels autour des limites.
-                //     });
-                // }
-                
-                this.getRouteInfos();
+                // La surface ajuste elle-même les limites. Le calcul est lancé au
+                // montage et ne dépend donc plus du timing de cet événement.
             },
             convertSecondsToHoursAndMinutes(seconds) {
                 const hours   = Math.floor(seconds / 3600);

@@ -2,13 +2,12 @@
 // import axios from 'axios'
 
 import supabase from '@/utils/supabaseClient.js';
+import { serverRequest } from '@/utils/serverApi.js';
 
 // import router from '@/router';
 // import store from '@/store'; 
 
 // import { defineStore } from 'pinia';
-
-import stripe from '@/utils/stripe.js'
 
 // store/trips.js
 // export const useTripsStore = defineStore('trips', {
@@ -227,15 +226,16 @@ export default {
         },
         SET_RATINGS_INFO(state, infos) {
             console.log("SET_RATINGS_INFO", infos);
-            if(!infos || !infos.id){
+            const tripId = infos?.tripId || infos?.id;
+            if(!tripId){
                 return;
             }
 
-            if(state.ratings.ratedTripIds.includes(infos.id)){
+            if(state.ratings.ratedTripIds.includes(tripId)){
                 return;
             }
 
-            const alreadyQueued = state.ratings.bookings.some((booking) => booking.id == infos.id);
+            const alreadyQueued = state.ratings.bookings.some((booking) => booking.id == tripId);
             if(alreadyQueued){
                 return;
             }
@@ -243,6 +243,8 @@ export default {
             const driverAccountId = infos.driverAccountId || infos.driver_account_id || null;
             const normalizedInfos = {
                 ...infos,
+                id: tripId,
+                tripId,
                 driverAccountId,
             };
 
@@ -293,62 +295,64 @@ export default {
     },
     actions: {
         async getContacts({ state, commit }){
-            if(state.tripSelected != undefined && state.tripSelected.bookings != undefined) {
-                console.log("getConctats", state.tripSelected.bookings.length);
-            }
-            else {
-                console.log("getConctats-trip", state.tripSelected);
-                state.chat.contacts = [];
+            const bookings = state.tripSelected?.bookings;
+            const tripId = state.tripSelected?.id;
+            if(!Array.isArray(bookings) || !tripId) {
+                commit('SET_CONTACTS', []);
                 return;
             }
 
-            let contacts = [];
-            let accounts_id = [];
-
-            // get-account
-            if( state.tripSelected != undefined && state.tripSelected.bookings != undefined ){
-                for (let index = 0; index < state.tripSelected.bookings.length; index++) {
-                    const passenger_account_id = state.tripSelected.bookings[index].passenger_account_id;
-                    const trip_id = state.tripSelected.id;
-                    console.log("trip_id-----", trip_id);
-                    if( ! accounts_id.includes(passenger_account_id) ){
-
-                        let { data: account, error: error_account } = await supabase
-                            .from('account')
-                            .select(`
-                                *,
-                                booking (
-                                    *,
-                                    trip (
-                                        max_seats,
-                                        village_departure_id,
-                                        village_arrival_id,
-                                        departure_time
-                                    )
-                                )
-                            `)
-                            .eq('id', passenger_account_id)
-                            .eq('booking.trip_id', trip_id)
-
-                        if( error_account ){
-                            console.error("Error:", error_account);
-                        }
-
-                        let contact = account[0];
-                        // contact.avatar = "https://avataaars.io/?avatarStyle=Circle&topType=ShortHairDreads01&accessoriesType=Blank&hairColor=PastelPink&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Wink&eyebrowType=DefaultNatural&mouthType=Serious&skinColor=Tanned";
-                        contact.messageNumber = 0;
-                        
-                        console.log("contact", contact);
-                        contacts.push(contact);
-                        accounts_id.push(passenger_account_id);
-
-                    }
-                }
+            const accountIds = [...new Set(bookings
+                .map((booking) => Number(booking.passenger_account_id))
+                .filter((accountId) => Number.isSafeInteger(accountId) && accountId > 0))];
+            if(accountIds.length === 0) {
+                commit('SET_CONTACTS', []);
+                return;
             }
-            
+
+            const { data: accounts, error } = await supabase
+                .from('account')
+                .select(`
+                    id,
+                    user_id,
+                    username,
+                    avatar,
+                    booking (
+                        id,
+                        trip_id,
+                        passenger_account_id,
+                        is_accepted,
+                        is_refused,
+                        in_car,
+                        passenger_no_show,
+                        payment_status,
+                        trip (
+                            max_seats,
+                            village_departure_id,
+                            village_arrival_id,
+                            departure_time
+                        )
+                    )
+                `)
+                .in('id', accountIds)
+                .eq('booking.trip_id', tripId);
+
+            if(error) {
+                console.error("getContacts error:", error);
+                commit('SET_CONTACTS', []);
+                return;
+            }
+
+            const contacts = (accounts || []).map((account) => ({
+                ...account,
+                booking: (account.booking || []).filter(
+                    (booking) => String(booking.trip_id) === String(tripId)
+                ),
+                messageNumber: 0,
+            }));
             commit('SET_CONTACTS', contacts);
         },
-        async getProfilMember({state}, member){
+        async getProfilMember({state, rootState}, member){
             
             let { data: account, error: error_account } = await supabase
                 .from('account')
@@ -357,6 +361,9 @@ export default {
             
             if(error_account){
                 console.error(error_account)
+                return false;
+            }
+            if(!account?.length){
                 return false;
             }
 
@@ -384,9 +391,19 @@ export default {
                 state.member.identity = account[0].identity;
                 state.member.userId = account[0].id;
 
-                const provider = await stripe.accounts.retrieve(account[0].provider_id);
-                console.log("retrieve provider:", provider);
-                state.member.payouts_enabled = provider.payouts_enabled;
+                state.member.payouts_enabled = false;
+                if(account[0].provider_id){
+                    try {
+                        const { data: provider } = await serverRequest(
+                            'get',
+                            `/connect/accounts/${account[0].provider_id}/status`,
+                            { mode: rootState.profil.modeCo }
+                        );
+                        state.member.payouts_enabled = Boolean(provider?.payouts_enabled);
+                    } catch (error) {
+                        console.warn("Unable to retrieve Connect status:", error);
+                    }
+                }
 
                 let outPreferences = [];
                 
@@ -406,49 +423,79 @@ export default {
             return true;
 
         },
-        async updateAccepteBooking({state}, index){
-            const bookings = state.chat.contacts[index].booking;
-            for (let indexB = 0; indexB < bookings.length; indexB++) {
-                const id_bk = bookings[indexB].id;
-                const { data, error } = await supabase
-                    .from('booking')
-                    .update({ is_accepted: true })
-                    .eq('id', id_bk)
-                    .select();
-
-                if(error){
-                    console.error("Error", error)
-                    return {status: 1, message: "Une erreur s'est produite, veuillez réessayer plus tard !"};
-                }
-
-                if( data ){
-                    state.chat.contacts[index].booking[indexB].is_accepted = true;
-                }
+        async updateAccepteBooking({state, rootState}, index){
+            const contact = state.chat.contacts[index];
+            const bookingIds = (contact?.booking || []).map((booking) => booking.id).filter(Boolean);
+            if( bookingIds.length === 0 ){
+                return {status: 1, message: "Réservation introuvable."};
             }
 
-            return {status: 0, message: "success"};
+            try {
+                const response = await serverRequest('post', '/bookings/decision', {
+                    mode: rootState.profil.modeCo,
+                    data: { bookingIds, decision: 'accept' },
+                });
+                const decision = response.data?.data;
+                if( response.data?.status !== 'ok' || !decision ){
+                    throw new Error("Réponse de décision invalide.");
+                }
+                const updatedIds = new Set((decision?.bookingIds || bookingIds).map(String));
+                contact.booking.forEach((booking) => {
+                    if( updatedIds.has(String(booking.id)) ){
+                        booking.is_accepted = true;
+                        booking.is_refused = false;
+                        const serverBooking = decision?.bookings?.find((item) => String(item.id) === String(booking.id));
+                        if( serverBooking?.payment_status ){
+                            booking.payment_status = serverBooking.payment_status;
+                        }
+                    }
+                });
+                return {status: 0, message: "success", data: decision};
+            }
+            catch(error){
+                console.error("updateAccepteBooking error:", error);
+                return {
+                    status: 1,
+                    message: error.response?.data?.message || "Une erreur s'est produite, veuillez réessayer plus tard !",
+                };
+            }
         },
-        async updateRefusedBooking({state}, index){
-            const bookings = state.chat.contacts[index].booking;
-            for (let indexB = 0; indexB < bookings.length; indexB++) {
-                const id_bk = bookings[indexB].id;
-                const { data, error } = await supabase
-                    .from('booking')
-                    .update({ is_refused: true })
-                    .eq('id', id_bk)
-                    .select();
-
-                if(error){
-                    console.error("Error", error)
-                    return {status: 1, message: "Une erreur s'est produite, veuillez réessayer plus tard !"};
-                }
-
-                if( data ){
-                    state.chat.contacts[index].booking[indexB].is_refused = true;
-                }
+        async updateRefusedBooking({state, rootState}, index){
+            const contact = state.chat.contacts[index];
+            const bookingIds = (contact?.booking || []).map((booking) => booking.id).filter(Boolean);
+            if( bookingIds.length === 0 ){
+                return {status: 1, message: "Réservation introuvable."};
             }
 
-            return {status: 0, message: "success"};
+            try {
+                const response = await serverRequest('post', '/bookings/decision', {
+                    mode: rootState.profil.modeCo,
+                    data: { bookingIds, decision: 'refuse' },
+                });
+                const decision = response.data?.data;
+                if( response.data?.status !== 'ok' || !decision ){
+                    throw new Error("Réponse de décision invalide.");
+                }
+                const updatedIds = new Set((decision?.bookingIds || bookingIds).map(String));
+                contact.booking.forEach((booking) => {
+                    if( updatedIds.has(String(booking.id)) ){
+                        booking.is_accepted = false;
+                        booking.is_refused = true;
+                        const serverBooking = decision?.bookings?.find((item) => String(item.id) === String(booking.id));
+                        if( serverBooking?.payment_status ){
+                            booking.payment_status = serverBooking.payment_status;
+                        }
+                    }
+                });
+                return {status: 0, message: "success", data: decision};
+            }
+            catch(error){
+                console.error("updateRefusedBooking error:", error);
+                return {
+                    status: 1,
+                    message: error.response?.data?.message || "Une erreur s'est produite, veuillez réessayer plus tard !",
+                };
+            }
         },
     },
 }

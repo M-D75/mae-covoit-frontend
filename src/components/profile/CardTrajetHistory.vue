@@ -381,11 +381,19 @@
             async callRemoveBooking(){
                 console.log("Annulation de la reservation", this.userId, this.infos.id);
                 this.$refs.BottomMenuRefConfirmChoice.loadingBtn = true;
-                await this.removeBooking({trip_id: this.infos.id});
+                const response = await this.removeBooking({
+                    trip_id: this.infos.id,
+                    departure_time: this.infos.departure_time,
+                });
                 this.$refs.BottomMenuRefConfirmChoice.loadingBtn = false;
-                //TODO : remove
                 this.$refs.BottomMenuRefConfirmChoice.close();
-                this.$emit('booking-removed');
+                if( !response || response.status !== 0 ){
+                    this.messageSnackbarError = response?.message || "Impossible d'annuler cette réservation.";
+                    this.showSnackbarError = true;
+                }
+                else{
+                    this.$emit('booking-removed');
+                }
             },
             async callCancelTrip(){
                 console.log("Annulation du trajet", this.infos.id);

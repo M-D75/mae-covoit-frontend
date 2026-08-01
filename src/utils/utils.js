@@ -85,6 +85,27 @@ export function findKeyOfNullOrUndefined(obj) {
     return null;
 }
 
+/**
+ * Propose un départ proche de `leadMinutes` dans le futur, aligné sur le pas
+ * du sélecteur. Exemple : 16:31 -> 16:45 avec 15 minutes et un pas de 5.
+ */
+export function getDefaultDepartureTime(now = new Date(), leadMinutes = 15, stepMinutes = 5) {
+    const safeNow = new Date(now);
+    const safeLead = Number.isFinite(leadMinutes) && leadMinutes >= 0 ? leadMinutes : 15;
+    const safeStep = Number.isInteger(stepMinutes) && stepMinutes > 0 ? stepMinutes : 5;
+    const departure = new Date(safeNow.getTime() + safeLead * 60 * 1000);
+
+    departure.setSeconds(0, 0);
+    departure.setMinutes(Math.round(departure.getMinutes() / safeStep) * safeStep);
+
+    return {
+        date: departure,
+        hourInit: departure.getHours(),
+        minuteInit: departure.getMinutes(),
+        time: `${String(departure.getHours()).padStart(2, '0')}:${String(departure.getMinutes()).padStart(2, '0')}`,
+    };
+}
+
 
 //convertion de date en numéro de semaine
 export function getISOWeekNumber(d) {
@@ -229,4 +250,3 @@ export function tomorowDate(date) {
   
     return dateDemain;
 }
-  

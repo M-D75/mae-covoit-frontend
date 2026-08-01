@@ -69,6 +69,8 @@
             ...mapState("profil", {
                 preferences: state => state.profil.infos_perso.preferences,
                 nbTrip: state => state.profil.nbTrip,
+                avis: state => state.profil.avis,
+                satisfaction: state => state.profil.satisfaction,
             }),
         },
         components: {
@@ -222,6 +224,7 @@
             this.updateCar();
 
             this.getNotation();
+            this.updateNotationLabels();
 
             if(this.payouts_enabled || this.identity)
                 this.groupeParameters[0].parameters[0].chipText = "2/3";
@@ -229,10 +232,14 @@
                 this.groupeParameters[0].parameters[0].chipText = "3/3";
         },
         methods: {
-            ...mapActions("profil", ["updateAutoValidation", "getCars", "getNotation"]),
-            updateAutoValidation() {
-                console.log("updateAutoValidation:");
-                this.updateAutoValidation();
+            ...mapActions("profil", ["getCars", "getNotation"]),
+            updateNotationLabels() {
+                const average = Math.max(0, Math.min(5, Number(this.avis) || 0));
+                const satisfaction = Math.max(0, Math.min(100, Number(this.satisfaction) || 0));
+                this.infos_panneau[1].label = `${average.toLocaleString('fr-FR', {
+                    maximumFractionDigits: 2,
+                })}/5`;
+                this.infos_panneau[2].label = `${Math.round(satisfaction)}%`;
             },
             selectModel() {
                 if (this.$refs.BottomMenuRefModelVehicul) {
@@ -310,6 +317,12 @@
             },
             nbTrip(){
                 this.infos_panneau[0].label = formatNumber(this.nbTrip);
+            },
+            avis(){
+                this.updateNotationLabels();
+            },
+            satisfaction(){
+                this.updateNotationLabels();
             }
         }
     });

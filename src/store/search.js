@@ -1,14 +1,48 @@
 // import { createStore } from 'vuex'
-import axios from 'axios'
-
 import store from '../store'; 
 
-import stripe from '@/utils/stripe.js'
-import { sendServerNotification } from '@/utils/notifications.js';
+import { serverRequest } from '@/utils/serverApi.js';
 import supabase from '@/utils/supabaseClient.js';
 import router from '@/router';
 import { formaterDateUTC, getRandomInt, getRandomString, getFutureTime, tomorowDate } from '@/utils/utils.js'
-import { humanizeSupabaseError } from '@/utils/errorMessages.js';
+
+const TRIP_SEARCH_SELECT = `
+    id,
+    driver_id,
+    village_departure_id,
+    village_arrival_id,
+    departure_time,
+    max_seats,
+    price,
+    route,
+    car_id,
+    car (*),
+    account (*),
+    booking (
+        *,
+        account (*)
+    )`;
+
+function isMissingCancellationColumn(error) {
+    return error?.code === '42703'
+        && String(error?.message || '').includes('cancellation_pending_at');
+}
+
+/**
+ * La colonne d'annulation arrive avec les migrations de durcissement. Pendant
+ * la transition, une base plus ancienne doit encore pouvoir rechercher ses
+ * trajets ; Supabase renvoie sinon 42703 et l'interface affiche une liste vide.
+ */
+async function executeTripSearch(buildQuery) {
+    let result = await buildQuery(true);
+    if (isMissingCancellationColumn(result.error)) {
+        console.warn(
+            'La migration cancellation_pending_at manque ; recherche en mode compatible.',
+        );
+        result = await buildQuery(false);
+    }
+    return result;
+}
 
 
 export default {
@@ -96,55 +130,22 @@ export default {
             localStorage.setItem('communesFrequency', JSON.stringify(state.communesFrequency));
         },
         async getVillages({ state, commit }) {
-            
-            // if(state.villages.length == 0)
-            //     axios.get(`${process.env.VUE_APP_API_MBABUF_URL}/villages`, {
-            //             params:{
-            //                 jwt: store.state.auth.token,
-            //             }
-            //         })
-            //         .then(response => {
-            //             commit('SET_VILLAGES', response.data.result);
-            //             console.log("get-villages:", response.data.result);
-            //         })
-            //         .catch(error => {
-            //             console.error(error);
-            //         });
-            // else
-            //     console.log("Get Villages Already done !", state.villages);
+            if( state.villages.length == 0 ){
+                const { data: villageList, error } = await supabase
+                    .from('village_list')
+                    .select('*');
 
-            if( process.env.VUE_APP_MODE == 'local' ){
-                axios.get(`${process.env.VUE_APP_API_MBABUF_URL}/villages`, {
-                        params:{
-                            jwt: store.state.auth.token,
-                        }
-                    })
-                    .then(response => {
-                        commit('SET_VILLAGES', response.data.result);
-                        console.log("get-villages:", response.data.result);
-                    })
-                    .catch(error => {
-                        console.error(error);
-                    });
-            }
-            else{
-                if( state.villages.length == 0 ){
-                    let { data: village_list, error } = await supabase
-                        .from('village_list')
-                        .select('*');
-    
-                    if(error){
-                        console.error("Error, impossible de récuperer les villages :", error)
-                    }
-    
-                    commit('SET_VILLAGES', village_list);
+                if(error){
+                    console.error("Error, impossible de récuperer les villages :", error);
+                    return false;
                 }
-                else
-                    console.log("Get Villages Already done !", state.villages);  
-            }
 
-                      
-        
+                commit('SET_VILLAGES', villageList || []);
+            }
+            else {
+                console.log("Get Villages Already done !", state.villages);
+            }
+            return true;
         },
         async getTrajetsFake({ state }){
 
@@ -178,26 +179,17 @@ export default {
                 return;
             }
 
-            const { data: trips, error } = await supabase
-                .from('trip')
-                .select(`
-                    id, 
-                    driver_id,
-                    village_departure_id,
-                    village_arrival_id,
-                    departure_time,
-                    max_seats,
-                    price,
-                    route,
-                    car_id,
-                    car (*),
-                    account (*),
-                    booking (
-                        *,
-                        account (*)
-                    )`
-                )
-                .neq('driver_id', store.state.profil.userUid)
+            const { data: trips, error } = await executeTripSearch((withCancellationFilter) => {
+                let query = supabase
+                    .from('trip')
+                    .select(TRIP_SEARCH_SELECT)
+                    .neq('driver_id', store.state.profil.userUid);
+
+                if (withCancellationFilter) {
+                    query = query.is('cancellation_pending_at', null);
+                }
+                return query;
+            });
 
             if ( error ) {
                 console.error(error);
@@ -236,6 +228,7 @@ export default {
                 const _trip  = {
                     id: trip.id,
                     driver_id: trip.driver_id,
+                    driver_account_id: tripAccount.id || null,
                     name: `${driverFirstname} ${driverLastname}`.trim(),
                     avatar: driverAvatar,
                     depart: getters.GET_VILLAGE_BY_ID(trip.village_departure_id),
@@ -270,28 +263,19 @@ export default {
 
             console.log("date:", infos, infos.date, tomorow)
 
-            const { data: trips, error } = await supabase
-                .from('trip')
-                .select(`
-                    id, 
-                    driver_id,
-                    village_departure_id,
-                    village_arrival_id,
-                    departure_time,
-                    max_seats,
-                    price,
-                    route,
-                    car_id,
-                    car (*),
-                    account (*),
-                    booking (
-                        *,
-                        account (*)
-                    )`
-                )
-                .neq('driver_id', store.state.profil.userUid)
-                .gt("departure_time", formaterDateUTC(infos.date))
-                .lt("departure_time", formaterDateUTC(tomorow))
+            const { data: trips, error } = await executeTripSearch((withCancellationFilter) => {
+                let query = supabase
+                    .from('trip')
+                    .select(TRIP_SEARCH_SELECT)
+                    .neq('driver_id', store.state.profil.userUid)
+                    .gte("departure_time", formaterDateUTC(infos.date))
+                    .lt("departure_time", formaterDateUTC(tomorow));
+
+                if (withCancellationFilter) {
+                    query = query.is('cancellation_pending_at', null);
+                }
+                return query;
+            });
 
             if ( error ) {
                 console.error(error);
@@ -326,6 +310,7 @@ export default {
                 const _trip  = {
                     id: trip.id,
                     driver_id: trip.driver_id,
+                    driver_account_id: tripAccount.id || null,
                     name: `${tripAccount.firstname || ''} ${tripAccount.lastname || ''}`.trim() || "Chauffeur",
                     avatar: tripAccount.avatar || null,
                     depart: getters.GET_VILLAGE_BY_ID(trip.village_departure_id),
@@ -358,28 +343,19 @@ export default {
 
             console.log("infos", infos, infos.user_uid, formaterDateUTC(new Date()), parseInt(infos.ids));
 
-            const { data: trips, error } = await supabase
-                .from('trip')
-                .select(`
-                    id, 
-                    driver_id,
-                    village_departure_id,
-                    village_arrival_id,
-                    departure_time,
-                    max_seats,
-                    price,
-                    route,
-                    car_id,
-                    car (*),
-                    account (*),
-                    booking (
-                        *,
-                        account (*)
-                    )`
-                )
-                .eq('id', parseInt(infos.ids))
-                .gt("departure_time", formaterDateUTC(new Date()))
-                .neq('driver_id', store.state.profil.userUid)
+            const { data: trips, error } = await executeTripSearch((withCancellationFilter) => {
+                let query = supabase
+                    .from('trip')
+                    .select(TRIP_SEARCH_SELECT)
+                    .eq('id', parseInt(infos.ids))
+                    .gt("departure_time", formaterDateUTC(new Date()))
+                    .neq('driver_id', store.state.profil.userUid);
+
+                if (withCancellationFilter) {
+                    query = query.is('cancellation_pending_at', null);
+                }
+                return query;
+            });
 
             console.log("-----------------------------------");
 
@@ -416,6 +392,7 @@ export default {
                 const _trip  = {
                     id: trip.id,
                     driver_id: trip.driver_id,
+                    driver_account_id: tripAccount.id || null,
                     name: `${tripAccount.firstname || ''} ${tripAccount.lastname || ''}`.trim() || "Chauffeur",
                     avatar: tripAccount.avatar || null,
                     depart: getters.GET_VILLAGE_BY_ID(trip.village_departure_id),
@@ -538,242 +515,106 @@ export default {
             return {status: 0, message: "publish ok"}
 
         },
-        async reserveTrajet({state}, playload){
+        async reserveTrajet({state}, payload = {}){
             const sessionChecked = await store.dispatch("auth/checkSessionOnly");
             if( ! sessionChecked ){
                 router.replace("/login");
-                return;
+                return {
+                    valided: false,
+                    message: "Votre session a expiré. Veuillez vous reconnecter.",
+                    retriable: false,
+                };
             }
 
-            const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
+            const selectedTrip = state.trajetSelected;
+            const seatsRequested = Number(state.nbPassenger);
+            if( !selectedTrip || !selectedTrip.id ){
+                return { valided: false, message: "Erreur lors de la sélection du trajet.", retriable: false };
+            }
+            if( !Number.isInteger(seatsRequested) || seatsRequested <= 0 ){
+                return { valided: false, message: "Le nombre de places demandé est invalide.", retriable: false };
+            }
+            if( !payload.requestId ){
+                return { valided: false, message: "La demande de réservation est invalide.", retriable: false };
+            }
 
             const typeUrl = store.state.profil.modeCo;
-
-            //try ask serveur
-            let testAskAxio = await axios.post(`${adresse[typeUrl]}/testAsk`, {
-                    test: 'ok',
-                })
-                .then(response => {
-                    console.log("testAsk", response.data);
-                    const data = response.data;
-
-                    if(data.status != undefined && data.status == 'ok'){
-                        console.log("testAsk-ok");
-                        return true;
-                    }
-                    else{
-                        return false;
-                    }
-                })
-                .catch(error => {
-                    console.error('ERROR testAsk :', error);
-                    return false;
-                });
-
-            if( ! testAskAxio ){
-                return { valided: false, message: "Nos serveurs sont actuellement indisponible veuillez réessayer plus tard.", retriable: true };
-            }
-
-            if( state.nbPassenger + state.trajetSelected.passenger_number > state.trajetSelected.max_seats ){
-                return { valided: false, message: "Pas assez place sur ce trajet !"};
-            }
-
-            if( ! state.trajetSelected ){
-                return { valided: false, message: "Erreur lors de la selection du trajet"};
-            }
-
-            // get account passenger
-            let { data: account_passenger, error: error_passenger } = await supabase
-                .from('account')
-                .select("*")
-                .eq('user_id', playload.user_id)
-            
-            if ( error_passenger ) {
-                console.error('Erreur lors de la requête :', error_passenger);
-                return { valided: false, message: "Une erreur est survenue !"};
-            }
-
-            // get account driver
-            let { data: account_driver, error: error_driver } = await supabase
-                .from('account')
-                .select(`
-                    *,
-                    settings (auto_accept_trip)
-                `)
-                .eq('user_id', state.trajetSelected.driver_id)
-            
-            if ( error_driver ) {
-                console.error('Erreur lors de la requête :', error_driver);
-                return { valided: false, message: "Une erreur est survenue !"};
-            }
-
-            // define payment strategy
-            const seatsRequested = state.nbPassenger;
-            const totalPrice = state.trajetSelected.price * seatsRequested;
-            let byCredit = account_passenger[0].credit >= totalPrice;
-            let paymentMethodId = null;
-
-            if( !byCredit ){
-                const customer = await stripe.customers.retrieve(account_passenger[0].customer_id);
-                console.log("retrieve customer:", customer);
-                const cardId = customer.metadata.source_selected;
-
-                if( !cardId ){
-                    return {valided: false, status: 2, message: "Aucun moyen de paiement n'est sélectionné. Veuillez enregistrer une carte."};
-                }
-
-                paymentMethodId = cardId;
-            }
-            
-            // debit le montant
-            if(byCredit){
-                const newCredit = account_passenger[0].credit - totalPrice;
-                let { data: account_update, error: error_update } = await supabase
-                    .from('account')
-                    .update({ credit: newCredit })
-                    .eq('user_id', playload.user_id)
-                    .select()
-
-                if( error_update ){
-                    console.error("Error update", error_update)
-                    return { valided: false, message: humanizeSupabaseError(error_update, "Nous n'avons pas pu débiter votre solde, veuillez réessayer plus tard.")};
-                }
-
-                store.state.profil.soldes = account_update[0].credit;
-                const currentPendingDebit = store.state.profil.pendingDebit || 0;
-                store.state.profil.pendingDebit = parseFloat((currentPendingDebit + totalPrice).toFixed(2));
-                console.log("new-soldes:", account_update[0].credit);
-            }
-
-            const user_id = account_passenger[0].id;
-            const auto_accept_trip = account_driver[0].settings[0].auto_accept_trip;
-
-            let list_ins_passenger = [];
-            for(let index_passenger=0; index_passenger < state.nbPassenger; index_passenger++){
-                list_ins_passenger.push({ trip_id: state.trajetSelected.id, passenger_account_id: user_id, is_accepted: auto_accept_trip })
-            }
-
-            //add +1 reserve
-            
-            let { data: data_booking, error: error_booking_update } = await supabase
-                .from('booking')
-                .insert(list_ins_passenger)
-                .select()
-
-            if ( error_booking_update ) {
-                console.error('Erreur lors de la requête :', error_booking_update);
-                return {valided: false, message: "Nous avons pas pu réserver ce trajet, vous serez rembourser sous 24h"};
-            }
-
-            console.log("reserveTrajet:", data_booking);
-
-            const bookingIds = data_booking.map((booking) => booking.id);
-
-            if(byCredit){
-                const { error: wallet_booking_error } = await supabase
-                    .from('booking')
-                    .update({
-                        payment_status: 'wallet_reserved'
-                    })
-                    .in('id', bookingIds);
-
-                if(wallet_booking_error){
-                    console.warn("wallet booking update failed:", wallet_booking_error);
-                }
-            }
-
-            if( !byCredit ){
-                try {
-                    const totalAmount = Math.round(totalPrice * 100);
-                    const holdResponse = await axios.post(`${adresse[typeUrl]}/payments/hold`, {
-                        amount: totalAmount,
-                        customerId: account_passenger[0].customer_id,
-                        paymentMethodId,
-                        passengerAccountId: account_passenger[0].id,
-                        driverAccountId: account_driver[0].provider_id,
-                        tripId: state.trajetSelected.id,
-                        bookingIds,
-                        departureTime: state.trajetSelected.departure_time,
-                        description: `Reservation de trajet ${state.trajetSelected.depart} vers ${state.trajetSelected.destination} pour ${account_passenger[0].username}`,
-                    });
-
-                    if( !holdResponse.data || holdResponse.data.status !== 'ok' ){
-                        await supabase.from('booking').delete().in('id', bookingIds);
-                        return { valided: false, message: "Impossible de préparer le paiement différé. Aucun débit n'a été effectué.", retriable: true };
-                    }
-
-                    const { paymentIntentId, captureAfter } = holdResponse.data;
-                    const totalAmountEuro = totalAmount / 100;
-                    const currentPendingDebit = store.state.profil.pendingDebit || 0;
-                    store.state.profil.pendingDebit = parseFloat((currentPendingDebit + totalAmountEuro).toFixed(2));
-
-                    const { error: booking_payment_error } = await supabase
-                        .from('booking')
-                        .update({
-                            payment_intent_id: paymentIntentId,
-                            payment_status: 'requires_capture',
-                            payment_capture_after: captureAfter
-                        })
-                        .in('id', bookingIds);
-
-                    if( booking_payment_error ){
-                        console.warn("booking payment update failed:", booking_payment_error);
-                    }
-                }
-                catch(error){
-                    console.error("Deferred payment error:", error);
-                    await supabase.from('booking').delete().in('id', bookingIds);
-                    const fallback = "Nous n'avons pas pu sécuriser le paiement. Réessayez plus tard.";
-                    if(axios.isAxiosError?.(error) && error.response?.data?.message){
-                        return { valided: false, message: error.response.data.message, retriable: true };
-                    }
-                    return { valided: false, message: fallback, retriable: true };
-                }
-            }
-
-            store.state.trip.rating = true;
-            store.state.profil.history.datesTripPassenger.push(state.trajetSelected.departure_time);
-            const baseMessage = auto_accept_trip ? "Votre réservation a été effectuée avec succès." : "Votre demande est en attente de validation par le chauffeur.";
-            const paymentMessage = byCredit ? " Vos crédits seront débités à la validation du départ." : " Le prélèvement sera confirmé une fois votre présence validée au départ.";
-            const message_success = `${baseMessage}${paymentMessage}`;
-
-            const passengerName = `${account_passenger[0].firstname || ''} ${account_passenger[0].lastname || ''}`.trim() || account_passenger[0].username || "Un passager";
-            const departureName = state.trajetSelected.depart || store.getters["search/GET_VILLAGE_BY_ID"](state.trajetSelected.village_departure_id) || "Départ";
-            const destinationName = state.trajetSelected.destination || store.getters["search/GET_VILLAGE_BY_ID"](state.trajetSelected.village_arrival_id) || "Destination";
-            const departureTime = new Date(state.trajetSelected.departure_time);
-            const formattedHour = `${departureTime.getHours().toString().padStart(2, '0')}:${departureTime.getMinutes().toString().padStart(2, '0')}`;
-            const driverTitle = auto_accept_trip ? "Nouvelle réservation" : "Demande de réservation";
-            const driverBody = auto_accept_trip
-                ? `${passengerName} rejoint votre trajet ${departureName} → ${destinationName}.`
-                : `${passengerName} souhaite rejoindre votre trajet ${departureName} → ${destinationName}.`;
-
-            await sendServerNotification({
-                mode: typeUrl,
-                userId: state.trajetSelected.driver_id,
-                title: driverTitle,
-                body: driverBody,
-                data: {
-                    largeBody: `${passengerName} pour ${departureName} → ${destinationName} (${formattedHour}).`,
-                    actions: {
-                        goTo: "/profil/open-trip-driver",
+            try {
+                const response = await serverRequest('post', '/bookings/reserve', {
+                    mode: typeUrl,
+                    data: {
+                        tripId: selectedTrip.id,
+                        seats: seatsRequested,
+                        requestId: payload.requestId,
                     },
-                },
-            });
-
-            return {
-                valided: true,
-                message: message_success,
-                accepted: auto_accept_trip,
-                data: {
-                    id: state.trajetSelected.id,
-                    date: state.trajetSelected.departure_time,
-                    driverAccountId: account_driver[0].id,
-                },
-                payment: {
-                    mode: byCredit ? "wallet" : "card_deferred",
-                    amount: totalPrice
+                });
+                const reservation = response.data?.data;
+                if( response.data?.status !== 'ok' || !reservation ){
+                    throw new Error("Réponse de réservation invalide.");
                 }
-            };
+
+                const paymentMode = reservation.payment?.mode;
+                const paymentAmount = Number(reservation.payment?.amount) || 0;
+                store.state.profil.soldes = Number(reservation.credit) || 0;
+
+                if (reservation.payment?.status === 'requires_action') {
+                    return {
+                        valided: false,
+                        status: 'PAYMENT_ACTION_REQUIRED',
+                        message: "Votre banque demande une authentification supplémentaire.",
+                        retriable: true,
+                        requestId: reservation.requestId,
+                        paymentIntentId: reservation.payment.paymentIntentId,
+                        clientSecret: reservation.payment.clientSecret,
+                    };
+                }
+
+                // A replay is the same reservation returned after a timeout: do
+                // not duplicate local history, pending amounts or notifications.
+                store.state.trip.rating = true;
+                if( !store.state.profil.history.datesTripPassenger.includes(selectedTrip.departure_time) ){
+                    store.state.profil.history.datesTripPassenger.push(selectedTrip.departure_time);
+                }
+                if( !reservation.replayed ){
+                    const currentPendingDebit = Number(store.state.profil.pendingDebit) || 0;
+                    store.state.profil.pendingDebit = parseFloat((currentPendingDebit + paymentAmount).toFixed(2));
+
+                }
+
+                const baseMessage = reservation.accepted
+                    ? "Votre réservation a été effectuée avec succès."
+                    : "Votre demande est en attente de validation par le chauffeur.";
+                const paymentMessage = paymentMode === 'wallet'
+                    ? " Vos crédits sont réservés jusqu'à la validation du départ."
+                    : " Le prélèvement sera confirmé une fois votre présence validée au départ.";
+
+                return {
+                    valided: true,
+                    message: `${baseMessage}${paymentMessage}`,
+                    accepted: Boolean(reservation.accepted),
+                    replayed: Boolean(reservation.replayed),
+                    requestId: reservation.requestId,
+                    bookingIds: reservation.bookingIds,
+                    data: {
+                        id: reservation.tripId,
+                        tripId: reservation.tripId,
+                        bookingId: reservation.bookingIds?.[0] || null,
+                        date: selectedTrip.departure_time,
+                        driverAccountId: reservation.driverAccountId || selectedTrip.driver_account_id || null,
+                    },
+                    payment: reservation.payment,
+                };
+            }
+            catch(error){
+                console.error("reserveTrajet error:", error);
+                const apiError = error.response?.data;
+                return {
+                    valided: false,
+                    status: apiError?.code || 'RESERVATION_FAILED',
+                    message: apiError?.message || "Nos serveurs sont actuellement indisponibles. Veuillez réessayer plus tard.",
+                    retriable: apiError?.retriable !== false,
+                };
+            }
         },
     },
 }

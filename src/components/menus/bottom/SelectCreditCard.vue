@@ -115,11 +115,10 @@
 <script>
     import { defineComponent } from 'vue';
     import { mapState, mapMutations } from 'vuex';
-
-    import stripe from '@/utils/stripe.js'
+    import { serverRequest } from '@/utils/serverApi.js';
 
     export default defineComponent({
-        emits: ["no-card-founded", "need-to-add-new-card", "card-selected", "mount"],
+        emits: ["no-card-founded", "need-to-add-new-card", "card-selected", "mount", "checkout-error"],
         computed: {
             ...mapState("profil", ["darkMode"]),
             ...mapState("auth", ["customer_id", "customer"]),
@@ -147,49 +146,48 @@
             defaultSource: "",
             cardSelected: null,
         }),
-        mounted(){
+        async mounted(){
             this.$emit("mount");
-            const vue = this;
             this.load = true;
-            stripe.paymentMethods.list({
-                customer: this.customer_id,
-                type: 'card',
-            }, async function(err, paymentMethods) {
-                if (err) {
-                    console.error(err);
-                    vue.load = false;
-                } 
-                else {
-                    const customer = await stripe.customers.retrieve(vue.customer_id);
-                    console.log("paymentMethods", paymentMethods);
-                    const cards = paymentMethods.data;
-                    if(cards.length == 0){
-                        vue.$emit("no-card-founded");
-                        return;
-                    }
-                    
-                    for (let index = 0; index < cards.length; index++) {
-                        const paymentMethod = cards[index];
-                        const card = paymentMethod.card;
-                        const selected = customer != null 
-                                        && (
-                                            (customer.invoice_settings.default_payment_method != null 
-                                        && customer.invoice_settings.default_payment_method == paymentMethod.id) 
-                                        || (customer.invoice_settings.default_payment_method == null && customer.default_source != null && customer.default_source == paymentMethod.id));
-
-                        
-                        const infos = {id: paymentMethod.id, brand: card.brand, exp_month: card.exp_month, exp_year: card.exp_year, last4: card.last4, select: selected};
-                        if(selected){
-                            vue.SET_CREDIT_CARD(infos);
-                            vue.defaultSource = paymentMethod.id;
-                        }
-                        vue.cards.push(infos);
-
-                    }
-                    vue.load = false;
-                    // console.log("all cards", vue.cards);
+            try {
+                const { data } = await serverRequest('get', '/payments/methods', {
+                    mode: this.$store.state.profil.modeCo,
+                });
+                const customer = data.customer;
+                const cards = data.data || [];
+                if(cards.length === 0){
+                    this.$emit("no-card-founded");
+                    return;
                 }
-            });
+
+                for (const paymentMethod of cards) {
+                    const card = paymentMethod.card;
+                    const selected = customer?.metadata?.source_selected === paymentMethod.id
+                        || customer?.invoice_settings?.default_payment_method === paymentMethod.id
+                        || customer?.default_source === paymentMethod.id;
+                    const infos = {
+                        id: paymentMethod.id,
+                        brand: card.brand,
+                        exp_month: card.exp_month,
+                        exp_year: card.exp_year,
+                        last4: card.last4,
+                        select: selected,
+                    };
+                    if(selected){
+                        this.SET_CREDIT_CARD(infos);
+                        this.defaultSource = paymentMethod.id;
+                    }
+                    this.cards.push(infos);
+                }
+            } catch (error) {
+                console.error("Unable to retrieve payment methods:", error);
+                this.$emit(
+                    "checkout-error",
+                    error.response?.data?.message || "Impossible de récupérer vos moyens de paiement."
+                );
+            } finally {
+                this.load = false;
+            }
         },
         methods: {
             ...mapMutations("profil", ["SET_CREDIT_CARD"]),
@@ -217,30 +215,28 @@
             },
             async deleteSource(id, index){
                 console.log("id:", id, this.customer_id, this.cards[index]);
-
-                const customerSource = await stripe.customers.deleteSource(
-                    this.customer_id,
-                    id
-                );
-
-                this.cards = this.cards.slice().filter((card) => card.id != customerSource.id);
-
-                console.log("customerSource", customerSource, this.cards);
-
-                if( customerSource && customerSource.id == id){
-                    let customer = await stripe.customers.update(
-                        this.customer_id,
-                        {
-                            metadata: {
-                                type_source: null,
-                                source_selected: null,
-                            }
-                        }
+                this.load = true;
+                try {
+                    const { data: customerSource } = await serverRequest(
+                        'delete',
+                        `/payments/methods/${id}`,
+                        { mode: this.$store.state.profil.modeCo }
                     );
 
-                    console.log("customer", customer);
-                    if(customer)
+                    this.cards = this.cards.slice().filter((card) => card.id != customerSource.id);
+                    console.log("customerSource", customerSource, this.cards);
+
+                    if( customerSource && customerSource.id == id){
                         this.$router.go("/profil")
+                    }
+                } catch (error) {
+                    console.error("Unable to delete payment method:", error);
+                    this.$emit(
+                        "checkout-error",
+                        error.response?.data?.message || "Impossible de supprimer cette carte."
+                    );
+                } finally {
+                    this.load = false;
                 }
             },
         },

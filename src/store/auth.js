@@ -2,9 +2,9 @@
 
 import router from '../router';  
 import supabase from '@/utils/supabaseClient.js';
+import { serverRequest } from '@/utils/serverApi.js';
 
 import store from '../store'; 
-import stripe from '@/utils/stripe.js'
 
 export default {
     namespaced: true,
@@ -13,8 +13,11 @@ export default {
         //stripe
         customer_id: "",
         provider_id: "", //id compte stipe connect
+        provider: null,
         stripe_provider: null,
         customer: null,
+        token: "",
+        tokenExpiry: 0,
         logged_in: false,
         account_created: false,
         // device Id pour Android, IOS
@@ -30,9 +33,24 @@ export default {
         SET_REGISTER_DEVICE_TOKEN(state, token) {
             state.registerDeviceToken = token;
         },
+        SET_TOKEN(state, { token, expiry }) {
+            state.token = token || "";
+            state.tokenExpiry = expiry || 0;
+        },
+        CLEAR_TOKEN(state) {
+            state.token = "";
+            state.tokenExpiry = 0;
+            state.logged_in = false;
+            state.account_created = false;
+            state.customer_id = "";
+            state.provider_id = "";
+            state.provider = null;
+            state.customer = null;
+            state.stripe_provider = null;
+        },
     },
     actions: {
-        async createAccount({state}, info){
+        async createAccount({state, rootState}, info){
 
             const { data: { user } } = await supabase.auth.getUser();
 
@@ -41,115 +59,77 @@ export default {
                 return {status: 1, message: "Un probléme est survenu, veuillez réessayer plus tard"}
             }
             
-            // create account
-            const { data: account_ins, error: err_account_ins } = await supabase
-                .from('account')
-                .insert([
-                    { username: `${info.name} ${info.firstname}`, lastname: info.name, firstname: info.firstname, user_id: user.id, email: user.email },
-                ])
-                .select()
+            try {
+                const profileResponse = await serverRequest('post', '/account/profile', {
+                    mode: rootState.profil?.modeCo,
+                    data: {
+                        lastname: info.name,
+                        firstname: info.firstname,
+                        village: info.village,
+                    },
+                });
 
-            if(err_account_ins){
-                console.error("Erreur", err_account_ins)
-                return {status: 2, message: "Nous n'avons pas pu crée votre compte, veuillez réessayer plus tard"}
+                state.account_created = true;
+                rootState.profil.userId = profileResponse.data?.account?.id || null;
+
+                // Stripe creation is recoverable and must not turn an already
+                // committed Supabase profile into a false sign-up failure.
+                try {
+                    const paymentResponse = await serverRequest('post', '/account/payment-profile', {
+                        mode: rootState.profil?.modeCo,
+                    });
+                    const paymentProfile = paymentResponse.data;
+                    state.customer_id = paymentProfile.customer?.id || "";
+                    state.customer = paymentProfile.customer || null;
+                    state.provider_id = paymentProfile.provider?.id || "";
+                    state.stripe_provider = paymentProfile.provider || null;
+                    rootState.profil.payouts_enabled = Boolean(paymentProfile.provider?.payoutsEnabled);
+                } catch (paymentError) {
+                    console.error("Payment profile will be initialized on retry:", paymentError);
+                }
+
+                return {status: 0, message: "Votre compte a été créé avec succès"};
+            } catch (error) {
+                console.error("createAccount error:", error);
+                return {
+                    status: error.response?.status || 2,
+                    message: error.response?.data?.message || "Nous n'avons pas pu créer votre compte.",
+                };
             }
-
-            // create setting
-            const { data: setting_ins, error: err_setting_ins } = await supabase
-                .from('setting')
-                .insert([
-                    { account_id: account_ins[0].id },
-                ])
-                .select()
-
-            if(err_setting_ins){
-                console.error("Erreur", err_setting_ins)
-                return {status: 3, message: "La création de votre compte n'a pas pu aboutir, certaines fonctionnalité seront indeisponible."}
-            }
-
-            console.log("INS:", info, account_ins, setting_ins);
-
-            state.account_created = true;
-            return {status: 0, message: "Votre compte à été crée avec succès"};
         },
-        async removeAccount(){
-            //***REMOVE DATA */
-            //booking
-            
-            let { data: account, error: account_error } = await supabase
-                .from('account')
-                .select(`id, user_id`);
+        async removeAccount({ commit, rootState }){
+            try {
+                const response = await serverRequest('delete', '/account', {
+                    mode: rootState.profil?.modeCo,
+                });
 
-            if(account_error){
-                console.error("Error 1 :", account_error);
-                return {status: 1, message: "Une erreur s'est produite !"}
+                // The remote user no longer exists, so only clear the local
+                // session. A global sign-out can fail after admin deletion.
+                await supabase.auth.signOut({ scope: 'local' });
+                commit('CLEAR_TOKEN');
+                localStorage.removeItem('vuex');
+                localStorage.removeItem('mae-covoit-v2');
+
+                return {
+                    status: 0,
+                    message: response.data?.message || "Votre compte a été supprimé.",
+                    warnings: response.data?.warnings || [],
+                };
             }
-
-            console.log("account-ok", account);
-
-            const accountId = account[0].id;
-            const accountUserId = account[0].user_id;
-
-            //remove all booking
-            const { error: booking_error } = await supabase
-                .from('booking')
-                .delete()
-                .eq('passenger_account_id', accountId);
-
-            if(booking_error){
-                console.error("Error 2 :", booking_error);
-                return {status: 2, message: "Un probléme avec la suppression de vos données, réessayé plus tard"}
+            catch(error){
+                console.error("removeAccount error:", error);
+                return {
+                    status: error.response?.status || 1,
+                    message: error.response?.data?.message || "La suppression du compte n'a pas pu être terminée.",
+                };
             }
-
-            //remove all trip
-            const { error: trip_error } = await supabase
-                .from('trip')
-                .delete()
-                .eq('driver_id', accountUserId)
-        
-            if(trip_error){
-                console.error("Error 3 :", trip_error);
-                return {status: 3, message: "Un probléme avec la suppression de vos données, réessayé plus tard"}
-            }
-
-
-            //remove all settings
-            const { error: settings_error } = await supabase
-                .from('settings')
-                .delete()
-                .eq('account_id', accountId)
-        
-            if(settings_error){
-                console.error("Error 4 :", settings_error);
-                return {status: 4, message: "Un probléme avec la suppression de vos données, réessayé plus tard"}
-            }
-
-            //remove all car
-            const { error: car_error } = await supabase
-                .from('car')
-                .delete()
-                .eq('driver_id', accountUserId);
-        
-            if(car_error){
-                console.error("Error 5 :", car_error);
-                return {status: 5, message: "Un probléme avec la suppression de vos données, réessayé plus tard"}
-            }
-
-            //remove account
-            const { error: account_del_error } = await supabase
-                .from('account')
-                .delete()
-                .eq('id', accountId);
-        
-            if(account_del_error){
-                console.error("Error 6 :", account_del_error);
-                return {status: 6, message: "Un probléme avec la suppression de vos données, réessayé plus tard"}
-            }
-        
-            
         },
         async refreshToken({state}){
             const { data, error } = await supabase.auth.refreshSession()
+            if (error || !data?.session) {
+                console.error("refreshToken error:", error);
+                return false;
+            }
             const { session, user } = data;
 
             const jwt = session.access_token;
@@ -158,15 +138,18 @@ export default {
             state.tokenExpiry = session.expires_at * 1000;
 
             console.log("refreshToken", error, user)
-            
+            return true;
         },
         async checkSession({ state, commit }){
             let { data, error } = await supabase.auth.getSession();
 
-            console.log("checkSession data.session:", data.session)
             commit('SET_LOGGED_IN', false);
             if(data.session){
                 commit('SET_LOGGED_IN', true);
+                commit('SET_TOKEN', {
+                    token: data.session.access_token,
+                    expiry: data.session.expires_at * 1000,
+                });
                 const user = data.session.user;
                 commit('profil/SET_USER_UID', user.id, { root: true });
                 commit('SET_PROVIDER', user.app_metadata.provider);
@@ -181,8 +164,13 @@ export default {
                     `)
                     .eq('user_id', user.id)
 
-                if(account && account.length > 0){
-                    store.state.profil.auto_accept_trip = account[0].settings[0].auto_accept_trip;
+                account = account || [];
+
+                if(account.length > 0){
+                    const settings = account[0].settings?.[0];
+                    if (settings) {
+                        store.state.profil.auto_accept_trip = settings.auto_accept_trip;
+                    }
                     store.state.profil.identity = account[0].identity;
                 }
 
@@ -191,74 +179,35 @@ export default {
                 if( error_account ){
                     console.error("Erreur", error_account)
                     state.account_created = false;
+                    return false;
                 }
                 else{
                     if(account.length > 0){
                         console.log("Welcome ! ", account[0].firstname);
                         store.state.profil.userId = account[0].id;
                         state.account_created = true;
-                        
-                        // Create or retrieve custromer
-                        if( account[0].customer_id == null ){
-                            console.log("create new customer");
-                            // strip customer
-                            const customer = await stripe.customers.create({
-                                name: `${account[0].firstname} ${account[0].lastname}`,
-                                email: user.email,
-                            });
 
-                            console.log("new customer:", customer);
-                            await supabase
-                                .from('account')
-                                .update({ customer_id: customer.id })
-                                .eq('user_id', user.id)
-                                .select();
-                        }
-                        else{
-                            const customer = await stripe.customers.retrieve(account[0].customer_id);
-                            console.log("retrieve customer:", customer);
-                            state.customer_id = customer.id;
-                            state.customer = customer;
-                            if( customer.default_source ){
-                                try {
-                                    const card = await stripe.customers.retrieveSource(
-                                        customer.id,
-                                        customer.default_source
-                                    );
-                                    store.state.profil.credit_card.brand = card.brand;
-                                    store.state.profil.credit_card.num_end_credit_card = card.last4;
-                                    store.state.profil.credit_card.available = true;
-                                } catch (error) {
-                                    console.error("Erreur lors de la récupération de la carte:", error);
-                                    throw error;
-                                }
+                        try {
+                            const paymentProfileResponse = await serverRequest(
+                                'post',
+                                '/account/payment-profile',
+                                { mode: store.state.profil.modeCo }
+                            );
+                            const paymentProfile = paymentProfileResponse.data;
+
+                            state.customer_id = paymentProfile.customer?.id || "";
+                            state.customer = paymentProfile.customer || null;
+                            state.provider_id = paymentProfile.provider?.id || "";
+                            state.stripe_provider = paymentProfile.provider || null;
+                            store.state.profil.payouts_enabled = Boolean(paymentProfile.provider?.payoutsEnabled);
+
+                            if (paymentProfile.customer?.card) {
+                                store.state.profil.credit_card.brand = paymentProfile.customer.card.brand;
+                                store.state.profil.credit_card.last4 = paymentProfile.customer.card.last4;
+                                store.state.profil.credit_card.available = true;
                             }
-                        }
-
-                        //***************
-                        // Create or retrieve provider
-                        if( account[0].provider_id == null ){
-                            console.log("create new provider");
-                            // strip provider
-                            const provider = await stripe.accounts.create({
-                                type: 'standard',
-                                country: 'FR',
-                                email: user.email,
-                            });
-
-                            console.log("new provider:", provider);
-                            await supabase
-                                .from('account')
-                                .update({ provider_id: provider.id })
-                                .eq('user_id', user.id)
-                                .select();
-                        }
-                        else{
-                            const provider = await stripe.accounts.retrieve(account[0].provider_id);
-                            console.log("retrieve provider:", provider);
-                            state.provider_id = provider.id;
-                            state.stripe_provider = provider;
-                            store.state.profil.payouts_enabled = provider.payouts_enabled;
+                        } catch (paymentProfileError) {
+                            console.error("Payment profile initialization failed:", paymentProfileError);
                         }
                     }
                     else{
@@ -318,19 +267,12 @@ export default {
             }
         },
         async checkSessionOnly(){
-            let { data, error } = await supabase.auth.getSession();
+            let { data, error } = await supabase.auth.getUser();
 
-            if(error)
+            if(error || !data?.user)
                 return false;
 
-            // console.log("checkSession--data.session:", data.session)
-            if( data.session ){
-                return true;
-            }
-            else{
-                console.log("Error cheking session:", error)
-                return false;
-            }
+            return true;
         },
         async logout({ commit }) {
             let { error } = await supabase.auth.signOut();
@@ -346,15 +288,14 @@ export default {
     getters: {
         getUserUid: (state) => state.userUid,
         async isAuthenticated() {
-            let { data, error } = await supabase.auth.getSession();
+            let { data, error } = await supabase.auth.getUser();
 
-            if( error ){
+            if( error || !data?.user ){
                 router.replace("/login");
                 return false;
             }
 
-            const tokenValid = new Date().getTime() < data.session.expires_at * 1000;
-            return tokenValid;
+            return true;
         },
     },
     modules: {

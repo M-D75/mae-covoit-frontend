@@ -256,7 +256,7 @@
     import InfosGeneral from '@/components/menus/setting/InfosGeneral.vue';
     import SelectVirement from '@/components/menus/setting/SelectVirement.vue';
 
-    import { mapActions, mapMutations, mapState } from 'vuex';
+    import { mapActions, mapState } from 'vuex';
 
     export default defineComponent({
         name: 'setting-view',
@@ -274,8 +274,6 @@
             ...mapState("general", ['cgu', 'dataProtection']),
             ...mapState("auth", ['provider']),
             ...mapState("search", ['villages']),
-            ...mapMutations("auth", ["CLEAR_TOKEN"]),
-            ...mapActions("auth", ["logout"]),
         },
         data() {
             return {
@@ -298,6 +296,7 @@
         },
         methods: {
             ...mapActions("search", ["getVillages"]),
+            ...mapActions("auth", ["logout"]),
             initializeGroupeParameters() {
                 this.groupeParameters = [
                     {
@@ -366,7 +365,7 @@
                 ];
             },
             async signOutSupabase(){
-                this.logout;
+                await this.logout();
             },
             async inviteUserSupabase(){
                 let { data, error } = await this.supabase.auth.api.inviteUserByEmail('someone@email.com');

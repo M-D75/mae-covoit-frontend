@@ -109,7 +109,7 @@
                 :width="173"
                 aspect-ratio="16/9"
                 cover
-                src="../assets/splash.png"
+                src="../assets/splash-none.png"
             ></v-img>
         </v-container>
 
@@ -138,7 +138,6 @@
         name: 'home-view',
         computed: {
             ...mapState("auth", ["logged_in"]),
-            ...mapActions("auth", ["checkSession"]),
         },
         data() {
             return {
@@ -146,11 +145,12 @@
             }
         },
         methods: {
+            ...mapActions("auth", ["checkSession"]),
             goToLoginSign(){
                 this.$router.push({ path: '/login' });
             },
             async checkSessionIn(){
-                await this.checkSession;
+                await this.checkSession();
                 this.overlayLoad = false;
                 if(this.logged_in)
                     this.$router.replace("/search");

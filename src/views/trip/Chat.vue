@@ -421,6 +421,7 @@
     // Importez la bibliothèque Socket.IO client
     import io from 'socket.io-client';
     import supabase from '@/utils/supabaseClient.js';
+    import { createSocketAuth, getServerUrl } from '@/utils/serverApi.js';
     import { SafeAreaController, SafeArea } from '@aashu-dubey/capacitor-statusbar-safe-area';
     import { Keyboard } from '@capacitor/keyboard';
 
@@ -577,21 +578,18 @@
                 this.scrollToBottom();
             }.bind(this), 500);
 
-            const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
-
-            const typeUrl = this.modeCo;
+            const serverUrl = getServerUrl(this.modeCo);
             if( Object.keys(this.tripSelected).length > 0 && this.userUid != this.tripSelected.driver_id ){//mode passager
                 this.mode_driver = false;
-                this.socket = io(adresse[typeUrl], {
+                this.socket = io(serverUrl, {
                     reconnection: true,
                     reconnectionDelay: 1000,
                     reconnectionAttempts: 60,
+                    auth: createSocketAuth(),
                     query: {
-                        userId: this.userUid,
                         chatIds: [[this.userUid, this.tripSelected.driver_id].sort((a, b) => {
                                 return a.localeCompare(b);
                             }).join(":")],
-                        registerDeviceToken: this.registerDeviceToken,
                     }
                 });
 
@@ -603,7 +601,7 @@
             }
             else{
                 this.mode_driver = true;
-                this.contacts = this.chat.contacts;
+                this.contacts = Array.isArray(this.chat?.contacts) ? this.chat.contacts : [];
 
                 let chatIds = [];
                 for (let index = 0; index < this.contacts.length; index++) {
@@ -612,19 +610,21 @@
                             }).join(":"));
                 }
 
-                this.socket = io(adresse[typeUrl], {
+                this.socket = io(serverUrl, {
                     reconnection: true,
                     reconnectionDelay: 1000,
                     reconnectionAttempts: 60,
+                    auth: createSocketAuth(),
                     query: {
-                        userId: this.userUid,
                         chatIds: chatIds,
-                        registerDeviceToken: this.registerDeviceToken,
                     }
                 });
-                this.currentContact.username = this.contacts[0].username;
-                this.currentContact.avatarContact = this.contacts[0].avatar;
-                this.currentContact.userUid = this.contacts[0].user_id;
+                const firstContact = this.contacts[0];
+                if (firstContact) {
+                    this.currentContact.username = firstContact.username;
+                    this.currentContact.avatarContact = firstContact.avatar;
+                    this.currentContact.userUid = firstContact.user_id;
+                }
             }
 
             this.socket.on('connect', () => {

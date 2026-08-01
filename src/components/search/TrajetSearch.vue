@@ -303,7 +303,6 @@
         emits: ["switch-commune", "trajet-selected", "open-dep", "open-dest", "open-calendar", "open-nb-passenger"],
         computed: {
             ...mapState("search", ['villages', 'depart', 'destination', 'nbPassenger']),
-            ...mapActions("search", ['getVillages']),
         },
         components: {
         },
@@ -320,10 +319,11 @@
         },
         created() {
             if( this.villages == undefined || this.villages == null || this.villages.length == 0 ){
-                this.getVillages;
+                this.getVillages();
             }
         },
         methods: {
+            ...mapActions("search", ['getVillages']),
             ...mapMutations("search", ["SET_DEPART", "SET_DESTINATION"]),
             switchCommuneEmit(){
                 //Animation

@@ -129,17 +129,24 @@
         <div class="row-item infos">
 
             <div class="label"> 
-                {{ modeDriver ? 'Gain' + (pending>0 ? ' en attente' : ' en Transit') : 'Solde' }} 
+                {{ modeDriver ? driverBalanceLabel : 'Solde' }}
+
+                <v-icon
+                    v-if="modeDriver && wallet>0"
+                    color="blue"
+                >
+                    mdi-wallet
+                </v-icon>
                 
                 <v-icon 
-                    v-if="modeDriver && pending>0"
+                    v-if="modeDriver && wallet==0 && pending>0"
                     color="orange"
                 >
                     mdi-clock-time-eight-outline
                 </v-icon>
 
                 <v-icon 
-                    v-if="modeDriver && pending==0"
+                    v-if="modeDriver && wallet==0 && pending==0"
                     color="green"
                 >
                     mdi-bank-transfer-in
@@ -162,7 +169,7 @@
                 <v-icon 
                     v-if="modeDriver" 
                     class="zoom-bounce" 
-                    :class="{ icon_disabled: gain==0}"  
+                    :class="{ icon_disabled: wallet==0}"
                     @click="emit('transfert-gain')"
                 >mdi-transfer</v-icon>
                 
@@ -261,6 +268,7 @@
             ...mapState("profil", {
                 pending: state => state.gain.pending,
                 transit: state => state.gain.transit,
+                wallet: state => state.gain.wallet,
                 reservedDebit: state => state.pendingDebit,
             }),
             ...mapState("auth", ["provider_id"]),
@@ -273,6 +281,11 @@
             },
             reservedDebitLabel(){
                 return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(this.reservedDebit || 0);
+            },
+            driverBalanceLabel(){
+                if( this.wallet > 0 ) return "Gains en crédits";
+                if( this.pending > 0 ) return "Gains en attente";
+                return "Gains en transit";
             }
         },
         props: {
@@ -328,7 +341,12 @@
             updateSolde(){
                 console.log("change-mode", this.modeDriver, this.gain, this.soldes);
                 if(this.modeDriver)
-                    this.animerNombre(parseInt(this.soldeWritable), this.gain.pending > 0 ? this.gain.pending :  this.gain.transit, 20, 1000);
+                    this.animerNombre(
+                        parseInt(this.soldeWritable),
+                        this.gain.wallet > 0 ? this.gain.wallet : (this.gain.pending > 0 ? this.gain.pending : this.gain.transit),
+                        20,
+                        1000
+                    );
                 else
                     this.animerNombre(parseInt(this.soldeWritable), this.soldes, 20, 1000);
             }
@@ -344,6 +362,9 @@
             },
             pending(){
                 console.log("gain-pending-changed", this.gain);
+                this.updateSolde();
+            },
+            wallet(){
                 this.updateSolde();
             },
             modeDriver(){

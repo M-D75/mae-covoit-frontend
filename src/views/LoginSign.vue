@@ -267,7 +267,7 @@
 <script>
     // import $ from 'jquery'
     import { inject } from 'vue';
-    import { mapActions, mapMutations, mapState } from "vuex";
+    import { mapMutations, mapState } from "vuex";
 
     import { App } from '@capacitor/app';
     import { Plugins } from '@capacitor/core';
@@ -284,7 +284,6 @@
         },
         computed: {
             ...mapState("auth", ["logged_in", "account_created"]),
-            ...mapActions("auth", ["refreshToken", "checkSession"]),
         },
         data() {
             return {
@@ -377,7 +376,7 @@
 
                 //this.sendNotification();
 
-                console.log('Connexion par mail réussie:', data, session);
+                console.log('Connexion par mail réussie');
                 this.SET_TOKEN({token: session.access_token, expiry: session.expires_at*1000})
                 this.overlayLoad = false;
 
@@ -446,13 +445,13 @@
                         },
                     }));
                 }
-                else if(window.location.host == "localhost:8080"){
+                else if(['localhost', '127.0.0.1'].includes(window.location.hostname)){
                     // Test local
                     ({ data, error } = await this.supabase.auth.signInWithOAuth({
                         provider: service,
                         options: {
                             skipBrowserRedirect: true,
-                            redirectTo: "http://localhost:8080",
+                            redirectTo: window.location.origin,
                         },
                     }));
                 }

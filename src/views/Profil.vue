@@ -219,7 +219,7 @@
         mode="up-money"
         labelSelectorN1="Quel montant souhaitez-vous transferer sur votre compte passager ?"
         ref="BottomMenuRefMoneyDriver"
-        :params-number="{min:1, max: Math.ceil(Math.floor(pending))}"
+        :params-number="{min:1, max: Math.max(1, Math.floor(wallet))}"
         :upMoneyObj="{btn: 'Transferer'}"
         v-on:close="overlay = false"
         v-on:up-money="overlay = false; $refs.BottomMenuRefMoneyDriver.close()"
@@ -233,7 +233,7 @@
 <script>
     import { defineComponent } from 'vue';
     import { mapState, mapActions, mapMutations } from 'vuex';
-    import axios from 'axios';
+    import { serverRequest } from '@/utils/serverApi.js';
     // import { SafeArea } from '@aashu-dubey/capacitor-statusbar-safe-area';
     import { Capacitor } from '@capacitor/core';
 
@@ -256,6 +256,7 @@
             ...mapState("profil", {
                 pending: state => state.gain.pending,
                 transit: state => state.gain.transit,
+                wallet: state => state.gain.wallet,
             }),
             ...mapState("trip", ["notMessageVue"]),
         },
@@ -481,43 +482,30 @@
                 }
             },
             onDropMoney(){
-                if( this.gain == 0 ){
+                if( Number(this.gain.pending || 0) + Number(this.gain.transit || 0) <= 0 ){
                     this.messageSnackbarError = "Désolé, vous n'avez pas de gains suffisants pour cette action."
                     this.showSnackbarError = true;
                 }
                 else{
-                    if( this.modePathNavigation != "drop-money" ){
-                        
-                        this.modePathNavigation = "drop-money";
-                        this.indexModeNavigation = -1;
-                        this.pathNavigationNext();
-
-                        setTimeout(function(){
-                            if ( this.$refs.BottomMenuRefMoney ) {
-                                this.overlay = this.$refs.BottomMenuRefMoney.open();
-                            }
-                        }.bind(this), 500);
-                    }
-                    else {
-                        this.pathNavigationNext();
-                    }
-                }
-            },
-            onUpMoney(){
-                if( this.modePathNavigation != "up-money" ){
-                    this.modePathNavigation = "up-money";
+                    this.modePathNavigation = "drop-money";
                     this.indexModeNavigation = -1;
                     this.pathNavigationNext();
-                    
                     setTimeout(function(){
                         if ( this.$refs.BottomMenuRefMoney ) {
                             this.overlay = this.$refs.BottomMenuRefMoney.open();
                         }
-                    }.bind(this), 500);
+                    }.bind(this), 50);
                 }
-                else {
-                    this.pathNavigationNext();
-                }
+            },
+            onUpMoney(){
+                this.modePathNavigation = "up-money";
+                this.indexModeNavigation = -1;
+                this.pathNavigationNext();
+                setTimeout(function(){
+                    if ( this.$refs.BottomMenuRefMoney ) {
+                        this.overlay = this.$refs.BottomMenuRefMoney.open();
+                    }
+                }.bind(this), 50);
             },
             pathNavigationNext(){
                 this.indexModeNavigation = (this.indexModeNavigation + 1) % this.pathNavigation[this.modePathNavigation].length;
@@ -537,12 +525,11 @@
                 }
             },
             askNewMessage(){
-                const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
-
                 const typeUrl = this.modeCo;
                 if(this.infosTravels.length > 0){
-                    axios.post(`${adresse[typeUrl]}/askNewMessage`, {
-                            userId: this.userUid,
+                    serverRequest('post', '/askNewMessage', {
+                            mode: typeUrl,
+                            data: { userId: this.userUid },
                         })
                         .then(response => {
                             console.log("askNewMessage", response.data);
@@ -574,7 +561,7 @@
                 }
             },
             transferGainToSoldes(){
-                if( this.gain.pending < 1 ){
+                if( this.gain.wallet < 1 ){
                     this.messageSnackbarError = "Désolé, vous n'avez pas de gain en attente suffisant."
                     this.showSnackbarError = true;
                 }

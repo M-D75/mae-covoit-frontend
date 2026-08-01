@@ -87,6 +87,22 @@
         v-on:yes="overlay = false; console.log('yes'); deleteAccount();"
         v-on:no="overlay = false; console.log('no'); $refs.BottomMenuRefConfirmChoice.close()"
         />
+
+    <v-snackbar
+        v-model="showDeleteError"
+        :timeout="5000"
+        color="error"
+    >
+        {{ deleteError }}
+    </v-snackbar>
+
+    <v-snackbar
+        v-model="showDeleteWarning"
+        :timeout="5000"
+        color="warning"
+    >
+        {{ deleteWarning }}
+    </v-snackbar>
  </template>
 
 
@@ -122,26 +138,40 @@
         },
         data() {
             return {
+                showDeleteError: false,
+                deleteError: "",
+                showDeleteWarning: false,
+                deleteWarning: "",
             };
         },
         mounted() {
         },
         methods: {
             ...mapMutations("profil", ["SET_CGU_ACCEPTED"]),
-            ...mapActions("profil", ["removeAccount", "logout"]),
+            ...mapActions("auth", ["removeAccount"]),
             callDeleteAccount(){
                 this.$refs.BottomMenuRefConfirmChoice.open();
             },
             async deleteAccount(){
                 this.$refs.BottomMenuRefConfirmChoice.loadingBtn = true;
-                await this.removeAccount();
+                const result = await this.removeAccount();
                 this.$refs.BottomMenuRefConfirmChoice.loadingBtn = false;
+
+                if (result.status !== 0) {
+                    this.deleteError = result.message;
+                    this.showDeleteError = true;
+                    return;
+                }
+
                 this.$refs.BottomMenuRefConfirmChoice.close();
-                setTimeout(function(){
-                    this.logout();
-                }.bind(this), 2000);
+                if (result.warnings?.length) {
+                    this.deleteWarning = result.warnings.join(" ");
+                    this.showDeleteWarning = true;
+                    setTimeout(() => this.$router.replace("/login"), 5000);
+                } else {
+                    this.$router.replace("/login");
+                }
             }
         }
     };
 </script>
-

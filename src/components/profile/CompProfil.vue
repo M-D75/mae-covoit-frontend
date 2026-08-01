@@ -66,17 +66,21 @@
             width: 82.7%;
             display: flex;
             justify-content: space-between;
+            align-items: center;
+            gap: 10px;
             @include mixins.respond-to('small') {
                 width: 90%;
             }
 
             .v-btn {
-                width: 138px;
+                flex: 1 1 0;
+                min-width: 0;
+                width: auto;
                 height: 32px;
                 box-shadow: none;
                 font-size: 12px;
                 font-weight: 700;
-                background-color: var(--border-color);
+                background-color: var(--white-bg-color);
                 color: var(--font-color-label);
                 &.dashboard{
                     content: "nbonjo";
@@ -86,8 +90,10 @@
                     color: white;
                 }
                 &.calendar {
-                    width: 0px !important;
-                    min-width: 20px !important;
+                    flex: 0 0 42px;
+                    width: 42px !important;
+                    min-width: 42px !important;
+                    padding: 0 !important;
                     .v-icon {
                         font-size: 20px;
                     }
@@ -103,7 +109,7 @@
                     left: -2px;
                 }
                 @include mixins.respond-to('small') {
-                    width: 40%;
+                    font-size: 11px;
                 }
             }
         }
@@ -199,7 +205,7 @@
 <script>
     import { defineComponent } from 'vue';
     import { mapState, mapActions, mapMutations } from 'vuex';
-    import axios from 'axios';
+    import { serverRequest } from '@/utils/serverApi.js';
 
     // import $ from 'jquery';
 
@@ -425,12 +431,11 @@
                 }
             },
             askNewMessage(){
-                const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
-
                 const typeUrl = this.modeCo;
                 if(this.infosTravels.length > 0){
-                    axios.post(`${adresse[typeUrl]}/askNewMessage`, {
-                            userId: this.userUid,
+                    serverRequest('post', '/askNewMessage', {
+                            mode: typeUrl,
+                            data: { userId: this.userUid },
                         })
                         .then(response => {
                             console.log("askNewMessage", response.data);

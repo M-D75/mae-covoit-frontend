@@ -1,5 +1,4 @@
 // import { createStore } from 'vuex'
-import axios from 'axios'
 // import { createClient } from '@supabase/supabase-js'
 
 
@@ -8,71 +7,10 @@ import supabase from '@/utils/supabaseClient.js';
 import { dateConverter, groupByDate, mapToObject } from '@/utils/utils.js';
 import router from '@/router';
 
-import stripe from '@/utils/stripe.js'
 import { fetchPassengerTrips, normalizePassengerTrips } from '@/services/travels.js';
 import { humanizeSupabaseError } from '@/utils/errorMessages.js';
-import { sendServerNotification } from '@/utils/notifications.js';
-
-async function releaseExpiredWalletReservations(state, accountRow) {
-    const cutoff = new Date(Date.now() - (60 * 60 * 1000)).toISOString();
-
-    const { data: expiredBookings, error: expiredError } = await supabase
-        .from('booking')
-        .select(`
-            id,
-            trip:trip_id (
-                price,
-                departure_time
-            )
-        `)
-        .eq('passenger_account_id', accountRow.id)
-        .eq('payment_status', 'wallet_reserved')
-        .eq('in_car', false)
-        .lt('trip.departure_time', cutoff);
-
-    if (expiredError) {
-        console.error('releaseExpiredWalletReservations error:', expiredError);
-        throw new Error(humanizeSupabaseError(expiredError));
-    }
-
-    if (!expiredBookings || expiredBookings.length === 0) {
-        return accountRow.credit;
-    }
-
-    const refundAmount = expiredBookings.reduce((sum, booking) => {
-        const price = booking.trip && booking.trip.price ? booking.trip.price : 0;
-        return sum + price;
-    }, 0);
-
-    if (refundAmount <= 0) {
-        return accountRow.credit;
-    }
-
-    const { data: updatedAccount, error: updateError } = await supabase
-        .from('account')
-        .update({ credit: accountRow.credit + refundAmount })
-        .eq('id', accountRow.id)
-        .select();
-
-    if (updateError) {
-        console.error('releaseExpiredWalletReservations update error:', updateError);
-        throw new Error(humanizeSupabaseError(updateError));
-    }
-
-    const bookingIds = expiredBookings.map((booking) => booking.id);
-
-    const { error: bookingUpdateError } = await supabase
-        .from('booking')
-        .update({ payment_status: 'wallet_released' })
-        .in('id', bookingIds);
-
-    if (bookingUpdateError) {
-        console.error('releaseExpiredWalletReservations booking update error:', bookingUpdateError);
-        throw new Error(humanizeSupabaseError(bookingUpdateError));
-    }
-
-    return updatedAccount[0].credit;
-}
+import { serverRequest } from '@/utils/serverApi.js';
+import { createRequestId } from '@/utils/requestId.js';
 
 export default {
     namespaced: true,
@@ -84,7 +22,8 @@ export default {
             animal: "animal",
         },
         auto_accept_trip: true,
-        modeCo: "online", //online, local
+        // One source of truth prevents a local screen from calling production.
+        modeCo: process.env.VUE_APP_MODE || (process.env.NODE_ENV === 'production' ? "online" : "local"),
         notification: true,
         modeDriver: false,
         darkMode: false,
@@ -97,6 +36,7 @@ export default {
         gain: {
             pending: 0,
             transit: 0,
+            wallet: 0,
         },
         cguAccepted: false,
         identity: false,
@@ -108,6 +48,8 @@ export default {
         },
         profil: {
             nbTrip: 0,
+            avis: 0,
+            satisfaction: 0,
             infos_perso: {
                 civilite: "Mr.",
                 nom: "Ledou",
@@ -253,18 +195,34 @@ export default {
     },
     actions: {
         async getNotation({state}){
-            const { count, error } = await supabase
-                .from('trip')
-                .select('id', { count: 'exact', head: true })
-                .eq("driver_id", state.userUid);
+            try {
+                const [{ count, error }, summaryResponse] = await Promise.all([
+                    supabase
+                        .from('trip')
+                        .select('id', { count: 'exact', head: true })
+                        .eq("driver_id", state.userUid),
+                    serverRequest('get', `/ratings/accounts/${state.userId}/summary`, {
+                        mode: state.modeCo,
+                    }),
+                ]);
+                if(error) throw error;
 
-            if(error){
-                return {status: 1, message: "Erreur"}
+                const summary = summaryResponse.data?.data;
+                if (summaryResponse.data?.status !== 'ok' || !summary) {
+                    throw new Error("Réponse de notation invalide.");
+                }
+
+                state.profil.nbTrip = count;
+                state.profil.avis = Number(summary.averageScore || 0);
+                state.profil.satisfaction = Number(summary.satisfaction || 0);
+                return {status: 0, message: "Nombre de trajets:"+state.profil.nbTrip}
+            } catch (error) {
+                console.error("getNotation error:", error);
+                return {
+                    status: 1,
+                    message: error.response?.data?.message || "Erreur lors du chargement de la notation.",
+                };
             }
-            // console.log("count", error, count);
-            state.profil.nbTrip = count;
-            return {status: 0, message: "Nombre de trajets:"+state.profil.nbTrip}
-
         },
         async addCar({state}, infos){
 
@@ -364,73 +322,86 @@ export default {
             const sessionChecked = await store.dispatch("auth/checkSessionOnly");
             if( ! sessionChecked ){
                 router.replace("/login");
-                return;
+                return {status: 1, message: "Votre session a expiré."};
             }
 
-            // get-credit
-            let { data: account, error: error_account } = await supabase
-                .from('account')
-                .select("id, credit, customer_id")
-                .eq('user_id', state.userUid);
-
-            if(error_account){
-                console.log("Error2:", error_account);
-                return {status: 2, message: humanizeSupabaseError(error_account, "Une erreur s'est produite lors de la récupération de votre solde.")};
-            }
-
+            // All releases/captures/cancellations are reconciled server-side so
+            // a stale client can never refund a wallet or cancel another hold.
+            let reconciliation = null;
+            const reconciliationWarnings = [];
             try {
-                account[0].credit = await releaseExpiredWalletReservations(state, account[0]);
+                const response = await serverRequest('post', '/bookings/reconcile', {
+                    mode: state.modeCo,
+                });
+                reconciliation = response.data?.data;
+                if( response.data?.status !== 'ok' || !reconciliation ){
+                    throw new Error("Réponse de synchronisation invalide.");
+                }
             }
             catch(error){
-                console.error("releaseExpiredWalletReservations failed:", error);
-                return {status: 2, message: error.message || "Impossible de mettre à jour vos crédits. Réessayez plus tard."};
-            }
-            const accountId = account[0].id;
-            let refreshedCredit = account[0].credit;
-
-            const balanceConnect = await stripe.balance.retrieve({
-                stripeAccount: store.state.auth.provider_id,
-            });
-
-            console.log("balanceConnect", balanceConnect, balanceConnect.available[0].amount, balanceConnect.pending[0].amount, (balanceConnect.available[0].amount + balanceConnect.pending[0].amount));
-
-            state.gain.transit = (balanceConnect.available[0].amount + balanceConnect.pending[0].amount)/100;
-
-            // pending
-
-            let { data: strip_charge, error: error_strip_charge } = await supabase
-                .from('strip_charge')
-                .select('*')
-                .neq("account_id", state.userId)
-                .eq("transfered", false);
-        
-            if(error_strip_charge){
-                console.error("Error:", error_strip_charge);
+                console.error("getSoldes reconciliation error:", error);
+                reconciliationWarnings.push(
+                    error.response?.data?.message || "Impossible de synchroniser les réservations."
+                );
             }
 
-            console.log("strip_charge", strip_charge);
-            state.gain.pending = 0;
+            // Webhooks remain the production source of truth, but this
+            // authenticated reconciliation also completes synchronous local
+            // tests after a lost response or a temporarily closed app.
+            try {
+                await serverRequest('post', '/payments/topups/reconcile', {
+                    mode: state.modeCo,
+                });
+            } catch (error) {
+                console.warn("Top-up reconciliation unavailable:", error);
+                reconciliationWarnings.push(
+                    error.response?.data?.message || "Impossible de synchroniser les rechargements."
+                );
+            }
 
-            if(strip_charge.length > 0){    
-                for (let index = 0; index < strip_charge.length; index++) {
-                    const element = strip_charge[index];
-                    const balanceTransaction = await stripe.balanceTransactions.retrieve(
-                        element.charge_id
-                    );
+            let { data: account, error: errorAccount } = await supabase
+                .from('account')
+                .select("id, credit, gain")
+                .eq('user_id', state.userUid)
+                .single();
 
-                    console.log("balanceTransaction", balanceTransaction);
+            // Compatibilité temporaire avec une base antérieure à la migration
+            // 015. La réservation atomique exige toujours les migrations serveur,
+            // mais l'affichage du solde historique ne doit pas échouer pour autant.
+            if (
+                errorAccount?.code === '42703'
+                && String(errorAccount.message || '').includes('account.gain')
+            ) {
+                const legacyAccount = await supabase
+                    .from('account')
+                    .select("id, credit")
+                    .eq('user_id', state.userUid)
+                    .single();
+                account = legacyAccount.data ? { ...legacyAccount.data, gain: 0 } : null;
+                errorAccount = legacyAccount.error;
+                reconciliationWarnings.push(
+                    "Les gains chauffeur seront disponibles après la mise à jour de la base."
+                );
+            }
 
-                    // const charge = await stripe.charges.retrieve(balanceTransaction.source);
-                    
-                    // console.log("charge", charge, charge.customer, account[0].customer_id);
-                    console.log("driver_id:${state.userUid}", `driver_id:${state.userUid}`);
-                    console.log("description:", balanceTransaction.description);
-                    if(balanceTransaction.description.includes(`driver_id:${state.userUid}`)){
-                        state.gain.pending += (balanceTransaction.net * 0.59)/100;
-                    }
-                }
-                state.gain.pending = parseFloat(state.gain.pending).toFixed(2)
-                console.log("pending", state.gain.pending);
+            if(errorAccount || !account){
+                console.error("getSoldes account error:", errorAccount);
+                return {status: 2, message: humanizeSupabaseError(errorAccount, "Une erreur s'est produite lors de la récupération de votre solde.")};
+            }
+
+            const refreshedCredit = Number(account.credit) || 0;
+            state.gain.wallet = Number(account.gain) || 0;
+
+            try {
+                const { data: connectBalance } = await serverRequest('get', '/connect/balance', {
+                    mode: state.modeCo,
+                });
+                state.gain.transit = connectBalance.total / 100;
+                state.gain.pending = (connectBalance.pendingEarnings / 100).toFixed(2);
+            } catch (error) {
+                console.error("Unable to retrieve Connect balance:", error);
+                state.gain.transit = 0;
+                state.gain.pending = 0;
             }
 
             // console.log("state.gain", state.gain);
@@ -438,243 +409,136 @@ export default {
             state.soldes = refreshedCredit;
             state.pendingDebit = 0;
 
-            let cardHold = 0;
-            const { data: pending_debits, error: pending_error } = await supabase
+            const { data: pendingDebits, error: pendingError } = await supabase
                 .from('stripe_pending_capture')
-                .select('amount, payment_intent_id, capture_after, trip_id, booking_ids')
-                .eq('passenger_account_id', account[0].id)
+                .select('amount')
+                .eq('passenger_account_id', account.id)
                 .eq('status', 'requires_capture');
 
-            if(pending_error){
-                console.error("pending debit error:", pending_error);
+            if(pendingError){
+                console.error("pending debit error:", pendingError);
             }
-            else if(pending_debits && pending_debits.length > 0){
-                const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
-                const typeUrl = state.modeCo;
-                let totalHold = 0;
-                const now = new Date();
-                const parseBookingIds = (rawValue) => {
-                    if(Array.isArray(rawValue)){
-                        return rawValue;
-                    }
-                    if(typeof rawValue === 'string'){
-                        try {
-                            const parsed = JSON.parse(rawValue);
-                            return Array.isArray(parsed) ? parsed : [];
-                        }
-                        catch(parseError){
-                            console.error("pending debit booking_ids parse error:", parseError);
-                            return [];
-                        }
-                    }
-                    return [];
-                };
+            const cardHold = (pendingDebits || []).reduce(
+                (total, record) => total + (Number(record.amount) || 0),
+                0
+            ) / 100;
 
-                for (const record of pending_debits) {
-                    const amount = record.amount || 0;
-                    const bookingIds = parseBookingIds(record.booking_ids);
-                    let mustCancel = record.capture_after ? new Date(record.capture_after) < now : false;
-
-                    if(bookingIds.length === 0){
-                        mustCancel = true;
-                    }
-                    else if(!mustCancel){
-                        const { data: bookingStatuses, error: bookingStatusError } = await supabase
-                            .from('booking')
-                            .select('id, is_refused')
-                            .in('id', bookingIds);
-
-                        if(bookingStatusError){
-                            console.error("pending debit booking status error:", bookingStatusError);
-                        }
-                        else if(!bookingStatuses || bookingStatuses.length === 0 || bookingStatuses.every((booking) => booking.is_refused)){
-                            mustCancel = true;
-                        }
-                    }
-
-                    if(mustCancel){
-                        try {
-                            console.log("Cancelling pending capture:", record.payment_intent_id);
-                            await axios.post(`${adresse[typeUrl]}/payments/cancel`, {
-                                paymentIntentId: record.payment_intent_id,
-                                tripId: record.trip_id,
-                            });
-                        }
-                        catch(error){
-                            console.error("Failed to cancel pending capture:", error);
-                        }
-                        continue;
-                    }
-
-                    totalHold += amount;
-                }
-
-                cardHold = totalHold / 100;
-            }
-
-            let walletHold = 0;
-            const { data: wallet_reserved, error: wallet_error } = await supabase
+            const { data: walletReserved, error: walletError } = await supabase
                 .from('booking')
                 .select(`
                     id,
-                    is_refused,
                     trip:trip_id (
                         price
                     )
                 `)
-                .eq('passenger_account_id', account[0].id)
+                .eq('passenger_account_id', account.id)
                 .eq('payment_status', 'wallet_reserved');
 
-            if(wallet_error){
-                console.error("wallet reserved error:", wallet_error);
+            if(walletError){
+                console.error("wallet reserved error:", walletError);
             }
-            else if(wallet_reserved && wallet_reserved.length > 0){
-                let walletRefund = 0;
-                const walletReleaseIds = [];
-
-                wallet_reserved.forEach((booking) => {
-                    const price = booking.trip && booking.trip.price ? booking.trip.price : 0;
-                    const numericPrice = Number(price) || 0;
-                    if(booking.is_refused || !booking.trip){
-                        walletRefund += numericPrice;
-                        walletReleaseIds.push(booking.id);
-                    }
-                    else{
-                        walletHold += numericPrice;
-                    }
-                });
-
-                if(walletRefund > 0){
-                    const { data: updatedAccount, error: walletCreditError } = await supabase
-                        .from('account')
-                        .update({ credit: refreshedCredit + walletRefund })
-                        .eq('id', accountId)
-                        .select();
-
-                    if(walletCreditError){
-                        console.error("wallet refund credit update error:", walletCreditError);
-                    }
-                    else if(updatedAccount && updatedAccount.length > 0){
-                        refreshedCredit = updatedAccount[0].credit;
-                    }
-
-                    if(walletReleaseIds.length > 0){
-                        const { error: walletReleaseError } = await supabase
-                            .from('booking')
-                            .update({ payment_status: 'wallet_released' })
-                            .in('id', walletReleaseIds);
-
-                        if(walletReleaseError){
-                            console.error("wallet release update error:", walletReleaseError);
-                        }
-                    }
-                }
-            }
+            const walletHold = (walletReserved || []).reduce(
+                (total, booking) => total + (Number(booking.trip?.price) || 0),
+                0
+            );
 
             state.pendingDebit = parseFloat((cardHold + walletHold).toFixed(2));
-            state.soldes = refreshedCredit;
 
-            return {status: 0, message: `Votre solide est de : ${state.soldes}`};
+            return {
+                status: 0,
+                message: `Votre solde est de : ${state.soldes}`,
+                reconciliation,
+                warnings: reconciliationWarnings,
+            };
         },
         async addCredit({state}, infosLoad){
             const sessionChecked = await store.dispatch("auth/checkSessionOnly");
             if( ! sessionChecked ){
                 router.replace("/login");
-                return;
+                return {status: 1, message: "Votre session a expiré."};
             }
 
-            // get-credit
-            let { data: account, error: error_account } = await supabase
-                .from('account')
-                .select("credit, customer_id")
-                .eq('user_id', state.userUid)
-            
-            if(error_account){
-                console.log("Error2:", error_account);
-                return {status: 2, message: "Une erreur s'est produite lors de la récupératioin de votre solde."};
+            if (infosLoad.no_source) {
+                return {
+                    status: 2,
+                    message: "Le paiement doit être confirmé avant de créditer le compte.",
+                };
             }
 
-            console.log("account:", account, error_account, account[0].credit+infosLoad.credit, infosLoad.no_source);
+            try {
+                const attemptId = infosLoad.attemptId || createRequestId();
+                const { data: paymentIntent } = await serverRequest('post', '/payments/topup-intent', {
+                    mode: state.modeCo,
+                    data: {
+                        amount: Math.round(Number(infosLoad.credit) * 100),
+                        confirmWithSavedMethod: true,
+                        attemptId,
+                    },
+                });
 
-            const customerId = account[0].customer_id;
-            if( ! infosLoad.no_source ){
-                //get card
-                const customer = await stripe.customers.retrieve(account[0].customer_id);
-                console.log("retrieve customer:", customer);
-                if( customer.metadata.source_selected ){
-                    const cardId = customer.metadata.source_selected;
-                    try {
-                        const obj = {
-                            amount: infosLoad.credit*100,
-                            currency: 'eur',
-                            customer: customerId,
-                            payment_method: cardId,
-                            confirm: true,
-                            description: `rechargement de credits pour ${state.userName}; userUid : ${state.userUid};`,
-                            // return_url: 'http://localhost:8080/profil',
-                            automatic_payment_methods: {
-                                enabled: true,
-                                allow_redirects: 'never'
-                            },
-                        };
-                        console.log("build-payment-intent", obj);
-                        const paymentIntent = await stripe.paymentIntents.create(obj);
-                
-                        console.log("paymentIntent [OK]", paymentIntent);
-                    } 
-                    catch (error) {
-                        console.error("Erreur lors de la création de l'intention de paiement:", error);
-                        return {status: 2, message: "Une erreur s'est produite lors du prélevement sur votre card de credit, veuillez réessayer plus tard."};
-                    }
+                if (paymentIntent.status === 'requires_action') {
+                    return {
+                        status: 3,
+                        paymentIntentId: paymentIntent.id,
+                        message: "Une authentification bancaire est nécessaire.",
+                    };
                 }
-                else {
-                    return {status: 4, message: "Carte de crédit non detecté"};
+                if (paymentIntent.status === 'processing') {
+                    return {
+                        status: 1,
+                        pending: true,
+                        message: "Le paiement est en cours de traitement. Votre solde sera actualisé dès sa validation.",
+                    };
                 }
-            }
+                if (paymentIntent.status !== 'succeeded') {
+                    return {status: 2, message: "Le paiement n'a pas été validé."};
+                }
 
-            // update
-            let { data: data_update, error: error_update } = await supabase
-                .from('account')
-                .update({ credit: (account[0].credit + infosLoad.credit) })
-                .eq('user_id', state.userUid)
-                .select()
-            
-            if( error_update ){
-                return {status: 3, message: "Une erreur s'est produite lors, un remboursement vous sera envoyé."};
-            }
+                const { data: account, error } = await supabase
+                    .from('account')
+                    .select('credit')
+                    .eq('user_id', state.userUid)
+                    .single();
+                if (error) {
+                    throw error;
+                }
 
-            state.soldes = data_update[0].credit;
-            console.log("update-credit", data_update, error_update);
-            return {status: 0, message: "Votre compte à bien était crédité !"};
+                state.soldes = account.credit;
+                return {status: 0, message: "Votre compte a bien été crédité !"};
+            } catch (error) {
+                console.error("addCredit error:", error);
+                const response = error.response;
+                return {
+                    status: 2,
+                    code: response?.data?.code || 'TOPUP_FAILED',
+                    retriable: response?.data?.retriable ?? (!response || response.status >= 500),
+                    message: response?.data?.message || "Le rechargement n'a pas pu être effectué.",
+                };
+            }
         },
-        // async transfertGain({state}, data){
-        //     // get-credit
-        //     let { data: account, error: error_account } = await supabase
-        //         .from('account')
-        //         .select("*")
-        //         .eq('user_id', state.userUid);
-
-        //     if( error_account ){
-        //         console.error("Error acount:", error_account);
-        //         return {status: 1, message: "Une erreur s'est produite veulliez réessayez plus tard !"}
-        //     }
-
-        //     let { data: data_update, error: error_update } = await supabase
-        //         .from('account')
-        //         .update({ credit: (account[0].credit + data.credit), gain: account[0].gain - data.credit })
-        //         .eq('user_id', state.userUid)
-        //         .select()
-
-        //     if( error_update ){
-        //         console.error("Error update:", error_update);
-        //         return {status: 2, message: "Une erreur s'est produite veulliez réessayez plus tard !"}
-        //     }
-
-        //     state.soldes = data_update[0].credit;
-        //     state.gain = data_update[0].gain;
-            
-        //     return {status: 0, message: "Votre transfert à bien été effectué !"};
-        // },
+        async transfertGain({state}, payload){
+            try {
+                const { data: response } = await serverRequest('post', '/wallet/earnings-to-credit', {
+                    mode: state.modeCo,
+                    data: {
+                        amount: Number(payload.credit),
+                        requestId: payload.requestId,
+                    },
+                });
+                const conversion = response?.data;
+                if(response?.status !== 'ok' || !conversion){
+                    throw new Error("Réponse de conversion invalide.");
+                }
+                state.soldes = Number(conversion.credit) || 0;
+                state.gain.wallet = Number(conversion.gain) || 0;
+                return {status: 0, message: "Vos gains ont été ajoutés à vos crédits."};
+            } catch (error) {
+                return {
+                    status: 2,
+                    message: error.response?.data?.message || "Le transfert de vos gains a échoué.",
+                };
+            }
+        },
         async getTravels({state, commit}){
 
             state.profil.myTravels = [];
@@ -798,64 +662,44 @@ export default {
             return {status: 0, message: "success"};
         },
         async removeBooking({state, commit}, infos){
-
-            let tripInfos = null;
-            if(infos.trip_id){
-                const { data: tripData, error: tripError } = await supabase
-                    .from('trip')
-                    .select('id, driver_id, village_departure_id, village_arrival_id, departure_time')
-                    .eq('id', infos.trip_id)
-                    .limit(1);
-
-                if(!tripError && Array.isArray(tripData) && tripData.length > 0){
-                    tripInfos = tripData[0];
-                }
-                else if(tripError){
-                    console.error("removeBooking trip fetch error:", tripError);
-                }
+            const tripId = Number(infos?.trip_id);
+            if( !Number.isSafeInteger(tripId) || tripId <= 0 ){
+                return {status: 1, message: "Trajet introuvable."};
             }
 
-            const { error } = await supabase
-                .from('booking')
-                .delete()
-                .eq('trip_id', infos.trip_id)
-                .eq('passenger_account_id', state.userId);
-
-            if(error){
-                console.error("Error:", error);
-                return {status: 1, message: "Une erreur s'est produite vueillez réessayer plus tard"}
-            }
-
-            if(tripInfos && tripInfos.driver_id){
-                const villageGetter = store.getters["search/GET_VILLAGE_BY_ID"];
-                const resolveVillage = (id) => typeof villageGetter === 'function' ? villageGetter(id) : "";
-                const departureName = resolveVillage(tripInfos.village_departure_id) || "Départ";
-                const destinationName = resolveVillage(tripInfos.village_arrival_id) || "Destination";
-                const departureTime = new Date(tripInfos.departure_time);
-                const formattedHour = `${departureTime.getHours().toString().padStart(2, '0')}:${departureTime.getMinutes().toString().padStart(2, '0')}`;
-                const passengerName = `${state.profil.infos_perso.prenom || ''} ${state.profil.infos_perso.nom || ''}`.trim() || state.userName || "Un passager";
-
-                await sendServerNotification({
+            try {
+                const response = await serverRequest('delete', `/bookings/trip/${tripId}`, {
                     mode: state.modeCo,
-                    userId: tripInfos.driver_id,
-                    title: "Réservation annulée",
-                    body: `${passengerName} s'est désisté pour ${departureName} → ${destinationName}.`,
-                    data: {
-                        largeBody: `${passengerName} a annulé sa place pour le trajet ${departureName} → ${destinationName} prévu à ${formattedHour}.`,
-                        actions: {
-                            goTo: "/profil/open-trip-driver",
-                        }
-                    }
                 });
-            }
+                const cancellation = response.data?.data;
+                if( response.data?.status !== 'ok' || !cancellation ){
+                    throw new Error("Réponse d'annulation invalide.");
+                }
+                const departureTime = cancellation.trip?.departure_time || infos?.departure_time;
+                if( departureTime ){
+                    commit('REMOVE_HISTORY_DATE_BY_VALUE', {
+                        type: 'passenger',
+                        departure_time: departureTime,
+                    });
+                }
+                commit('trip/SET_RATINGS_REMOVE', { id: tripId }, { root: true });
+                await store.dispatch("profil/getSoldes");
 
-            if(tripInfos && tripInfos.departure_time){
-                commit('REMOVE_HISTORY_DATE_BY_VALUE', { type: 'passenger', departure_time: tripInfos.departure_time });
+                return {
+                    status: 0,
+                    message: cancellation.alreadyCanceled
+                        ? "Cette réservation était déjà annulée."
+                        : "Suppression effectuée avec succès.",
+                    data: cancellation,
+                };
             }
-
-            commit('trip/SET_RATINGS_REMOVE', { id: infos.trip_id }, { root: true });
-            
-            return {status: 0, message: "Suppression effectuée avec succèes"};
+            catch(error){
+                console.error("removeBooking error:", error);
+                return {
+                    status: 1,
+                    message: error.response?.data?.message || "Une erreur s'est produite, veuillez réessayer plus tard.",
+                };
+            }
 
         },
         async cancelTripPublication({state, commit, dispatch}, tripInfos){
@@ -870,107 +714,43 @@ export default {
                 return {status: 2, message: "Trajet introuvable"};
             }
 
-            const { data: trip, error: tripError } = await supabase
-                .from('trip')
-                .select(`
-                    id,
-                    price,
-                    departure_time,
-                    driver_id,
-                    village_departure_id,
-                    village_arrival_id,
-                    booking (
-                        id,
-                        passenger_account_id,
-                        payment_status,
-                        payment_intent_id,
-                        account (
-                            id,
-                            credit,
-                            firstname,
-                            lastname,
-                            user_id
-                        )
-                    )
-                `)
-                .eq('id', tripId)
-                .single();
-
-            if(tripError || !trip){
-                console.error("cancelTripPublication trip error:", tripError);
-                return {status: 2, message: "Impossible de récupérer le trajet."};
-            }
-
-            const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
-            const typeUrl = state.modeCo;
-            const resolveVillage = store.getters["search/GET_VILLAGE_BY_ID"];
-            const departureName = typeof resolveVillage === 'function' ? resolveVillage(trip.village_departure_id) : "";
-            const destinationName = typeof resolveVillage === 'function' ? resolveVillage(trip.village_arrival_id) : "";
-            const departureTime = new Date(trip.departure_time);
-            const formattedHour = `${departureTime.getHours().toString().padStart(2, '0')}:${departureTime.getMinutes().toString().padStart(2, '0')}`;
-
-            const activeBookings = (trip.booking || []).filter((booking) => !booking.passenger_no_show);
-            for (const booking of activeBookings) {
-                if( booking.payment_status === 'requires_capture' && booking.payment_intent_id ){
-                    try{
-                        await axios.post(`${adresse[typeUrl]}/payments/cancel`, {
-                            paymentIntentId: booking.payment_intent_id,
-                            tripId: tripId,
-                        });
-                    }
-                    catch(error){
-                        console.error("cancelTripPublication payment cancel error:", error);
-                    }
+            try {
+                const response = await serverRequest('delete', `/trips/${tripId}`, {
+                    mode: state.modeCo,
+                });
+                const cancellation = response.data?.data;
+                if( response.data?.status !== 'ok' || !cancellation ){
+                    throw new Error("Réponse d'annulation invalide.");
                 }
-                else if( booking.payment_status === 'wallet_reserved' ){
-                    try{
-                        const currentCredit = booking.account?.credit || 0;
-                        const newCredit = currentCredit + (trip.price || 0);
-                        await supabase
-                            .from('account')
-                            .update({ credit: newCredit })
-                            .eq('id', booking.passenger_account_id);
-                    }
-                    catch(error){
-                        console.error("cancelTripPublication wallet refund error:", error);
-                    }
-                }
+                const canceledTrip = cancellation.trip || tripInfos;
 
-                if( booking.account && booking.account.user_id ){
-                    const passengerName = `${booking.account.firstname || ''} ${booking.account.lastname || ''}`.trim() || "Le passager";
-                    await sendServerNotification({
-                        mode: state.modeCo,
-                        userId: booking.account.user_id,
-                        title: "Trajet annulé",
-                        body: "Le conducteur a annulé votre trajet.",
-                        data: {
-                            largeBody: `${passengerName}, le trajet ${departureName} → ${destinationName} (${formattedHour}) a été annulé par le chauffeur.`,
-                            actions: {
-                                goTo: "/profil/open-trip-passenger",
-                            }
-                        }
+                if( canceledTrip?.departure_time ){
+                    commit('REMOVE_HISTORY_DATE_BY_VALUE', {
+                        type: 'driver',
+                        departure_time: canceledTrip.departure_time,
                     });
                 }
+                state.profil.myPublish = state.profil.myPublish.reduce((acc, group) => {
+                    const remaining = group.infos.filter((info) => info.id != tripId);
+                    if( remaining.length > 0 ){
+                        acc.push({ ...group, infos: remaining });
+                    }
+                    return acc;
+                }, []);
+
+                // Refresh display state only; settlement and notifications have
+                // already been completed atomically by the backend.
+                await store.dispatch("profil/getSoldes");
+                await dispatch('getPublish');
+                return {status: 0, message: "Trajet annulé.", data: cancellation};
             }
-
-            await supabase.from('booking').delete().eq('trip_id', tripId);
-            await supabase.from('trip').delete().eq('id', tripId);
-
-            commit('REMOVE_HISTORY_DATE_BY_VALUE', { type: 'driver', departure_time: trip.departure_time });
-            state.profil.myPublish = state.profil.myPublish.reduce((acc, group) => {
-                const remaining = group.infos.filter((info) => info.id != tripId);
-                if( remaining.length > 0 ){
-                    acc.push({
-                        ...group,
-                        infos: remaining,
-                    });
-                }
-                return acc;
-            }, []);
-            await store.dispatch("profil/getSoldes");
-            await dispatch('getPublish');
-
-            return {status: 0, message: "Trajet annulé"};
+            catch(error){
+                console.error("cancelTripPublication error:", error);
+                return {
+                    status: 2,
+                    message: error.response?.data?.message || "Impossible d'annuler ce trajet.",
+                };
+            }
         },
         async buildHistoriqueBooking({state}){
 
@@ -1004,39 +784,33 @@ export default {
         },
         // stripe
         async getProvider({state}){
-            let { data: account, error } = await supabase
-                .from('account')
-                .select(`
-                    provider_id
-                `)
-                .eq('user_id', state.userUid)
-
-            if(error){
-                console.error("Error : ", error)
-                return {status: 1, message: "Une erreur s'est produite"}
-            }
-
-            const provider = await stripe.accounts.retrieve(account[0].provider_id);
+            const { data: provider } = await serverRequest('get', '/connect/account', {
+                mode: state.modeCo,
+            });
             console.log("retrieve provider : ", provider);
             store.state.auth.provider_id = provider.id;
             store.state.auth.stripe_provider = provider;
             state.payouts_enabled = provider.payouts_enabled;
         },
         async identityChecked({state}){
-            
-            const { data, error } = await supabase
-                .from('account')
-                .update({ identity: true })
-                .eq('user_id', state.userUid)
-                .select()
-        
-            if(error){
-                console.error("Error : ", error)
-                return {status: 1, message: "Une erreur s'est produite"}
+            try {
+                const { data } = await serverRequest('post', '/connect/identity-confirm', {
+                    mode: state.modeCo,
+                });
+                if (data?.identity) {
+                    state.identity = true;
+                    return {status: 0, message:"Mise à jour effectuée avec succées"};
+                }
+            }
+            catch(error){
+                console.error("identityChecked error:", error);
+                return {
+                    status: 1,
+                    message: error.response?.data?.message || "Une erreur s'est produite",
+                };
             }
 
-
-            if(data){
+            if(state.identity){
                 state.identity = true;
                 return {status: 0, message:"Mise à jour effectuée avec succées"};
             }

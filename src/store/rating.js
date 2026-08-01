@@ -1,9 +1,8 @@
 
-// import router from '../router';  
-import supabase from '@/utils/supabaseClient.js';
+// import router from '../router';
+import { serverRequest } from '@/utils/serverApi.js';
 
 // import store from '../store'; 
-// import stripe from '@/utils/stripe.js'
 
 export default {
     namespaced: true,
@@ -123,29 +122,44 @@ export default {
         },
     },
     actions: {
-        async getRating({state}, infos){
+        async getRating({state, rootState}, infos){
             console.log("getRating:", infos);
-            let { data: settings, error } = await supabase
-                .from('settings')
-                .select('rating')
-                .eq("account_id", infos.userId)
-          
-            if( error ){
-                console.err("Error:", error);
-                return {status: 1, message: "Une erreur s'est produite."}
-            }
-
-            console.log(settings);
-
             ['good', 'bad'].forEach(category => {
-                state.btnIco[category].forEach((item, index) => {
-                    item.numberOfVote = settings[0].rating[category][index];
+                state.btnIco[category].forEach((item) => {
+                    item.numberOfVote = 0;
                 });
             });
+            rootState.trip.member.notation.avis = 0;
+            rootState.trip.member.notation.satisfaction = 0;
+            try {
+                const response = await serverRequest(
+                    'get',
+                    `/ratings/accounts/${infos.userId}/summary`,
+                    { mode: rootState.profil.modeCo }
+                );
+                const summary = response.data?.data;
+                if (response.data?.status !== 'ok' || !summary) {
+                    throw new Error("Réponse de notation invalide.");
+                }
 
-            console.log("update-btnIco", state.btnIco);
+                ['good', 'bad'].forEach(category => {
+                    state.btnIco[category].forEach((item, index) => {
+                        item.numberOfVote = Number(summary.rating?.[category]?.[index] || 0);
+                    });
+                });
 
-            return {status: 0, message: ""}
+                rootState.trip.member.notation.avis = Number(summary.averageScore || 0);
+                rootState.trip.member.notation.satisfaction = Number(summary.satisfaction || 0);
+
+                console.log("update-btnIco", state.btnIco);
+                return {status: 0, message: "", data: summary};
+            } catch (error) {
+                console.error("getRating error:", error);
+                return {
+                    status: 1,
+                    message: error.response?.data?.message || "Une erreur s'est produite.",
+                };
+            }
         },
     },
 }

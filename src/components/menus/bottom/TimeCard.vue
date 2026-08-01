@@ -234,7 +234,8 @@
                 const middleIndexMinutes = (this.minutes.length/2);
                 const prefixClassMinute = `.scrollable-container.minute-list${vue.className.length != 0 ? "." + vue.className.join(".") : ""}`;
 
-                this.minutes = this.shiftRightMulti(this.minutes, ((this.minuteInit)/this.nbPasMinutes));
+                // Place la minute proposée en première position, comme pour les heures.
+                this.minutes = this.shiftLeftMulti(this.minutes, (this.minuteInit / this.nbPasMinutes));
 
                 //console.log("prefixClassMinute", prefixClassMinute);
                 $(`${prefixClassMinute} .m-${this.minuteInit.toString().padStart(2, '0')} span`).css("opacity", 1);

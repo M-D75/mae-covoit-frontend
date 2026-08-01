@@ -217,6 +217,7 @@
 
             this.updateGrouparameterPreference();
             this.infos_panneau[0].label = formatNumber(this.nbTrip);
+            this.updateNotationLabels();
 
             console.log("pa:", this.payouts_enabled, this.identity);
 
@@ -227,6 +228,14 @@
         },
         methods: {
             ...mapActions("rating", ["getRating"]),
+            updateNotationLabels(){
+                const average = Math.max(0, Math.min(5, Number(this.avis) || 0));
+                const satisfaction = Math.max(0, Math.min(100, Number(this.satisfaction) || 0));
+                this.infos_panneau[1].label = `${average.toLocaleString('fr-FR', {
+                    maximumFractionDigits: 2,
+                })}/5`;
+                this.infos_panneau[2].label = `${Math.round(satisfaction)}%`;
+            },
             updateGrouparameterPreference(){
                 if(this.preferences[0] != undefined){
                     this.groupeParameters[1].parameters = this.groupeParameters[1].parameters.map(
@@ -273,6 +282,12 @@
             nbTrip(){
                 console.log("nbTrip-modified");
                 this.infos_panneau[0].label = formatNumber(this.nbTrip);
+            },
+            avis(){
+                this.updateNotationLabels();
+            },
+            satisfaction(){
+                this.updateNotationLabels();
             },
             payouts_enabled(){
                 if(this.payouts_enabled || this.identity)

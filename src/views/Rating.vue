@@ -60,9 +60,9 @@
     <v-overlay v-model="overlay" contained persistent style="z-index: 10;" @click="overlay = false"></v-overlay>
 
     <v-main class="rating" >
-        <div ref="ratingRef">
+        <div v-if="ratingDriver" ref="ratingRef">
             <!-- Avatar -->
-            <Avatar :name="ratings.data[0].trip[0].account[0].firstname + ' ' +  ratings.data[0].trip[0].account[0].lastname" :modeEdit="false" :avatar="ratings.data[0].trip[0].account[0].avatar" :sub-title="'Non spécifié'" />
+            <Avatar :name="ratingDriver.firstname + ' ' + ratingDriver.lastname" :modeEdit="false" :avatar="ratingDriver.avatar" :sub-title="'Non spécifié'" />
 
             <!-- ? -->
             <PanneauInfo v-if="modeDriver" :infos_panneau="infos_panneau" />
@@ -76,7 +76,7 @@
             />
 
             <div class="good-part">
-                <div class="title">Qu'avez vous pensez du service offert par {{ ratings.data[0].trip[0].account[0].firstname }} {{ ratings.data[0].trip[0].account[0].lastname }} ?</div>
+                <div class="title">Qu'avez vous pensé du service offert par {{ ratingDriver.firstname }} {{ ratingDriver.lastname }} ?</div>
 
                 <IconRating
                     :class-name="['good-trip']"
@@ -122,10 +122,13 @@
                 variant="flat"
                 color="black"
                 size="large"
+                :loading="isSubmitting"
                 @click="rated()"
             >
                 VALIDER
             </v-btn>
+
+            <div v-if="ratingError" class="sub-title bad-part">{{ ratingError }}</div>
 
         </div>
 
@@ -140,7 +143,7 @@
     import { mapState, mapActions, mapMutations } from 'vuex';
     import { onMounted, onUnmounted, ref } from 'vue';
 
-    import supabase from '@/utils/supabaseClient.js';
+    import { serverRequest } from '@/utils/serverApi.js';
 
 
     import { formatNumber } from '@/utils/utils.js'
@@ -159,6 +162,14 @@
             }),
             ...mapState("trip", ["ratings"]),
             ...mapState("rating", ["btnIco"]),
+            ratingTrip(){
+                const relation = this.ratings?.data?.[0]?.trip;
+                return Array.isArray(relation) ? relation[0] : relation;
+            },
+            ratingDriver(){
+                const relation = this.ratingTrip?.account;
+                return Array.isArray(relation) ? relation[0] : relation;
+            },
         },
         setup(){
             const ratingRef = ref(null);
@@ -197,6 +208,8 @@
                 badDescription: "",
                 notHappy: false,
                 avis: 3,
+                isSubmitting: false,
+                ratingError: "",
                 overlay: false,
                 about: "discution",
                 modeBottomMenu: "select-model-vehicul",
@@ -220,7 +233,9 @@
             }
         },
         mounted() {
-            // this.getNotation();
+            if( !this.ratingDriver ){
+                this.$router.replace("/");
+            }
         },
         methods: {
             ...mapActions("profil", ["getNotation"]),
@@ -234,56 +249,44 @@
                 }
 
                 const bookingData = this.ratings.data[0];
-                const driverAccount = bookingData.trip && bookingData.trip[0] && bookingData.trip[0].account && bookingData.trip[0].account[0]
-                    ? bookingData.trip[0].account[0]
-                    : null;
-                const driverAccountId = bookingData.driverAccountId || (driverAccount ? driverAccount.id : null);
+                const tripId = bookingData.trip_id || (bookingData.trip && bookingData.trip[0] && bookingData.trip[0].id);
 
-                if( !driverAccountId ){
-                    this.SET_RATINGS_REMOVE({id: bookingData.trip_id || (bookingData.trip && bookingData.trip[0] && bookingData.trip[0].id)});
+                if( !tripId ){
                     this.$router.push("/");
                     return;
                 }
 
+                this.ratingError = "";
+                this.isSubmitting = true;
                 try {
-                    let { data: settings, error } = await supabase
-                        .from('settings')
-                        .select('rating')
-                        .eq("account_id", driverAccountId);
-        
-                    if( error || !settings || settings.length === 0 ){
-                        console.error("rating fetch error:", error);
-                        this.SET_RATINGS_REMOVE({id: bookingData.trip_id || (bookingData.trip && bookingData.trip[0] && bookingData.trip[0].id)});
-                        this.$router.push("/");
-                        return;
-                    }
-        
-                    const newRatingGood = settings[0].rating.good.map((value, index) => this.btnIco.good[index].select ? value + 1 : value);
-                    const newRatingBad = settings[0].rating.bad.map((value, index) => this.btnIco.bad[index].select ? value + 1 : value);
-        
-                    const { error: error_update } = await supabase
-                        .from('settings')
-                        .update({ "rating": {bad: newRatingBad, good: newRatingGood } })
-                        .eq("account_id", driverAccountId)
-                        .select();
-        
-                    if( error_update ){
-                        console.error("rating update error:", error_update);
-                        this.SET_RATINGS_REMOVE({id: bookingData.trip_id || (bookingData.trip && bookingData.trip[0] && bookingData.trip[0].id)});
-                        this.$router.push("/");
-                        return;
-                    }
+                    const goodIndices = this.btnIco.good
+                        .map((item, index) => item.select ? index : null)
+                        .filter((index) => index !== null);
+                    const badIndices = this.btnIco.bad
+                        .map((item, index) => item.select ? index : null)
+                        .filter((index) => index !== null);
+                    await serverRequest('post', '/ratings', {
+                        mode: this.$store.state.profil.modeCo,
+                        data: { tripId, score: Number(this.avis), goodIndices, badIndices },
+                    });
         
                     this.SET_RATINGS_REMOVE({
-                        id: bookingData.trip_id || (bookingData.trip && bookingData.trip[0] && bookingData.trip[0].id),
+                        id: tripId,
                         markRated: true,
                     });
                     this.$router.push("/");
                 }
                 catch(error){
                     console.error("rating error:", error);
-                    this.SET_RATINGS_REMOVE({id: bookingData.trip_id || (bookingData.trip && bookingData.trip[0] && bookingData.trip[0].id)});
-                    this.$router.push("/");
+                    if( error.response?.data?.code === 'RATING_ALREADY_SUBMITTED' ){
+                        this.SET_RATINGS_REMOVE({ id: tripId, markRated: true });
+                        this.$router.push("/");
+                        return;
+                    }
+                    this.ratingError = error.response?.data?.message || "Votre avis n'a pas pu être enregistré. Vous pouvez réessayer.";
+                }
+                finally{
+                    this.isSubmitting = false;
                 }
             },
         },

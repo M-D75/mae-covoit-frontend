@@ -183,9 +183,8 @@ import { Plugins } from '@capacitor/core';
 
 
 import supabase from '@/utils/supabaseClient.js';
+import { serverRequest } from '@/utils/serverApi.js';
 import store from '../store'; 
-import axios from 'axios';
-// import stripe from '@/utils/stripe.js'
 
 const { LocalNotifications } = Plugins;
 
@@ -226,6 +225,17 @@ async function sendNotification(title, body, data) {
 let initFireBase = false;
 router.beforeEach(async (to, from, next) => {
     console.log("[index.js] from", from);
+
+    if (to.meta.requiresAuth) {
+        const { data, error } = await supabase.auth.getUser();
+        if (error || !data?.user) {
+            return next({
+                path: '/login',
+                query: to.fullPath ? { redirect: to.fullPath } : undefined,
+            });
+        }
+    }
+
     if ( to.path === '/search' ) {
 
         if( store.state.trip.ratings.rating ){
@@ -236,8 +246,11 @@ router.beforeEach(async (to, from, next) => {
                 bookings = bookings.filter((data) => new Date(data.date).getTime() + 15 * 60000 < now.getTime() );
             }
 
-            // TODO : à évaluer
             if( bookings.length > 0 ){
+                const ratingCandidate = bookings[0];
+                const bookingId = Number(ratingCandidate.bookingId);
+                const tripId = Number(ratingCandidate.tripId || ratingCandidate.id);
+                const hasBookingId = Number.isSafeInteger(bookingId) && bookingId > 0;
                 const { data: trips, error } = await supabase
                     .from('booking')
                     .select(`
@@ -246,6 +259,7 @@ router.beforeEach(async (to, from, next) => {
                         passenger_account_id,
                         is_accepted,
                         is_refused,
+                        in_car,
                         trip (
                             id, 
                             driver_id,
@@ -262,46 +276,46 @@ router.beforeEach(async (to, from, next) => {
                             price,
                             route
                         )`)
-                    .eq('id', bookings[0].id);
+                    .eq(hasBookingId ? 'id' : 'trip_id', hasBookingId ? bookingId : tripId)
+                    .eq('is_accepted', true)
+                    .eq('is_refused', false)
+                    .eq('in_car', true);
                 
                 if( error ){
                     console.log("[index.js] Error : check rating failed no boking gettting : ", error);
-                    next();
+                    return next();
                 }
 
                 console.log("[index.js] Get for rating success : ", trips);
 
                 store.state.trip.ratings.data = trips;
                 if(trips.length > 0)
-                    next('/rating');
+                    return next('/rating');
             }
             
         }
         
 
         // ----------------------------- ------------------------------
-        if( (isIOS || isAndroid) && !initFireBase ){
+        const { data: sessionData } = (isIOS || isAndroid)
+            ? await supabase.auth.getSession()
+            : { data: { session: null } };
+        if( (isIOS || isAndroid) && !initFireBase && sessionData?.session ){
             initFireBase = true;
             FirebaseMessaging.requestPermissions().then(result => {
                 console.log("[index.js] FirebaseMessaging Access :", result.receive);
                 if ( result.receive === 'granted' ) { 
-                    const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
-
                     const registerToken = (token) => {
                         if (!token) {
                             return;
                         }
 
-                        const userId = store.state.profil.userUid;
-                        if (!userId) {
-                            console.log('[index.js] registerDeviceToken skipped: userId not ready');
-                            return;
-                        }
-
                         store.commit('auth/SET_REGISTER_DEVICE_TOKEN', token);
-                        axios.post(`${adresse.online}/registerDeviceToken`, {
-                            registerDeviceToken: token,
-                            userId,
+                        serverRequest('post', '/registerDeviceToken', {
+                            mode: store.state.profil.modeCo,
+                            data: {
+                                registerDeviceToken: token,
+                            },
                         })
                         .then(response => {
                             console.log("[index.js] data:", response.data);
@@ -315,7 +329,6 @@ router.beforeEach(async (to, from, next) => {
                         try {
                             const tokenResult = await FirebaseMessaging.getToken();
                             if (tokenResult && tokenResult.token) {
-                                console.log('[index.js] getToken', tokenResult.token);
                                 registerToken(tokenResult.token);
                             }
                         } catch (error) {
@@ -327,7 +340,6 @@ router.beforeEach(async (to, from, next) => {
 
                     const addTokenReceivedListener = async () => {
                         await FirebaseMessaging.addListener('tokenReceived', event => {
-                            console.log('[index.js] tokenReceived', { event }, event.token);
                             registerToken(event.token);
                         });
                     };
@@ -368,7 +380,7 @@ router.beforeEach(async (to, from, next) => {
         }
     }
 
-    next();
+    return next();
     // const requiresAuth = to.meta.requiresAuth;
     // const isUserAuthenticated = store.getters['auth/isAuthenticated'];
     

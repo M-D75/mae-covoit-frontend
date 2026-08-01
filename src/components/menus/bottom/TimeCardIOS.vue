@@ -246,17 +246,10 @@
                 console.log("Minutes Init is :", this.minuteInit);
                 const prefixClassMinute = `.scrollable-container.minute-list${vue.className.length != 0 ? "." + vue.className.join(".") : ""}`;
 
-                let initScroll;
-                if(this.minuteInit > 0){
-                    initScroll = (((this.minuteInit)/this.nbPasMinutes)-1)*100;
-                }
-                else{
-                    initScroll = (((this.minuteInit)/this.nbPasMinutes)+1)*100;
-                }
-                
-                const currentIndexMinutes = (Math.ceil(Math.abs(initScroll-50)/100));
-                const val = (vue.minutes.length * 100) * (Math.ceil(this.repeatTime/2)-1) + ( (currentIndexMinutes-1) * 100 );
-                console.log("Init minute Index", currentIndexMinutes,  val);
+                const currentIndexMinutes = this.minuteInit / this.nbPasMinutes;
+                const middleBlock = Math.floor(this.repeatTime / 2);
+                const val = ((middleBlock * vue.minutes.length) + currentIndexMinutes) * 100;
+                console.log("Init minute Index", currentIndexMinutes, val);
                 
                 $(prefixClassMinute).animate({scrollTop: val}, 180, function(){
                     console.log("MinuteInitied:", vue.minutes[currentIndexMinutes]);
@@ -363,18 +356,10 @@
                 this.hourLength = this.heures.length * this.repeatTime;
 
                 console.log("Hour Init is :", this.hourInit);
-                initScroll;
-                if(this.hourInit > 0){
-                    initScroll = (this.hourInit)*100;
-                }
-                else{
-                    initScroll = (this.hourInit+1)*100;
-                }
-
                 const prefixClassHour = `.scrollable-container.hour-list${vue.className.length != 0 ? "." + vue.className.join(".") : ""}`;
 
-                const currentIndexHours = (Math.ceil(Math.abs(initScroll-50)/100));
-                const valHour = (vue.heures.length * 100) * (Math.ceil(this.repeatTime/2)-1) + ( (currentIndexHours-1) * 100 );
+                const currentIndexHours = this.hourInit;
+                const valHour = ((middleBlock * vue.heures.length) + currentIndexHours) * 100;
                 console.log("Init hour Index", currentIndexHours,  valHour);
                 
                 $(prefixClassHour).animate({scrollTop: valHour}, 180, function(){

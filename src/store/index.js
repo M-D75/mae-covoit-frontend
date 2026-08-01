@@ -10,6 +10,42 @@ import search from './search';
 import general from './general';
 import trip from './trip';
 
+const PERSISTENCE_KEY = 'mae-covoit-v2';
+
+/**
+ * Persist only small preferences and identifiers. Map routes, trips, contacts
+ * and API result lists are transient and can easily exceed the browser's
+ * localStorage quota.
+ */
+const resilientStorage = {
+    getItem(key) {
+        if (typeof window === 'undefined') return null;
+        return window.localStorage.getItem(key);
+    },
+    setItem(key, value) {
+        if (typeof window === 'undefined') return;
+        try {
+            window.localStorage.setItem(key, value);
+        } catch (error) {
+            // Persistence must never crash navigation. Clear only this cache;
+            // the Supabase authentication session uses a separate key.
+            window.localStorage.removeItem(key);
+            console.warn('Vuex cache skipped because browser storage is full.');
+        }
+    },
+    removeItem(key) {
+        if (typeof window !== 'undefined') {
+            window.localStorage.removeItem(key);
+        }
+    },
+};
+
+// The legacy `vuex` key contained full routes, contacts and database results.
+// Remove it once when upgrading to the bounded v2 persistence format.
+if (typeof window !== 'undefined') {
+    window.localStorage.removeItem('vuex');
+}
+
 export default createStore({
     modules: {
         auth,
@@ -22,11 +58,12 @@ export default createStore({
     },
     plugins: [
         createPersistedState({
+            key: PERSISTENCE_KEY,
+            storage: resilientStorage,
             paths: [
                 'auth.provider',
                 'auth.registerDeviceToken',
                 'auth.customer_id',
-                'auth.customer',
                 'general.isNative',
                 'profil.cguAccepted',
                 'profil.payouts_enabled',
@@ -43,17 +80,13 @@ export default createStore({
                 'profil.avatarUrl',
                 'profil.cars',
                 'profil.preferenceVirementMode',
-                'profil.profil.infos_perso.preferences',
                 'profil.history.datesTripPassenger',
                 'profil.history.datesTripDriver',
-                'search.villages',
-                'search.accounts',
                 'search.communesFrequency',
-                'trip.tripSelected',
-                'trip.chat',
-                'trip.chat.contacts',
-                'trip.member',
-                'trip.ratings',
+                'trip.notMessageVue',
+                'trip.ratings.rating',
+                'trip.ratings.bookings',
+                'trip.ratings.ratedTripIds',
             ]
         })
     ],

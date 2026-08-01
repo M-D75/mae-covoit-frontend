@@ -115,7 +115,6 @@
     import { App } from '@capacitor/app';
 
     // TODO : à supprimé quand eddine aura finit
-    // import stripe from '@/utils/stripe.js'
 
     const { LocalNotifications } = Plugins;
 

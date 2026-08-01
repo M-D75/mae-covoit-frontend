@@ -195,6 +195,8 @@
 
         <v-btn
             v-on:click="tryReserve"
+            :disabled="overlayLoad"
+            :loading="overlayLoad"
             class="mr-4 text-none"
             prepend-icon="mdi-credit-card"
             rounded="xl" 
@@ -349,8 +351,7 @@
 
 
 <script>
-    import axios from 'axios';
-    import stripe from '@/utils/stripe.js'
+    import { serverRequest } from '@/utils/serverApi.js';
     
     import { mapActions, mapState, mapMutations } from 'vuex';
     import { Plugins, Capacitor } from '@capacitor/core';
@@ -359,6 +360,29 @@
 
     const isAndroid = Capacitor.getPlatform() === 'android';
     const isIOS = Capacitor.getPlatform() === 'ios';
+    let stripePromise;
+
+    /** Create an RFC 4122 v4 id used to make reservation retries idempotent. */
+    function createReservationRequestId() {
+        const browserCrypto = typeof window !== 'undefined' ? window.crypto : null;
+        if (browserCrypto?.randomUUID) {
+            return browserCrypto.randomUUID();
+        }
+
+        const bytes = new Uint8Array(16);
+        if (browserCrypto?.getRandomValues) {
+            browserCrypto.getRandomValues(bytes);
+        }
+        else {
+            for (let index = 0; index < bytes.length; index += 1) {
+                bytes[index] = Math.floor(Math.random() * 256);
+            }
+        }
+        bytes[6] = (bytes[6] & 0x0f) | 0x40;
+        bytes[8] = (bytes[8] & 0x3f) | 0x80;
+        const value = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+        return `${value.slice(0, 8)}-${value.slice(8, 12)}-${value.slice(12, 16)}-${value.slice(16, 20)}-${value.slice(20)}`;
+    }
 
 
     // Components
@@ -378,7 +402,7 @@
                 if( this.soldes >= this.totalPrice ){
                     return "Vos crédits seront réservés puis débités une fois votre présence confirmée au départ.";
                 }
-                return "Votre carte sera débitée une heure après le départ, seulement si vous avez validé votre présence dans le véhicule.";
+                return "Votre carte sera débitée uniquement après confirmation de votre présence au départ.";
             }
         },
         data() {
@@ -390,6 +414,8 @@
                 message: "",
                 accepted: false,
                 showRetrySnackbar: false,
+                reservationRequestId: null,
+                reservationTripId: null,
                 car: {
                     model: "AUCUN VEHICULE",
                     color: 'var(--bg-app-color)',
@@ -471,15 +497,17 @@
                 else
                     console.log("non-diff");
 
-                const adresse = {local: "http://192.168.134.15:8090", online: "https://server-mae-covoit-notif.infinityinsights.fr"}
                 const typeUrl = this.modeCo;
-                axios.post(`${adresse[typeUrl]}/reservation`, {
-                    userId: this.userUid,
-                    date: date,
-                    title: "Tchipou Tchipou",
-                    body: `Tsiyo, soyez prêt pour vôtre départ ! Horaire : ${this.trajetSelected.hour_start}. Ne soyez pas en retard !`,
+                serverRequest('post', '/reservation', {
+                    mode: typeUrl,
                     data: {
-                        largeBody: `Tsiyo : Votre trajet de ${this.trajetSelected.depart} à ${this.trajetSelected.destination} depart à ${this.trajetSelected.hour_start} est proche. Ne soyez pas en retard.`,
+                        userId: this.userUid,
+                        date: date,
+                        title: "Tchipou Tchipou",
+                        body: `Tsiyo, soyez prêt pour vôtre départ ! Horaire : ${this.trajetSelected.hour_start}. Ne soyez pas en retard !`,
+                        data: {
+                            largeBody: `Tsiyo : Votre trajet de ${this.trajetSelected.depart} à destination de ${this.trajetSelected.destination} part à ${this.trajetSelected.hour_start}. Ne soyez pas en retard.`,
+                        },
                     }
                 })
                 .then(response => {
@@ -490,63 +518,121 @@
                 });   
             },
             async tryReserve(){
+                if( this.overlayLoad ){
+                    return;
+                }
+
                 console.log("tryReserve...");
                 this.overlayLoad = true;
-                const res = await this.getSoldes();
-                console.log(res);
-                this.updateCar();
-                if( this.soldes < this.totalPrice ){
-                    console.log("pas assez de soldes...", this.soldes, this.totalPrice);
-                    const customer = await stripe.customers.retrieve(this.customer_id);
-                    if( !(customer.metadata.source_selected 
-                            && (customer.metadata.source_selected == customer.default_source 
-                                || customer.metadata.source_selected == customer.invoice_settings.default_payment_method
-                                )
-                        ) || !customer.metadata.source_selected
-                        ){
-                        console.log("no-source-founded", customer);
-                        this.$emit("no-source-founded");
-                        this.overlayLoad = false;
+                const tripId = this.trajetSelected?.id;
+                if( !this.reservationRequestId || this.reservationTripId !== tripId ){
+                    this.reservationRequestId = createReservationRequestId();
+                    this.reservationTripId = tripId;
+                }
+
+                try {
+                    const res = await this.getSoldes();
+                    console.log(res);
+                    if( !res || res.status !== 0 ){
+                        throw new Error(
+                            res?.message || "Impossible de vérifier votre solde avant la réservation."
+                        );
+                    }
+                    this.updateCar();
+                    let reserved = await this.$store.dispatch("search/reserveTrajet", {
+                        requestId: this.reservationRequestId,
+                    });
+
+                    if( reserved?.status === 'PAYMENT_ACTION_REQUIRED' ){
+                        reserved = await this.completePaymentAuthentication(reserved);
+                    }
+
+                    if( !reserved?.valided ){
+                        const message = reserved?.message || "La réservation n'a pas pu être effectuée.";
+                        this.messageSnackbarError = message;
+                        this.showSnackbarError = true;
+                        this.showRetrySnackbar = Boolean(reserved?.retriable);
+                        this.message = message;
+
+                        // A business error (no seat, invalid card, etc.) starts a
+                        // new operation on the next click. A network/server error
+                        // keeps the same id so a retry cannot book twice.
+                        if( !reserved?.retriable ){
+                            this.reservationRequestId = null;
+                            this.reservationTripId = null;
+                        }
+                        if( [
+                            'PAYMENT_METHOD_REQUIRED',
+                            'PAYMENT_PROFILE_REQUIRED',
+                            'PAYMENT_RESOURCE_NOT_FOUND',
+                        ].includes(reserved?.status) ){
+                            this.$emit("no-source-founded");
+                            return;
+                        }
+                        if( reserved?.retriable ){
+                            return;
+                        }
+                        this.$emit("notif-failed");
                         return;
                     }
-                    else{
-                        console.log("source founded", customer, (customer.metadata.source_selected 
-                            && (customer.metadata.source_selected == customer.default_source 
-                                || customer.metadata.source_selected == customer.invoice_settings.default_payment_method
-                                )), !customer.metadata.source_selected);
-                    }
-                }
 
-                const reserved = await this.$store.dispatch("search/reserveTrajet", { user_id: this.$store.state.profil.userUid });
-                this.overlayLoad = false;
-                if( ! reserved.valided ){
-                    this.messageSnackbarError=reserved.message;
-                    this.showSnackbarError=true;
-                    this.showRetrySnackbar = Boolean(reserved.retriable);
-
-                    this.message = reserved.message;
-                    this.$emit("notif-failed");
-                }
-                else{
-                    if(isAndroid || isIOS)
+                    if((isAndroid || isIOS) && !reserved.replayed){
                         this.sendNotification();
+                    }
 
                     this.message = reserved.message;
                     this.accepted = reserved.accepted;
-                    // add for notation later
-                    // TODO : changement après validation du passager et chauffeur ou à la fin du trajet
-                    if( this.accepted ){
-                        this.SET_RATINGS_INFO(reserved.data)
-                    }
+                    // Keep the candidate even when driver approval is pending;
+                    // the router later verifies acceptance, presence and date.
+                    this.SET_RATINGS_INFO(reserved.data);
 
                     this.showRetrySnackbar = false;
-
+                    this.reservationRequestId = null;
+                    this.reservationTripId = null;
                     this.$emit('test-notif-success');
+                }
+                catch(error){
+                    console.error("tryReserve error:", error);
+                    this.messageSnackbarError = error?.message || "Nos serveurs sont indisponibles. Vous pouvez réessayer sans risque de réserver deux fois.";
+                    this.showSnackbarError = true;
+                    this.showRetrySnackbar = true;
+                }
+                finally {
+                    this.overlayLoad = false;
                 }
             },
             retryReservation(){
                 this.showRetrySnackbar = false;
                 this.tryReserve();
+            },
+            async completePaymentAuthentication(action){
+                if( !action?.clientSecret || !action?.paymentIntentId ){
+                    throw new Error("L'authentification bancaire ne peut pas être démarrée.");
+                }
+                if( !stripePromise ){
+                    const { loadStripe } = await import('@stripe/stripe-js');
+                    stripePromise = loadStripe(process.env.VUE_APP_API_STRIPE_PK);
+                }
+                const stripe = await stripePromise;
+                const result = await stripe.confirmCardPayment(action.clientSecret);
+                if( result.error ){
+                    throw new Error(result.error.message || "L'authentification bancaire a été annulée.");
+                }
+                if( result.paymentIntent?.status !== 'requires_capture' ){
+                    throw new Error("L'autorisation bancaire n'a pas été validée.");
+                }
+
+                await serverRequest('post', '/bookings/authorization-finalize', {
+                    mode: this.modeCo,
+                    data: {
+                        paymentIntentId: action.paymentIntentId,
+                        requestId: this.reservationRequestId,
+                    },
+                });
+                await this.getSoldes();
+                return this.$store.dispatch("search/reserveTrajet", {
+                    requestId: this.reservationRequestId,
+                });
             },
             formatCurrency(amount){
                 const value = typeof amount === "number" ? amount : parseFloat(amount) || 0;
@@ -554,8 +640,12 @@
             }
         },
         watch: {
-            trajetSelected(){
+            trajetSelected(newTrip, previousTrip){
                 console.log("trajet-selected:", this.trajetSelected);
+                if( newTrip?.id !== previousTrip?.id ){
+                    this.reservationRequestId = null;
+                    this.reservationTripId = null;
+                }
                 this.updateCar();
             },
         },

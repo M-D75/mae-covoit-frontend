@@ -71,17 +71,20 @@
 
         .alert-marker-wrapper {
             .alert-marker {
-                width: 28px;
-                height: 28px;
-                border-radius: 50%;
+                width: 38px;
+                height: 38px;
+                border-radius: 14px;
                 color: #fff;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 12px;
-                font-weight: 700;
+                background: var(--alert-color, #ff9800);
                 border: 2px solid #fff;
-                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+                box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
+                .mdi {
+                    font-size: 20px;
+                    line-height: 1;
+                }
             }
         }
 
@@ -194,136 +197,24 @@
             />
         </div>
 
-        <!-- L-map -->
-        <l-map 
-            id="map-id" 
-            :zoom="zoom" 
-            :center="center" 
-            @ready="isLoaded()" 
-            ref="mapRef"
-        >            
-            <!-- <l-tile-layer url="https://api.maptiler.com/maps/winter-v2/{z}/{x}/{y}.png?key=faY6afh2tnFprZqdoyZP"/> -->
-            <l-tile-layer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"/>
-            
-            <!-- our-position -->
-            <l-circle-marker 
-                v-if="currentLocation.current.length >= 2"
-                :lat-lng="currentLocation.current"
-                :radius="9"
-                :weight="2"
-                :color="'white'"
-                :fillColor="'#33BBFF'" 
-                :fillOpacity="0.7"
-                style="z-index: 9999;"
-            >
-            </l-circle-marker>
-
-            <div>
-                <l-circle-marker 
-                    v-for="(loc, index) in localisation"
-                    :key="index"
-                    :lat-lng="loc.latLng"
-                    :radius="9"
-                    :weight="2"
-                    :color="'white'"
-                    :fillColor="colorsLoc[index % colorsLoc.length]" 
-                    :fillOpacity="0.7"
-                    style="z-index: 9999;"
-                >
-                </l-circle-marker>
-            </div>
-
-            <l-marker
-                v-for="alert in activeAlerts"
-                :key="alert.id"
-                :lat-lng="alert.coordinates"
-                :icon="resolveAlertIcon(alert.type)"
-            >
-                <l-tooltip :options="{ direction: 'top', offset: [0, -10] }">
-                    <div class="alert-tooltip">
-                        <strong>{{ alertLabel(alert.type) }}</strong><br>
-                        Signalé à {{ formatAlertCreation(alert.createdAt) }} h<br>
-                        Expire à {{ formatAlertExpiration(alert.expiresAt) }} h
-                    </div>
-                </l-tooltip>
-            </l-marker>
-
-            <!-- origin -->
-            <l-marker 
-                :lat-lng="itineraire.origin.location.latLng.latLngTab"
-            >
-                <l-popup>{{ itineraire.origin.infos.village }}, ({{ itineraire.origin.infos.commune }})</l-popup>
-            </l-marker>
-
-            <!-- route -->
-            <div v-if="routeAvail">
-                <l-polyline 
-                    v-for="(route, index) in routes.slice().reverse()"
-                    :key="route.id"
-                    :lat-lngs="route.polylineDecoded" 
-                    :color="index == routes.length - 1 ? '#1b79cc' : '#838383'" 
-                    :weight="8"
-                >
-                    <l-tooltip
-                        v-if="route.current"
-                        :options="{ permanent: true, interactive: false, direction: 'right', offset: [10, 0] }"
-                    >
-                        <span :style="{'font-weight': 800, color: 'red' }"> {{ route.duration }} </span>
-                    </l-tooltip>  
-                </l-polyline>
-
-                <l-polyline 
-                    v-for="(route, index) in routes.slice().reverse()"
-                    :key="index"
-                    :lat-lngs="route.polylineDecoded" 
-                    :color="index == routes.length - 1 ? '#01a9e8' : '#bcbcbc'" 
-                    :weight="4"
-                    @click="trajetSelected(index)"
-                />
-
-                <!-- point -->
-                <l-circle-marker 
-                    :lat-lng="itineraire.destination.location.latLng.latLngTab"
-                    :radius="5"
-                    :weight="2"
-                    :color="'black'"
-                    :fillColor="'white'" 
-                    :fillOpacity="1"
-                >
-                    <!-- <l-popup>{{ itineraire.destination.infos.village }}, ({{ itineraire.destination.infos.commune }})</l-popup> -->
-                    <l-tooltip :options="{ permanent: true, interactive: false, direction: 'right', offset: [10, 0] }">
-                        <span style="font-weight: bold;"> {{ itineraire.destination.infos.village }} </span>, ({{ itineraire.destination.infos.commune }})
-                        <!-- <br>
-                        <span style="font-weight: bold; color:green;">{{ itin.duration }}</span> 
-                        <br> 
-                        <span style="font-weight: bold; color: chocolate;"> {{ itin.distance }}</span> km -->
-                    </l-tooltip>
-                </l-circle-marker>
-            </div>
-
-            <!-- point-dest -->
-            <l-circle-marker 
-                v-if="!routeAvail"
-                :lat-lng="itineraire.destination.location.latLng.latLngTab"
-                :radius="5"
-                :weight="2"
-                :color="'black'"
-                :fillColor="'white'" 
-                :fillOpacity="1"
-                style="z-index: 999;"
-            >
-                <!-- <l-popup>{{ itineraire.destination.infos.village }}, ({{ itineraire.destination.infos.commune }})</l-popup> -->
-                <l-tooltip :options="{ permanent: true, interactive: false, direction: 'right', offset: [10, 0] }">
-                    <span style="font-weight: bold;"> {{ itineraire.destination.infos.village }} </span>, ({{ itineraire.destination.infos.commune }})
-                    <!-- <br>
-                    <span style="font-weight: bold; color:green;">{{ itin.duration }}</span> 
-                    <br> 
-                    <span style="font-weight: bold; color: chocolate;"> {{ itin.distance }}</span> km -->
-                </l-tooltip>
-            </l-circle-marker>
-
-            
-        </l-map>
+        <!-- Les interactions trajet/alertes sont identiques quel que soit le moteur. -->
+        <MapSurface
+            :provider="mapProvider"
+            :zoom="zoom"
+            :center="center"
+            :origin="itineraire.origin"
+            :destination="itineraire.destination"
+            :routes="routes"
+            :route-available="routeAvail"
+            :current-location="currentLocation.current"
+            :shared-locations="localisation"
+            :shared-location-colors="colorsLoc"
+            :alerts="activeAlerts"
+            :alert-types="alertTypes"
+            @ready="isLoaded"
+            @route-select="trajetSelected"
+            @alert-select="openAlertDetails"
+        />
     </div>
 
     <!-- <BottomMenuTrip
@@ -354,9 +245,17 @@
         :no-show-processing-id="noShowProcessingId"
         :is-driver="mode_driver"
         :is-dark-mode="darkMode"
+        :selected-alert="selectedAlert"
+        :selected-alert-context-message="selectedAlertContextMessage"
+        :can-vote-selected-alert="canVoteSelectedAlert"
+        :selected-alert-vote-state="selectedAlertVoteState"
+        :selected-alert-is-owner="selectedAlertIsOwner"
+        :alert-vote-loading="alertVoteLoading"
+        :alert-vote-action="alertVoteAction"
         ref="BottomMenuRef"
         @select-alert-type="selectedAlertType = $event"
         @confirm-alert="createLocalAlert"
+        @vote-alert="voteSelectedAlert"
         @mark-passenger-no-show="markPassengerNoShow"
         @close="handleBottomMenuClose"
         @opened="open_b = true"
@@ -468,18 +367,14 @@
 
 <script>
     import { defineComponent } from 'vue';
-    import polyline from '@mapbox/polyline';
     import { Geolocation } from '@capacitor/geolocation';
     import { mapActions, mapState, mapGetters, mapMutations } from 'vuex';
-    import axios from 'axios';
     import io from 'socket.io-client';
     import supabase from '@/utils/supabaseClient.js';
-    import { sendServerNotification } from '@/utils/notifications.js';
+    import { createSocketAuth, getServerUrl, serverRequest } from '@/utils/serverApi.js';
+    import { calculateRoutes } from '@/services/routingService.js';
 
     import L from "leaflet";
-    
-    import "leaflet/dist/leaflet.css";
-    import { LMap, LTileLayer, LMarker, LPopup, LPolyline, LTooltip, LCircleMarker } from "@vue-leaflet/vue-leaflet";
     import { SafeAreaController } from '@aashu-dubey/capacitor-statusbar-safe-area';
     // import $ from 'jquery';
 
@@ -490,6 +385,7 @@
     
     //componants
     import BottomMenuTrip from '@/components/menus/trip/BottomMenuTrip.vue';
+    import MapSurface from '@/components/maps/MapSurface.vue';
 
     export default defineComponent({
         name: 'results-view',
@@ -535,6 +431,24 @@
             alertTypeItems(){
                 return this.alertTypes;
             },
+            selectedAlert(){
+                if( !this.selectedAlertId ){
+                    return null;
+                }
+                return this.activeAlerts.find((alert) => String(alert.id) === String(this.selectedAlertId)) || null;
+            },
+            selectedAlertContextMessage(){
+                return this.selectedAlertContext?.message || "";
+            },
+            selectedAlertVoteState(){
+                return this.getAlertVoteState(this.selectedAlert);
+            },
+            selectedAlertIsOwner(){
+                return this.isAlertOwner(this.selectedAlert);
+            },
+            canVoteSelectedAlert(){
+                return Boolean(this.selectedAlert) && !this.selectedAlertIsOwner && this.userId != null;
+            },
             alertDurationLabel(){
                 const minutes = Math.round(this.alertDurationMs / 60000);
                 const hours = Math.floor(minutes / 60);
@@ -549,16 +463,14 @@
             },
         },
         components: {
-            LMap,
-            LTileLayer,
-            LMarker,
-            LPopup,
-            LPolyline,
-            LTooltip,
-            LCircleMarker,
             BottomMenuTrip,
+            MapSurface,
         },
         props: {
+            mapProvider: {
+                type: String,
+                default: '',
+            },
             // itineraire: {
             //     type: Object,
             //     default: () => {
@@ -679,17 +591,23 @@
                     // {type: "driver", latLng: [-12.7997252, 45.1038055]}, {type: "passenger", latLng: [-12.7797252, 45.1038055]}
                 ],
                 alertTypes: [
-                    { value: 'traffic', label: 'Bouchon', color: '#ff9800', icon: 'mdi-traffic-light', abbr: 'B' },
-                    { value: 'danger', label: 'Menace', color: '#d32f2f', icon: 'mdi-shield-cross', abbr: '!' },
-                    { value: 'works', label: 'Travaux', color: '#ffa726', icon: 'mdi-traffic-cone', abbr: 'T' },
-                    { value: 'weather', label: 'Intempérie', color: '#4fc3f7', icon: 'mdi-weather-pouring', abbr: '~' },
+                    { value: 'traffic', label: 'Bouchon', color: '#ff9800', icon: 'mdi-car-brake-alert', description: 'Circulation ralentie, bouchon ou route bloquée.' },
+                    { value: 'danger', label: 'Danger humain', color: '#d32f2f', icon: 'mdi-shield-alert', description: 'Coupeurs de route, menace humaine ou zone risquée.' },
+                    { value: 'works', label: 'Travaux', color: '#ffa726', icon: 'mdi-traffic-cone', description: 'Chantier, voie neutralisée ou déviation.' },
+                    { value: 'weather', label: 'Intempérie', color: '#4fc3f7', icon: 'mdi-weather-pouring', description: 'Pluie forte, chaussée glissante ou visibilité réduite.' },
+                    { value: 'obstacle', label: 'Obstacle', color: '#8e24aa', icon: 'mdi-road-variant', description: 'Arbre, débris, pierre ou obstacle dangereux sur la route.' },
                 ],
                 selectedAlertType: 'traffic',
                 activeAlerts: [],
                 alertDurationMs: 60 * 60 * 1000,
+                alertDuplicateDistanceM: 180,
                 alertCleanupTimer: null,
                 alertIconCache: {},
                 alertChannel: null,
+                selectedAlertId: null,
+                selectedAlertContext: null,
+                alertVoteLoading: false,
+                alertVoteAction: "",
             snackbarError: false,
                 snackbarMessage: "",
                 snackbarSuccess: false,
@@ -707,7 +625,7 @@
             console.log(this.itineraire);
         },
         async mounted(){
-            SafeAreaController.injectCSSVariables
+            SafeAreaController.injectCSSVariables();
 
             const isPassenger = this.tripSelected && this.tripSelected.driver_id
                 ? this.userUid != this.tripSelected.driver_id
@@ -732,16 +650,12 @@
 
                     const coordinates = await Geolocation.getCurrentPosition();
                     const { latitude, longitude } = coordinates.coords;
-                    if( this.$refs.mapRef ){
-                        this.currentLocation.current = [latitude, longitude];
-                    }
+                    this.currentLocation.current = [latitude, longitude];
                 }
                 else{
                     const coordinates = await Geolocation.getCurrentPosition();
                     const { latitude, longitude } = coordinates.coords;
-                    if( this.$refs.mapRef ){
-                        this.currentLocation.current = [latitude, longitude];
-                    }
+                    this.currentLocation.current = [latitude, longitude];
                 }
 
                 const checkPermissions = await Geolocation.checkPermissions();
@@ -769,21 +683,18 @@
             
 
             // real-time
-            const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
-
-            const typeUrl = this.modeCo;
+            const serverUrl = getServerUrl(this.modeCo);
             if( Object.keys(this.tripSelected).length > 0 && this.userUid != this.tripSelected.driver_id ){//mode passager
                 this.mode_driver = false;
-                this.socket = io(adresse[typeUrl], {
+                this.socket = io(serverUrl, {
                     reconnection: true,
                     reconnectionDelay: 1000,
                     reconnectionAttempts: 60,
+                    auth: createSocketAuth(),
                     query: {
-                        userId: this.userUid,
                         chatIds: [[this.userUid, this.tripSelected.driver_id].sort((a, b) => {
                                 return a.localeCompare(b);
                             }).join(":")],
-                        registerDeviceToken: this.registerDeviceToken,
                     }
                 });
 
@@ -793,7 +704,7 @@
             }
             else{
                 this.mode_driver = true;
-                this.contacts = this.chat.contacts;
+                this.contacts = Array.isArray(this.chat?.contacts) ? this.chat.contacts : [];
 
                 console.log("this.contacts", this.contacts);
                 let chatIds = [];
@@ -803,20 +714,22 @@
                             }).join(":"));
                 }
 
-                this.socket = io(adresse[typeUrl], {
+                this.socket = io(serverUrl, {
                     reconnection: true,
                     reconnectionDelay: 1000,
                     reconnectionAttempts: 60,
+                    auth: createSocketAuth(),
                     query: {
-                        userId: this.userUid,
                         chatIds: chatIds,
-                        registerDeviceToken: this.registerDeviceToken,
                     }
                 });
 
-                this.currentContact.username = this.contacts[0].username;
-                this.currentContact.avatarContact = this.contacts[0].avatar;
-                this.currentContact.userUid = this.contacts[0].user_id;
+                const firstContact = this.contacts[0];
+                if (firstContact) {
+                    this.currentContact.username = firstContact.username;
+                    this.currentContact.avatarContact = firstContact.avatar;
+                    this.currentContact.userUid = firstContact.user_id;
+                }
             }
 
             this.socket.on('connect', () => {
@@ -910,50 +823,44 @@
                 console.log("updateThresholdCheck", this.isBeforeThreshold, departure, diffInMin, this.minutesBefore);
                 
             },
-            /***
-             * Mark the user as in car for the selected trip
-             */
+            /** Confirm passenger presence and settle the related payment server-side. */
             async InCar(){
                 console.log("InCar", this.tripSelected);
 
                 try{
-                    const trip_id = this.tripSelected.id;
-                    let { data, error } = await supabase
-                        .from('booking')
-                        .update({ in_car: true })
-                        .eq('passenger_account_id', this.userId)
-                        .eq('trip_id', trip_id)
-                        .select();
-
-
-                    if(error){
-                        throw new Error("Impossible de confirmer votre présence. Réessayez.");
-                    }
-
-                    console.log("Booking updated successfully", data);
-                    const updatedBooking = Array.isArray(data) && data.length > 0 ? data[0] : null;
-                    const passengerBooking = updatedBooking || this.getPassengerBooking();
-
-                    if( !passengerBooking ){
+                    const response = await serverRequest('post', '/bookings/presence', {
+                        mode: this.modeCo,
+                        data: { tripId: this.tripSelected.id },
+                    });
+                    const result = response.data?.data;
+                    const updatedBookings = Array.isArray(result?.bookings) ? result.bookings : [];
+                    if( updatedBookings.length === 0 ){
                         throw new Error("Réservation introuvable pour ce trajet.");
                     }
 
-                    if( passengerBooking && passengerBooking.payment_intent_id ){
-                        await this.captureDeferredPayment(passengerBooking.payment_intent_id);
-                    }
+                    const updatesById = new Map(updatedBookings.map((booking) => [booking.id, booking]));
+                    const localBookings = (this.tripSelected.bookings || []).map((booking) => (
+                        updatesById.has(booking.id)
+                            ? { ...booking, ...updatesById.get(booking.id) }
+                            : booking
+                    ));
+                    this.SET_TRIP_SELECTED({
+                        ...this.tripSelected,
+                        bookings: localBookings,
+                        booking: localBookings,
+                    });
+                    await this.$store.dispatch("profil/getSoldes");
 
-                    if( passengerBooking ){
-                        passengerBooking.in_car = true;
+                    const passengerBooking = updatedBookings[0];
+                    if( this.socket && this.currentContact?.userUid ){
+                        this.socket.emit("in_car", {
+                            idBooking: passengerBooking.id,
+                            from: this.userUid,
+                            to: this.currentContact.userUid,
+                        });
                     }
 
                     this.showSuccess("Présence validée, bon trajet !");
-
-                    const infos = {
-                        idBooking: passengerBooking ? passengerBooking.id : null,
-                        from: this.userUid,
-                        to: this.currentContact.userUid,
-                    };
-                    this.socket.emit("in_car", infos);
                 }
                 catch(error){
                     this.handleServerError(error, error?.message || "Nous n'avons pas pu valider votre présence.");
@@ -1003,89 +910,33 @@
                 }
             },
             async annulerTrajet(){
-                // suppression avant un certains temps
-
                 console.log("annuler", this.tripSelected, this.userId);
-
-                const trip_id = this.tripSelected.id;
-                const passengerBooking = this.getPassengerBooking();
-                const passengerBookings = Array.isArray(this.tripSelected.bookings)
-                    ? this.tripSelected.bookings.filter((booking) => booking.passenger_account_id == this.userId)
-                    : [];
-                const bookingIds = passengerBookings.map((booking) => booking.id);
-                const seatsCount = passengerBookings.length > 0 ? passengerBookings.length : (passengerBooking ? 1 : 0);
-                const rawSeatPrice = Number(this.tripSelected.price || 0) || Number(passengerBookings[0]?.price || passengerBooking?.price || 0) || 0;
-                const walletRefundAmount = rawSeatPrice * seatsCount;
-
-                if( passengerBooking && passengerBooking.payment_intent_id && passengerBooking.payment_status === 'requires_capture' ){
-                    await this.cancelDeferredPayment(passengerBooking.payment_intent_id);
-                }
-
-                if(
-                    passengerBooking &&
-                    passengerBooking.payment_status === 'wallet_reserved' &&
-                    walletRefundAmount > 0
-                ){
-                    const targetIds = bookingIds.length > 0 ? bookingIds : (passengerBooking.id ? [passengerBooking.id] : []);
-                    await this.releaseWalletReservation(targetIds, walletRefundAmount);
-                }
-
-                let { error: error_booking } = await supabase
-                    .from('booking')
-                    .delete()
-                    .eq('passenger_account_id', this.userId)
-                    .eq('trip_id', trip_id);
-
-                console.log("Error booking", error_booking);
-                if(error_booking){
-                    this.handleServerError(error_booking, "Impossible d'annuler votre réservation.");
-                }
-                else{
-                    console.log("Booking deleted successfully");
-                }
-
-                await this.notifyDriverCancellation();
-                if(this.tripSelected && this.tripSelected.departure_time){
-                    this.$store.commit('profil/REMOVE_HISTORY_DATE_BY_VALUE', {
-                        type: 'passenger',
-                        departure_time: this.tripSelected.departure_time,
+                try{
+                    await serverRequest('delete', `/bookings/trip/${this.tripSelected.id}`, {
+                        mode: this.modeCo,
                     });
+                    await this.$store.dispatch("profil/getSoldes");
+
+                    if(this.tripSelected?.departure_time){
+                        this.$store.commit('profil/REMOVE_HISTORY_DATE_BY_VALUE', {
+                            type: 'passenger',
+                            departure_time: this.tripSelected.departure_time,
+                        });
+                    }
+                    this.showSuccess("Réservation annulée.");
+                    if(this.$router){
+                        this.$router.replace('/profil');
+                    }
                 }
-
-                if(this.$router){
-                    this.$router.replace('/profil');
+                catch(error){
+                    this.handleServerError(error, "Impossible d'annuler votre réservation.");
                 }
-                
-                // for (let index = 0; index < this.tripSelected.bookings.length; index++) {
-                //     const passenger_account_id = this.tripSelected.bookings[index].passenger_account_id;
-                //     const trip_id = this.tripSelected.id;
-
-                //     console.log("annulerTrajet", passenger_account_id, trip_id);
-                    
-
-                //     let { error: error_booking } = await supabase
-                //         .from('booking')
-                //         .delete()
-                //         .eq('passenger_account_id', this.userId)
-                //         .eq('trip_id', trip_id);
-
-                //     console.log("Error booking", error_booking);
-                //     if(error_booking){
-                //         console.error("Error deleting booking:", error_booking);
-                //     }
-                //     else{
-                //         console.log("Booking deleted successfully");
-                //     }
-                    
-                // }
-               
             },
             askNewMessage(){
-                const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
-
                 const typeUrl = this.modeCo;
-                axios.post(`${adresse[typeUrl]}/askNewMessage`, {
-                        userId: this.userUid,
+                serverRequest('post', '/askNewMessage', {
+                        mode: typeUrl,
+                        data: { userId: this.userUid },
                     })
                     .then(response => {
                         console.log("askNewMessage", response.data);
@@ -1106,37 +957,6 @@
                 }
 
                 return this.tripSelected.bookings.find((booking) => booking.passenger_account_id == this.userId && !booking.passenger_no_show) || null;
-            },
-            passengerDisplayName(){
-                const infosPerso = this.profil && this.profil.infos_perso ? this.profil.infos_perso : {};
-                const composed = `${infosPerso.prenom || ''} ${infosPerso.nom || ''}`.trim();
-                return composed || this.userName || "Passager";
-            },
-            async notifyDriverCancellation(){
-                if( !this.tripSelected || !this.tripSelected.driver_id ){
-                    return;
-                }
-
-                const passengerName = this.passengerDisplayName();
-                const departureName = this.tripSelected.depart || (this.tripSelected.itineraire?.origin?.infos?.village) || "Départ";
-                const destinationName = this.tripSelected.destination || (this.tripSelected.itineraire?.destination?.infos?.village) || "Destination";
-                const departureTime = this.tripSelected.departure_time ? new Date(this.tripSelected.departure_time) : null;
-                const formattedHour = departureTime ? `${departureTime.getHours().toString().padStart(2, '0')}:${departureTime.getMinutes().toString().padStart(2, '0')}` : "";
-
-                await sendServerNotification({
-                    mode: this.modeCo,
-                    userId: this.tripSelected.driver_id,
-                    title: "Réservation annulée",
-                    body: `${passengerName} s'est désisté pour ${departureName} → ${destinationName}.`,
-                    data: {
-                        largeBody: formattedHour
-                            ? `${passengerName} ne participera plus au trajet ${departureName} → ${destinationName} (${formattedHour}).`
-                            : `${passengerName} ne participera plus au trajet ${departureName} → ${destinationName}.`,
-                        actions: {
-                            goTo: "/profil/open-trip-driver",
-                        }
-                    }
-                });
             },
             async markPassengerNoShow(booking){
                 if(
@@ -1160,32 +980,12 @@
                 this.noShowProcessingId = booking.id;
 
                 try{
-                    if( booking.payment_status === 'requires_capture' && booking.payment_intent_id ){
-                        await this.cancelDeferredPayment(booking.payment_intent_id);
-                    }
-
-                    const walletAmount = booking.payment_status === 'wallet_reserved'
-                        ? this.resolveBookingPrice(booking)
-                        : 0;
-
-                    if( walletAmount > 0 && booking.passenger_account_id ){
-                        await this.releaseWalletReservation([booking.id], walletAmount, booking.passenger_account_id);
-                    }
-
-                    const { error } = await supabase
-                        .from('booking')
-                        .update({
-                            passenger_no_show: true,
-                            passenger_no_show_at: new Date().toISOString(),
-                            is_refused: true,
-                        })
-                        .eq('id', booking.id);
-
-                    if( error ){
-                        throw error;
-                    }
-
-                    const remainingBookings = (this.tripSelected.bookings || []).filter((item) => item.id !== booking.id);
+                    const response = await serverRequest('post', `/bookings/${booking.id}/no-show`, {
+                        mode: this.modeCo,
+                    });
+                    const removedIds = new Set(response.data?.data?.bookingIds || [booking.id]);
+                    const remainingBookings = (this.tripSelected.bookings || [])
+                        .filter((item) => !removedIds.has(item.id));
                     const updatedTrip = {
                         ...this.tripSelected,
                         passenger_number: remainingBookings.filter((item) => item.is_accepted).length,
@@ -1194,8 +994,6 @@
                     };
                     this.SET_TRIP_SELECTED(updatedTrip);
 
-                    await this.notifyPassengerNoShow(booking);
-
                     this.showSuccess("Passager marqué absent. Les montants ont été libérés.");
                 }
                 catch(error){
@@ -1203,135 +1001,6 @@
                 }
                 finally{
                     this.noShowProcessingId = null;
-                }
-            },
-            async notifyPassengerNoShow(booking){
-                if( !booking ){
-                    return;
-                }
-
-                let passengerAccount = booking.account;
-                if( (!passengerAccount || !passengerAccount.user_id) && booking.passenger_account_id ){
-                    const { data } = await supabase
-                        .from('account')
-                        .select('user_id, firstname, lastname, username')
-                        .eq('id', booking.passenger_account_id)
-                        .single();
-                    if( data ){
-                        passengerAccount = { ...passengerAccount, ...data };
-                    }
-                }
-
-                if( !passengerAccount?.user_id ){
-                    return;
-                }
-
-                const nameFromAccount = `${passengerAccount.firstname || ''} ${passengerAccount.lastname || ''}`.trim();
-                const infosPerso = this.profil?.infos_perso || {};
-                const driverName = `${infosPerso.prenom || ''} ${infosPerso.nom || ''}`.trim() || "Votre chauffeur";
-                const departureName = this.tripSelected?.depart || this.tripSelected?.itineraire?.origin?.infos?.village || "Départ";
-                const destinationName = this.tripSelected?.destination || this.tripSelected?.itineraire?.destination?.infos?.village || "Destination";
-                const departureTime = this.tripSelected?.departure_time ? new Date(this.tripSelected.departure_time) : null;
-                const formattedHour = departureTime
-                    ? `${departureTime.getHours().toString().padStart(2, '0')}:${departureTime.getMinutes().toString().padStart(2, '0')}`
-                    : "";
-
-                await sendServerNotification({
-                    mode: this.modeCo,
-                    userId: passengerAccount.user_id,
-                    title: "Absence signalée",
-                    body: `${driverName} a indiqué que ${nameFromAccount || 'vous'} étiez absent pour ${departureName} → ${destinationName}.`,
-                    data: {
-                        largeBody: formattedHour
-                            ? `${driverName} a clôturé le trajet (${formattedHour}) en signalant votre absence.`
-                            : `${driverName} a clôturé ce trajet en signalant votre absence.`,
-                        actions: {
-                            goTo: "/profil/open-trip-passenger",
-                        }
-                    }
-                });
-            },
-            async captureDeferredPayment(paymentIntentId){
-                const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
-                const typeUrl = this.modeCo;
-
-                try {
-                    const { data } = await axios.post(`${adresse[typeUrl]}/payments/capture-now`, {
-                        paymentIntentId,
-                        tripId: this.tripSelected.id,
-                    });
-                    console.log("capture-now result:", data);
-                    await this.$store.dispatch("profil/getSoldes");
-                }
-                catch(error){
-                    this.handleServerError(error, "Nous n'avons pas pu valider le paiement.");
-                }
-            },
-            async cancelDeferredPayment(paymentIntentId){
-                const adresse = {local: "http://localhost:3001", online: window.location.protocol == 'http:' ? "http://server-mae-covoit-notif.infinityinsights.fr" : "https://server-mae-covoit-notif.infinityinsights.fr"}
-                const typeUrl = this.modeCo;
-
-                try {
-                    const { data } = await axios.post(`${adresse[typeUrl]}/payments/cancel`, {
-                        paymentIntentId,
-                        tripId: this.tripSelected.id,
-                    });
-                    console.log("cancel deferred result:", data);
-                    await this.$store.dispatch("profil/getSoldes");
-                }
-                catch(error){
-                    this.handleServerError(error, "Nous n'avons pas pu annuler le paiement.");
-                }
-            },
-            async releaseWalletReservation(bookingIds, amount, targetAccountId = null){
-                if(!amount || amount <= 0){
-                    return;
-                }
-
-                const accountId = targetAccountId || this.userId;
-
-                try {
-                    const { data: accountRow, error: accountError } = await supabase
-                        .from('account')
-                        .select('credit')
-                        .eq('id', accountId)
-                        .single();
-
-                    if(accountError){
-                        this.handleServerError(accountError, "Impossible de rembourser vos crédits.");
-                        return;
-                    }
-
-                    const currentCredit = accountRow?.credit || 0;
-                    const newCredit = currentCredit + amount;
-
-                    const { error: creditUpdateError } = await supabase
-                        .from('account')
-                        .update({ credit: newCredit })
-                        .eq('id', accountId);
-
-                    if(creditUpdateError){
-                        this.handleServerError(creditUpdateError, "Impossible de mettre à jour vos crédits.");
-                        return;
-                    }
-
-                    if(Array.isArray(bookingIds) && bookingIds.length > 0){
-                        const { error: bookingUpdateError } = await supabase
-                            .from('booking')
-                            .update({ payment_status: 'wallet_released' })
-                            .in('id', bookingIds);
-
-                        if(bookingUpdateError){
-                            this.handleServerError(bookingUpdateError, "Impossible de libérer la réservation.");
-                        }
-                    }
-
-                    if( accountId === this.userId ){
-                        await this.$store.dispatch('profil/getSoldes');
-                    }
-                }
-                catch(error){
-                    this.handleServerError(error, "Erreur lors du remboursement.");
                 }
             },
             showError(message){
@@ -1344,7 +1013,8 @@
             },
             handleServerError(error, fallback){
                 console.error(fallback || 'Server error', error);
-                this.showError(fallback || "Une erreur serveur est survenue.");
+                const serverMessage = error?.response?.data?.message;
+                this.showError(serverMessage || fallback || "Une erreur serveur est survenue.");
             },
             passengerName(booking){
                 if(booking.account){
@@ -1369,27 +1039,12 @@
                 }
                 return "P";
             },
-            resolveBookingPrice(booking){
-                if( booking && typeof booking.price !== 'undefined' ){
-                    const parsed = Number(booking.price);
-                    if( !isNaN(parsed) ){
-                        return parsed;
-                    }
-                }
-
-                if( this.tripSelected && typeof this.tripSelected.price !== 'undefined' ){
-                    const tripPrice = Number(this.tripSelected.price);
-                    if( !isNaN(tripPrice) ){
-                        return tripPrice;
-                    }
-                }
-
-                return 0;
-            },
-
             trajetSelected(index){
-                // console.log("trajetSelectd", index)
-                if(index == this.routes.length - 1){
+                const selectedRoute = this.routes[index];
+                if( !selectedRoute ){
+                    return;
+                }
+                if( selectedRoute.current ){
                     this.$emit("trajet-selected");
                 }
                 else{
@@ -1397,7 +1052,10 @@
 
                     setTimeout(function(){
                         this.routeAvail = false;
-                        this.routes = this.swapWithLast(this.routes, index);
+                        this.routes = [
+                            selectedRoute,
+                            ...this.routes.filter((route) => route !== selectedRoute),
+                        ];
                         this.itin.duration = this.routes[0].duration;
                         this.itin.distance = this.routes[0].distance;
                         
@@ -1427,160 +1085,54 @@
             },
             async getRouteInfos(){
                 this.overlayLoad = true;
-                await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Goog-Api-Key': process.env.VUE_APP_API_GOOGLE_ROUTE_API_KEY,
-                        'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline',
-                    },
-                    body: JSON.stringify({
-                        origin: {
-                            location: {
-                                latLng: {
-                                    latitude: this.itineraire.origin.location.latLng.latitude,
-                                    longitude: this.itineraire.origin.location.latLng.longitude
-                                }
-                            }
-                        },
-                        destination: {
-                            location: {
-                                latLng: {
-                                    latitude: this.itineraire.destination.location.latLng.latitude,
-                                    longitude: this.itineraire.destination.location.latLng.longitude,
-                                }
-                            }
-                        },
-                        travelMode: 'DRIVE',
-                        routingPreference: 'TRAFFIC_AWARE',
+                try {
+                    const routes = await calculateRoutes({
+                        provider: this.mapProvider,
+                        origin: this.itineraire.origin,
+                        destination: this.itineraire.destination,
                         departureTime: this.itineraire.departureTime,
-                        computeAlternativeRoutes: true,
-                        routeModifiers: {
-                            avoidTolls: true,
-                            avoidHighways: true,
-                            avoidFerries: true
-                        },
-                        languageCode: 'en-US',
-                        units: 'IMPERIAL'
-                    }),
-                }).then(response => response.json()).then(data => { 
-                    console.log(data);
-
+                        alternatives: true,
+                    });
                     this.routeAvail = false;
-
-                    var tmp_routes = [];
-                    var first = true;
-                    for(const route in data.routes){
-                        const decoded  = polyline.decode(data.routes[route].polyline.encodedPolyline);
-                        const duration = (this.convertSecondsToHoursAndMinutes(parseInt(data.routes[route].duration.replaceAll("s", "")))).toString();
-                        const distance = (data.routes[route].distanceMeters/1000).toFixed(2).toString();
-
-                        tmp_routes.push({
-                            id: route, 
-                            polylineDecoded: decoded,
-                            originalPolyline: decoded.slice(),
-                            infosGoogle: data.routes[route], 
-                            duration: duration, 
-                            distance: distance, 
-                            faster: first,
-                            current: first,
-                        });
-                        
-                        if(route == 0){
-                            this.itin.duration = duration;
-                            this.itin.distance = distance;
-                        }
-                        first = false;
-                    }
-
+                    this.routes = routes.map((route) => ({
+                        ...route,
+                        originalPolyline: route.polylineDecoded.slice(),
+                    }));
+                    this.itin.duration = this.routes[0].duration;
+                    this.itin.distance = this.routes[0].distance;
                     this.routeAvail = true;
-                    console.log("Avail", this.itineraire);
-
-                    this.routes = tmp_routes;
-                    this.overlayLoad = false;
-                    
-                }).catch(error => {
+                }
+                catch (error) {
                     this.handleServerError(error, "Impossible de calculer l'itinéraire.");
+                }
+                finally {
                     this.overlayLoad = false;
-                });
+                }
             },
-            getCurrentRouteInfos(){
+            async getCurrentRouteInfos(){
                 this.overlayLoad = true;
-                fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Goog-Api-Key': process.env.VUE_APP_API_GOOGLE_ROUTE_API_KEY,
-                        'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline',
-                    },
-                    body: JSON.stringify({
-                        origin: {
-                            location: {
-                                latLng: {
-                                    latitude: this.currentLocation.current[0],
-                                    longitude: this.currentLocation.current[1],
-                                }
-                            }
-                        },
-                        destination: {
-                            location: {
-                                latLng: {
-                                    latitude: this.itineraire.destination.location.latLng.latitude,
-                                    longitude: this.itineraire.destination.location.latLng.longitude,
-                                }
-                            }
-                        },
-                        travelMode: 'DRIVE',
-                        routingPreference: 'TRAFFIC_AWARE',
-                        computeAlternativeRoutes: true,
-                        routeModifiers: {
-                            avoidTolls: true,
-                            avoidHighways: true,
-                            avoidFerries: true
-                        },
-                        languageCode: 'en-US',
-                        units: 'IMPERIAL'
-                    }),
-                }).then(response => response.json()).then(data => { 
-                    console.log(data);
-
+                try {
+                    const routes = await calculateRoutes({
+                        provider: this.mapProvider,
+                        origin: this.currentLocation.current,
+                        destination: this.itineraire.destination,
+                        alternatives: true,
+                    });
                     this.routeAvail = false;
-
-                    var tmp_routes = [];
-                    var first = true;
-                    for(const route in data.routes){
-                        const decoded  = polyline.decode(data.routes[route].polyline.encodedPolyline);
-                        const duration = (this.convertSecondsToHoursAndMinutes(parseInt(data.routes[route].duration.replaceAll("s", "")))).toString();
-                        const distance = (data.routes[route].distanceMeters/1000).toFixed(2).toString();
-
-                        tmp_routes.push({
-                            id: route, 
-                            polylineDecoded: decoded,
-                            originalPolyline: decoded.slice(),
-                            infosGoogle: data.routes[route], 
-                            duration: duration, 
-                            distance: distance, 
-                            faster: first,
-                            current: first,
-                        });
-                        
-                        if(route == 0){
-                            this.itin.duration = duration;
-                            this.itin.distance = distance;
-                        }
-                        first = false;
-                    }
-
+                    this.routes = routes.slice(0, 1).map((route) => ({
+                        ...route,
+                        originalPolyline: route.polylineDecoded.slice(),
+                    }));
+                    this.itin.duration = this.routes[0].duration;
+                    this.itin.distance = this.routes[0].distance;
                     this.routeAvail = true;
-                    console.log("Avail", this.itineraire, JSON.stringify(tmp_routes));
-
-                    this.routes = tmp_routes.slice(0, 1);
-                    this.overlayLoad = false;
-                    
-                }).catch(error => {
+                }
+                catch (error) {
                     this.handleServerError(error, "Impossible de calculer l'itinéraire.");
+                }
+                finally {
                     this.overlayLoad = false;
-                });
+                }
             },
             swapWithLast(arr, index) {
                 if (index < 0 || index >= arr.length) {
@@ -1640,29 +1192,113 @@
                 }
             },
             openBottomMenuInfos(){
-                this.setBottomMenuMode('map');
+                this.switchToMapMenu();
             },
             openAlertMenu(){
-                this.setBottomMenuMode('alert');
+                if( this.currentModeButton === 'alert' && this.open_b ){
+                    this.switchToMapMenu();
+                    return;
+                }
+                this.selectedAlertId = null;
+                this.selectedAlertContext = null;
+                this.setBottomMenuMode('alert', 'alert');
             },
             openPassengerMenu(){
                 if( !this.mode_driver ){
                     return;
                 }
-                this.setBottomMenuMode('passengers');
+                if( this.currentModeButton === 'passengers' && this.open_b ){
+                    this.switchToMapMenu();
+                    return;
+                }
+                this.selectedAlertId = null;
+                this.selectedAlertContext = null;
+                this.setBottomMenuMode('passengers', 'passengers');
             },
-            setBottomMenuMode(mode){
-                const shouldToggleToMap = this.bottomMenuMode === mode && mode !== 'map' && this.open_b;
-                this.bottomMenuMode = shouldToggleToMap ? 'map' : mode;
-                this.currentModeButton = shouldToggleToMap ? null : (mode === 'map' ? null : mode);
+            switchToMapMenu(){
+                this.selectedAlertId = null;
+                this.selectedAlertContext = null;
+                this.bottomMenuMode = 'map';
+                this.currentModeButton = null;
                 if( this.$refs.BottomMenuRef ){
                     this.$refs.BottomMenuRef.open();
                 }
             },
+            setBottomMenuMode(mode, button = null){
+                this.bottomMenuMode = mode;
+                this.currentModeButton = button;
+                if( this.$refs.BottomMenuRef ){
+                    this.$refs.BottomMenuRef.open();
+                }
+            },
+            openAlertDetails(alert, contextMessage = ""){
+                if( !alert ){
+                    return;
+                }
+                this.selectedAlertId = alert.id;
+                this.selectedAlertContext = contextMessage ? { message: contextMessage } : null;
+                this.setBottomMenuMode('alert-detail', 'alert');
+            },
             handleBottomMenuClose(){
                 this.open_b = false;
+                this.selectedAlertId = null;
+                this.selectedAlertContext = null;
                 this.bottomMenuMode = 'map';
                 this.currentModeButton = null;
+            },
+            getAlertActorKey(value){
+                return value == null ? null : String(value);
+            },
+            getAlertVoteState(alert){
+                if( !alert ){
+                    return "";
+                }
+                if( this.isAlertOwner(alert) ){
+                    return "owner";
+                }
+                return alert.currentUserVote || "";
+            },
+            isAlertOwner(alert){
+                if( !alert ){
+                    return false;
+                }
+                const actorKey = this.getAlertActorKey(this.userId);
+                return actorKey !== null && this.getAlertActorKey(alert.accountId) === actorKey;
+            },
+            findNearbyAlert(type, coordinates){
+                if( !Array.isArray(coordinates) || coordinates.length < 2 ){
+                    return null;
+                }
+
+                let nearestAlert = null;
+                let nearestDistance = Infinity;
+
+                for (const alert of this.activeAlerts) {
+                    if( !alert || alert.type !== type || alert.expiresAt <= Date.now() ){
+                        continue;
+                    }
+                    const distance = this.calculateDistance(coordinates, alert.coordinates);
+                    if( distance <= this.alertDuplicateDistanceM && distance < nearestDistance ){
+                        nearestDistance = distance;
+                        nearestAlert = alert;
+                    }
+                }
+
+                return nearestAlert;
+            },
+            buildNearbyAlertMessage(alert){
+                const label = this.alertLabel(alert?.type);
+                const voteState = this.getAlertVoteState(alert);
+                if( this.isAlertOwner(alert) ){
+                    return `Vous avez déjà signalé "${label}" à proximité. Inutile d'ajouter un doublon.`;
+                }
+                if( voteState === 'confirm' ){
+                    return `Un signalement "${label}" existe déjà ici et vous l'avez déjà validé.`;
+                }
+                if( voteState === 'invalidate' ){
+                    return `Un signalement "${label}" existe déjà ici. Vous pouvez changer votre vote si la situation a évolué.`;
+                }
+                return `Un signalement similaire existe déjà à proximité. Confirmez-le si le problème est toujours présent.`;
             },
             async createLocalAlert(){
                 if( !this.canCreateAlert ){
@@ -1679,6 +1315,18 @@
                 const now = Date.now();
                 const coordinates = [...this.currentLocation.current];
                 const expiresAt = new Date(now + this.alertDurationMs).toISOString();
+                const nearbyAlert = this.findNearbyAlert(typeDef.value, coordinates);
+
+                if( nearbyAlert ){
+                    this.openAlertDetails(nearbyAlert, this.buildNearbyAlertMessage(nearbyAlert));
+                    if( this.isAlertOwner(nearbyAlert) ){
+                        this.showError("Un signalement similaire est déjà actif à cet endroit.");
+                    }
+                    else{
+                        this.showSuccess("Signalement similaire trouvé. Vous pouvez le valider au lieu d'en créer un nouveau.");
+                    }
+                    return;
+                }
 
                 try{
                     const { data, error } = await supabase
@@ -1690,9 +1338,6 @@
                             lat: coordinates[0],
                             lng: coordinates[1],
                             expires_at: expiresAt,
-                            metadata: {
-                                created_from: 'app',
-                            },
                         })
                         .select()
                         .single();
@@ -1703,10 +1348,81 @@
 
                     const alert = this.mapAlertRow(data);
                     this.addOrReplaceAlert(alert);
+                    this.openAlertDetails(alert, `Signalement "${typeDef.label}" ajouté. Les autres usagers peuvent maintenant le confirmer ou l'infirmer.`);
                     this.showSuccess(`Signalement "${typeDef.label}" ajouté sur la carte.`);
                 }
                 catch(error){
                     this.handleServerError(error, "Impossible d'enregistrer le signalement.");
+                }
+            },
+            async voteSelectedAlert(vote){
+                const alert = this.selectedAlert;
+                if( !alert ){
+                    this.showError("Ce signalement n'est plus disponible.");
+                    return;
+                }
+
+                if( this.isAlertOwner(alert) ){
+                    this.showError("Vous avez créé ce signalement. Un vote supplémentaire n'est pas nécessaire.");
+                    return;
+                }
+
+                const actorKey = this.getAlertActorKey(this.userId);
+                if( !actorKey ){
+                    this.showError("Impossible d'identifier votre compte pour ce vote.");
+                    return;
+                }
+
+                const currentVote = this.getAlertVoteState(alert);
+                if( currentVote === vote ){
+                    this.showError(vote === 'confirm' ? "Vous avez déjà validé ce signalement." : "Vous avez déjà infirmé ce signalement.");
+                    return;
+                }
+
+                this.alertVoteLoading = true;
+                this.alertVoteAction = vote;
+
+                try{
+                    const { error: voteError } = await supabase
+                        .from('road_alert_vote')
+                        .upsert({
+                            road_alert_id: alert.id,
+                            account_id: this.userId,
+                            vote_type: vote,
+                        }, {
+                            onConflict: 'road_alert_id,account_id',
+                        });
+
+                    if( voteError ){
+                        throw voteError;
+                    }
+
+                    if( vote === 'confirm' ){
+                        const { error: alertError } = await supabase
+                            .from('road_alert')
+                            .update({
+                                expires_at: new Date(Date.now() + this.alertDurationMs).toISOString(),
+                            })
+                            .eq('id', alert.id);
+
+                        if( alertError ){
+                            throw alertError;
+                        }
+                    }
+
+                    await this.fetchRemoteAlerts();
+                    const updatedAlert = this.activeAlerts.find((item) => String(item.id) === String(alert.id)) || alert;
+                    this.openAlertDetails(updatedAlert);
+                    this.showSuccess(vote === 'confirm'
+                        ? "Signalement validé. Sa durée a été prolongée."
+                        : "Signalement infirmé.");
+                }
+                catch(error){
+                    this.handleServerError(error, "Impossible d'enregistrer votre vote.");
+                }
+                finally{
+                    this.alertVoteLoading = false;
+                    this.alertVoteAction = "";
                 }
             },
             alertLabel(type){
@@ -1735,9 +1451,9 @@
                 const typeDef = this.alertTypes.find((item) => item.value === type) || this.alertTypes[0];
                 this.alertIconCache[type] = L.divIcon({
                     className: 'alert-marker-wrapper',
-                    html: `<div class="alert-marker" style="background:${typeDef.color};">${typeDef.abbr || '!'}</div>`,
-                    iconSize: [30, 30],
-                    iconAnchor: [15, 15],
+                    html: `<div class="alert-marker" style="--alert-color:${typeDef.color};"><span class="mdi ${typeDef.icon}"></span></div>`,
+                    iconSize: [38, 38],
+                    iconAnchor: [19, 19],
                 });
 
                 return this.alertIconCache[type];
@@ -1761,6 +1477,14 @@
                 const filtered = this.activeAlerts.filter((alert) => alert.expiresAt > now);
                 if( filtered.length !== this.activeAlerts.length ){
                     this.activeAlerts = filtered;
+                    if( this.selectedAlertId && !filtered.some((alert) => String(alert.id) === String(this.selectedAlertId)) ){
+                        this.selectedAlertId = null;
+                        this.selectedAlertContext = null;
+                        if( this.bottomMenuMode === 'alert-detail' ){
+                            this.bottomMenuMode = 'map';
+                            this.currentModeButton = null;
+                        }
+                    }
                 }
                 if( this.activeAlerts.length === 0 ){
                     this.stopAlertCleanupTimer();
@@ -1777,7 +1501,21 @@
                 try{
                     const { data, error } = await supabase
                         .from('road_alert')
-                        .select('*')
+                        .select(`
+                            id,
+                            alert_type,
+                            lat,
+                            lng,
+                            created_at,
+                            expires_at,
+                            account_id,
+                            confirm_count,
+                            invalidate_count,
+                            road_alert_vote (
+                                account_id,
+                                vote_type
+                            )
+                        `)
                         .gt('expires_at', new Date().toISOString())
                         .order('created_at', { ascending: true });
                     if( error ){
@@ -1785,6 +1523,10 @@
                     }
                     const alerts = (data || []).map((row) => this.mapAlertRow(row));
                     this.activeAlerts = alerts;
+                    if( this.selectedAlertId && !alerts.some((alert) => String(alert.id) === String(this.selectedAlertId)) ){
+                        this.selectedAlertId = null;
+                        this.selectedAlertContext = null;
+                    }
                     if( alerts.length ){
                         this.startAlertCleanupTimer();
                     }
@@ -1800,11 +1542,16 @@
                 this.alertChannel.on(
                     'postgres_changes',
                     { event: 'INSERT', schema: 'public', table: 'road_alert' },
-                    (payload) => {
-                        if( payload?.new ){
-                            const alert = this.mapAlertRow(payload.new);
-                            this.addOrReplaceAlert(alert);
-                        }
+                    async () => {
+                        await this.fetchRemoteAlerts();
+                    }
+                );
+
+                this.alertChannel.on(
+                    'postgres_changes',
+                    { event: 'UPDATE', schema: 'public', table: 'road_alert' },
+                    async () => {
+                        await this.fetchRemoteAlerts();
                     }
                 );
 
@@ -1816,6 +1563,14 @@
                         if( alertId ){
                             this.removeAlertById(alertId);
                         }
+                    }
+                );
+
+                this.alertChannel.on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'road_alert_vote' },
+                    async () => {
+                        await this.fetchRemoteAlerts();
                     }
                 );
 
@@ -1831,6 +1586,17 @@
                 if( !row ){
                     return null;
                 }
+                const votes = Array.isArray(row.road_alert_vote) ? row.road_alert_vote : [];
+                const actorKey = this.getAlertActorKey(this.userId);
+                const currentVote = actorKey
+                    ? votes.find((vote) => this.getAlertActorKey(vote.account_id) === actorKey)?.vote_type || ""
+                    : "";
+                const confirmCount = Number.isInteger(row.confirm_count)
+                    ? row.confirm_count
+                    : votes.filter((vote) => vote.vote_type === 'confirm').length;
+                const invalidateCount = Number.isInteger(row.invalidate_count)
+                    ? row.invalidate_count
+                    : votes.filter((vote) => vote.vote_type === 'invalidate').length;
                 return {
                     id: row.id,
                     type: row.alert_type,
@@ -1838,10 +1604,17 @@
                     createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
                     expiresAt: row.expires_at ? new Date(row.expires_at).getTime() : Date.now() + this.alertDurationMs,
                     accountId: row.account_id || null,
+                    currentUserVote: currentVote,
+                    confirmCount,
+                    invalidateCount,
                 };
             },
             addOrReplaceAlert(alert){
-                if( !alert || alert.expiresAt <= Date.now() ){
+                if( !alert ){
+                    return;
+                }
+                if( alert.expiresAt <= Date.now() ){
+                    this.removeAlertById(alert.id);
                     return;
                 }
                 const index = this.activeAlerts.findIndex((item) => item.id === alert.id);
@@ -1859,6 +1632,14 @@
                 const filtered = this.activeAlerts.filter((alert) => alert.id !== alertId);
                 if( filtered.length !== this.activeAlerts.length ){
                     this.activeAlerts = filtered;
+                }
+                if( this.selectedAlertId && String(this.selectedAlertId) === String(alertId) ){
+                    this.selectedAlertId = null;
+                    this.selectedAlertContext = null;
+                    if( this.bottomMenuMode === 'alert-detail' ){
+                        this.bottomMenuMode = 'map';
+                        this.currentModeButton = null;
+                    }
                 }
                 if( this.activeAlerts.length === 0 ){
                     this.stopAlertCleanupTimer();
@@ -1926,38 +1707,31 @@
                         this.updatePassedPoints(currentPosition);
                         this.updateRemainingEstimates(currentPosition);
 
-                        // const bounds = [[latitude, longitude], [43.60461578085957, 3.880710839194244]]
-                        if(this.$refs.mapRef){
-                            this.currentLocation.current = [latitude, longitude];
+                        this.currentLocation.current = [latitude, longitude];
 
-                            if( this.shareLocalisation ){
-                                if(this.mode_driver){
-                                    for (let index = 0; index < this.contacts.length; index++) {
-                                        let newLoc = {
-                                            idTrip: this.tripSelected.id,
-                                            from: this.userUid,
-                                            to: this.contacts[index].user_id,
-                                            latLng: this.currentLocation.current, 
-                                            status: "send=",
-                                        }
-                                        this.socket.emit("send-localisation", newLoc);
-                                    }
-                                }
-                                else{
+                        if (this.shareLocalisation && this.socket) {
+                            if(this.mode_driver){
+                                for (let index = 0; index < this.contacts.length; index++) {
                                     let newLoc = {
                                         idTrip: this.tripSelected.id,
                                         from: this.userUid,
-                                        to: this.currentContact.userUid,
+                                        to: this.contacts[index].user_id,
                                         latLng: this.currentLocation.current, 
-                                        status: "send=--",
+                                        status: "send=",
                                     }
                                     this.socket.emit("send-localisation", newLoc);
                                 }
                             }
-                            
-                            // this.$refs.mapRef.leafletObject.fitBounds(bounds, {
-                            //     padding: [18, 18] // padding en pixels autour des limites.
-                            // });
+                            else if (this.currentContact.userUid) {
+                                let newLoc = {
+                                    idTrip: this.tripSelected.id,
+                                    from: this.userUid,
+                                    to: this.currentContact.userUid,
+                                    latLng: this.currentLocation.current,
+                                    status: "send=--",
+                                }
+                                this.socket.emit("send-localisation", newLoc);
+                            }
                         }
                         this.checkAndRerouteIfNeeded(currentPosition);
                     }
@@ -2005,33 +1779,30 @@
                         const currentPosition = [latitude, longitude]; // Obtenez la position actuelle
                         this.updatePassedPoints(currentPosition);
 
-                        // const bounds = [[latitude, longitude], [43.60461578085957, 3.880710839194244]]
-                        if(this.$refs.mapRef){
-                            this.currentLocation.current = [latitude, longitude];
+                        this.currentLocation.current = [latitude, longitude];
 
-                            if( this.shareLocalisation ){
-                                if(this.mode_driver){
-                                    for (let index = 0; index < this.contacts.length; index++) {
-                                        let newLoc = {
-                                            idTrip: this.tripSelected.id,
-                                            from: this.userUid,
-                                            to: this.contacts[index].user_id,
-                                            latLng: this.currentLocation.current, 
-                                            status: "send=",
-                                        }
-                                        this.socket.emit("send-localisation", newLoc);
-                                    }
-                                }
-                                else{
+                        if (this.shareLocalisation && this.socket) {
+                            if(this.mode_driver){
+                                for (let index = 0; index < this.contacts.length; index++) {
                                     let newLoc = {
                                         idTrip: this.tripSelected.id,
                                         from: this.userUid,
-                                        to: this.currentContact.userUid,
+                                        to: this.contacts[index].user_id,
                                         latLng: this.currentLocation.current, 
-                                        status: "send=--",
+                                        status: "send=",
                                     }
                                     this.socket.emit("send-localisation", newLoc);
                                 }
+                            }
+                            else if (this.currentContact.userUid) {
+                                let newLoc = {
+                                    idTrip: this.tripSelected.id,
+                                    from: this.userUid,
+                                    to: this.currentContact.userUid,
+                                    latLng: this.currentLocation.current,
+                                    status: "send=--",
+                                }
+                                this.socket.emit("send-localisation", newLoc);
                             }
                         }
                     });

@@ -326,7 +326,11 @@
 
 
     //import supabase from '@/utils/supabaseClient.js';
-    import { getFirstDayOfWeek, findKeyOfNullOrUndefined } from '@/utils/utils.js'
+    import {
+        findKeyOfNullOrUndefined,
+        getDefaultDepartureTime,
+        getFirstDayOfWeek,
+    } from '@/utils/utils.js'
     // import { Capacitor } from '@capacitor/core';
 
     // const isIOS = Capacitor.getPlatform() === 'ios';
@@ -391,6 +395,9 @@
             },
         },
         data() {
+            // Initialisé avant le montage du sélecteur ; le faire après un `await`
+            // laisserait l'ancienne heure fixe affichée.
+            const defaultDeparture = getDefaultDepartureTime(new Date(), 15, 5);
             return {
                 isDriver: false,
                 nothing: false,
@@ -488,11 +495,11 @@
                             commune: "Bandrélé",
                         }
                     },
-                    departureTime: '2023-10-15T15:01:23.045123456Z',
+                    departureTime: defaultDeparture.date,
                 },
                 timeInit: {
-                    hourInit: 7,
-                    minuteInit: 30,
+                    hourInit: defaultDeparture.hourInit,
+                    minuteInit: defaultDeparture.minuteInit,
                     nbPasMinutes: 5,
                 },
                 seatPreferences: {},
@@ -533,22 +540,6 @@
 
             this.overlayLoad = false;
 
-            // this.test();
-            const futureDate = new Date();
-            futureDate.setMinutes(futureDate.getMinutes() + 15);
-            const step = this.timeInit.nbPasMinutes || 5;
-            let hourInit = futureDate.getHours();
-            let minuteInit = futureDate.getMinutes();
-            let roundedMinutes = Math.ceil(minuteInit / step) * step;
-            if( roundedMinutes >= 60 ){
-                roundedMinutes = 0;
-                hourInit = (hourInit + 1) % 24;
-            }
-            this.timeInit = {
-                ...this.timeInit,
-                hourInit,
-                minuteInit: roundedMinutes,
-            };
             this.loadSeatPreferences();
             
 
