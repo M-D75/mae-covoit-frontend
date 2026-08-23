@@ -1,0 +1,402 @@
+-- Public road-alert map: one active report per account, server-managed writes,
+-- and a private moderation trail. The browser never chooses account_id.
+
+create schema if not exists private;
+revoke all on schema private from public, anon, authenticated;
+grant usage on schema private to service_role;
+
+create table if not exists public.road_alert (
+    id uuid primary key default gen_random_uuid(),
+    trip_id bigint references public.trip(id) on delete set null,
+    account_id bigint not null references public.account(id) on delete cascade,
+    alert_type text not null,
+    lat double precision not null,
+    lng double precision not null,
+    created_at timestamptz not null default timezone('utc', now()),
+    expires_at timestamptz not null default (timezone('utc', now()) + interval '1 hour'),
+    confirm_count integer not null default 0,
+    invalidate_count integer not null default 0
+);
+
+create table if not exists public.road_alert_vote (
+    road_alert_id uuid not null references public.road_alert(id) on delete cascade,
+    account_id bigint not null references public.account(id) on delete cascade,
+    vote_type text not null,
+    created_at timestamptz not null default timezone('utc', now()),
+    updated_at timestamptz not null default timezone('utc', now()),
+    primary key (road_alert_id, account_id)
+);
+
+alter table public.road_alert
+    alter column trip_id drop not null,
+    add column if not exists status text not null default 'active',
+    add column if not exists superseded_at timestamptz,
+    add column if not exists confirm_count integer not null default 0,
+    add column if not exists invalidate_count integer not null default 0;
+
+alter table public.road_alert_vote
+    add column if not exists created_at timestamptz not null default timezone('utc', now()),
+    add column if not exists updated_at timestamptz not null default timezone('utc', now());
+
+-- Keep only the most recent, non-expired legacy row active for each account.
+with ranked as (
+    select
+        id,
+        row_number() over (
+            partition by account_id
+            order by created_at desc nulls last, id desc
+        ) as account_rank
+    from public.road_alert
+)
+update public.road_alert as alert
+set status = case
+        when ranked.account_rank = 1 and alert.expires_at > timezone('utc', now())
+            then 'active'
+        when alert.expires_at <= timezone('utc', now())
+            then 'expired'
+        else 'superseded'
+    end,
+    superseded_at = case
+        when ranked.account_rank > 1 then coalesce(alert.superseded_at, timezone('utc', now()))
+        else alert.superseded_at
+    end
+from ranked
+where ranked.id = alert.id;
+
+-- Resolve any legacy duplicate votes before enforcing last-vote-wins.
+delete from public.road_alert_vote as older
+using public.road_alert_vote as newer
+where older.road_alert_id = newer.road_alert_id
+  and older.account_id = newer.account_id
+  and older.ctid < newer.ctid;
+
+-- Repair legacy counters from their vote ledger before the API starts using
+-- the denormalized values.
+update public.road_alert
+set confirm_count = 0,
+    invalidate_count = 0;
+
+with vote_totals as (
+    select
+        road_alert_id,
+        count(*) filter (where vote_type = 'confirm') as confirm_total,
+        count(*) filter (where vote_type = 'invalidate') as invalidate_total
+    from public.road_alert_vote
+    group by road_alert_id
+)
+update public.road_alert as alert
+set confirm_count = coalesce(vote_totals.confirm_total, 0),
+    invalidate_count = coalesce(vote_totals.invalidate_total, 0)
+from vote_totals
+where vote_totals.road_alert_id = alert.id;
+
+create unique index if not exists road_alert_one_active_per_account_uidx
+    on public.road_alert (account_id)
+    where status = 'active';
+
+create unique index if not exists road_alert_vote_account_uidx
+    on public.road_alert_vote (road_alert_id, account_id);
+
+create index if not exists road_alert_active_expiry_idx
+    on public.road_alert (status, expires_at);
+
+create index if not exists road_alert_account_history_idx
+    on public.road_alert (account_id, created_at desc);
+
+alter table public.road_alert
+    drop constraint if exists road_alert_status_check;
+alter table public.road_alert
+    add constraint road_alert_status_check
+    check (status in ('active', 'superseded', 'expired'));
+
+alter table public.road_alert
+    drop constraint if exists road_alert_coordinates_check;
+alter table public.road_alert
+    add constraint road_alert_coordinates_check
+    check (lat between -90 and 90 and lng between -180 and 180) not valid;
+
+alter table public.road_alert_vote
+    drop constraint if exists road_alert_vote_type_check;
+alter table public.road_alert_vote
+    add constraint road_alert_vote_type_check
+    check (vote_type in ('confirm', 'invalidate')) not valid;
+
+create table if not exists private.road_alert_audit (
+    id bigint generated by default as identity primary key,
+    road_alert_id text,
+    reporter_user_id uuid not null,
+    reporter_account_id bigint not null,
+    event_type text not null,
+    details jsonb not null default '{}'::jsonb,
+    created_at timestamptz not null default timezone('utc', now()),
+    retain_until timestamptz not null default (timezone('utc', now()) + interval '180 days')
+);
+
+revoke all on table private.road_alert_audit from public, anon, authenticated;
+grant select, insert, update, delete on table private.road_alert_audit to service_role;
+grant usage, select on all sequences in schema private to service_role;
+
+-- Serialize replacements per authenticated user so two devices cannot create
+-- two simultaneously active reports for the same account.
+create or replace function public.create_or_replace_road_alert(
+    target_user_id uuid,
+    target_alert_type text,
+    target_lat double precision,
+    target_lng double precision,
+    target_trip_id bigint default null
+)
+returns public.road_alert
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    selected_account public.account%rowtype;
+    latest_created_at timestamptz;
+    replaced_alert_id uuid;
+    created_alert public.road_alert%rowtype;
+begin
+    if target_user_id is null then
+        raise exception using errcode = '28000', message = 'AUTH_REQUIRED';
+    end if;
+    if target_alert_type not in ('traffic', 'danger', 'works', 'weather', 'obstacle') then
+        raise exception using errcode = '22023', message = 'INVALID_ROAD_ALERT_TYPE';
+    end if;
+    if target_lat is null or target_lat < -90 or target_lat > 90
+       or target_lng is null or target_lng < -180 or target_lng > 180 then
+        raise exception using errcode = '22023', message = 'INVALID_ROAD_ALERT_LOCATION';
+    end if;
+
+    perform pg_advisory_xact_lock(hashtextextended(target_user_id::text, 0));
+
+    select * into selected_account
+    from public.account
+    where user_id = target_user_id
+    for update;
+    if not found then
+        raise exception using errcode = 'P0002', message = 'ACCOUNT_NOT_FOUND';
+    end if;
+    if selected_account.deletion_pending_at is not null then
+        raise exception using errcode = '55000', message = 'ACCOUNT_DELETION_PENDING';
+    end if;
+
+    select created_at into latest_created_at
+    from public.road_alert
+    where account_id = selected_account.id
+    order by created_at desc, id desc
+    limit 1;
+    if latest_created_at > timezone('utc', now()) - interval '2 minutes' then
+        raise exception using errcode = '55000', message = 'ROAD_ALERT_RATE_LIMITED';
+    end if;
+
+    if target_trip_id is not null and not exists (
+        select 1
+        from public.trip
+        where id = target_trip_id
+          and (
+              driver_id = target_user_id
+              or exists (
+                  select 1
+                  from public.booking
+                  where booking.trip_id = target_trip_id
+                    and booking.passenger_account_id = selected_account.id
+                    and booking.is_accepted = true
+                    and booking.is_refused = false
+              )
+          )
+    ) then
+        raise exception using errcode = '42501', message = 'ROAD_ALERT_TRIP_FORBIDDEN';
+    end if;
+
+    select id into replaced_alert_id
+    from public.road_alert
+    where account_id = selected_account.id
+      and status = 'active'
+    order by created_at desc, id desc
+    limit 1;
+
+    update public.road_alert
+    set status = 'superseded',
+        superseded_at = timezone('utc', now())
+    where account_id = selected_account.id
+      and status = 'active';
+
+    insert into public.road_alert (
+        trip_id,
+        account_id,
+        alert_type,
+        lat,
+        lng,
+        created_at,
+        expires_at,
+        status,
+        confirm_count,
+        invalidate_count
+    ) values (
+        target_trip_id,
+        selected_account.id,
+        target_alert_type,
+        target_lat,
+        target_lng,
+        timezone('utc', now()),
+        timezone('utc', now()) + interval '1 hour',
+        'active',
+        0,
+        0
+    )
+    returning * into created_alert;
+
+    insert into private.road_alert_audit (
+        road_alert_id,
+        reporter_user_id,
+        reporter_account_id,
+        event_type,
+        details
+    ) values (
+        created_alert.id::text,
+        target_user_id,
+        selected_account.id,
+        'created',
+        jsonb_build_object(
+            'alertType', target_alert_type,
+            'lat', target_lat,
+            'lng', target_lng,
+            'tripId', target_trip_id,
+            'replacesAlertId', replaced_alert_id::text
+        )
+    );
+
+    return created_alert;
+end;
+$$;
+
+create or replace function public.vote_road_alert(
+    target_user_id uuid,
+    target_road_alert_id uuid,
+    target_vote_type text
+)
+returns public.road_alert
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    selected_account public.account%rowtype;
+    selected_alert public.road_alert%rowtype;
+    confirm_total integer;
+    invalidate_total integer;
+begin
+    if target_vote_type not in ('confirm', 'invalidate') then
+        raise exception using errcode = '22023', message = 'INVALID_ROAD_ALERT_VOTE';
+    end if;
+
+    select * into selected_account
+    from public.account
+    where user_id = target_user_id;
+    if not found then
+        raise exception using errcode = 'P0002', message = 'ACCOUNT_NOT_FOUND';
+    end if;
+
+    select * into selected_alert
+    from public.road_alert
+    where id = target_road_alert_id
+    for update;
+    if not found or selected_alert.status <> 'active'
+       or selected_alert.expires_at <= timezone('utc', now()) then
+        raise exception using errcode = 'P0002', message = 'ROAD_ALERT_NOT_FOUND';
+    end if;
+    if selected_alert.account_id = selected_account.id then
+        raise exception using errcode = '42501', message = 'ROAD_ALERT_OWNER_CANNOT_VOTE';
+    end if;
+
+    insert into public.road_alert_vote (
+        road_alert_id,
+        account_id,
+        vote_type,
+        created_at,
+        updated_at
+    ) values (
+        target_road_alert_id,
+        selected_account.id,
+        target_vote_type,
+        timezone('utc', now()),
+        timezone('utc', now())
+    )
+    on conflict (road_alert_id, account_id)
+    do update set
+        vote_type = excluded.vote_type,
+        updated_at = timezone('utc', now());
+
+    select
+        count(*) filter (where vote_type = 'confirm'),
+        count(*) filter (where vote_type = 'invalidate')
+    into confirm_total, invalidate_total
+    from public.road_alert_vote
+    where road_alert_id = target_road_alert_id;
+
+    update public.road_alert
+    set confirm_count = confirm_total,
+        invalidate_count = invalidate_total,
+        expires_at = case
+            when target_vote_type = 'confirm'
+                then greatest(expires_at, timezone('utc', now()) + interval '1 hour')
+            else expires_at
+        end
+    where id = target_road_alert_id
+    returning * into selected_alert;
+
+    insert into private.road_alert_audit (
+        road_alert_id,
+        reporter_user_id,
+        reporter_account_id,
+        event_type,
+        details
+    ) values (
+        selected_alert.id::text,
+        target_user_id,
+        selected_account.id,
+        'vote_' || target_vote_type,
+        jsonb_build_object('voteType', target_vote_type)
+    );
+
+    return selected_alert;
+end;
+$$;
+
+revoke all on public.road_alert from anon, authenticated;
+revoke all on public.road_alert_vote from anon, authenticated;
+grant all on public.road_alert to service_role;
+grant all on public.road_alert_vote to service_role;
+grant usage, select on all sequences in schema public to service_role;
+
+alter table public.road_alert enable row level security;
+alter table public.road_alert_vote enable row level security;
+
+do $$
+declare
+    policy_row record;
+begin
+    for policy_row in
+        select schemaname, tablename, policyname
+        from pg_policies
+        where schemaname = 'public'
+          and tablename in ('road_alert', 'road_alert_vote')
+    loop
+        execute format(
+            'drop policy if exists %I on %I.%I',
+            policy_row.policyname,
+            policy_row.schemaname,
+            policy_row.tablename
+        );
+    end loop;
+end;
+$$;
+
+revoke all on function public.create_or_replace_road_alert(uuid, text, double precision, double precision, bigint)
+    from public, anon, authenticated;
+revoke all on function public.vote_road_alert(uuid, uuid, text)
+    from public, anon, authenticated;
+grant execute on function public.create_or_replace_road_alert(uuid, text, double precision, double precision, bigint)
+    to service_role;
+grant execute on function public.vote_road_alert(uuid, uuid, text)
+    to service_role;

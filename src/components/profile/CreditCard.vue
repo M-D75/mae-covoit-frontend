@@ -188,6 +188,12 @@
             >
                 Réservé : {{ reservedDebitLabel }}
             </div>
+            <div
+                v-if="modeDriver && connect_activation_required"
+                class="pending-info"
+            >
+                Activation Stripe requise pour recevoir vos gains.
+            </div>
         </div>
 
         <div class="row-item code-card">
@@ -264,7 +270,13 @@
         name: 'credit-card-comp',
         emits: ["transfert-gain", "add-card", "up-money", "drop-money", "add-credit"],
         computed: {
-            ...mapState("profil", ["soldes", "gain", "credit_card", "modeDriver"]),
+            ...mapState("profil", [
+                "soldes",
+                "gain",
+                "credit_card",
+                "modeDriver",
+                "connect_activation_required",
+            ]),
             ...mapState("profil", {
                 pending: state => state.gain.pending,
                 transit: state => state.gain.transit,

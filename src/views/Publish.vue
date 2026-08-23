@@ -251,23 +251,30 @@
     <v-main v-else>
         <div class="nothing label-filter text-caption mx-auto">
             <div v-if="nothing" class="contenu">
-                <v-icon :icon="cars.length == 0 ? 'mdi-car-off' : 'mdi-bank-off' "></v-icon>
+                <v-icon :icon="cars.length == 0 ? 'mdi-car-off' : 'mdi-bank-clock-outline' "></v-icon>
                 <span v-if="cars.length == 0 ">Oups ! Il semble que votre garage soit vide. Que diriez-vous de lui donner vie en ajoutant un véhicule pour votre annonce ? 🚗✨</span>
-                <span v-if="cars.length != 0 && ! payouts_enabled">Attention vous ne serez pas payé si vous n'enregistrer pas vos coordonnées bancaire, souhaitez vous continuer ?</span>
+                <span v-else-if="!connect_account_available">
+                    Impossible d'initialiser votre compte de versement Stripe. Réessayez avant de publier un trajet.
+                </span>
+                <span v-else-if="connect_activation_required">
+                    Vous pouvez publier et recevoir des réservations. Vos gains resteront en attente et seront transférés dès que vous aurez terminé l'activation Stripe.
+                </span>
                 
                 <div class="cont-btn">
                     <v-btn
-                        v-if="cars.length != 0 && ! payouts_enabled"
-                        color="red"
+                        v-if="cars.length != 0 && connect_account_available && connect_activation_required"
+                        color="orange"
                         icon
+                        title="Publier maintenant"
                         @click="nothing = false; isDriver=true;"
                     >
-                        <v-icon class="zoom-bounce" icon="mdi-close-octagon"></v-icon>
+                        <v-icon class="zoom-bounce" icon="mdi-arrow-right-bold"></v-icon>
                     </v-btn>
 
                     <v-btn
                         color="blue"
                         icon
+                        :title="cars.length == 0 ? 'Ajouter un véhicule' : 'Activer les versements Stripe'"
                         @click="goToAddVehiculOrBank()"
                     >
                         <!-- <v-progress-circular v-if="load" indeterminate color="white"></v-progress-circular> -->
@@ -349,7 +356,11 @@
 
             ...mapState("search", ['villages', 'communesHistory']),
             ...mapGetters("search", ["getVillagesByName", "GET_ID_VILLAGE_BY_NAME"]),
-            ...mapState("profil", ['cars', "payouts_enabled"]),
+            ...mapState("profil", [
+                'cars',
+                "connect_account_available",
+                "connect_activation_required",
+            ]),
             villagesSortedFiltered(){
                 const typePath = this.modeWork ? "work" : "default";
 
@@ -512,39 +523,47 @@
         },
         created() {
             this.chargerHistorique();
-            if( this.villages == undefined || this.villages == null || this.villages.length == 0 ){
-                this.getVillages();
-            }
         },
         async mounted() {
             $(".mode-publish").css("display", "flex");
 
-            await this.getProvider();
-            
+            try {
+                if(!await this.getVillages()) {
+                    this.showError("Impossible de charger la liste des villages.");
+                    return;
+                }
 
-            // const res = await this.getCars();
-            // if( res.status == 0 ){
-            //     if( this.cars.length == 0 || ! this.payouts_enabled ){
-            //         this.nothing = true;
-            //     }
-            //     else{
-            //         this.isDriver = true;
-            //     }
-            // }
-            // else{
-            //     this.showError("Une erreur s'est produite. Veuillez réessayer plus tard. Si le problème persiste, n'hésitez pas à contacter notre support.");
-            // }
-            
-            // TODO : test
-            this.isDriver = true;
+                const carsResult = await this.getCars();
+                if(carsResult?.status !== 0) {
+                    this.showError(carsResult?.message || "Impossible de charger vos véhicules.");
+                    return;
+                }
 
-            this.overlayLoad = false;
+                if(this.cars.length === 0) {
+                    this.nothing = true;
+                    return;
+                }
 
-            this.loadSeatPreferences();
-            
+                // A Connect account is mandatory. Its onboarding can remain
+                // incomplete: the driver is warned, then may publish anyway.
+                const providerResult = await this.getProvider();
+                if(providerResult?.status !== 0) {
+                    this.nothing = true;
+                    this.showError(providerResult?.message || "Impossible d'initialiser votre compte de versement.");
+                    return;
+                }
+
+                if(this.connect_activation_required) {
+                    this.nothing = true;
+                } else {
+                    this.isDriver = true;
+                }
+            } finally {
+                this.overlayLoad = false;
+                this.loadSeatPreferences();
+            }
 
             console.log(this.$store.state.profil.userUid, this.timeInit);
-
             console.log("getFirstDayOfWeek:", getFirstDayOfWeek("S50").getUTCDate());
 
         },
@@ -1030,7 +1049,7 @@
                 this.showSnackbar.showError = true;
             },
             goToAddVehiculOrBank(){
-                if( this.cars.length != 0 && ! this.payouts_enabled){
+                if( this.cars.length != 0 && this.connect_activation_required){
                     this.$router.push('/profil/perso/open-check-identiy');
                 }
                 else{

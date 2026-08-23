@@ -109,8 +109,8 @@ export default defineComponent({
     props: {
         center: { type: [Array, Object], required: true },
         zoom: { type: Number, default: 11 },
-        origin: { type: Object, required: true },
-        destination: { type: Object, required: true },
+        origin: { type: Object, default: null },
+        destination: { type: Object, default: null },
         routes: { type: Array, default: () => [] },
         routeAvailable: { type: Boolean, default: false },
         currentLocation: { type: Array, default: () => [] },

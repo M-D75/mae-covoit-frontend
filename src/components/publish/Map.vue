@@ -128,8 +128,10 @@
 
 <script>
     import { defineComponent } from 'vue';
+    import { mapState } from 'vuex';
+    import io from 'socket.io-client';
 
-    import supabase from '@/utils/supabaseClient.js';
+    import { createSocketAuth, getServerUrl, serverRequest } from '@/utils/serverApi.js';
     import { calculateRoutes } from '@/services/routingService.js';
 
     import L from "leaflet";
@@ -144,6 +146,7 @@
         name: 'results-view',
         emits: ["trajet-selected"],
         computed: {
+            ...mapState("profil", ["modeCo"]),
             center() {
                 // const latitudes =  [this.itineraire.origin.location.latLng.latitude, this.itineraire.destination.location.latLng.latitude];
                 // const longitudes = [this.itineraire.origin.location.latLng.longitude, this.itineraire.destination.location.latLng.longitude];
@@ -250,11 +253,12 @@
                     { value: 'danger', label: 'Menace', color: '#d32f2f', abbr: '!' },
                     { value: 'works', label: 'Travaux', color: '#ffa726', abbr: 'T' },
                     { value: 'weather', label: 'Intempérie', color: '#4fc3f7', abbr: '~' },
+                    { value: 'obstacle', label: 'Obstacle', color: '#8e24aa', abbr: '!' },
                 ],
                 activeAlerts: [],
                 alertDurationMs: 60 * 60 * 1000,
                 alertCleanupTimer: null,
-                alertChannel: null,
+                alertSocket: null,
                 alertIconCache: {},
             }
         },
@@ -262,6 +266,13 @@
             SafeAreaController.injectCSSVariables();
             console.log("itineraire", this.itineraire);
             this.$refs.BottomMenuRef.open();
+            this.alertSocket = io(getServerUrl(this.modeCo), {
+                reconnection: true,
+                reconnectionDelay: 1000,
+                reconnectionAttempts: 60,
+                auth: createSocketAuth(),
+            });
+            this.alertSocket.on('road-alerts:changed', () => this.fetchRemoteAlerts());
             this.initializeAlertSync();
             // Une route calculée avant la fin du chargement de la carte sera dessinée
             // dès que Leaflet ou Google Maps sera prêt.
@@ -269,7 +280,11 @@
         },
         beforeUnmount(){
             this.stopAlertCleanupTimer();
-            this.unsubscribeAlertChannel();
+            if(this.alertSocket){
+                this.alertSocket.off('road-alerts:changed');
+                this.alertSocket.disconnect();
+                this.alertSocket = null;
+            }
         },
         methods: {
             trajetSelected(index){
@@ -464,19 +479,12 @@
             },
             async initializeAlertSync(){
                 await this.fetchRemoteAlerts();
-                this.subscribeToAlertChannel();
             },
             async fetchRemoteAlerts(){
                 try{
-                    const { data, error } = await supabase
-                        .from('road_alert')
-                        .select('*')
-                        .gt('expires_at', new Date().toISOString())
-                        .order('created_at', { ascending: true });
-                    if( error ){
-                        throw error;
-                    }
-                    const alerts = (data || []).map((row) => this.mapAlertRow(row));
+                    const response = await serverRequest('get', '/road-alerts', { mode: this.modeCo });
+                    const rows = response.data?.data?.alerts || [];
+                    const alerts = rows.map((row) => this.mapAlertRow(row)).filter(Boolean);
                     this.activeAlerts = alerts;
                     if( alerts.length ){
                         this.startAlertCleanupTimer();
@@ -486,51 +494,16 @@
                     console.error("fetchRemoteAlerts error", error);
                 }
             },
-            subscribeToAlertChannel(){
-                this.unsubscribeAlertChannel();
-                this.alertChannel = supabase.channel('road_alert_global');
-
-                this.alertChannel.on(
-                    'postgres_changes',
-                    { event: 'INSERT', schema: 'public', table: 'road_alert' },
-                    (payload) => {
-                        if( payload?.new ){
-                            const alert = this.mapAlertRow(payload.new);
-                            this.addOrReplaceAlert(alert);
-                        }
-                    }
-                );
-
-                this.alertChannel.on(
-                    'postgres_changes',
-                    { event: 'DELETE', schema: 'public', table: 'road_alert' },
-                    (payload) => {
-                        const alertId = payload?.old?.id;
-                        if( alertId ){
-                            this.removeAlertById(alertId);
-                        }
-                    }
-                );
-
-                this.alertChannel.subscribe();
-            },
-            unsubscribeAlertChannel(){
-                if( this.alertChannel ){
-                    this.alertChannel.unsubscribe();
-                    this.alertChannel = null;
-                }
-            },
             mapAlertRow(row){
                 if( !row ){
                     return null;
                 }
                 return {
                     id: row.id,
-                    type: row.alert_type,
-                    coordinates: [row.lat, row.lng],
-                    createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
-                    expiresAt: row.expires_at ? new Date(row.expires_at).getTime() : Date.now() + this.alertDurationMs,
-                    accountId: row.account_id || null,
+                    type: row.type || row.alert_type,
+                    coordinates: Array.isArray(row.coordinates) ? row.coordinates : [row.lat, row.lng],
+                    createdAt: new Date(row.createdAt || row.created_at || Date.now()).getTime(),
+                    expiresAt: new Date(row.expiresAt || row.expires_at || Date.now() + this.alertDurationMs).getTime(),
                 };
             },
             addOrReplaceAlert(alert){

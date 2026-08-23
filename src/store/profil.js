@@ -12,6 +12,31 @@ import { humanizeSupabaseError } from '@/utils/errorMessages.js';
 import { serverRequest } from '@/utils/serverApi.js';
 import { createRequestId } from '@/utils/requestId.js';
 
+function normalizeConnectProvider(provider = {}) {
+    const payoutsEnabled = Boolean(provider.payouts_enabled ?? provider.payoutsEnabled);
+    const detailsSubmitted = Boolean(provider.details_submitted ?? provider.detailsSubmitted);
+    const transfersActive = Boolean(provider.transfers_active ?? provider.transfersActive);
+    const onboardingComplete = Boolean(
+        provider.onboarding_complete
+        ?? provider.onboardingComplete
+        ?? (payoutsEnabled && detailsSubmitted && transfersActive)
+    );
+
+    return {
+        id: provider.id || null,
+        payouts_enabled: payoutsEnabled,
+        details_submitted: detailsSubmitted,
+        transfers_active: transfersActive,
+        onboarding_complete: onboardingComplete,
+        activation_required: Boolean(
+            provider.activation_required
+            ?? provider.activationRequired
+            ?? !onboardingComplete
+        ),
+        metadata: provider.metadata || { vs_id: null },
+    };
+}
+
 export default {
     namespaced: true,
     state: {
@@ -41,6 +66,8 @@ export default {
         cguAccepted: false,
         identity: false,
         payouts_enabled: false,
+        connect_account_available: false,
+        connect_activation_required: true,
         credit_card: {
             last4: "0000",
             available: false,
@@ -398,6 +425,9 @@ export default {
                 });
                 state.gain.transit = connectBalance.total / 100;
                 state.gain.pending = (connectBalance.pendingEarnings / 100).toFixed(2);
+                state.connect_account_available = true;
+                state.payouts_enabled = Boolean(connectBalance.payoutsEnabled);
+                state.connect_activation_required = Boolean(connectBalance.activationRequired);
             } catch (error) {
                 console.error("Unable to retrieve Connect balance:", error);
                 state.gain.transit = 0;
@@ -545,6 +575,9 @@ export default {
             state.history.datesTripPassenger = [];
 
             try{
+                if(!await store.dispatch("search/getVillages")) {
+                    throw new Error("Impossible de charger les villages.");
+                }
                 const resolveVillage = (id) => store.getters["search/GET_VILLAGE_BY_ID"](id);
                 const bookings = await fetchPassengerTrips({ passengerAccountId: state.userId, includeHistory: false });
                 const normalizedTrips = normalizePassengerTrips(bookings, resolveVillage);
@@ -600,7 +633,11 @@ export default {
             state.profil.myPublish = [];
             state.history.datesTripDriver = [];
 
-            await store.dispatch("search/getOwnTrip");
+            const ownTrips = await store.dispatch("search/getOwnTrip");
+            if(ownTrips?.status !== 0) {
+                state.history.datesTripDriver = [];
+                return ownTrips || {status: 1, message: "Impossible de charger les trajets."};
+            }
 
             if( ! store.state.search.trajets ){
                 console.error("Error getPush 1")
@@ -757,6 +794,9 @@ export default {
             state.history.load = true;
 
             try{
+                if(!await store.dispatch("search/getVillages")) {
+                    throw new Error("Impossible de charger les villages.");
+                }
                 const resolveVillage = (id) => store.getters["search/GET_VILLAGE_BY_ID"](id);
                 const bookings = await fetchPassengerTrips({ passengerAccountId: state.userId, includeHistory: true });
                 const normalized = normalizePassengerTrips(bookings, resolveVillage);
@@ -784,13 +824,46 @@ export default {
         },
         // stripe
         async getProvider({state}){
-            const { data: provider } = await serverRequest('get', '/connect/account', {
-                mode: state.modeCo,
-            });
-            console.log("retrieve provider : ", provider);
-            store.state.auth.provider_id = provider.id;
-            store.state.auth.stripe_provider = provider;
-            state.payouts_enabled = provider.payouts_enabled;
+            try {
+                let providerPayload;
+                try {
+                    const { data } = await serverRequest('get', '/connect/account', {
+                        mode: state.modeCo,
+                    });
+                    providerPayload = data;
+                } catch (error) {
+                    if (error.response?.status !== 404) throw error;
+
+                    // Legacy users may not have a Connect account yet. This
+                    // idempotent endpoint creates or repairs it before publish.
+                    const { data } = await serverRequest('post', '/account/payment-profile', {
+                        mode: state.modeCo,
+                    });
+                    providerPayload = data?.provider;
+                }
+
+                const provider = normalizeConnectProvider(providerPayload);
+                if (!provider.id) throw new Error("Compte Stripe Connect introuvable.");
+
+                console.log("retrieve provider : ", provider);
+                store.state.auth.provider_id = provider.id;
+                store.state.auth.stripe_provider = provider;
+                state.connect_account_available = true;
+                state.payouts_enabled = provider.payouts_enabled;
+                state.connect_activation_required = provider.activation_required;
+                return { status: 0, provider };
+            } catch (error) {
+                console.error("getProvider error:", error);
+                store.state.auth.provider_id = "";
+                store.state.auth.stripe_provider = null;
+                state.connect_account_available = false;
+                state.payouts_enabled = false;
+                state.connect_activation_required = true;
+                return {
+                    status: 1,
+                    message: error.response?.data?.message || "Impossible d'initialiser le compte de versement.",
+                };
+            }
         },
         async identityChecked({state}){
             try {

@@ -84,6 +84,11 @@ export default {
                     state.provider_id = paymentProfile.provider?.id || "";
                     state.stripe_provider = paymentProfile.provider || null;
                     rootState.profil.payouts_enabled = Boolean(paymentProfile.provider?.payoutsEnabled);
+                    rootState.profil.connect_account_available = Boolean(paymentProfile.provider?.id);
+                    rootState.profil.connect_activation_required = Boolean(
+                        paymentProfile.provider?.activationRequired
+                        ?? !paymentProfile.provider?.onboardingComplete
+                    );
                 } catch (paymentError) {
                     console.error("Payment profile will be initialized on retry:", paymentError);
                 }
@@ -200,6 +205,11 @@ export default {
                             state.provider_id = paymentProfile.provider?.id || "";
                             state.stripe_provider = paymentProfile.provider || null;
                             store.state.profil.payouts_enabled = Boolean(paymentProfile.provider?.payoutsEnabled);
+                            store.state.profil.connect_account_available = Boolean(paymentProfile.provider?.id);
+                            store.state.profil.connect_activation_required = Boolean(
+                                paymentProfile.provider?.activationRequired
+                                ?? !paymentProfile.provider?.onboardingComplete
+                            );
 
                             if (paymentProfile.customer?.card) {
                                 store.state.profil.credit_card.brand = paymentProfile.customer.card.brand;

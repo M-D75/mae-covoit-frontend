@@ -128,14 +128,14 @@
                     class="mx-auto"
                     max-width="344"
                     title="Banque"
-                    :subtitle="payouts_enabled ? 'RIB validée' : 'Aucun RIB enregistré'"
+                    :subtitle="!connect_activation_required ? 'Versements activés' : 'Activation requise pour recevoir vos gains'"
                     prepend-icon="mdi-bank-outline"
                     @click="goToStripe()"
                 >
                     <template v-slot:append>
                         <v-btn
-                            :color="payouts_enabled ? 'green' : 'grey-lighten-1'"
-                            :icon="payouts_enabled ? 'mdi-check-bold' : 'mdi-timer-sand'"
+                            :color="!connect_activation_required ? 'green' : 'grey-lighten-1'"
+                            :icon="!connect_activation_required ? 'mdi-check-bold' : 'mdi-timer-sand'"
                             variant="text"
                         ></v-btn>
                     </template>
@@ -207,7 +207,12 @@
         name: 'identity-comp',
         emits: ["close"],
         computed: {
-            ...mapState("profil", ["userUid", "payouts_enabled", "identity"]),
+            ...mapState("profil", [
+                "userUid",
+                "payouts_enabled",
+                "connect_activation_required",
+                "identity",
+            ]),
             ...mapState("auth", ["provider_id", "stripe_provider"]),
         },
         components: {

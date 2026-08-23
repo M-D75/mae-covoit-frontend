@@ -105,13 +105,14 @@
         <!-- Menu -->
         <div class="menu rigth">
             <v-btn
-                v-if="routes.length > 1"
+                v-if="!isPublicMap && routes.length > 1"
                 icon="mdi-map-marker-path"
                 :disabled="routes.length <= 1"
                 @click="swapRoute()"  
             />
 
             <v-btn 
+                v-if="!isPublicMap"
                 icon
                 @click="$router.push('/message')"
             >
@@ -121,7 +122,7 @@
 
             <v-btn
                 :icon=" shareLocalisation ? 'mdi-map-marker-outline' : 'mdi-map-marker-off-outline'"
-                @click="shareLocalisation = !shareLocalisation; checkSharedLoc()"  
+                @click="toggleOwnLocation"
             />
 
             <v-btn
@@ -134,7 +135,7 @@
             </v-btn>
 
             <v-btn 
-                v-if="mode_driver"
+                v-if="!isPublicMap && mode_driver"
                 icon="mdi-account-group"
                 @click="openPassengerMenu"
             >
@@ -159,7 +160,7 @@
             </v-btn> -->
 
             <v-btn 
-                v-if="!mode_driver && !isBeforeThreshold"
+                v-if="!isPublicMap && !mode_driver && !isBeforeThreshold"
                 icon
                 @click="dialog_annuler = true"
             >
@@ -167,7 +168,7 @@
             </v-btn>
 
             <v-btn 
-                v-else-if="!mode_driver && !passengerConfirmedInCar"
+                v-else-if="!isPublicMap && !mode_driver && !passengerConfirmedInCar"
                 icon
                 @click="InCar()"
             >
@@ -175,7 +176,7 @@
             </v-btn>
 
             <v-chip
-                v-if="!mode_driver && passengerConfirmedInCar"
+                v-if="!isPublicMap && !mode_driver && passengerConfirmedInCar"
                 size="small"
                 color="green-darken-2"
                 prepend-icon="mdi-check-circle"
@@ -191,7 +192,7 @@
                 @click="back()"
             />
             <v-btn 
-                v-if="!open_b"
+                v-if="!isPublicMap && !open_b"
                 icon="mdi-information-slab-circle-outline"
                 @click="openBottomMenuInfos()"
             />
@@ -202,12 +203,12 @@
             :provider="mapProvider"
             :zoom="zoom"
             :center="center"
-            :origin="itineraire.origin"
-            :destination="itineraire.destination"
-            :routes="routes"
-            :route-available="routeAvail"
-            :current-location="currentLocation.current"
-            :shared-locations="localisation"
+            :origin="isPublicMap ? null : itineraire.origin"
+            :destination="isPublicMap ? null : itineraire.destination"
+            :routes="isPublicMap ? [] : routes"
+            :route-available="!isPublicMap && routeAvail"
+            :current-location="shareLocalisation ? currentLocation.current : []"
+            :shared-locations="isPublicMap ? [] : localisation"
             :shared-location-colors="colorsLoc"
             :alerts="activeAlerts"
             :alert-types="alertTypes"
@@ -394,6 +395,9 @@
             ...mapState("profil", ["modeCo", "userUid", "userId", "userName", "profil", "darkMode"]),
             ...mapState("trip", ["tripSelected", "notMessageVue", "chat"]),
             ...mapGetters("search", ["getVillagesByName", "GET_ID_VILLAGE_BY_NAME"]),
+            isPublicMap(){
+                return this.context === 'public';
+            },
             passengerBookings(){
                 if(!this.tripSelected || !Array.isArray(this.tripSelected.bookings)){
                     return [];
@@ -405,6 +409,9 @@
                 return booking ? Boolean(booking.in_car) : false;
             },
             center() {
+                if(this.isPublicMap && Array.isArray(this.currentLocation.current) && this.currentLocation.current.length >= 2){
+                    return this.currentLocation.current;
+                }
                 if(this.routes.length == 0){
                     return [ -12.7850694, 45.1658908 ]
                 }
@@ -470,6 +477,11 @@
             mapProvider: {
                 type: String,
                 default: '',
+            },
+            context: {
+                type: String,
+                default: 'trip',
+                validator: (value) => ['trip', 'public'].includes(value),
             },
             // itineraire: {
             //     type: Object,
@@ -603,7 +615,6 @@
                 alertDuplicateDistanceM: 180,
                 alertCleanupTimer: null,
                 alertIconCache: {},
-                alertChannel: null,
                 selectedAlertId: null,
                 selectedAlertContext: null,
                 alertVoteLoading: false,
@@ -615,17 +626,39 @@
                 noShowProcessingId: null,
         }
     },
-        beforeMount(){
-            let _tmp_village = this.getVillagesByName(this.tripSelected.depart);
-            this.setItineraire("origin", _tmp_village);
-
-            _tmp_village = this.getVillagesByName(this.tripSelected.destination);
-            this.setItineraire("destination", _tmp_village);
-
-            console.log(this.itineraire);
-        },
         async mounted(){
             SafeAreaController.injectCSSVariables();
+
+            // The public map deliberately skips every trip prerequisite. It
+            // only loads the caller's local position and anonymized alerts.
+            if(this.isPublicMap){
+                this.open_b = false;
+                this.mode_driver = false;
+                this.routeAvail = false;
+                this.routes = [];
+                await this.initializeCurrentLocation();
+                this.socket = io(getServerUrl(this.modeCo), {
+                    reconnection: true,
+                    reconnectionDelay: 1000,
+                    reconnectionAttempts: 60,
+                    auth: createSocketAuth(),
+                });
+                this.bindAlertSocket();
+                await this.initializeAlertSync();
+                this.shareLoc();
+                this.overlayLoad = false;
+                return;
+            }
+
+            const villagesReady = await this.getVillages();
+            const originVillage = this.getVillagesByName(this.tripSelected?.depart);
+            const destinationVillage = this.getVillagesByName(this.tripSelected?.destination);
+            if(!villagesReady || !originVillage || !destinationVillage) {
+                this.showError("Les informations géographiques du trajet sont indisponibles.");
+                return;
+            }
+            this.setItineraire("origin", originVillage);
+            this.setItineraire("destination", destinationVillage);
 
             const isPassenger = this.tripSelected && this.tripSelected.driver_id
                 ? this.userUid != this.tripSelected.driver_id
@@ -732,6 +765,8 @@
                 }
             }
 
+            this.bindAlertSocket();
+
             this.socket.on('connect', () => {
                 console.log('Map-Connecté au serveur Socket.IO!');
                 this.overlayLoad = false;
@@ -809,12 +844,64 @@
                 this.watchId = null;
             }
             this.stopAlertCleanupTimer();
-            this.unsubscribeAlertChannel();
+            if (this.socket) {
+                this.socket.off('road-alerts:changed');
+                this.socket.disconnect();
+                this.socket = null;
+            }
         },
         methods: {
             ...mapActions("search", ['getVillages']),
             ...mapActions("trip", ["getContacts"]),
             ...mapMutations("trip", ["SET_NOT_MESSAGE_VUE", "SET_TRIP_SELECTED"]),
+            /** Ask for location once; denial still leaves the public map usable. */
+            async initializeCurrentLocation(){
+                try{
+                    if(isAndroid || isIOS){
+                        await Geolocation.requestPermissions();
+                    }
+                    const coordinates = await Geolocation.getCurrentPosition();
+                    const { latitude, longitude } = coordinates.coords || {};
+                    if(typeof latitude === 'number' && typeof longitude === 'number'){
+                        this.currentLocation.current = [latitude, longitude];
+                    }
+                    const permissions = await Geolocation.checkPermissions();
+                    this.getGeolocalisation = permissions.location === 'granted';
+                }
+                catch(error){
+                    console.warn("Current location unavailable", error?.message || error);
+                    this.getGeolocalisation = false;
+                }
+                if(!this.getGeolocalisation){
+                    this.shareLocalisation = false;
+                    this.dialog = true;
+                }
+            },
+            /** Refresh alerts after a server-side mutation, without DB exposure. */
+            bindAlertSocket(){
+                if(!this.socket) return;
+                this.socket.off('road-alerts:changed');
+                this.socket.on('road-alerts:changed', () => this.fetchRemoteAlerts());
+            },
+            async toggleOwnLocation(){
+                if(this.shareLocalisation){
+                    this.shareLocalisation = false;
+                    if(this.isPublicMap && this.watchId){
+                        await Geolocation.clearWatch({ id: this.watchId });
+                        this.watchId = null;
+                    }
+                    this.checkSharedLoc();
+                    return;
+                }
+
+                if(!this.getGeolocalisation){
+                    await this.initializeCurrentLocation();
+                }
+                if(this.getGeolocalisation){
+                    this.shareLocalisation = true;
+                    this.shareLoc();
+                }
+            },
             updateThresholdCheck() {
                 const departure = new Date(this.tripSelected.departure_time);
                 const diffInMs = departure - this.now;
@@ -1156,6 +1243,10 @@
                 return arr;
             },
             async isLoaded(){
+                if(this.isPublicMap){
+                    this.routeAvail = false;
+                    return;
+                }
                 // const bounds = [this.itineraire.origin.location.latLng.latLngTab, this.itineraire.destination.location.latLng.latLngTab]
                 // if(this.$refs.mapRef){
                 //     this.$refs.mapRef.leafletObject.fitBounds(bounds, {
@@ -1262,6 +1353,9 @@
                 if( !alert ){
                     return false;
                 }
+                if(typeof alert.isOwner === 'boolean'){
+                    return alert.isOwner;
+                }
                 const actorKey = this.getAlertActorKey(this.userId);
                 return actorKey !== null && this.getAlertActorKey(alert.accountId) === actorKey;
             },
@@ -1312,9 +1406,7 @@
                 }
 
                 const typeDef = this.alertTypes.find((item) => item.value === this.selectedAlertType) || this.alertTypes[0];
-                const now = Date.now();
                 const coordinates = [...this.currentLocation.current];
-                const expiresAt = new Date(now + this.alertDurationMs).toISOString();
                 const nearbyAlert = this.findNearbyAlert(typeDef.value, coordinates);
 
                 if( nearbyAlert ){
@@ -1329,24 +1421,16 @@
                 }
 
                 try{
-                    const { data, error } = await supabase
-                        .from('road_alert')
-                        .insert({
-                            trip_id: this.tripSelected?.id || null,
-                            account_id: this.userId,
-                            alert_type: typeDef.value,
+                    const response = await serverRequest('post', '/road-alerts', {
+                        mode: this.modeCo,
+                        data: {
+                            type: typeDef.value,
                             lat: coordinates[0],
                             lng: coordinates[1],
-                            expires_at: expiresAt,
-                        })
-                        .select()
-                        .single();
-
-                    if( error ){
-                        throw error;
-                    }
-
-                    const alert = this.mapAlertRow(data);
+                            tripId: this.isPublicMap ? null : this.tripSelected?.id || null,
+                        },
+                    });
+                    const alert = this.mapAlertRow(response.data?.data?.alert);
                     this.addOrReplaceAlert(alert);
                     this.openAlertDetails(alert, `Signalement "${typeDef.label}" ajouté. Les autres usagers peuvent maintenant le confirmer ou l'infirmer.`);
                     this.showSuccess(`Signalement "${typeDef.label}" ajouté sur la carte.`);
@@ -1367,12 +1451,6 @@
                     return;
                 }
 
-                const actorKey = this.getAlertActorKey(this.userId);
-                if( !actorKey ){
-                    this.showError("Impossible d'identifier votre compte pour ce vote.");
-                    return;
-                }
-
                 const currentVote = this.getAlertVoteState(alert);
                 if( currentVote === vote ){
                     this.showError(vote === 'confirm' ? "Vous avez déjà validé ce signalement." : "Vous avez déjà infirmé ce signalement.");
@@ -1383,35 +1461,12 @@
                 this.alertVoteAction = vote;
 
                 try{
-                    const { error: voteError } = await supabase
-                        .from('road_alert_vote')
-                        .upsert({
-                            road_alert_id: alert.id,
-                            account_id: this.userId,
-                            vote_type: vote,
-                        }, {
-                            onConflict: 'road_alert_id,account_id',
-                        });
-
-                    if( voteError ){
-                        throw voteError;
-                    }
-
-                    if( vote === 'confirm' ){
-                        const { error: alertError } = await supabase
-                            .from('road_alert')
-                            .update({
-                                expires_at: new Date(Date.now() + this.alertDurationMs).toISOString(),
-                            })
-                            .eq('id', alert.id);
-
-                        if( alertError ){
-                            throw alertError;
-                        }
-                    }
-
-                    await this.fetchRemoteAlerts();
-                    const updatedAlert = this.activeAlerts.find((item) => String(item.id) === String(alert.id)) || alert;
+                    const response = await serverRequest('post', `/road-alerts/${alert.id}/vote`, {
+                        mode: this.modeCo,
+                        data: { vote },
+                    });
+                    const updatedAlert = this.mapAlertRow(response.data?.data?.alert) || alert;
+                    this.addOrReplaceAlert(updatedAlert);
                     this.openAlertDetails(updatedAlert);
                     this.showSuccess(vote === 'confirm'
                         ? "Signalement validé. Sa durée a été prolongée."
@@ -1491,37 +1546,13 @@
                 }
             },
             async initializeAlertSync(){
-                if( !this.tripSelected?.id ){
-                    return;
-                }
                 await this.fetchRemoteAlerts();
-                this.subscribeToAlertChannel();
             },
             async fetchRemoteAlerts(){
                 try{
-                    const { data, error } = await supabase
-                        .from('road_alert')
-                        .select(`
-                            id,
-                            alert_type,
-                            lat,
-                            lng,
-                            created_at,
-                            expires_at,
-                            account_id,
-                            confirm_count,
-                            invalidate_count,
-                            road_alert_vote (
-                                account_id,
-                                vote_type
-                            )
-                        `)
-                        .gt('expires_at', new Date().toISOString())
-                        .order('created_at', { ascending: true });
-                    if( error ){
-                        throw error;
-                    }
-                    const alerts = (data || []).map((row) => this.mapAlertRow(row));
+                    const response = await serverRequest('get', '/road-alerts', { mode: this.modeCo });
+                    const rows = response.data?.data?.alerts || [];
+                    const alerts = rows.map((row) => this.mapAlertRow(row)).filter(Boolean);
                     this.activeAlerts = alerts;
                     if( this.selectedAlertId && !alerts.some((alert) => String(alert.id) === String(this.selectedAlertId)) ){
                         this.selectedAlertId = null;
@@ -1533,53 +1564,7 @@
                 }
                 catch(error){
                     console.error("fetchRemoteAlerts error", error);
-                }
-            },
-            subscribeToAlertChannel(){
-                this.unsubscribeAlertChannel();
-                this.alertChannel = supabase.channel('road_alert_global');
-
-                this.alertChannel.on(
-                    'postgres_changes',
-                    { event: 'INSERT', schema: 'public', table: 'road_alert' },
-                    async () => {
-                        await this.fetchRemoteAlerts();
-                    }
-                );
-
-                this.alertChannel.on(
-                    'postgres_changes',
-                    { event: 'UPDATE', schema: 'public', table: 'road_alert' },
-                    async () => {
-                        await this.fetchRemoteAlerts();
-                    }
-                );
-
-                this.alertChannel.on(
-                    'postgres_changes',
-                    { event: 'DELETE', schema: 'public', table: 'road_alert' },
-                    (payload) => {
-                        const alertId = payload?.old?.id;
-                        if( alertId ){
-                            this.removeAlertById(alertId);
-                        }
-                    }
-                );
-
-                this.alertChannel.on(
-                    'postgres_changes',
-                    { event: '*', schema: 'public', table: 'road_alert_vote' },
-                    async () => {
-                        await this.fetchRemoteAlerts();
-                    }
-                );
-
-                this.alertChannel.subscribe();
-            },
-            unsubscribeAlertChannel(){
-                if( this.alertChannel ){
-                    this.alertChannel.unsubscribe();
-                    this.alertChannel = null;
+                    this.showError("Impossible de charger les signalements.");
                 }
             },
             mapAlertRow(row){
@@ -1588,23 +1573,24 @@
                 }
                 const votes = Array.isArray(row.road_alert_vote) ? row.road_alert_vote : [];
                 const actorKey = this.getAlertActorKey(this.userId);
-                const currentVote = actorKey
+                const legacyCurrentVote = actorKey
                     ? votes.find((vote) => this.getAlertActorKey(vote.account_id) === actorKey)?.vote_type || ""
                     : "";
-                const confirmCount = Number.isInteger(row.confirm_count)
-                    ? row.confirm_count
+                const confirmCount = Number.isInteger(row.confirmCount ?? row.confirm_count)
+                    ? row.confirmCount ?? row.confirm_count
                     : votes.filter((vote) => vote.vote_type === 'confirm').length;
-                const invalidateCount = Number.isInteger(row.invalidate_count)
-                    ? row.invalidate_count
+                const invalidateCount = Number.isInteger(row.invalidateCount ?? row.invalidate_count)
+                    ? row.invalidateCount ?? row.invalidate_count
                     : votes.filter((vote) => vote.vote_type === 'invalidate').length;
                 return {
                     id: row.id,
-                    type: row.alert_type,
-                    coordinates: [row.lat, row.lng],
-                    createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
-                    expiresAt: row.expires_at ? new Date(row.expires_at).getTime() : Date.now() + this.alertDurationMs,
+                    type: row.type || row.alert_type,
+                    coordinates: Array.isArray(row.coordinates) ? row.coordinates : [row.lat, row.lng],
+                    createdAt: new Date(row.createdAt || row.created_at || Date.now()).getTime(),
+                    expiresAt: new Date(row.expiresAt || row.expires_at || Date.now() + this.alertDurationMs).getTime(),
+                    isOwner: Boolean(row.isOwner),
                     accountId: row.account_id || null,
-                    currentUserVote: currentVote,
+                    currentUserVote: row.currentUserVote || legacyCurrentVote,
                     confirmCount,
                     invalidateCount,
                 };
@@ -1646,6 +1632,9 @@
                 }
             },
             checkSharedLoc(){
+                if(this.isPublicMap){
+                    return;
+                }
                 if(!this.shareLocalisation){
                     if(this.mode_driver){
                         for (let index = 0; index < this.contacts.length; index++) {
@@ -1704,12 +1693,14 @@
                         const coordinates = await Geolocation.getCurrentPosition();
                         const { latitude, longitude } = coordinates.coords;
                         const currentPosition = [latitude, longitude]; // Obtenez la position actuelle
-                        this.updatePassedPoints(currentPosition);
-                        this.updateRemainingEstimates(currentPosition);
+                        if(!this.isPublicMap){
+                            this.updatePassedPoints(currentPosition);
+                            this.updateRemainingEstimates(currentPosition);
+                        }
 
                         this.currentLocation.current = [latitude, longitude];
 
-                        if (this.shareLocalisation && this.socket) {
+                        if (!this.isPublicMap && this.shareLocalisation && this.socket) {
                             if(this.mode_driver){
                                 for (let index = 0; index < this.contacts.length; index++) {
                                     let newLoc = {
@@ -1733,7 +1724,9 @@
                                 this.socket.emit("send-localisation", newLoc);
                             }
                         }
-                        this.checkAndRerouteIfNeeded(currentPosition);
+                        if(!this.isPublicMap){
+                            this.checkAndRerouteIfNeeded(currentPosition);
+                        }
                     }
 
                 }.bind(this), 10000); // Met à jour toutes les secondes, par exemple
@@ -1762,9 +1755,9 @@
                     this.socket.emit("send-localisation", newLoc);
                 }
             },
-            shareLoc(){
-                if( this.getGeolocalisation ){
-                    this.watchId = Geolocation.watchPosition({}, async (position, err) => {
+            async shareLoc(){
+                if( this.getGeolocalisation && !this.watchId ){
+                    this.watchId = await Geolocation.watchPosition({}, async (position, err) => {
                         if (err) {
                             this.handleServerError(err, "Erreur lors de la mise à jour de votre position.");
                             return;
@@ -1777,11 +1770,13 @@
                             return;
                         }
                         const currentPosition = [latitude, longitude]; // Obtenez la position actuelle
-                        this.updatePassedPoints(currentPosition);
+                        if(!this.isPublicMap){
+                            this.updatePassedPoints(currentPosition);
+                        }
 
                         this.currentLocation.current = [latitude, longitude];
 
-                        if (this.shareLocalisation && this.socket) {
+                        if (!this.isPublicMap && this.shareLocalisation && this.socket) {
                             if(this.mode_driver){
                                 for (let index = 0; index < this.contacts.length; index++) {
                                     let newLoc = {
@@ -2058,14 +2053,16 @@
                 return distance < seuil;
             },
             back(){
-                window.location = "/profil";
+                this.$router.push(this.isPublicMap ? '/search' : '/profil');
             },
             setItineraire(loc, infoVillage){
+                if(!this.itineraire?.[loc] || !infoVillage) return false;
                 this.itineraire[loc].infos.village = infoVillage.village;
                 this.itineraire[loc].infos.commune = infoVillage.commune;
                 this.itineraire[loc].location.latLng.latitude = infoVillage.lat;
                 this.itineraire[loc].location.latLng.longitude = infoVillage.lon;
                 this.itineraire[loc].location.latLng.latLngTab = [infoVillage.lat, infoVillage.lon];
+                return true;
             },
             async updateName(userUid){
                 //Check if account are created
@@ -2084,6 +2081,9 @@
         watch: {
             tripSelected: {
                 handler(newTrip, oldTrip){
+                    if(this.isPublicMap){
+                        return;
+                    }
                     this.ensurePassengerBookings();
                     if( newTrip?.id && (!oldTrip || newTrip.id !== oldTrip.id) ){
                         this.initializeAlertSync();

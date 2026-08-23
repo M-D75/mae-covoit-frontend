@@ -21,6 +21,7 @@ import ProfilMember from '@/views/profil/ProfilMember.vue'
 import Test from '@/views/Test.vue'
 import StripeCheckout from '@/views/StripeCheckout.vue'
 import Rating from '@/views/Rating.vue'
+import RoadAlerts from '@/views/RoadAlerts.vue'
 
 
 const routes = [
@@ -111,6 +112,12 @@ const routes = [
     {
         path: '/search',
         component: HomeSearch,
+        meta: { requiresAuth: true, bottomNav: true },
+    },
+    {
+        path: '/road-alerts',
+        name: 'road-alerts',
+        component: RoadAlerts,
         meta: { requiresAuth: true, bottomNav: true },
     },
     {

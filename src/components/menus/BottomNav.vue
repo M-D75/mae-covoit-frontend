@@ -38,7 +38,7 @@
             color: var(--gray-icon-color);
             font-weight: bold;
             flex-grow: 0;
-            width: 33%;
+            width: 25%;
         }
 
         .v-btn__content {
@@ -67,10 +67,19 @@
             Recherche
         </v-btn>
 
-        <v-btn 
+        <v-btn
             :active="false"
             :ripple="false"
             :class="{ selected: value == 1}">
+            <v-icon>mdi-map-marker-alert</v-icon>
+
+            Carte
+        </v-btn>
+
+        <v-btn
+            :active="false"
+            :ripple="false"
+            :class="{ selected: value == 2}">
             <v-icon>mdi-plus-circle</v-icon>
 
             Publier
@@ -79,7 +88,7 @@
         <v-btn 
             :active="false"
             :ripple="false"
-            :class="{ selected: value == 2}">
+            :class="{ selected: value == 3}">
             <v-icon>mdi-account-circle</v-icon>
 
             Profil
@@ -107,19 +116,7 @@
             }
         },
         beforeMount (){
-            switch (this.$router.currentRoute._rawValue.path) {
-                case '/search':
-                    this.value=0;
-                    break;
-                case '/publish':
-                    this.value=1;
-                    break;
-                case '/publish/select-car':
-                    this.value=1;
-                    break;       
-                default:
-                    this.value=2;
-            }
+            this.value = this.routeIndex(this.$route.path);
 
             if(isIOS)
                 this.barBottom = 10;
@@ -131,23 +128,16 @@
             // this.initStatusBarHeight();
         },
         methods: {
+            routeIndex(path){
+                if(path === '/search') return 0;
+                if(path === '/road-alerts') return 1;
+                if(path === '/publish' || path === '/publish/select-car') return 2;
+                return 3;
+            },
             keep_menu_selected(){
                 console.log("Nav : ", this.$router.currentRoute._rawValue.path)
-
-                if (this.value == undefined) {
-                    switch (this.$router.currentRoute._rawValue.path) {
-                        case '/search':
-                            this.value=0;
-                            break;
-                        case '/publish':
-                            this.value=1;
-                            break;
-                        case '/publish/select-car':
-                            this.value=1;
-                            break;           
-                        default:
-                            this.value=2;
-                    }
+                if(this.value == undefined){
+                    this.value = this.routeIndex(this.$route.path);
                 }
             },
             async initStatusBarHeight(){
@@ -171,6 +161,9 @@
                         this.$router.push("/search");
                         break;
                     case 1:
+                        this.$router.push("/road-alerts");
+                        break;
+                    case 2:
                         if(this.$router.currentRoute._rawValue.path != "/publish/select-car"){
                             this.$router.push("/publish");
                         }
@@ -183,9 +176,7 @@
             },
             $route(to, from) {
                 console.log("route-from", from.path, "to", to.path);
-                if(to.path == "/profil/perso/open-add-vehicle" || to.path == "/profil/perso/open-check-identiy"){
-                    this.value = 2;
-                }
+                this.value = this.routeIndex(to.path);
                 // switch (to) {
                 //     case '':
                 //         this.$router.push("/search");
@@ -204,5 +195,3 @@
         },
     };
 </script>
-
-

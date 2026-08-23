@@ -64,13 +64,21 @@ export default {
     },
     getters: {
         getVillagesByName: (state) => (name) => {
-            return state.villages.find(infoVillage => infoVillage.village.toLowerCase() == name.toLowerCase());
+            const normalizedName = String(name || '').trim().toLowerCase();
+            if(!normalizedName) return undefined;
+            return state.villages.find(
+                (infoVillage) => String(infoVillage?.village || '').toLowerCase() === normalizedName
+            );
         },
         GET_ID_VILLAGE_BY_NAME: (state) => (name) => {
-            return state.villages.find(infoVillage => infoVillage.village.toLowerCase() == name.toLowerCase()).id;
+            const normalizedName = String(name || '').trim().toLowerCase();
+            const village = state.villages.find(
+                (infoVillage) => String(infoVillage?.village || '').toLowerCase() === normalizedName
+            );
+            return village?.id ?? null;
         },
         GET_VILLAGE_BY_ID: (state) => (id) => {
-            return state.villages.find(infoVillage => infoVillage.id == id).village;
+            return state.villages.find((infoVillage) => infoVillage?.id == id)?.village || '';
         },
         GET_ACCOUNTS: (state) => {
             return state.accounts
@@ -172,12 +180,13 @@ export default {
             console.log("travelList Fake", travelList);
 
         },
-        async getTrajets({ commit, getters }) {
+        async getTrajets({ commit, getters, dispatch }) {
             const sessionChecked = await store.dispatch("auth/checkSessionOnly");
             if(!sessionChecked){
                 router.replace("/login");
                 return;
             }
+            if(!await dispatch('getVillages')) return false;
 
             const { data: trips, error } = await executeTripSearch((withCancellationFilter) => {
                 let query = supabase
@@ -252,12 +261,13 @@ export default {
 
             return true
         },
-        async getTrajetsDate({ commit, getters }, infos) {
+        async getTrajetsDate({ commit, getters, dispatch }, infos) {
             const sessionChecked = await store.dispatch("auth/checkSessionOnly");
             if(!sessionChecked){
                 router.replace("/login");
                 return;
             }
+            if(!await dispatch('getVillages')) return false;
 
             const tomorow = tomorowDate(infos.date);
 
@@ -334,11 +344,14 @@ export default {
 
             return true
         },
-        async getTrajetsId({ commit, getters }, infos) {
+        async getTrajetsId({ commit, getters, dispatch }, infos) {
             const sessionChecked = await store.dispatch("auth/checkSessionOnly");
             if(!sessionChecked){
                 router.replace("/login");
                 return;
+            }
+            if(!await dispatch('getVillages')) {
+                return {status: 1, data: null};
             }
 
             console.log("infos", infos, infos.user_uid, formaterDateUTC(new Date()), parseInt(infos.ids));
@@ -434,11 +447,15 @@ export default {
 
             return {status: 0, data: account}
         },
-        async getOwnTrip({ getters, commit }) {
+        async getOwnTrip({ getters, commit, dispatch }) {
             const sessionChecked = await store.dispatch("auth/checkSessionOnly");
             if(!sessionChecked){
                 router.replace("/login");
                 return;
+            }
+            if(!await dispatch('getVillages')) {
+                commit('SET_TRAJETS', []);
+                return {status: 1, message: "Impossible de charger les villages."};
             }
 
             const currentDate = new Date();
