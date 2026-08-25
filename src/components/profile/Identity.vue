@@ -196,6 +196,8 @@
 <script>
     import { defineComponent } from 'vue';
     import { mapState, mapActions } from 'vuex';
+    import { Browser } from '@capacitor/browser';
+    import { Capacitor } from '@capacitor/core';
     import { serverRequest } from '@/utils/serverApi.js';
 
     let stripePromise;
@@ -315,12 +317,29 @@
                 }
             },
             async goToStripe(){
-                const { data: accountLink } = await serverRequest('post', '/connect/onboarding-link', {
-                    mode: this.$store.state.profil.modeCo,
-                });
+                try {
+                    const isNative = Capacitor.isNativePlatform();
+                    const { data: response } = await serverRequest('post', '/connect/onboarding-link', {
+                        mode: this.$store.state.profil.modeCo,
+                        data: { client: isNative ? 'mobile' : 'web' },
+                    });
+                    const accountLink = response?.data || response;
+                    if (!accountLink?.url) {
+                        throw new Error("Lien Stripe Connect manquant.");
+                    }
 
-                console.log("accountLink", accountLink);
-                window.location.href = accountLink.url;
+                    if (isNative) {
+                        await Browser.open({ url: accountLink.url });
+                    } else {
+                        window.location.assign(accountLink.url);
+                    }
+                } catch (error) {
+                    console.error("goToStripe error:", error);
+                    this.showSnackbarMessage(
+                        2,
+                        error.response?.data?.message || "Impossible d'ouvrir l'inscription Stripe."
+                    );
+                }
             },
             showSnackbarMessage(mode, message){
                 console.log("mess", mode, message);

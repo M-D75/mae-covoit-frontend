@@ -73,8 +73,9 @@
         position: fixed;
         width: 100%;
         height: 50px;
-        z-index: 99999;
-        cursor: pointer;
+        z-index: 2101;
+        cursor: grab;
+        touch-action: none;
         &.dragging, &.active {
             border: none;
         }
@@ -92,11 +93,19 @@
         width: 100%;
         max-width: 100%;
         max-height: calc(100vh - 16px);
+        max-height: calc(100dvh - 16px);
         overflow: hidden;
+        z-index: 2100;
+        transition: top 220ms cubic-bezier(0.22, 1, 0.36, 1);
+        will-change: top;
+        &.is-dragging{
+            transition: none;
+        }
         .sub-cont {
             height: max-content;
             min-height: 0;
             max-height: calc(100vh - 180px);
+            max-height: calc(100dvh - 96px);
             overflow-y: auto;
             overscroll-behavior: contain;
             -webkit-overflow-scrolling: touch;
@@ -574,7 +583,7 @@
 
     <vue3-draggable-resizable
         class-name="draggable"
-        :class="className"
+        :class="[...className, {closed: !open_b}]"
         v-model:x="x"
         v-model:y="y"
         :axis="'y'"
@@ -585,6 +594,7 @@
         :disabledY="disabledY"
         :disabledW="true"
         :disabledH="true"
+        @drag-start="onDragStart"
         @dragging="onDrag"
         @drag-end="onDragStop"
     >
@@ -593,7 +603,8 @@
     <!--  -->
     <v-container
         class="bottom-menu"
-        :class="className.join(' ')"
+        :class="[...className, {closed: !open_b, 'is-dragging': isDragging}]"
+        :style="{top: `${y}px`}"
     >
         <div class="sub-cont" :class="className.join(' ')" ref="subCont">
 
@@ -602,7 +613,7 @@
             <!-- Map -->
             
             <div 
-                v-if="mode=='map'"
+                v-if="mode=='map' && showRouteInfo"
                 class="map"
             >
                 <div class="infos-route">
@@ -859,7 +870,7 @@
         <div class="sub-cont-sup" :class="className.join(' ')" ref="subContSup">
             <!-- Map -->
             <div
-                v-if="mode=='map'"
+                v-if="mode=='map' && showRouteInfo"
                 class="map"
             >
                 <v-card
@@ -926,11 +937,11 @@
 <!--  -->
 <script>
     import { defineComponent } from 'vue';
-    import $ from 'jquery';
     //import supabase from '@/utils/supabaseClient';
 
     // Components
     import Vue3DraggableResizable from 'vue3-draggable-resizable';
+    import { clampSheetTop, selectSheetSnap } from '@/utils/bottomSheet.js';
     
 
     export default defineComponent({
@@ -988,6 +999,10 @@
                         destination: "Mamoudzou"
                     };
                 },
+            },
+            showRouteInfo: {
+                type: Boolean,
+                default: true,
             },
             about: {
                 type: String,
@@ -1067,11 +1082,16 @@
                 active: true,
                 disabledY: false,
                 sizeScreen: 0,
-                move: false,
-                marge_bar: 30,
+                isDragging: false,
+                sheetState: "closed",
+                dragStartY: 0,
+                dragStartState: "closed",
                 subContHeigth: 0,
                 subContSupHeigth: 0,
                 open_b: false,
+                contentResizeObserver: null,
+                contentResizeFrame: null,
+                viewportResizeFrame: null,
                 showSnackbarError: false,
                 messageSnackbarError: "",
                 showSnackbarSuccess: false,
@@ -1081,33 +1101,90 @@
         mounted() {
             this.refreshSheetMetrics();
             this.y = this.sizeScreen;
-            
-            const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
-            $(classBottomMenuNameJquery).css("top", `${this.y}px`);
-
-            
-            $(classBottomMenuNameJquery).addClass("closed");
-            
-            $("div.sub-label-color").addClass("warn-good-to-low");
-            // if(this.mode=="password"){
-            //     this.open();
-            //     this.messageSnackbarError = "test";
-            //     this.showSnackbarError = true;
-            // }
+            if(typeof ResizeObserver !== 'undefined'){
+                this.contentResizeObserver = new ResizeObserver(this.scheduleContentReposition);
+                if(this.$refs.subCont){
+                    this.contentResizeObserver.observe(this.$refs.subCont);
+                }
+                if(this.$refs.subContSup){
+                    this.contentResizeObserver.observe(this.$refs.subContSup);
+                }
+            }
+            window.addEventListener('resize', this.scheduleViewportReposition);
+            window.visualViewport?.addEventListener('resize', this.scheduleViewportReposition);
+        },
+        beforeUnmount(){
+            this.contentResizeObserver?.disconnect();
+            window.removeEventListener('resize', this.scheduleViewportReposition);
+            window.visualViewport?.removeEventListener('resize', this.scheduleViewportReposition);
+            if(this.contentResizeFrame){
+                cancelAnimationFrame(this.contentResizeFrame);
+            }
+            if(this.viewportResizeFrame){
+                cancelAnimationFrame(this.viewportResizeFrame);
+            }
         },
         methods: {
             refreshSheetMetrics(){
-                this.sizeScreen = $(window).innerHeight();
-                this.subContHeigth = this.$refs.subCont ? this.$refs.subCont.clientHeight : 0;
-                this.subContSupHeigth = this.$refs.subContSup ? this.$refs.subContSup.clientHeight : 0;
+                this.sizeScreen = Math.round(window.visualViewport?.height || window.innerHeight || 0);
+                // scrollHeight measures the real content even when the sheet is
+                // currently clipped in its preview position.
+                this.subContHeigth = this.$refs.subCont ? this.$refs.subCont.scrollHeight : 0;
+                this.subContSupHeigth = this.$refs.subContSup ? this.$refs.subContSup.scrollHeight : 0;
             },
-            getOpenTopPosition(){
+            getSafeTop(){
+                const styles = getComputedStyle(document.documentElement);
+                const inset = Number.parseFloat(styles.getPropertyValue('--safe-area-inset-top')) || 0;
+                return Math.max(16, inset + 12);
+            },
+            getExpandedTopPosition(){
                 this.refreshSheetMetrics();
-                const visibleHeight = Math.min(
-                    this.subContHeigth + this.subContSupHeigth,
-                    Math.max(this.sizeScreen - 100, 240)
+                const safeTop = this.getSafeTop();
+                const naturalHeight = Math.max(
+                    180,
+                    this.subContHeigth + this.subContSupHeigth + 32
                 );
-                return Math.max(16, this.sizeScreen - (visibleHeight + 50));
+                const visibleHeight = Math.min(naturalHeight, this.sizeScreen - safeTop);
+                return Math.max(safeTop, this.sizeScreen - visibleHeight);
+            },
+            getPeekTopPosition(){
+                const expandedTop = this.getExpandedTopPosition();
+                const naturalHeight = this.sizeScreen - expandedTop;
+                const desiredHeight = this.mode === 'alert'
+                    ? Math.min(480, Math.max(320, this.sizeScreen * 0.48))
+                    : Math.min(420, Math.max(260, this.sizeScreen * 0.4));
+                const peekHeight = Math.min(naturalHeight, desiredHeight);
+                return Math.max(expandedTop, this.sizeScreen - peekHeight);
+            },
+            getInitialSheetState(){
+                return this.mode === 'alert' ? 'peek' : 'expanded';
+            },
+            getPositionForState(state){
+                if(state === 'expanded') return this.getExpandedTopPosition();
+                if(state === 'peek') return this.getPeekTopPosition();
+                return this.sizeScreen;
+            },
+            setSheetState(state){
+                this.sheetState = state;
+                this.y = Math.round(this.getPositionForState(state));
+            },
+            scheduleContentReposition(){
+                if(!this.open_b || this.isDragging || this.contentResizeFrame) return;
+                this.contentResizeFrame = requestAnimationFrame(() => {
+                    this.contentResizeFrame = null;
+                    const nextY = Math.round(this.getPositionForState(this.sheetState));
+                    if(Math.abs(nextY - this.y) > 1){
+                        this.y = nextY;
+                    }
+                });
+            },
+            scheduleViewportReposition(){
+                if(this.viewportResizeFrame) return;
+                this.viewportResizeFrame = requestAnimationFrame(() => {
+                    this.viewportResizeFrame = null;
+                    this.refreshSheetMetrics();
+                    this.y = Math.round(this.getPositionForState(this.open_b ? this.sheetState : 'closed'));
+                });
             },
             alertTypeByValue(value){
                 return this.alertTypes.find((type) => type.value === value) || null;
@@ -1144,160 +1221,97 @@
                 }
                 return "P";
             },
-            onDrag(pos) {
-                
-                const posOpenY = this.getOpenTopPosition();
-                // console.log("pos", pos, posOpenY - 20);
-                if(pos.y > posOpenY - 20){
-                    this.move = true;
-                    this.active = false;
+            onDragStart(pos) {
+                if(!this.open_b) return;
 
-                    const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${Object.keys(this.className).join(".")}` : ".bottom-menu";
-                    
-                    $(classBottomMenuNameJquery).css("top", `${pos.y}px`);
-                    const classBottomMenuNameJqueryDraggable = this.className != "" && this.className != null ? `.draggable.${this.className.join(".")}` : ".draggable";
-                    
-                    $(classBottomMenuNameJqueryDraggable).addClass("open");
-                    if (pos.y >= this.sizeScreen - this.marge_bar) {
-                        this.close();
-                    }
-                }
-                else{
-                    this.draggableBar = false;
-                    this.disabledY = true;
-                }
+                this.isDragging = true;
+                this.dragStartY = Number.isFinite(Number(pos?.y))
+                    ? Number(pos.y)
+                    : this.y;
+                this.dragStartState = this.sheetState;
+            },
+            onDrag(pos) {
+                if(!this.open_b) return;
+                this.isDragging = true;
+                this.disabledY = false;
+
+                const expandedTop = this.getExpandedTopPosition();
+                this.y = Math.round(clampSheetTop(pos.y, expandedTop, this.sizeScreen));
             },
             onDragStop(pos) {
+                if(!this.open_b) return;
+                this.isDragging = false;
+                this.active = true;
+                this.disabledY = false;
 
-                const _this = this;
-                if ( ! this.move ) {
-                    const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
-
-                    if ( pos.y >= this.sizeScreen-this.marge_bar && !$(classBottomMenuNameJquery).hasClass("closed") ) {
-                        this.open();
-                        setTimeout(function(){
-                            const classBottomMenuNameJqueryDraggable = _this.className != "" && _this.className != null ? `.draggable.${_this.className.join(".")}` : ".draggable";
-                            $(classBottomMenuNameJqueryDraggable).addClass("open")
-                        }, 100)
-                    }
-                    else if( ! $(classBottomMenuNameJquery).hasClass("closed") ){
-                        console.log("onDragStop")
-                        this.close();
-                    }
-                    
-                    $(classBottomMenuNameJquery).animate({"top": `${this.y}px`}, "fast");
-                }
-                else if ( this.move ) {
-                    if ( pos.y >= this.sizeScreen - this.marge_bar ) {
-                        this.disabledY = false;
-                        this.y = this.sizeScreen - this.marge_bar;
-                    }
-                    setTimeout(function(){
-                        const classBottomMenuNameJqueryDraggable = _this.className != "" && _this.className != null ? `.draggable.${_this.className.join(".")}` : ".draggable";
-                        $(classBottomMenuNameJqueryDraggable).addClass("open")
-                    }, 100)
+                const expandedTop = this.getExpandedTopPosition();
+                const peekTop = this.getPeekTopPosition();
+                const targetState = selectSheetSnap({
+                    releasedY: pos.y,
+                    expandedTop,
+                    peekTop,
+                    viewportHeight: this.sizeScreen,
+                    originY: this.dragStartY,
+                    originState: this.dragStartState,
+                });
+                this.dragStartY = 0;
+                this.dragStartState = 'closed';
+                if(targetState === 'closed'){
+                    this.close();
+                    return;
                 }
 
-                const posOpenY = this.getOpenTopPosition();
-                if(pos.y <= posOpenY - 20){
-                    _this.draggableBar = true;
-                    _this.disabledY = false;
-                    this.y = posOpenY;
-
-                    console.log("y", this.y, this.subContHeigth, this.subContSupHeigth);
-
-                    const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
-                    $(classBottomMenuNameJquery).animate({"top": `${_this.y}px`}, "fast", function(){
-                        // _this.draggableBar = true;
-                        // _this.disabledY = false;
-                        _this.y = parseInt($(this).css("top").replace("px", ""));
-                        _this.move = false;
-                    });
-                }
-
-                this.move = false;
+                // Never retain a random intermediate position: release always
+                // snaps to either the content-sized expanded state or preview.
+                this.setSheetState(targetState);
             },
             async open(){
                 await this.$nextTick();
                 this.refreshSheetMetrics();
-
-                if( this.move ){
-                    return this.open_b;
-                }
-
-                if( this.open_b ){
-                    return true;
-                }
-
-                const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
-                $(classBottomMenuNameJquery).removeClass("closed");
-
-                this.move = true;
-                this.disabledY = false;
-                this.y = this.getOpenTopPosition();
-                const _this = this;
-
-                $(classBottomMenuNameJquery).animate({"top": `${_this.y}px`}, "fast", function(){
-                    _this.y = parseInt($(this).css("top").replace("px", ""));
-                    _this.move = false;
-                    _this.$emit('opened');
-                });
-
+                const wasOpen = this.open_b;
                 this.open_b = true;
+                this.isDragging = false;
+                this.dragStartY = 0;
+                this.dragStartState = 'closed';
+                this.active = true;
+                this.disabledY = false;
+                this.setSheetState(this.getInitialSheetState());
+                if(!wasOpen){
+                    this.$emit('opened');
+                }
                 return true;
             },
             async openMiddle(){
                 await this.$nextTick();
                 this.refreshSheetMetrics();
-
-                if( this.move ){
-                    return this.open_b;
-                }
-
-                if( this.open_b ){
-                    return true;
-                }
-
-                this.move = true;
-                const _this = this;
+                const wasOpen = this.open_b;
+                this.open_b = true;
+                this.isDragging = false;
+                this.dragStartY = 0;
+                this.dragStartState = 'closed';
+                this.active = true;
                 this.disabledY = false;
-                this.y = this.sizeScreen / 2;
-                const classBottomMenuNameJquery =  this.className != null && this.className.length != 0 ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
-
-                $(classBottomMenuNameJquery).removeClass("closed");
-                $(classBottomMenuNameJquery).animate({"top": `${this.y}px`}, "fast", function(){
-                    _this.open_b = true;
-                    _this.move = false;
-                    _this.$emit("opened");
-                });
-
+                this.setSheetState('peek');
+                if(!wasOpen){
+                    this.$emit('opened');
+                }
                 return true;
             },
             close(){
-                
-                if( ! this.move && this.open_b ){
-                    this.move = true;
+                if(!this.open_b) return false;
 
-                    this.y = this.sizeScreen;
-                    
-                    const _this = this;
-                    const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
-                    
-                    $(classBottomMenuNameJquery).animate({"top": `${this.y}px`}, "fast", function(){
-                        $(this).addClass("closed");
-                        _this.move = false;
+                this.isDragging = false;
+                this.dragStartY = 0;
+                this.dragStartState = 'closed';
+                this.open_b = false;
+                this.setSheetState('closed');
 
-                        //reload if trajet reserved and closed
-                        if( _this.mode == "reserve" && _this.notif ){
-                            _this.$router.replace("/")
-                        }
-                        _this.$emit('close');
-                    });
-
-                    this.open_b = false;
+                // Reload only for the legacy reservation notification flow.
+                if(this.mode === "reserve" && this.notif){
+                    this.$router.replace("/");
                 }
-
-                return this.open_b;
+                this.$emit('close');
+                return false;
             },
             emit(value){
                 if( value == "time-valided" ){
@@ -1316,9 +1330,11 @@
             },
         },
         watch:{
-            y(){
-                const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
-                $(classBottomMenuNameJquery).css("top", `${this.y}px`);
+            mode(){
+                if(!this.open_b) return;
+                this.$nextTick(() => {
+                    this.setSheetState(this.getInitialSheetState());
+                });
             },
         }
    });

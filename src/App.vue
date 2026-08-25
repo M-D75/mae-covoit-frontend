@@ -113,6 +113,7 @@
     import { Capacitor } from '@capacitor/core';
     import { Plugins } from '@capacitor/core';
     import { App } from '@capacitor/app';
+    import { Browser } from '@capacitor/browser';
 
     // TODO : à supprimé quand eddine aura finit
 
@@ -145,12 +146,18 @@
         data: () => ({
             isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
             isSmallScreen: window.matchMedia("(max-width: 600px)").matches,
+            appStateListener: null,
+            appUrlOpenListener: null,
+            handlingStripeConnectReturn: false,
         }),
         beforeMount(){
             // console.log("[App] beforeMount")
         },
         async mounted(){
-            App.addListener('appStateChange', this.handleAppStateChange);
+            this.appStateListener = await App.addListener('appStateChange', this.handleAppStateChange);
+            // This listener lives at application level because Stripe can
+            // return while any profile component is mounted or recreated.
+            this.appUrlOpenListener = await App.addListener('appUrlOpen', this.handleAppUrlOpen);
             // const account = await stripe.accounts.retrieve('acct_1OUWQcI3Nt412vf3');
 
             // await stripe.charges.create({
@@ -376,7 +383,8 @@
         },
         beforeUnmount() {
             window.removeEventListener('resize', this.updateIsSmallScreen);
-            App.removeListener('appStateChange', this.handleAppStateChange);
+            this.appStateListener?.remove();
+            this.appUrlOpenListener?.remove();
         },
         methods: {
             ...mapActions("search", ["getOwnTrajetsEk", "getTrajetsEk", "getVillages"]),
@@ -391,6 +399,38 @@
                 else {
                     console.log("[App] L'application est en arrière-plan");
                     this.SET_APP_IS_ACTIVE({app: state.isActive, search: false});
+                }
+            },
+            async handleAppUrlOpen(data) {
+                let incomingUrl;
+                try {
+                    incomingUrl = new URL(data?.url || '');
+                } catch (_error) {
+                    return;
+                }
+
+                const expectedScheme = process.env.VUE_APP_MOBILE_URL_SCHEME || 'ekko-vi-shimago-app';
+                const isStripeReturn = incomingUrl.protocol === `${expectedScheme}:`
+                    && incomingUrl.hostname === 'callback'
+                    && incomingUrl.pathname === '/stripe-connect';
+                if (!isStripeReturn || this.handlingStripeConnectReturn) return;
+
+                this.handlingStripeConnectReturn = true;
+                try {
+                    // iOS keeps its in-app browser open until it is explicitly
+                    // closed. Android safely ignores close when already closed.
+                    await Browser.close().catch(() => undefined);
+                    await this.$router.replace({
+                        path: '/profil/perso',
+                        query: { stripe_connect: 'returned' },
+                    });
+                    // A return URL only means that the user left Stripe. Stripe
+                    // remains the source of truth for the onboarding status.
+                    await this.$store.dispatch('profil/getProvider');
+                } catch (error) {
+                    console.error('[App] Stripe Connect return error:', error);
+                } finally {
+                    this.handlingStripeConnectReturn = false;
                 }
             },
             updateIsSmallScreen() {

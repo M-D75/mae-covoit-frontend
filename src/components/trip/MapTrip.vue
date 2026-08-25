@@ -237,6 +237,7 @@
         :mode="bottomMenuMode"
         :class-name="['alert']"
         :mapInfos="{time: itin.duration, distance: itin.distance, depart: itineraire['origin'].infos.commune, destination: itineraire['destination'].infos.commune, infosSup: 'Le plus rapide selon l\'etat actuel de la circulation'}"
+        :show-route-info="!isPublicMap"
         :alert-types="alertTypeItems"
         :selected-alert-type="selectedAlertType"
         :alert-duration-label="alertDurationLabel"
@@ -633,6 +634,7 @@
             // only loads the caller's local position and anonymized alerts.
             if(this.isPublicMap){
                 this.open_b = false;
+                this.bottomMenuMode = 'alert';
                 this.mode_driver = false;
                 this.routeAvail = false;
                 this.routes = [];
@@ -1283,11 +1285,19 @@
                 }
             },
             openBottomMenuInfos(){
+                if(this.isPublicMap){
+                    return;
+                }
                 this.switchToMapMenu();
             },
             openAlertMenu(){
                 if( this.currentModeButton === 'alert' && this.open_b ){
-                    this.switchToMapMenu();
+                    if(this.isPublicMap){
+                        this.$refs.BottomMenuRef?.close();
+                    }
+                    else{
+                        this.switchToMapMenu();
+                    }
                     return;
                 }
                 this.selectedAlertId = null;
@@ -1309,6 +1319,12 @@
             switchToMapMenu(){
                 this.selectedAlertId = null;
                 this.selectedAlertContext = null;
+                if(this.isPublicMap){
+                    this.bottomMenuMode = 'alert';
+                    this.currentModeButton = null;
+                    this.$refs.BottomMenuRef?.close();
+                    return;
+                }
                 this.bottomMenuMode = 'map';
                 this.currentModeButton = null;
                 if( this.$refs.BottomMenuRef ){
@@ -1334,7 +1350,7 @@
                 this.open_b = false;
                 this.selectedAlertId = null;
                 this.selectedAlertContext = null;
-                this.bottomMenuMode = 'map';
+                this.bottomMenuMode = this.isPublicMap ? 'alert' : 'map';
                 this.currentModeButton = null;
             },
             getAlertActorKey(value){
@@ -1536,8 +1552,7 @@
                         this.selectedAlertId = null;
                         this.selectedAlertContext = null;
                         if( this.bottomMenuMode === 'alert-detail' ){
-                            this.bottomMenuMode = 'map';
-                            this.currentModeButton = null;
+                            this.switchToMapMenu();
                         }
                     }
                 }
@@ -1623,8 +1638,7 @@
                     this.selectedAlertId = null;
                     this.selectedAlertContext = null;
                     if( this.bottomMenuMode === 'alert-detail' ){
-                        this.bottomMenuMode = 'map';
-                        this.currentModeButton = null;
+                        this.switchToMapMenu();
                     }
                 }
                 if( this.activeAlerts.length === 0 ){
