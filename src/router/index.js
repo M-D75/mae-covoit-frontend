@@ -22,6 +22,7 @@ import Test from '@/views/Test.vue'
 import StripeCheckout from '@/views/StripeCheckout.vue'
 import Rating from '@/views/Rating.vue'
 import RoadAlerts from '@/views/RoadAlerts.vue'
+import AuthCallback from '@/views/AuthCallback.vue'
 
 
 const routes = [
@@ -77,7 +78,13 @@ const routes = [
         path: '/account-info',
         name: 'account-info',
         component: CreateAccount,
-        meta: { requiresAuth: true },
+        meta: { requiresAuth: true, allowMissingAccount: true },
+    },
+    {
+        path: '/auth/callback',
+        name: 'auth-callback',
+        component: AuthCallback,
+        meta: { requiresAuth: false },
     },
     {
         path: '/member',
@@ -191,6 +198,10 @@ import { Plugins } from '@capacitor/core';
 
 import supabase from '@/utils/supabaseClient.js';
 import { serverRequest } from '@/utils/serverApi.js';
+import {
+    fetchAuthProfileState,
+    resolveAuthGuardRedirect,
+} from '@/services/authProfile.js';
 import store from '../store'; 
 
 const { LocalNotifications } = Plugins;
@@ -234,12 +245,28 @@ router.beforeEach(async (to, from, next) => {
     console.log("[index.js] from", from);
 
     if (to.meta.requiresAuth) {
-        const { data, error } = await supabase.auth.getUser();
-        if (error || !data?.user) {
-            return next({
-                path: '/login',
-                query: to.fullPath ? { redirect: to.fullPath } : undefined,
-            });
+        const authProfile = await fetchAuthProfileState(supabase);
+        const hasAccount = Boolean(authProfile.account);
+
+        store.commit('auth/SET_LOGGED_IN', authProfile.authenticated);
+        store.commit('auth/SET_ACCOUNT_CREATED', hasAccount);
+        store.commit('profil/SET_USER_UID', authProfile.user?.id || '');
+        store.state.profil.userId = authProfile.account?.id || null;
+
+        if(authProfile.profileError){
+            console.error('[router] Account profile check failed:', authProfile.profileError);
+        }
+
+        const authRedirect = resolveAuthGuardRedirect({
+            requiresAuth: Boolean(to.meta.requiresAuth),
+            allowMissingAccount: Boolean(to.meta.allowMissingAccount),
+            fullPath: to.fullPath,
+            requestedPath: to.query.redirect,
+            authenticated: authProfile.authenticated,
+            hasAccount,
+        });
+        if(authRedirect){
+            return next(authRedirect);
         }
     }
 

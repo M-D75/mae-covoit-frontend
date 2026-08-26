@@ -27,6 +27,9 @@ export default {
         SET_LOGGED_IN(state, status) {
             state.logged_in = status;
         },
+        SET_ACCOUNT_CREATED(state, status) {
+            state.account_created = Boolean(status);
+        },
         SET_PROVIDER(state, provider) {
             state.provider = provider;
         },
@@ -50,7 +53,7 @@ export default {
         },
     },
     actions: {
-        async createAccount({state, rootState}, info){
+        async createAccount({state, commit, rootState}, info){
 
             const { data: { user } } = await supabase.auth.getUser();
 
@@ -69,7 +72,7 @@ export default {
                     },
                 });
 
-                state.account_created = true;
+                commit('SET_ACCOUNT_CREATED', true);
                 rootState.profil.userId = profileResponse.data?.account?.id || null;
 
                 // Stripe creation is recoverable and must not turn an already
@@ -145,10 +148,11 @@ export default {
             console.log("refreshToken", error, user)
             return true;
         },
-        async checkSession({ state, commit }){
+        async checkSession({ state, commit, rootState }){
             let { data, error } = await supabase.auth.getSession();
 
             commit('SET_LOGGED_IN', false);
+            commit('SET_ACCOUNT_CREATED', false);
             if(data.session){
                 commit('SET_LOGGED_IN', true);
                 commit('SET_TOKEN', {
@@ -183,14 +187,15 @@ export default {
 
                 if( error_account ){
                     console.error("Erreur", error_account)
-                    state.account_created = false;
+                    commit('SET_ACCOUNT_CREATED', false);
+                    rootState.profil.userId = null;
                     return false;
                 }
                 else{
                     if(account.length > 0){
                         console.log("Welcome ! ", account[0].firstname);
                         store.state.profil.userId = account[0].id;
-                        state.account_created = true;
+                        commit('SET_ACCOUNT_CREATED', true);
 
                         try {
                             const paymentProfileResponse = await serverRequest(
@@ -222,7 +227,8 @@ export default {
                     }
                     else{
                         console.log("No account")
-                        state.account_created = false;
+                        commit('SET_ACCOUNT_CREATED', false);
+                        rootState.profil.userId = null;
                     }
                 }
                 
@@ -273,6 +279,8 @@ export default {
             }
             else{
                 console.log("Error cheking session:", error)
+                rootState.profil.userId = null;
+                commit('profil/SET_USER_UID', '', { root: true });
                 return false;
             }
         },

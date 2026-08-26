@@ -269,14 +269,15 @@
     import { inject } from 'vue';
     import { mapMutations, mapState } from "vuex";
 
-    import { App } from '@capacitor/app';
+    import { Browser } from '@capacitor/browser';
     import { Plugins } from '@capacitor/core';
     import { Capacitor } from '@capacitor/core';
+    import { buildAuthCallbackUrl } from '@/services/authCallback.js';
+    import { resolvePostAuthPath } from '@/services/authProfile.js';
 
     const { LocalNotifications } = Plugins;
 
-    const isAndroid = Capacitor.getPlatform() === 'android';
-    const isIOS = Capacitor.getPlatform() === 'ios';
+    const isNative = Capacitor.isNativePlatform();
 
     export default {
         setup() {
@@ -322,33 +323,27 @@
             }
         },
         created(){
+            if(this.$route.query.auth_error){
+                this.messageSnackbarError = "L'authentification n'a pas pu être terminée. Veuillez réessayer.";
+                this.showSnackbarError = true;
+            }
             this.checkSessionIn();
         },
         beforeMount(){
             
         },
-        mounted() {
-            App.addListener('appUrlOpen', (data) => {
-                //console.log('URL reçue: ' + data.url);
-                if( data.url.split('#').length > 1 ){
-                    const fragment = data.url.split('#')[1];  // retire le '#'
-                    const path = window.location.href.replaceAll("login", "") + "#" + fragment;
-                    window.location.href = path;
-                }
-            });
-        },
         methods: {
             ...mapMutations("auth", ["SET_TOKEN"]),
-            authService(service){
+            async authService(service){
                 switch (service) {
                     case "google":
-                        this.authServiceSupabse(service);
+                        await this.authServiceSupabse(service);
                         break;
                     case "emailSignUp":
-                        this.signUpEmailSupabase();
+                        await this.signUpEmailSupabase();
                         break;
                     case "emailSignIn":
-                        this.signInEmailSupabase();
+                        await this.signInEmailSupabase();
                         break;
                     default:
                         console.log("other")
@@ -387,7 +382,13 @@
                 this.overlayLoad = true;
                 let { error } = await this.supabase.auth.signUp({
                     email: this.email,
-                    password: this.password
+                    password: this.password,
+                    options: {
+                        emailRedirectTo: buildAuthCallbackUrl({
+                            native: isNative,
+                            requestedPath: this.$route.query.redirect,
+                        }),
+                    },
                 });
 
                 if ( error ) {
@@ -433,37 +434,20 @@
                 this.showSnackbar = true;            
             },
             async authServiceSupabse(service){
-
-                let { data, error } = {data: null, error: null}
-                if( isAndroid || isIOS ){
-                    //Android & IOS
-                    ({ data, error } = await this.supabase.auth.signInWithOAuth({
-                        provider: service,
-                        options: {
-                            skipBrowserRedirect: true,
-                            redirectTo: "ekko-vi-shimago-app://callback",
-                        },
-                    }));
-                }
-                else if(['localhost', '127.0.0.1'].includes(window.location.hostname)){
-                    // Test local
-                    ({ data, error } = await this.supabase.auth.signInWithOAuth({
-                        provider: service,
-                        options: {
-                            skipBrowserRedirect: true,
-                            redirectTo: window.location.origin,
-                        },
-                    }));
-                }
-                else{
-                    // Site Web App 
-                    ({ data, error } = await this.supabase.auth.signInWithOAuth({
-                        provider: service,
-                        options: {
-                            skipBrowserRedirect: true,
-                        },
-                    }));
-                }
+                this.overlayLoad = true;
+                const redirectTo = buildAuthCallbackUrl({
+                    native: isNative,
+                    requestedPath: this.$route.query.redirect,
+                });
+                const { data, error } = await this.supabase.auth.signInWithOAuth({
+                    provider: service,
+                    options: {
+                        redirectTo,
+                        // Capacitor owns its in-app browser. On web, Supabase
+                        // redirects the current tab to the dedicated callback.
+                        skipBrowserRedirect: isNative,
+                    },
+                });
 
                 if ( error ) {
                     console.error("Erreur lors de l'authenfication:", error.message);
@@ -472,12 +456,27 @@
                     
                     this.messageSnackbarError = `Erreur : ${translate}`;
                     this.showSnackbarError = true;
+                    this.overlayLoad = false;
 
                     return;
                 }
 
-                //console.log('Auhtenfication via', service, 'envoyé:', data);
-                window.open(data.url, '_blank');
+                if(isNative){
+                    if(!data?.url){
+                        this.overlayLoad = false;
+                        this.messageSnackbarError = "Le lien d'authentification est indisponible.";
+                        this.showSnackbarError = true;
+                        return;
+                    }
+                    try {
+                        await Browser.open({ url: data.url });
+                    } catch (browserError) {
+                        console.error("Impossible d'ouvrir le navigateur OAuth:", browserError);
+                        this.overlayLoad = false;
+                        this.messageSnackbarError = "Le navigateur d'authentification n'a pas pu être ouvert.";
+                        this.showSnackbarError = true;
+                    }
+                }
             },
             //Other
             createOrLoginSwitchMode(){
@@ -491,12 +490,11 @@
                 await this.$store.dispatch("auth/checkSession");
                 this.overlayLoad = false;
                 if(this.logged_in){
-                    if( ! this.account_created ){
-                        this.$router.replace("/account-info");
-                    }
-                    else {
-                        this.$router.replace("/search");
-                    }
+                    this.$router.replace(resolvePostAuthPath({
+                        authenticated: this.logged_in,
+                        hasAccount: this.account_created,
+                        requestedPath: this.$route.query.redirect,
+                    }));
                 }
             },
             async sendNotification() {

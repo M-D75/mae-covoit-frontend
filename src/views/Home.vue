@@ -137,7 +137,7 @@
     export default {
         name: 'home-view',
         computed: {
-            ...mapState("auth", ["logged_in"]),
+            ...mapState("auth", ["logged_in", "account_created"]),
         },
         data() {
             return {
@@ -152,12 +152,13 @@
             async checkSessionIn(){
                 await this.checkSession();
                 this.overlayLoad = false;
-                if(this.logged_in)
-                    this.$router.replace("/search");
+                if(this.logged_in){
+                    this.$router.replace(this.account_created ? "/search" : "/account-info");
+                }
                 else{
-                    setTimeout(function(){
-                        this.$router.push("/login");
-                    }.bind(this), 2000);
+                    // Do not leave a delayed redirect alive: on a cold native
+                    // OAuth return it could overwrite App.vue's callback route.
+                    this.$router.replace("/login");
                 }
             },
         },

@@ -184,6 +184,7 @@
 <script>
     import { mapActions, mapState } from 'vuex'
     import { keepLetter } from '@/utils/utils.js';
+    import { resolvePostAuthPath } from '@/services/authProfile.js';
 
     // Components
 
@@ -225,7 +226,11 @@
                 if( this.firstname != "" && this.name != "" ){
                     const res = await this.createAccount({name: this.name, firstname: this.firstname, village: this.village});
                     if( res.status == 0 && this.account_created ){
-                        this.$router.replace("/search");
+                        this.$router.replace(resolvePostAuthPath({
+                            authenticated: true,
+                            hasAccount: true,
+                            requestedPath: this.$route.query.redirect,
+                        }));
                     }
                     else{
                         this.showSnakBarInfo.messageError = res.message;

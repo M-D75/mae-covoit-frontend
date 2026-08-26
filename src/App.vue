@@ -114,6 +114,14 @@
     import { Plugins } from '@capacitor/core';
     import { App } from '@capacitor/app';
     import { Browser } from '@capacitor/browser';
+    import supabase from '@/utils/supabaseClient.js';
+    import {
+        completeAuthCallback,
+        getMobileUrlScheme,
+        isNativeAuthCallbackUrl,
+        parseAuthCallbackParameters,
+    } from '@/services/authCallback.js';
+    import { resolvePostAuthPath } from '@/services/authProfile.js';
 
     // TODO : à supprimé quand eddine aura finit
 
@@ -149,6 +157,7 @@
             appStateListener: null,
             appUrlOpenListener: null,
             handlingStripeConnectReturn: false,
+            handlingAuthReturn: false,
         }),
         beforeMount(){
             // console.log("[App] beforeMount")
@@ -158,6 +167,10 @@
             // This listener lives at application level because Stripe can
             // return while any profile component is mounted or recreated.
             this.appUrlOpenListener = await App.addListener('appUrlOpen', this.handleAppUrlOpen);
+            const launchUrl = await App.getLaunchUrl();
+            if(launchUrl?.url){
+                await this.handleAppUrlOpen(launchUrl);
+            }
             // const account = await stripe.accounts.retrieve('acct_1OUWQcI3Nt412vf3');
 
             // await stripe.charges.create({
@@ -409,10 +422,37 @@
                     return;
                 }
 
-                const expectedScheme = process.env.VUE_APP_MOBILE_URL_SCHEME || 'ekko-vi-shimago-app';
+                const expectedScheme = getMobileUrlScheme();
                 const isStripeReturn = incomingUrl.protocol === `${expectedScheme}:`
                     && incomingUrl.hostname === 'callback'
                     && incomingUrl.pathname === '/stripe-connect';
+                const isAuthReturn = isNativeAuthCallbackUrl(data?.url, expectedScheme);
+
+                if(isAuthReturn){
+                    if(this.handlingAuthReturn) return;
+                    this.handlingAuthReturn = true;
+                    try {
+                        await Browser.close().catch(() => undefined);
+                        await completeAuthCallback(supabase, data.url);
+                        await this.$store.dispatch('auth/checkSession');
+                        const parameters = parseAuthCallbackParameters(data.url);
+                        await this.$router.replace(resolvePostAuthPath({
+                            authenticated: this.$store.state.auth.logged_in,
+                            hasAccount: this.$store.state.auth.account_created,
+                            requestedPath: parameters.get('redirect'),
+                        }));
+                    } catch (error) {
+                        console.error('[App] Supabase OAuth return error:', error);
+                        await this.$router.replace({
+                            path: '/login',
+                            query: { auth_error: 'callback_failed' },
+                        });
+                    } finally {
+                        this.handlingAuthReturn = false;
+                    }
+                    return;
+                }
+
                 if (!isStripeReturn || this.handlingStripeConnectReturn) return;
 
                 this.handlingStripeConnectReturn = true;
