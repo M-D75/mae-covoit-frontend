@@ -231,11 +231,14 @@
         color: var(--font-color-label);
         width: 100%;
         max-width: 100%;
+        transition: bottom 120ms ease-out;
         
         .sub-cont {
             height: max-content;
             max-height: 90vh;
             overflow: auto;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
             .bar-up {
                 cursor: pointer;
                 margin: auto;
@@ -551,8 +554,14 @@
     <v-container
         class="bottom-menu"
         :class="className.join(' ')"
+        :style="bottomMenuStyle"
     >
-        <div class="sub-cont" :class="className.join(' ')" ref="subCont">
+        <div
+            class="sub-cont"
+            :class="className.join(' ')"
+            :style="subContentStyle"
+            ref="subCont"
+        >
 
             <div class="bar-up"></div>
 
@@ -1117,6 +1126,7 @@
     import { mapState, mapActions, mapMutations } from 'vuex';
     import { serverRequest } from '@/utils/serverApi.js';
     import { createRequestId } from '@/utils/requestId.js';
+    import { getKeyboardAwareViewport } from '@/utils/bottomSheet.js';
 
     // Components
     import Vue3DraggableResizable from 'vue3-draggable-resizable';
@@ -1134,6 +1144,7 @@
     import SelectCreditCard from './bottom/SelectCreditCard.vue';
 
     import { Capacitor } from '@capacitor/core';
+    import { Keyboard } from '@capacitor/keyboard';
 
     const isIOS = Capacitor.getPlatform() === 'ios';
    
@@ -1179,6 +1190,18 @@
             },
             numericMask() {
                 return { regex: /^[0-9]*$/ };
+            },
+            bottomMenuStyle() {
+                return {
+                    bottom: `${this.viewportBottomInset}px`,
+                };
+            },
+            subContentStyle() {
+                const keyboardSafeHeight = this.visibleViewportHeight - 66;
+                const regularSheetHeight = this.visibleViewportHeight * 0.9;
+                return {
+                    maxHeight: `${Math.max(120, Math.min(keyboardSafeHeight, regularSheetHeight))}px`,
+                };
             },
         },
         props: {
@@ -1344,11 +1367,19 @@
                 showSnackbarInfo: false,
                 messageSnackbarInfo: "",
                 isIOS: false,
+                baselineViewportHeight: 0,
+                visibleViewportHeight: 0,
+                viewportTop: 0,
+                viewportBottomInset: 0,
+                nativeKeyboardHeight: 0,
+                viewportResizeFrame: null,
+                keyboardListenerHandles: [],
             }
         },
-        mounted() {
+        async mounted() {
             this.isIOS = isIOS;
-            this.sizeScreen = $(window).innerHeight();
+            this.baselineViewportHeight = window.innerHeight || $(window).innerHeight();
+            this.refreshViewportMetrics();
             this.y = this.sizeScreen;
 
             const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
@@ -1363,11 +1394,9 @@
                     // const { height } = entry.contentRect;
                     const classSubContNameJquery = this.className != "" && this.className != null ? `.sub-cont.${this.className.join(".")}` : ".sub-cont";
                     if( $(classSubContNameJquery) && $(classSubContNameJquery).length > 0 ){
-                        this.subContHeigth = $(classSubContNameJquery)[0].clientHeight;
+                        this.subContHeigth = $(classSubContNameJquery)[0].scrollHeight;
                         if(this.open_b){
-                            setTimeout(function(){
-                                this.reOpenB();
-                            }.bind(this), 500);
+                            this.scheduleViewportReposition();
                         }
                     }
 
@@ -1377,6 +1406,22 @@
 
             if (this.$refs.subCont) {
                 this.resizeObserver.observe(this.$refs.subCont);
+            }
+
+            window.addEventListener('resize', this.scheduleViewportReposition);
+            window.visualViewport?.addEventListener('resize', this.scheduleViewportReposition);
+            window.visualViewport?.addEventListener('scroll', this.scheduleViewportReposition);
+
+            if(Capacitor.isNativePlatform()){
+                const showHandle = await Keyboard.addListener('keyboardWillShow', (info) => {
+                    this.nativeKeyboardHeight = Number(info.keyboardHeight) || 0;
+                    this.scheduleViewportReposition();
+                });
+                const hideHandle = await Keyboard.addListener('keyboardWillHide', () => {
+                    this.nativeKeyboardHeight = 0;
+                    this.scheduleViewportReposition();
+                });
+                this.keyboardListenerHandles.push(showHandle, hideHandle);
             }
 
             // console.log("Mounted BottomMenu : classe-name", this.className, "screen-height", this.sizeScreen, "subContHeigth", this.subContHeigth, "object", $(classSubContNameJquery));
@@ -1402,9 +1447,64 @@
                     $("div.sub-label-color").addClass("warn-good-to-low");
             }
         },
+        beforeUnmount(){
+            this.resizeObserver?.disconnect();
+            window.removeEventListener('resize', this.scheduleViewportReposition);
+            window.visualViewport?.removeEventListener('resize', this.scheduleViewportReposition);
+            window.visualViewport?.removeEventListener('scroll', this.scheduleViewportReposition);
+            this.keyboardListenerHandles.forEach((handle) => handle?.remove?.());
+            if(this.viewportResizeFrame){
+                cancelAnimationFrame(this.viewportResizeFrame);
+            }
+        },
         methods: {
             ...mapActions("profil", ["addCredit", "transfertGain"]),
             ...mapMutations("profil", ["SET_CREDIT_CARD"]),
+            refreshViewportMetrics(){
+                const layoutHeight = window.innerHeight || $(window).innerHeight() || 0;
+                const visualViewport = window.visualViewport;
+                const viewport = getKeyboardAwareViewport({
+                    layoutHeight,
+                    visualHeight: visualViewport?.height || layoutHeight,
+                    visualOffsetTop: visualViewport?.offsetTop || 0,
+                    keyboardHeight: this.nativeKeyboardHeight,
+                    baselineHeight: this.baselineViewportHeight || layoutHeight,
+                });
+
+                if(this.nativeKeyboardHeight === 0){
+                    this.baselineViewportHeight = Math.max(this.baselineViewportHeight, layoutHeight);
+                }
+                this.sizeScreen = Math.round(viewport.bottom);
+                this.visibleViewportHeight = Math.round(viewport.height);
+                this.viewportTop = Math.round(viewport.top);
+                this.viewportBottomInset = Math.round(viewport.bottomInset);
+            },
+            scheduleViewportReposition(){
+                if(this.viewportResizeFrame) return;
+                this.viewportResizeFrame = requestAnimationFrame(() => {
+                    this.viewportResizeFrame = null;
+                    this.refreshViewportMetrics();
+
+                    if(!this.open_b){
+                        this.y = this.sizeScreen;
+                        return;
+                    }
+
+                    const contentHeight = this.$refs.subCont?.scrollHeight || this.subContHeigth || 0;
+                    this.subContHeigth = contentHeight;
+                    this.y = Math.max(
+                        this.viewportTop,
+                        this.sizeScreen - Math.min(contentHeight + 50, this.visibleViewportHeight)
+                    );
+
+                    this.$nextTick(() => {
+                        const activeElement = document.activeElement;
+                        if(activeElement && this.$refs.subCont?.contains(activeElement)){
+                            activeElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                        }
+                    });
+                });
+            },
             checkNumericalValue(event, nextInputRef){
                 this.numericValues = this.numericValues.map(nums => nums.replace(/\D/g, ''));
                 event.target.value = event.target.value.replace(/\D/g, '')
@@ -1512,7 +1612,10 @@
                             // open
                             this.move = true;
                             this.disabledY = false;
-                            this.y = this.sizeScreen - ( this.subContHeigth + 50 );
+                            this.y = Math.max(
+                                this.viewportTop,
+                                this.sizeScreen - (this.subContHeigth + 50)
+                            );
                             const _this = this;
                             
                             $(classBottomMenuNameJquery).animate({"top": `${_this.y}px`}, "fast", function(){

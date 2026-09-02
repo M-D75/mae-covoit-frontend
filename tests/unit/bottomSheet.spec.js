@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { clampSheetTop, selectSheetSnap } from '@/utils/bottomSheet.js';
+import {
+    clampSheetTop,
+    getKeyboardAwareViewport,
+    selectSheetSnap,
+} from '@/utils/bottomSheet.js';
 
 describe('bottom sheet snapping', () => {
     it('never lets the panel hide above its expanded content position', () => {
@@ -56,5 +60,49 @@ describe('bottom sheet snapping', () => {
             peekTop: 480,
             viewportHeight: 800,
         })).toBe('expanded');
+    });
+});
+
+describe('keyboard-aware viewport', () => {
+    it('uses visualViewport when the keyboard overlays the layout viewport', () => {
+        expect(getKeyboardAwareViewport({
+            layoutHeight: 800,
+            visualHeight: 500,
+            keyboardHeight: 300,
+            baselineHeight: 800,
+        })).toEqual({
+            top: 0,
+            bottom: 500,
+            height: 500,
+            bottomInset: 300,
+        });
+    });
+
+    it('does not subtract the keyboard twice when innerHeight already shrank', () => {
+        expect(getKeyboardAwareViewport({
+            layoutHeight: 500,
+            visualHeight: 500,
+            keyboardHeight: 300,
+            baselineHeight: 800,
+        })).toEqual({
+            top: 0,
+            bottom: 500,
+            height: 500,
+            bottomInset: 0,
+        });
+    });
+
+    it('falls back to the native keyboard height when viewport APIs do not resize', () => {
+        expect(getKeyboardAwareViewport({
+            layoutHeight: 800,
+            visualHeight: 800,
+            keyboardHeight: 300,
+            baselineHeight: 800,
+        })).toEqual({
+            top: 0,
+            bottom: 500,
+            height: 500,
+            bottomInset: 300,
+        });
     });
 });
