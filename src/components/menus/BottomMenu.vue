@@ -206,36 +206,26 @@
     }
 
     // struct
-    .draggable{
-        position: fixed;
-        width: 100%;
-        height: 50px;
-        z-index: 0;
-        cursor: pointer;
-        // background-color: black;
-        // opacity: 0.5;
-        &.dragging, &.active {
-            border: none;
-        }
-        &.open{
-            z-index: 99999;
-        }
-    }
-
     .v-container.bottom-menu {
         position: fixed;
-        padding: 16px 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        padding: 0 0 16px;
         bottom: 0;
         border-radius: 30px 30px 0 0;
         background-color: var(--white-bg-color);
         color: var(--font-color-label);
         width: 100%;
         max-width: 100%;
-        transition: bottom 120ms ease-out;
+        transition: top 220ms cubic-bezier(0.22, 1, 0.36, 1);
+        &.is-dragging, &.viewport-tracking { transition: none; }
+        .sheet-content { display: flow-root; }
         
         .sub-cont {
-            height: max-content;
-            max-height: 90vh;
+            height: auto;
+            flex: 1 1 auto;
+            min-height: 0;
             overflow: auto;
             overscroll-behavior: contain;
             -webkit-overflow-scrolling: touch;
@@ -337,7 +327,7 @@
             //car
             div.card-contain{
                 margin: auto;
-                height: 85%;
+                height: auto;
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
@@ -498,6 +488,7 @@
         }
 
         .sub-cont-sup {
+            flex: 0 0 auto;
             //map
             .map {
                 width: 90%;
@@ -532,38 +523,27 @@
 
 <template>
 
-    <vue3-draggable-resizable
-        class-name="draggable"
-        :class="className"
-        v-model:x="x"
-        v-model:y="y"
-        :axis="'y'"
-        v-model:active="active"
-        :draggable="draggableBar"
-        :resizable="false"
-        :disabledX="true"
-        :disabledY="disabledY"
-        :disabledW="true"
-        :disabledH="true"
-        @dragging="onDrag"
-        @drag-end="onDragStop"
-    >
-    </vue3-draggable-resizable>
-
     <!--  -->
     <v-container
         class="bottom-menu"
-        :class="className.join(' ')"
+        :class="[...className, {closed: !open_b, 'is-dragging': isDragging, 'viewport-tracking': viewportTracking}]"
         :style="bottomMenuStyle"
     >
+        <SheetDragHandle
+            :top="y"
+            @drag-start="onDragStart"
+            @dragging="onDrag"
+            @drag-end="onDragStop"
+            @expand="setSheetState('expanded')"
+            @collapse="setSheetState('peek')"
+        />
         <div
             class="sub-cont"
             :class="className.join(' ')"
-            :style="subContentStyle"
             ref="subCont"
         >
 
-            <div class="bar-up"></div>
+            <div class="sheet-content" ref="sheetContent">
 
             <!-- ** Results **
                 **************
@@ -1023,8 +1003,10 @@
             <!-- End Map -->
         </div>
 
+        </div>
+
         <!-- sub-cont-sup -->
-        <div class="sub-cont-sup" :class="className.join(' ')">
+        <div class="sub-cont-sup" :class="className.join(' ')" ref="subContSup">
             <!-- Map -->
             <div
                 v-if="mode=='map'"
@@ -1126,10 +1108,10 @@
     import { mapState, mapActions, mapMutations } from 'vuex';
     import { serverRequest } from '@/utils/serverApi.js';
     import { createRequestId } from '@/utils/requestId.js';
-    import { getKeyboardAwareViewport } from '@/utils/bottomSheet.js';
 
     // Components
-    import Vue3DraggableResizable from 'vue3-draggable-resizable';
+    import SheetDragHandle from '@/components/menus/SheetDragHandle.vue';
+    import sheetLayout from '@/utils/sheetLayout.js';
     import TrajetMember from '@/components/search/TrajetMember.vue';
     import ReservePlace from '@/components/menus/bottom/ReservePlace.vue';
     import Notification from '@/components/menus/bottom/Notification.vue';
@@ -1144,13 +1126,13 @@
     import SelectCreditCard from './bottom/SelectCreditCard.vue';
 
     import { Capacitor } from '@capacitor/core';
-    import { Keyboard } from '@capacitor/keyboard';
 
     const isIOS = Capacitor.getPlatform() === 'ios';
    
 
     export default defineComponent({
         name: 'bottom-menu',
+        mixins: [sheetLayout],
         emits: [
             "close", "time-valided", "time-changed", 
             "day-valided", "day-not-selected",
@@ -1162,7 +1144,7 @@
             "no"
         ],
         components: {
-            Vue3DraggableResizable,
+            SheetDragHandle,
             TrajetMember,
             ReservePlace,
             Notification,
@@ -1190,18 +1172,6 @@
             },
             numericMask() {
                 return { regex: /^[0-9]*$/ };
-            },
-            bottomMenuStyle() {
-                return {
-                    bottom: `${this.viewportBottomInset}px`,
-                };
-            },
-            subContentStyle() {
-                const keyboardSafeHeight = this.visibleViewportHeight - 66;
-                const regularSheetHeight = this.visibleViewportHeight * 0.9;
-                return {
-                    maxHeight: `${Math.max(120, Math.min(keyboardSafeHeight, regularSheetHeight))}px`,
-                };
             },
         },
         props: {
@@ -1297,19 +1267,8 @@
                 loading: false,
                 loadingBtn: false,
                 numericValues: ['', '', '', '', '', '', ''],
-                x: 0,
-                y: 0,
-                draggableBar: true,
                 notif: false,
                 color: '#9fcb66',
-                active: true,
-                disabledY: false,
-                sizeScreen: 0,
-                move: false,
-                marge_bar: 30,
-                subContHeigth: 0,
-                subContSupHeigth: 0,
-                open_b: false,
                 reserve: {
                     message: "",
                     icon: "mdi-check-circle",
@@ -1367,70 +1326,10 @@
                 showSnackbarInfo: false,
                 messageSnackbarInfo: "",
                 isIOS: false,
-                baselineViewportHeight: 0,
-                visibleViewportHeight: 0,
-                viewportTop: 0,
-                viewportBottomInset: 0,
-                nativeKeyboardHeight: 0,
-                viewportResizeFrame: null,
-                keyboardListenerHandles: [],
             }
         },
-        async mounted() {
+        mounted() {
             this.isIOS = isIOS;
-            this.baselineViewportHeight = window.innerHeight || $(window).innerHeight();
-            this.refreshViewportMetrics();
-            this.y = this.sizeScreen;
-
-            const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
-            $(classBottomMenuNameJquery).css("top", `${this.y}px`);
-            
-            const classSubContNameJquery = this.className != "" && this.className != null ? `.sub-cont.${this.className.join(".")}` : ".sub-cont";
-            this.subContHeigth = $(classSubContNameJquery)[0].clientHeight;
-
-            // reopen When size changed
-            this.resizeObserver = new ResizeObserver(() => {
-                // for (let entry of entries) {
-                    // const { height } = entry.contentRect;
-                    const classSubContNameJquery = this.className != "" && this.className != null ? `.sub-cont.${this.className.join(".")}` : ".sub-cont";
-                    if( $(classSubContNameJquery) && $(classSubContNameJquery).length > 0 ){
-                        this.subContHeigth = $(classSubContNameJquery)[0].scrollHeight;
-                        if(this.open_b){
-                            this.scheduleViewportReposition();
-                        }
-                    }
-
-                    // console.log(`La hauteur de l'élément est maintenant : ${height}`);
-                // }
-            });
-
-            if (this.$refs.subCont) {
-                this.resizeObserver.observe(this.$refs.subCont);
-            }
-
-            window.addEventListener('resize', this.scheduleViewportReposition);
-            window.visualViewport?.addEventListener('resize', this.scheduleViewportReposition);
-            window.visualViewport?.addEventListener('scroll', this.scheduleViewportReposition);
-
-            if(Capacitor.isNativePlatform()){
-                const showHandle = await Keyboard.addListener('keyboardWillShow', (info) => {
-                    this.nativeKeyboardHeight = Number(info.keyboardHeight) || 0;
-                    this.scheduleViewportReposition();
-                });
-                const hideHandle = await Keyboard.addListener('keyboardWillHide', () => {
-                    this.nativeKeyboardHeight = 0;
-                    this.scheduleViewportReposition();
-                });
-                this.keyboardListenerHandles.push(showHandle, hideHandle);
-            }
-
-            // console.log("Mounted BottomMenu : classe-name", this.className, "screen-height", this.sizeScreen, "subContHeigth", this.subContHeigth, "object", $(classSubContNameJquery));
-            const classSubContSupNameJquery = this.className != "" && this.className != null ? `.sub-cont-sup.${this.className.join(".")}` : ".sub-cont-sup";
-            this.subContSupHeigth = $(classSubContSupNameJquery)[0].clientHeight;
-
-            // console.log("this.subContSupHeigth", this.subContSupHeigth, $(classSubContSupNameJquery));
-            $(classBottomMenuNameJquery).addClass("closed");
-            
             // init en fonction d mode
             if (this.mode == 'select-week') {
                     let numWeekCurrent = getISOWeekNumber(new Date())
@@ -1447,64 +1346,9 @@
                     $("div.sub-label-color").addClass("warn-good-to-low");
             }
         },
-        beforeUnmount(){
-            this.resizeObserver?.disconnect();
-            window.removeEventListener('resize', this.scheduleViewportReposition);
-            window.visualViewport?.removeEventListener('resize', this.scheduleViewportReposition);
-            window.visualViewport?.removeEventListener('scroll', this.scheduleViewportReposition);
-            this.keyboardListenerHandles.forEach((handle) => handle?.remove?.());
-            if(this.viewportResizeFrame){
-                cancelAnimationFrame(this.viewportResizeFrame);
-            }
-        },
         methods: {
             ...mapActions("profil", ["addCredit", "transfertGain"]),
             ...mapMutations("profil", ["SET_CREDIT_CARD"]),
-            refreshViewportMetrics(){
-                const layoutHeight = window.innerHeight || $(window).innerHeight() || 0;
-                const visualViewport = window.visualViewport;
-                const viewport = getKeyboardAwareViewport({
-                    layoutHeight,
-                    visualHeight: visualViewport?.height || layoutHeight,
-                    visualOffsetTop: visualViewport?.offsetTop || 0,
-                    keyboardHeight: this.nativeKeyboardHeight,
-                    baselineHeight: this.baselineViewportHeight || layoutHeight,
-                });
-
-                if(this.nativeKeyboardHeight === 0){
-                    this.baselineViewportHeight = Math.max(this.baselineViewportHeight, layoutHeight);
-                }
-                this.sizeScreen = Math.round(viewport.bottom);
-                this.visibleViewportHeight = Math.round(viewport.height);
-                this.viewportTop = Math.round(viewport.top);
-                this.viewportBottomInset = Math.round(viewport.bottomInset);
-            },
-            scheduleViewportReposition(){
-                if(this.viewportResizeFrame) return;
-                this.viewportResizeFrame = requestAnimationFrame(() => {
-                    this.viewportResizeFrame = null;
-                    this.refreshViewportMetrics();
-
-                    if(!this.open_b){
-                        this.y = this.sizeScreen;
-                        return;
-                    }
-
-                    const contentHeight = this.$refs.subCont?.scrollHeight || this.subContHeigth || 0;
-                    this.subContHeigth = contentHeight;
-                    this.y = Math.max(
-                        this.viewportTop,
-                        this.sizeScreen - Math.min(contentHeight + 50, this.visibleViewportHeight)
-                    );
-
-                    this.$nextTick(() => {
-                        const activeElement = document.activeElement;
-                        if(activeElement && this.$refs.subCont?.contains(activeElement)){
-                            activeElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-                        }
-                    });
-                });
-            },
             checkNumericalValue(event, nextInputRef){
                 this.numericValues = this.numericValues.map(nums => nums.replace(/\D/g, ''));
                 event.target.value = event.target.value.replace(/\D/g, '')
@@ -1522,175 +1366,6 @@
                         this.$refs["input" + (inputRef-1)].focus();
                     }
                 }
-            },
-            onDrag(pos) {
-                // console.log("onDrag");
-                this.subContHeigth = this.$refs.subCont.clientHeight;
-                const posOpenY = this.sizeScreen - ( (this.subContHeigth + this.subContSupHeigth ) + 50 );
-                // console.log("pos", pos, posOpenY - 20);
-                if(pos.y > posOpenY - 20){
-                    this.move = true;
-                    this.active = false;
-
-                    const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${Object.keys(this.className).join(".")}` : ".bottom-menu";
-                    
-                    $(classBottomMenuNameJquery).css("top", `${pos.y}px`);
-                    const classBottomMenuNameJqueryDraggable = this.className != "" && this.className != null ? `.draggable.${this.className.join(".")}` : ".draggable";
-                    
-                    $(classBottomMenuNameJqueryDraggable).addClass("open");
-                    if (pos.y >= this.sizeScreen - this.marge_bar) {
-                        this.close();
-                    }
-                }
-                else{
-                    this.draggableBar = false;
-                    this.disabledY = true;
-                }
-            },
-            onDragStop(pos) {
-                console.log("onDragStop");
-
-                const _this = this;
-                if ( ! this.move ) {
-                    const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
-
-                    if ( pos.y >= this.sizeScreen-this.marge_bar && !$(classBottomMenuNameJquery).hasClass("closed") ) {
-                        this.open();
-                        setTimeout(function(){
-                            const classBottomMenuNameJqueryDraggable = _this.className != "" && _this.className != null ? `.draggable.${_this.className.join(".")}` : ".draggable";
-                            $(classBottomMenuNameJqueryDraggable).addClass("open")
-                        }, 100)
-                    }
-                    else if( ! $(classBottomMenuNameJquery).hasClass("closed") ){
-                        console.log("onDragStop-close")
-                        this.close();
-                    }
-                    
-                    $(classBottomMenuNameJquery).animate({"top": `${this.y}px`}, "fast");
-                }
-                else if ( this.move ) {
-                    if ( pos.y >= this.sizeScreen - this.marge_bar ) {
-                        this.disabledY = false;
-                        this.y = this.sizeScreen - this.marge_bar;
-                    }
-                    setTimeout(function(){
-                        const classBottomMenuNameJqueryDraggable = _this.className != "" && _this.className != null ? `.draggable.${_this.className.join(".")}` : ".draggable";
-                        $(classBottomMenuNameJqueryDraggable).addClass("open")
-                    }, 100)
-                }
-
-                const posOpenY = this.sizeScreen - ( this.subContHeigth + this.subContSupHeigth + 50 );
-                if(pos.y <= posOpenY - 20){
-                    _this.draggableBar = true;
-                    _this.disabledY = false;
-                    this.y = this.sizeScreen - ( this.subContHeigth + this.subContSupHeigth + 50 );
-
-                    console.log("y", this.y, this.subContHeigth, this.subContSupHeigth);
-
-                    const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
-                    $(classBottomMenuNameJquery).animate({"top": `${_this.y}px`}, "fast", function(){
-                        // _this.draggableBar = true;
-                        // _this.disabledY = false;
-                        _this.y = parseInt($(this).css("top").replace("px", ""));
-                        _this.move = false;
-                    });
-                }
-
-                this.move = false;
-            },
-            open(){
-                if( this.$refs.subCont ){
-                    this.subContHeigth = this.$refs.subCont.clientHeight;
-
-                    console.log("open_b", this.open_b, this.subContHeigth);
-                    if ( ! this.open_b ) {
-                        if( ! this.move ){
-                            //console.log("will-open")
-                            const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
-                            $(classBottomMenuNameJquery).removeClass("closed");
-
-                            // open
-                            this.move = true;
-                            this.disabledY = false;
-                            this.y = Math.max(
-                                this.viewportTop,
-                                this.sizeScreen - (this.subContHeigth + 50)
-                            );
-                            const _this = this;
-                            
-                            $(classBottomMenuNameJquery).animate({"top": `${_this.y}px`}, "fast", function(){
-                                // $(this).animate({"top": "auto"}, 1000);
-                                _this.y = parseInt($(this).css("top").replace("px", ""));
-                                _this.move = false;
-                                _this.$emit('opened');
-                                const classBottomMenuNameJqueryDraggable = _this.className != "" && _this.className != null ? `.draggable.${_this.className.join(".")}` : ".draggable";
-                                $(classBottomMenuNameJqueryDraggable).addClass("open");
-                                console.log("opeeeeeneddd");
-                            });
-
-                            this.open_b = true;
-                            console.log("opened ?222", this.open_b);
-                        }
-                        else{
-                            this.open_b = false;
-                        }
-                    }
-
-                    console.log("opened ?", this.open_b);
-                }
-                return this.open_b;
-            },
-            openMiddle(){
-                if ( ! this.open_b ) {
-                    if ( this.y >= this.sizeScreen - this.marge_bar ) {
-                        if( ! this.move ){
-                            this.move = true;
-                            // open
-                            const _this = this;
-                            this.disabledY = false;
-                            this.y = this.sizeScreen/2;
-                            const classBottomMenuNameJquery =  this.className != null && this.className.length != 0 ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
-                            
-                            $(classBottomMenuNameJquery).animate({"top": `${this.y}px`}, "fast", function(){
-                                _this.open_b = true;
-                                _this.move = false;
-                                _this.$emit("opened");
-                            });
-                        }
-                    }
-                }
-
-                return this.open_b;
-            },
-            close(){
-                
-                if( ! this.move && this.open_b ){
-                    this.move = true;
-
-                    this.y = this.sizeScreen;
-                    
-                    const _this = this;
-                    const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
-                    
-                    $(classBottomMenuNameJquery).animate({"top": `${this.y}px`}, "fast", function(){
-                        $(this).addClass("closed");
-                        _this.move = false;
-
-                        //reload if trajet reserved and closed
-                        if( _this.mode == "reserve" && _this.notif ){
-                            _this.$router.replace("/")
-                        }
-
-                        const classBottomMenuNameJqueryDraggable = _this.className != "" && _this.className != null ? `.draggable.${_this.className.join(".")}` : ".draggable";
-                        $(classBottomMenuNameJqueryDraggable).removeClass("open")
-
-                        _this.$emit('close');
-                    });
-
-                    this.open_b = false;
-                }
-
-                return this.open_b;
             },
             selectDay(index) {
                 this.daysSelected[index]["selected"] = !this.daysSelected[index]["selected"];
@@ -1952,16 +1627,6 @@
                 this.reOpenB();
                 return {valided: true};
             },
-            reOpenB(){
-                console.log("reOpen");
-                
-                setTimeout(function(){
-                    console.log("re-open:", this.open_b, this.move);
-                    this.open_b = false;
-                    this.move = false;
-                    this.open();
-                }.bind(this), 20);
-            },
             tryReserveRes(){
                 this.notif = false;
                 this.$nextTick(() => this.$refs.ReservePlaceRef?.tryReserve());
@@ -1994,10 +1659,6 @@
             }
         },
         watch:{
-            y(){
-                const classBottomMenuNameJquery = this.className != "" && this.className != null ? `.bottom-menu.${this.className.join(".")}` : ".bottom-menu";
-                $(classBottomMenuNameJquery).css("top", `${this.y}px`);
-            },
             timeInit(){
                 // console.log("timeInit-changed", this.timeInit);
                 this.timeCard = false;
@@ -2010,12 +1671,7 @@
                 this.priceRecomended.min = arrondirSpecial(this.priceRecommended);
                 this.priceRecomended.max = arrondirSpecial(this.priceRecommended)+1;
             },
-            mode(){
-                console.log("changed mode", this.mode);
-                if( this.open_b ){
-                    this.reOpenB();
-                }
-            },
+
 
         }
    });

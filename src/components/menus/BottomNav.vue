@@ -33,7 +33,13 @@
     .v-bottom-navigation {
         background-color: var(--bg-app-color);
         padding-bottom: 5px;
-        transition: all 0.4s ease-in-out;
+        transition: transform 0.2s ease-out;
+
+        &.keyboard-open {
+            transform: translateY(100%) !important;
+            pointer-events: none;
+        }
+
         .v-btn {
             color: var(--gray-icon-color);
             font-weight: bold;
@@ -56,6 +62,7 @@
     <v-bottom-navigation
         v-model="value"
         grow
+        :class="{ 'keyboard-open': keyboardOpen }"
         :height="82+barBottom"
     >
         <v-btn
@@ -101,6 +108,7 @@
     // import $ from 'jquery'
     import { SafeAreaController, SafeArea } from '@aashu-dubey/capacitor-statusbar-safe-area';
     import { Capacitor } from '@capacitor/core';
+    import { Keyboard } from '@capacitor/keyboard';
 
     // const isAndroid = Capacitor.getPlatform() === 'android';
     const isIOS = Capacitor.getPlatform() === 'ios';
@@ -113,6 +121,9 @@
                 value: 0,
                 barHeight: 0,
                 barBottom: 0,
+                keyboardOpen: false,
+                keyboardListenerHandles: [],
+                viewportHeight: 0,
             }
         },
         beforeMount (){
@@ -124,10 +135,40 @@
         mounted (){
             console.log("Menu BootomNav:", this.value);
             SafeAreaController.injectCSSVariables();
+            this.viewportHeight = window.visualViewport?.height || window.innerHeight || 0;
+            window.visualViewport?.addEventListener('resize', this.handleViewportResize);
+
+            if(Capacitor.isNativePlatform()){
+                Promise.all([
+                    Keyboard.addListener('keyboardWillShow', () => {
+                        this.keyboardOpen = true;
+                    }),
+                    Keyboard.addListener('keyboardDidHide', () => {
+                        this.keyboardOpen = false;
+                    }),
+                ]).then((handles) => {
+                    this.keyboardListenerHandles = handles;
+                }).catch((error) => {
+                    console.error('Unable to observe keyboard visibility:', error);
+                });
+            }
 
             // this.initStatusBarHeight();
         },
+        beforeUnmount(){
+            window.visualViewport?.removeEventListener('resize', this.handleViewportResize);
+            this.keyboardListenerHandles.forEach((handle) => handle?.remove?.());
+        },
         methods: {
+            handleViewportResize(){
+                if(Capacitor.isNativePlatform()) return;
+
+                const currentHeight = window.visualViewport?.height || window.innerHeight || 0;
+                this.keyboardOpen = currentHeight < this.viewportHeight - 100;
+                if(!this.keyboardOpen){
+                    this.viewportHeight = currentHeight;
+                }
+            },
             routeIndex(path){
                 if(path === '/search') return 0;
                 if(path === '/road-alerts') return 1;

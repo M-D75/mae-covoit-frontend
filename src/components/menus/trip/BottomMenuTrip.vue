@@ -69,23 +69,11 @@
     }
 
     // struct
-    .draggable{
-        position: fixed;
-        width: 100%;
-        height: 50px;
-        z-index: 2101;
-        cursor: grab;
-        touch-action: none;
-        &.dragging, &.active {
-            border: none;
-        }
-    }
-
     .v-container.bottom-menu {
         position: fixed;
         display: flex;
         flex-direction: column;
-        padding: 16px 0;
+        padding: 0 0 16px;
         bottom: 0;
         border-radius: 30px 30px 0 0;
         background-color: var(--white-bg-color);
@@ -98,14 +86,14 @@
         z-index: 2100;
         transition: top 220ms cubic-bezier(0.22, 1, 0.36, 1);
         will-change: top;
-        &.is-dragging{
+        .sheet-content { display: flow-root; }
+        &.is-dragging, &.viewport-tracking{
             transition: none;
         }
         .sub-cont {
-            height: max-content;
+            height: auto;
+            flex: 1 1 auto;
             min-height: 0;
-            max-height: calc(100vh - 180px);
-            max-height: calc(100dvh - 96px);
             overflow-y: auto;
             overscroll-behavior: contain;
             -webkit-overflow-scrolling: touch;
@@ -172,7 +160,7 @@
             //car
             div.card-contain{
                 margin: auto;
-                height: 85%;
+                height: auto;
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
@@ -542,6 +530,7 @@
         }
 
         .sub-cont-sup {
+            flex: 0 0 auto;
             flex-shrink: 0;
             //map
             .map {
@@ -581,34 +570,23 @@
 
 <template>
 
-    <vue3-draggable-resizable
-        class-name="draggable"
-        :class="[...className, {closed: !open_b}]"
-        v-model:x="x"
-        v-model:y="y"
-        :axis="'y'"
-        v-model:active="active"
-        :draggable="true"
-        :resizable="false"
-        :disabledX="true"
-        :disabledY="disabledY"
-        :disabledW="true"
-        :disabledH="true"
-        @drag-start="onDragStart"
-        @dragging="onDrag"
-        @drag-end="onDragStop"
-    >
-    </vue3-draggable-resizable>
-
     <!--  -->
     <v-container
         class="bottom-menu"
-        :class="[...className, {closed: !open_b, 'is-dragging': isDragging}]"
-        :style="{top: `${y}px`}"
+        :class="[...className, {closed: !open_b, 'is-dragging': isDragging, 'viewport-tracking': viewportTracking}]"
+        :style="bottomMenuStyle"
     >
+        <SheetDragHandle
+            :top="y"
+            @drag-start="onDragStart"
+            @dragging="onDrag"
+            @drag-end="onDragStop"
+            @expand="setSheetState('expanded')"
+            @collapse="setSheetState('peek')"
+        />
         <div class="sub-cont" :class="className.join(' ')" ref="subCont">
 
-            <div class="bar-up"></div>
+            <div class="sheet-content" ref="sheetContent">
 
             <!-- Map -->
             
@@ -866,6 +844,8 @@
             
         </div>
 
+        </div>
+
         <!-- sub-cont-sup -->
         <div class="sub-cont-sup" :class="className.join(' ')" ref="subContSup">
             <!-- Map -->
@@ -940,15 +920,16 @@
     //import supabase from '@/utils/supabaseClient';
 
     // Components
-    import Vue3DraggableResizable from 'vue3-draggable-resizable';
-    import { clampSheetTop, selectSheetSnap } from '@/utils/bottomSheet.js';
+    import SheetDragHandle from '@/components/menus/SheetDragHandle.vue';
+    import sheetLayout from '@/utils/sheetLayout.js';
     
 
     export default defineComponent({
         name: 'bottom-menu',
+        mixins: [sheetLayout],
         emits: ["opened", "close", "alert", "select-alert-type", "confirm-alert", "mark-passenger-no-show", "vote-alert"],
         components: {
-            Vue3DraggableResizable,
+            SheetDragHandle,
         },
         computed: {
             numericRule() {
@@ -1076,116 +1057,15 @@
         data() {
             return {
                 numericValues: ['', '', '', '', '', '', ''],
-                x: 0,
-                y: 0,
                 notif: false,
-                active: true,
-                disabledY: false,
-                sizeScreen: 0,
-                isDragging: false,
-                sheetState: "closed",
-                dragStartY: 0,
-                dragStartState: "closed",
-                subContHeigth: 0,
-                subContSupHeigth: 0,
-                open_b: false,
-                contentResizeObserver: null,
-                contentResizeFrame: null,
-                viewportResizeFrame: null,
                 showSnackbarError: false,
                 messageSnackbarError: "",
                 showSnackbarSuccess: false,
                 messageSnackbarSuccess: "",
             }
         },
-        mounted() {
-            this.refreshSheetMetrics();
-            this.y = this.sizeScreen;
-            if(typeof ResizeObserver !== 'undefined'){
-                this.contentResizeObserver = new ResizeObserver(this.scheduleContentReposition);
-                if(this.$refs.subCont){
-                    this.contentResizeObserver.observe(this.$refs.subCont);
-                }
-                if(this.$refs.subContSup){
-                    this.contentResizeObserver.observe(this.$refs.subContSup);
-                }
-            }
-            window.addEventListener('resize', this.scheduleViewportReposition);
-            window.visualViewport?.addEventListener('resize', this.scheduleViewportReposition);
-        },
-        beforeUnmount(){
-            this.contentResizeObserver?.disconnect();
-            window.removeEventListener('resize', this.scheduleViewportReposition);
-            window.visualViewport?.removeEventListener('resize', this.scheduleViewportReposition);
-            if(this.contentResizeFrame){
-                cancelAnimationFrame(this.contentResizeFrame);
-            }
-            if(this.viewportResizeFrame){
-                cancelAnimationFrame(this.viewportResizeFrame);
-            }
-        },
         methods: {
-            refreshSheetMetrics(){
-                this.sizeScreen = Math.round(window.visualViewport?.height || window.innerHeight || 0);
-                // scrollHeight measures the real content even when the sheet is
-                // currently clipped in its preview position.
-                this.subContHeigth = this.$refs.subCont ? this.$refs.subCont.scrollHeight : 0;
-                this.subContSupHeigth = this.$refs.subContSup ? this.$refs.subContSup.scrollHeight : 0;
-            },
-            getSafeTop(){
-                const styles = getComputedStyle(document.documentElement);
-                const inset = Number.parseFloat(styles.getPropertyValue('--safe-area-inset-top')) || 0;
-                return Math.max(16, inset + 12);
-            },
-            getExpandedTopPosition(){
-                this.refreshSheetMetrics();
-                const safeTop = this.getSafeTop();
-                const naturalHeight = Math.max(
-                    180,
-                    this.subContHeigth + this.subContSupHeigth + 32
-                );
-                const visibleHeight = Math.min(naturalHeight, this.sizeScreen - safeTop);
-                return Math.max(safeTop, this.sizeScreen - visibleHeight);
-            },
-            getPeekTopPosition(){
-                const expandedTop = this.getExpandedTopPosition();
-                const naturalHeight = this.sizeScreen - expandedTop;
-                const desiredHeight = this.mode === 'alert'
-                    ? Math.min(480, Math.max(320, this.sizeScreen * 0.48))
-                    : Math.min(420, Math.max(260, this.sizeScreen * 0.4));
-                const peekHeight = Math.min(naturalHeight, desiredHeight);
-                return Math.max(expandedTop, this.sizeScreen - peekHeight);
-            },
-            getInitialSheetState(){
-                return this.mode === 'alert' ? 'peek' : 'expanded';
-            },
-            getPositionForState(state){
-                if(state === 'expanded') return this.getExpandedTopPosition();
-                if(state === 'peek') return this.getPeekTopPosition();
-                return this.sizeScreen;
-            },
-            setSheetState(state){
-                this.sheetState = state;
-                this.y = Math.round(this.getPositionForState(state));
-            },
-            scheduleContentReposition(){
-                if(!this.open_b || this.isDragging || this.contentResizeFrame) return;
-                this.contentResizeFrame = requestAnimationFrame(() => {
-                    this.contentResizeFrame = null;
-                    const nextY = Math.round(this.getPositionForState(this.sheetState));
-                    if(Math.abs(nextY - this.y) > 1){
-                        this.y = nextY;
-                    }
-                });
-            },
-            scheduleViewportReposition(){
-                if(this.viewportResizeFrame) return;
-                this.viewportResizeFrame = requestAnimationFrame(() => {
-                    this.viewportResizeFrame = null;
-                    this.refreshSheetMetrics();
-                    this.y = Math.round(this.getPositionForState(this.open_b ? this.sheetState : 'closed'));
-                });
-            },
+            getInitialSheetState(){ return this.mode === 'alert' ? 'peek' : 'expanded'; },
             alertTypeByValue(value){
                 return this.alertTypes.find((type) => type.value === value) || null;
             },
@@ -1221,98 +1101,6 @@
                 }
                 return "P";
             },
-            onDragStart(pos) {
-                if(!this.open_b) return;
-
-                this.isDragging = true;
-                this.dragStartY = Number.isFinite(Number(pos?.y))
-                    ? Number(pos.y)
-                    : this.y;
-                this.dragStartState = this.sheetState;
-            },
-            onDrag(pos) {
-                if(!this.open_b) return;
-                this.isDragging = true;
-                this.disabledY = false;
-
-                const expandedTop = this.getExpandedTopPosition();
-                this.y = Math.round(clampSheetTop(pos.y, expandedTop, this.sizeScreen));
-            },
-            onDragStop(pos) {
-                if(!this.open_b) return;
-                this.isDragging = false;
-                this.active = true;
-                this.disabledY = false;
-
-                const expandedTop = this.getExpandedTopPosition();
-                const peekTop = this.getPeekTopPosition();
-                const targetState = selectSheetSnap({
-                    releasedY: pos.y,
-                    expandedTop,
-                    peekTop,
-                    viewportHeight: this.sizeScreen,
-                    originY: this.dragStartY,
-                    originState: this.dragStartState,
-                });
-                this.dragStartY = 0;
-                this.dragStartState = 'closed';
-                if(targetState === 'closed'){
-                    this.close();
-                    return;
-                }
-
-                // Never retain a random intermediate position: release always
-                // snaps to either the content-sized expanded state or preview.
-                this.setSheetState(targetState);
-            },
-            async open(){
-                await this.$nextTick();
-                this.refreshSheetMetrics();
-                const wasOpen = this.open_b;
-                this.open_b = true;
-                this.isDragging = false;
-                this.dragStartY = 0;
-                this.dragStartState = 'closed';
-                this.active = true;
-                this.disabledY = false;
-                this.setSheetState(this.getInitialSheetState());
-                if(!wasOpen){
-                    this.$emit('opened');
-                }
-                return true;
-            },
-            async openMiddle(){
-                await this.$nextTick();
-                this.refreshSheetMetrics();
-                const wasOpen = this.open_b;
-                this.open_b = true;
-                this.isDragging = false;
-                this.dragStartY = 0;
-                this.dragStartState = 'closed';
-                this.active = true;
-                this.disabledY = false;
-                this.setSheetState('peek');
-                if(!wasOpen){
-                    this.$emit('opened');
-                }
-                return true;
-            },
-            close(){
-                if(!this.open_b) return false;
-
-                this.isDragging = false;
-                this.dragStartY = 0;
-                this.dragStartState = 'closed';
-                this.open_b = false;
-                this.setSheetState('closed');
-
-                // Reload only for the legacy reservation notification flow.
-                if(this.mode === "reserve" && this.notif){
-                    this.$router.replace("/");
-                }
-                this.$emit('close');
-                return false;
-            },
             emit(value){
                 if( value == "time-valided" ){
                     if(this.$refs.TimeCardRef){
@@ -1329,13 +1117,5 @@
                 this.$emit(value)
             },
         },
-        watch:{
-            mode(){
-                if(!this.open_b) return;
-                this.$nextTick(() => {
-                    this.setSheetState(this.getInitialSheetState());
-                });
-            },
-        }
    });
 </script>

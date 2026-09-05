@@ -39,6 +39,20 @@
             background-color: var(--bg-app-color);
             color: var(--font-color-label);
         }
+
+        .keyboard-dismiss-row {
+            position: sticky;
+            bottom: 8px;
+            z-index: 5;
+            display: flex;
+            justify-content: flex-end;
+            margin: 10px 0;
+
+            .keyboard-dismiss-btn {
+                background-color: var(--blue-color) !important;
+                color: white !important;
+            }
+        }
     }
 </style>
 
@@ -47,9 +61,23 @@
     <v-form 
         v-if="modeIn=='payment-card'" 
         id="payment-form"
+        ref="checkoutForm"
     >
         <div id="payment-element">
             <!--Stripe.js injects the Payment Element-->
+        </div>
+
+        <div v-if="showKeyboardDismiss" class="keyboard-dismiss-row">
+            <v-btn
+                class="keyboard-dismiss-btn text-none"
+                prepend-icon="mdi-keyboard-close"
+                type="button"
+                size="small"
+                @pointerdown.prevent="dismissStripeKeyboard"
+                @click.prevent="dismissStripeKeyboard"
+            >
+                Terminé
+            </v-btn>
         </div>
 
         <v-checkbox
@@ -78,9 +106,23 @@
     <form 
         v-if="modeIn=='register-card'" 
         id="card-form"
+        ref="checkoutForm"
     >
         <div id="card-element">
             <!--Stripe.js injects the Payment Element-->
+        </div>
+
+        <div v-if="showKeyboardDismiss" class="keyboard-dismiss-row">
+            <v-btn
+                class="keyboard-dismiss-btn text-none"
+                prepend-icon="mdi-keyboard-close"
+                type="button"
+                size="small"
+                @pointerdown.prevent="dismissStripeKeyboard"
+                @click.prevent="dismissStripeKeyboard"
+            >
+                Terminé
+            </v-btn>
         </div>
 
         <v-btn
@@ -103,6 +145,8 @@
     import { defineComponent } from 'vue';
     import { mapState } from 'vuex';
     import { serverRequest } from '@/utils/serverApi.js';
+    import { Capacitor } from '@capacitor/core';
+    import { Keyboard } from '@capacitor/keyboard';
 
     let stripePromise;
 
@@ -125,6 +169,9 @@
             ...mapState("auth", ["customer_id"]),
             activePaymentIntentId(){
                 return this.paymentIntentId || this.$route?.query?.payment_intent || null;
+            },
+            showKeyboardDismiss(){
+                return this.isIOS && this.stripeInputFocused;
             },
         },
         components: {
@@ -152,11 +199,23 @@
                 price: "",
                 modeIn: "register-card",
                 appearancePaymentIntent: {},
+                isIOS: Capacitor.getPlatform() === 'ios',
+                stripeInputFocused: false,
+                stripeBlurTimer: null,
             };
         },
         beforeUnmount(){
+            document.removeEventListener('pointerdown', this.handleOutsidePointerDown, true);
+            if(this.hasStripeFocus()){
+                this.dismissStripeKeyboard();
+            }
             document.querySelector("#card-form")?.removeEventListener("submit", this.submitCard);
             document.querySelector("#payment-form")?.removeEventListener("submit", this.submitPayment);
+            this.unbindStripeFocusEvents(this.card);
+            this.unbindStripeFocusEvents(this.paymentElement);
+            if(this.stripeBlurTimer){
+                clearTimeout(this.stripeBlurTimer);
+            }
             this.card?.unmount?.();
             this.paymentElement?.unmount?.();
             this.card = null;
@@ -167,6 +226,8 @@
             this.$emit("unmount");
         },
         async mounted() {
+            // Capture the tap before an overlay or parent closes the sheet.
+            document.addEventListener('pointerdown', this.handleOutsidePointerDown, true);
             this.$emit("mount");
             console.log("mount-strip-checkout", this.mode);
             this.modeIn = this.mode;
@@ -229,6 +290,65 @@
             
         },
         methods: {
+            getCheckoutForm(){
+                const form = this.$refs.checkoutForm;
+                return form?.$el || form;
+            },
+            hasStripeFocus(){
+                // Focus inside Stripe's cross-origin iframe does not bubble
+                // to the form, but the iframe remains document.activeElement.
+                const form = this.getCheckoutForm();
+                return this.stripeInputFocused || Boolean(
+                    form?.contains(document.activeElement)
+                    && document.activeElement?.tagName === 'IFRAME'
+                );
+            },
+            handleOutsidePointerDown(event){
+                if(!this.hasStripeFocus()) return;
+                const form = this.getCheckoutForm();
+                const panel = form?.closest('.bottom-menu') || form;
+                if(panel && !panel.contains(event.target)){
+                    this.dismissStripeKeyboard();
+                }
+            },
+            bindStripeFocusEvents(element){
+                element?.on?.('focus', this.handleStripeFocus);
+                element?.on?.('blur', this.handleStripeBlur);
+            },
+            unbindStripeFocusEvents(element){
+                element?.off?.('focus', this.handleStripeFocus);
+                element?.off?.('blur', this.handleStripeBlur);
+            },
+            handleStripeFocus(){
+                if(this.stripeBlurTimer){
+                    clearTimeout(this.stripeBlurTimer);
+                    this.stripeBlurTimer = null;
+                }
+                this.stripeInputFocused = true;
+            },
+            handleStripeBlur(){
+                if(this.stripeBlurTimer){
+                    clearTimeout(this.stripeBlurTimer);
+                }
+                // Keep the action mounted long enough for a tap on "Terminé"
+                // to finish after Stripe's iframe loses focus.
+                this.stripeBlurTimer = setTimeout(() => {
+                    this.stripeInputFocused = false;
+                    this.stripeBlurTimer = null;
+                }, 150);
+            },
+            async dismissStripeKeyboard(){
+                this.card?.blur?.();
+                this.paymentElement?.blur?.();
+                if(this.stripeBlurTimer){
+                    clearTimeout(this.stripeBlurTimer);
+                    this.stripeBlurTimer = null;
+                }
+                this.stripeInputFocused = false;
+                if(Capacitor.isNativePlatform()){
+                    await Keyboard.hide().catch(() => undefined);
+                }
+            },
             // ******
             // card
             async mountCardRegister(){
@@ -268,6 +388,7 @@
                     const card = elements.create("card", cardElementOption);
                     card.mount("#card-element");
                     this.card = card;
+                    this.bindStripeFocusEvents(card);
                     const cardForm = document.querySelector("#card-form");
                     if (!cardForm) {
                         throw new Error("Le formulaire de carte est introuvable.");
@@ -399,6 +520,7 @@
                     const paymentElement = elements.create("payment", paymentElementOptions);
                     paymentElement.mount("#payment-element");
                     this.paymentElement = paymentElement;
+                    this.bindStripeFocusEvents(paymentElement);
                     document
                         .querySelector("#payment-form")
                         .addEventListener("submit", this.submitPayment);
@@ -439,6 +561,7 @@
                     const paymentElement = elements.create("payment", paymentElementOptions);
                     paymentElement.mount("#payment-element");
                     this.paymentElement = paymentElement;
+                    this.bindStripeFocusEvents(paymentElement);
                     document
                         .querySelector("#payment-form")
                         .addEventListener("submit", this.submitPayment);
@@ -471,6 +594,7 @@
                         this.paymentIntent = paymentIntent;
 
                         this.elements.update({ clientSecret: paymentIntent.client_secret});
+                        this.unbindStripeFocusEvents(this.paymentElement);
                         this.paymentElement.unmount();
                         const stripePK = await stripePromise;
                         const paymentElementOptions = {
@@ -479,6 +603,7 @@
                         this.elements = stripePK.elements({appearance: this.appearancePaymentIntent, clientSecret: paymentIntent.client_secret})
                         this.paymentElement = this.elements.create("payment", paymentElementOptions);
                         this.paymentElement.mount("#payment-element");
+                        this.bindStripeFocusEvents(this.paymentElement);
                     }
                 } catch (error) {
                     this.saveInfo = !this.saveInfo;

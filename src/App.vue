@@ -114,6 +114,7 @@
     import { Plugins } from '@capacitor/core';
     import { App } from '@capacitor/app';
     import { Browser } from '@capacitor/browser';
+    import { Keyboard } from '@capacitor/keyboard';
     import supabase from '@/utils/supabaseClient.js';
     import {
         completeAuthCallback,
@@ -163,6 +164,13 @@
             // console.log("[App] beforeMount")
         },
         async mounted(){
+            // The keyboard plugin hides this by default. Keep iOS's native
+            // dismissal control available, including on numeric keyboards.
+            if(isIOS){
+                Keyboard.setAccessoryBarVisible({ isVisible: true }).catch((error) => {
+                    console.error('[App] Unable to show keyboard accessory bar:', error);
+                });
+            }
             this.appStateListener = await App.addListener('appStateChange', this.handleAppStateChange);
             // This listener lives at application level because Stripe can
             // return while any profile component is mounted or recreated.
