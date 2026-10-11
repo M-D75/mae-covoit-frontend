@@ -193,7 +193,7 @@ const router = createRouter({
 import { FirebaseMessaging } from '@capacitor-firebase/messaging';
 import { Capacitor } from '@capacitor/core';
 
-import { Plugins } from '@capacitor/core';
+import { LocalNotifications } from '@capacitor/local-notifications';
 
 
 import supabase from '@/utils/supabaseClient.js';
@@ -204,7 +204,7 @@ import {
 } from '@/services/authProfile.js';
 import store from '../store'; 
 
-const { LocalNotifications } = Plugins;
+
 
 
 const isAndroid = Capacitor.getPlatform() === 'android';
@@ -213,7 +213,7 @@ const isIOS = Capacitor.getPlatform() === 'ios';
 async function sendNotification(title, body, data) {
     const permission = await LocalNotifications.requestPermissions();
    
-    if( permission && this.notification ){
+    if( permission.display === 'granted' && this.notification ){
 
         let option = {
             id: 1,

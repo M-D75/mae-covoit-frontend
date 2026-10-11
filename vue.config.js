@@ -3,6 +3,13 @@ const sassEmbedded = require('sass-embedded')
 
 module.exports = defineConfig({
     transpileDependencies: true,
+    pages: {
+        index: {
+            entry: 'src/main.js',
+            template: 'public/index.html',
+            title: 'Covia',
+        },
+    },
     css: {
         loaderOptions: {
             sass: {
@@ -14,7 +21,7 @@ module.exports = defineConfig({
         },
     },
     pwa: {
-        name: "Shima-GoGoGo",
+        name: "Covia",
         themeColor: '#1a1a1a',
         msTileColor: '#000000',
         appleMobileWebAppCapable: 'yes',

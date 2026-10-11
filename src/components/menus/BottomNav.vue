@@ -63,7 +63,8 @@
         v-model="value"
         grow
         :class="{ 'keyboard-open': keyboardOpen }"
-        :height="82+barBottom"
+        :height="82 + barBottom"
+        :style="{ paddingBottom: `${5 + barBottom}px` }"
     >
         <v-btn
             :active="false" 
@@ -106,12 +107,10 @@
 
 <script>
     // import $ from 'jquery'
-    import { SafeAreaController, SafeArea } from '@aashu-dubey/capacitor-statusbar-safe-area';
+    import { SafeArea } from '@aashu-dubey/capacitor-statusbar-safe-area';
     import { Capacitor } from '@capacitor/core';
     import { Keyboard } from '@capacitor/keyboard';
 
-    // const isAndroid = Capacitor.getPlatform() === 'android';
-    const isIOS = Capacitor.getPlatform() === 'ios';
 
     // Components
     export default {
@@ -119,22 +118,22 @@
         data() {
             return {
                 value: 0,
-                barHeight: 0,
                 barBottom: 0,
                 keyboardOpen: false,
                 keyboardListenerHandles: [],
                 viewportHeight: 0,
+                disposed: false,
             }
         },
         beforeMount (){
             this.value = this.routeIndex(this.$route.path);
 
-            if(isIOS)
-                this.barBottom = 10;
         },
         mounted (){
             console.log("Menu BootomNav:", this.value);
-            SafeAreaController.injectCSSVariables();
+            this.refreshSafeArea();
+            document.addEventListener('visibilitychange', this.handleVisibilityChange);
+            window.addEventListener('resize', this.refreshSafeArea);
             this.viewportHeight = window.visualViewport?.height || window.innerHeight || 0;
             window.visualViewport?.addEventListener('resize', this.handleViewportResize);
 
@@ -145,17 +144,25 @@
                     }),
                     Keyboard.addListener('keyboardDidHide', () => {
                         this.keyboardOpen = false;
+                        this.refreshSafeArea();
                     }),
                 ]).then((handles) => {
-                    this.keyboardListenerHandles = handles;
+                    if(this.disposed){
+                        handles.forEach((handle) => handle?.remove?.());
+                    }
+                    else{
+                        this.keyboardListenerHandles = handles;
+                    }
                 }).catch((error) => {
                     console.error('Unable to observe keyboard visibility:', error);
                 });
             }
 
-            // this.initStatusBarHeight();
         },
         beforeUnmount(){
+            this.disposed = true;
+            document.removeEventListener('visibilitychange', this.handleVisibilityChange);
+            window.removeEventListener('resize', this.refreshSafeArea);
             window.visualViewport?.removeEventListener('resize', this.handleViewportResize);
             this.keyboardListenerHandles.forEach((handle) => handle?.remove?.());
         },
@@ -181,15 +188,20 @@
                     this.value = this.routeIndex(this.$route.path);
                 }
             },
-            async initStatusBarHeight(){
-                const insets = await this.getSafeAreaInsets();
-                console.log('NavBar insets:', insets);
-                this.barHeight = insets["top"];
-                this.barBottom = insets["bottom"];
+            handleVisibilityChange(){
+                if(!document.hidden) this.refreshSafeArea();
             },
-            async getSafeAreaInsets () {
-                const insets = await SafeArea.getSafeAreaInsets();
-                return insets; // Ex. { "bottom":34, "top":47, "right":0, "left":0 }
+            async refreshSafeArea(){
+                if(!Capacitor.isNativePlatform()) return;
+                try{
+                    const insets = await SafeArea.getSafeAreaInsets();
+                    if(this.disposed) return;
+                    const bottom = Number(insets.bottom);
+                    this.barBottom = Number.isFinite(bottom) ? Math.max(0, bottom) : 0;
+                }
+                catch(error){
+                    console.warn('Unable to read navigation bar insets:', error);
+                }
             },
         },
         watch:{

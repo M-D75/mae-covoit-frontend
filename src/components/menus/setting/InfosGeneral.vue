@@ -64,6 +64,15 @@
             </template>
         </v-btn>
 
+        <div v-if="mode === 'data-protection'" class="mt-4">
+            <p v-if="privacyContactEmail">Contact : <a :href="'mailto:' + privacyContactEmail">{{ privacyContactEmail }}</a></p>
+            <p><a href="/privacy.html" target="_blank" rel="noopener">Politique de confidentialité</a></p>
+            <p><a href="/account-deletion.html" target="_blank" rel="noopener">Demander la suppression de mes données</a></p>
+            <p v-if="showDeleteError && privacyContactEmail">
+                <a :href="deletionRequestUrl">Demander un traitement manuel de la suppression</a>
+            </p>
+        </div>
+
         <v-btn
             v-if="mode=='data-protection'"
             class="text-none"
@@ -113,11 +122,15 @@
 
     // Components
     import BottomMenu from '@/components/menus/BottomMenu.vue';
+    import { privacyContactEmail } from '@/services/privacyPolicy.js';
 
     export default {
         name: "infos-general-comp",
         computed: {
             ...mapState("profil", ['cguAccepted']),
+            deletionRequestUrl(){
+                return `mailto:${privacyContactEmail}?subject=${encodeURIComponent('Covia — demande de suppression de compte')}`;
+            },
         },
         components: {
             BottomMenu,
@@ -138,6 +151,7 @@
         },
         data() {
             return {
+                privacyContactEmail,
                 showDeleteError: false,
                 deleteError: "",
                 showDeleteWarning: false,

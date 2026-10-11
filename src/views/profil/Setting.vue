@@ -419,8 +419,8 @@
             },
             async shareContent() {
                 await Share.share({
-                    title: 'Partagez ce lien',
-                    text: 'Hey, test la nouvelle appli de covoiturage !',
+                    title: 'Covia — Covoiturage à Mayotte',
+                    text: 'Découvrez Covia et partagez vos trajets à Mayotte !',
                     url: 'https://tchap-tchap.yt',
                     dialogTitle: 'Partagez avec vos amis',
                 });

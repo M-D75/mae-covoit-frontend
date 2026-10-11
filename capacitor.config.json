@@ -1,6 +1,6 @@
 {
   "appId": "com.maecovoit.app",
-  "appName": "LAGOON",
+  "appName": "Covia",
   "webDir": "dist",
   "server": {
     "androidScheme": "https"

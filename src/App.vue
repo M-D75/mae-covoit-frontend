@@ -111,7 +111,7 @@
     import { StatusBar } from '@capacitor/status-bar';
     import { SafeAreaController } from '@aashu-dubey/capacitor-statusbar-safe-area';
     import { Capacitor } from '@capacitor/core';
-    import { Plugins } from '@capacitor/core';
+    import { LocalNotifications } from '@capacitor/local-notifications';
     import { App } from '@capacitor/app';
     import { Browser } from '@capacitor/browser';
     import { Keyboard } from '@capacitor/keyboard';
@@ -126,7 +126,7 @@
 
     // TODO : à supprimé quand eddine aura finit
 
-    const { LocalNotifications } = Plugins;
+
 
     //import axios from 'axios';
     import { mapMutations, mapState, mapActions } from 'vuex';
@@ -490,7 +490,7 @@
             async sendNotification(title, body, data) {
                 const permission = await LocalNotifications.requestPermissions();
                
-                if( permission && this.notification ){
+                if( permission.display === 'granted' && this.notification ){
 
                     let option = {
                         id: 1,

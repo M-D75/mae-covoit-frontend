@@ -354,9 +354,9 @@
     import { serverRequest } from '@/utils/serverApi.js';
     
     import { mapActions, mapState, mapMutations } from 'vuex';
-    import { Plugins, Capacitor } from '@capacitor/core';
+    import { Capacitor } from '@capacitor/core';
+    import { LocalNotifications } from '@capacitor/local-notifications';
 
-    const { LocalNotifications } = Plugins;
 
     const isAndroid = Capacitor.getPlatform() === 'android';
     const isIOS = Capacitor.getPlatform() === 'ios';
@@ -454,7 +454,7 @@
             async sendNotification() {
                 const permission = await LocalNotifications.requestPermissions();
             
-                if( permission != undefined && permission && this.notification ){
+                if( permission.display === 'granted' && this.notification ){
                     await LocalNotifications.schedule({
                         notifications: [{
                             id: 1,

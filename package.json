@@ -7,7 +7,10 @@
     "build": "vue-cli-service build",
     "build:prod": "vue-cli-service build --mode production",
     "lint": "vue-cli-service lint",
-    "test:unit": "vitest --environment happy-dom"
+    "test:unit": "vitest --environment happy-dom",
+    "privacy:generate": "node scripts/generate-privacy-pages.cjs",
+    "prebuild": "npm run privacy:generate",
+    "prebuild:prod": "npm run privacy:generate"
   },
   "dependencies": {
     "@aashu-dubey/capacitor-statusbar-safe-area": "^3.0.0",
@@ -73,6 +76,7 @@
     "@vue/cli-plugin-router": "~5.0.0",
     "@vue/cli-plugin-vuex": "~5.0.0",
     "@vue/cli-service": "~5.0.0",
+    "dotenv": "10.0.0",
     "eslint": "^7.32.0",
     "eslint-plugin-vue": "^8.0.3",
     "happy-dom": "^13.8.2",

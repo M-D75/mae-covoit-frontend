@@ -292,7 +292,7 @@
                 </v-card-title>
 
                 <v-card-text>
-                    Nous n'avons pas pu obtenir votre localisation, vérifier les permessions.
+                    Votre position est indisponible. Vous pouvez continuer sans localisation. Pour l’activer, autorisez la localisation dans les réglages de l’application et vérifiez que la localisation du téléphone est activée.
                 </v-card-text>
 
                 <v-card-actions>
@@ -305,6 +305,20 @@
                 </v-card-actions>
             </v-card>
         </template>
+    </v-dialog>
+
+    <v-dialog v-model="locationConsentDialog" max-width="480">
+        <v-card title="Utiliser ma position">
+            <v-card-text>
+                <p v-if="isPublicMap">Votre position permet de vous situer sur la carte et de placer les signalements routiers. Elle n’est pas partagée en direct avec les autres utilisateurs de cette carte.</p>
+                <p v-else>Votre position permet de suivre le trajet. Lorsque vous activez cette option, elle est envoyée au serveur MAE Solutions et partagée en direct avec les participants de votre trajet.</p>
+                <p>La localisation approximative est acceptée. Une position précise améliore le suivi. Le suivi s’arrête quand vous désactivez cette option, quittez la carte ou passez l’application en arrière-plan.</p>
+            </v-card-text>
+            <v-card-actions>
+                <v-btn @click="locationConsentDialog = false">Continuer sans</v-btn>
+                <v-btn color="primary" :loading="locationBusy" @click="enableOwnLocation">{{ isPublicMap ? 'Utiliser ma position' : 'Activer le partage' }}</v-btn>
+            </v-card-actions>
+        </v-card>
     </v-dialog>
 
     <!-- annuler trajet dialog -->
@@ -370,6 +384,7 @@
 <script>
     import { defineComponent } from 'vue';
     import { Geolocation } from '@capacitor/geolocation';
+    import { getUserLocation } from '@/services/locationPermission.js';
     import { mapActions, mapState, mapGetters, mapMutations } from 'vuex';
     import io from 'socket.io-client';
     import supabase from '@/utils/supabaseClient.js';
@@ -382,8 +397,7 @@
 
     import { Capacitor } from '@capacitor/core';
 
-    const isAndroid = Capacitor.getPlatform() === 'android';
-    const isIOS = Capacitor.getPlatform() === 'ios';
+
     
     //componants
     import BottomMenuTrip from '@/components/menus/trip/BottomMenuTrip.vue';
@@ -595,7 +609,14 @@
                     },
                 },
                 getGeolocalisation: false,
-                shareLocalisation: true,
+                shareLocalisation: false,
+                locationConsentDialog: false,
+                locationBusy: false,
+                locationSessionActive: true,
+                locationForeground: true,
+                locationEpoch: 0,
+                preciseLocationAllowed: false,
+                locationStateListener: null,
                 watchId: null,
                 socket: null,
                 mode_driver: false,
@@ -631,14 +652,27 @@
             SafeAreaController.injectCSSVariables();
 
             // The public map deliberately skips every trip prerequisite. It
-            // only loads the caller's local position and anonymized alerts.
+            // loads alerts without requiring location or a booking.
+            document.addEventListener('visibilitychange', this.handleLocationVisibility);
+            if (Capacitor.isNativePlatform()) {
+                const { App } = await import('@capacitor/app');
+                if(!this.locationSessionActive) return;
+                this.locationStateListener = await App.addListener('appStateChange', ({ isActive }) => {
+                    this.locationForeground = isActive;
+                    if (!isActive) this.stopOwnLocation();
+                });
+                if(!this.locationSessionActive){
+                    await this.locationStateListener.remove();
+                    return;
+                }
+            }
+
             if(this.isPublicMap){
                 this.open_b = false;
                 this.bottomMenuMode = 'alert';
                 this.mode_driver = false;
                 this.routeAvail = false;
                 this.routes = [];
-                await this.initializeCurrentLocation();
                 this.socket = io(getServerUrl(this.modeCo), {
                     reconnection: true,
                     reconnectionDelay: 1000,
@@ -678,36 +712,6 @@
                 return;
             }
 
-            try {
-                if( isAndroid || isIOS ){
-                    const requestPermissions = await Geolocation.requestPermissions();
-                    console.log("check-requestPermissions", requestPermissions);
-
-                    const coordinates = await Geolocation.getCurrentPosition();
-                    const { latitude, longitude } = coordinates.coords;
-                    this.currentLocation.current = [latitude, longitude];
-                }
-                else{
-                    const coordinates = await Geolocation.getCurrentPosition();
-                    const { latitude, longitude } = coordinates.coords;
-                    this.currentLocation.current = [latitude, longitude];
-                }
-
-                const checkPermissions = await Geolocation.checkPermissions();
-                this.getGeolocalisation = checkPermissions.location == 'granted';
-                if( ! this.getGeolocalisation ){
-                    this.dialog = true;
-                }
-                console.log("check-checkPermissions", checkPermissions);
-
-            }
-            catch(error){
-                console.log("Error get localisation");
-                if( ! this.getGeolocalisation ){
-                    this.dialog = true;
-                }
-            }
-            
             // this.askNewMessage();
             
             console.log("itineraire", this.itineraire);
@@ -836,11 +840,17 @@
             
         },
         beforeUnmount() {
+            this.locationSessionActive = false;
+            document.removeEventListener('visibilitychange', this.handleLocationVisibility);
+            if (this.locationStateListener) this.locationStateListener.remove();
             clearInterval(this.timer);
             if (this.updateLocTimerId) {
                 clearInterval(this.updateLocTimerId);
                 this.updateLocTimerId = null;
             }
+            this.locationEpoch++;
+            this.shareLocalisation = false;
+            if(this.socket) this.checkSharedLoc();
             if (this.watchId) {
                 Geolocation.clearWatch({ id: this.watchId });
                 this.watchId = null;
@@ -856,27 +866,62 @@
             ...mapActions("search", ['getVillages']),
             ...mapActions("trip", ["getContacts"]),
             ...mapMutations("trip", ["SET_NOT_MESSAGE_VUE", "SET_TRIP_SELECTED"]),
-            /** Ask for location once; denial still leaves the public map usable. */
+            handleLocationVisibility(){
+                this.locationForeground = !document.hidden;
+                if(document.hidden) this.stopOwnLocation();
+            },
+            async stopOwnLocation(){
+                this.locationEpoch++;
+                this.shareLocalisation = false;
+                if(this.updateLocTimerId){
+                    clearInterval(this.updateLocTimerId);
+                    this.updateLocTimerId = null;
+                }
+                const watchId = this.watchId;
+                this.watchId = null;
+                if(this.socket) this.checkSharedLoc();
+                if(watchId){
+                    try{
+                        await Geolocation.clearWatch({ id: watchId });
+                    }
+                    catch(error){
+                        console.warn('Location watcher cleanup failed');
+                    }
+                }
+            },
             async initializeCurrentLocation(){
+                const epoch = this.locationEpoch;
                 try{
-                    if(isAndroid || isIOS){
-                        await Geolocation.requestPermissions();
-                    }
-                    const coordinates = await Geolocation.getCurrentPosition();
-                    const { latitude, longitude } = coordinates.coords || {};
-                    if(typeof latitude === 'number' && typeof longitude === 'number'){
-                        this.currentLocation.current = [latitude, longitude];
-                    }
-                    const permissions = await Geolocation.checkPermissions();
-                    this.getGeolocalisation = permissions.location === 'granted';
+                    const coordinates = await getUserLocation();
+                    if(!this.locationSessionActive || !this.locationForeground || document.hidden || epoch !== this.locationEpoch) return false;
+                    const { latitude, longitude } = coordinates.coords;
+                    this.currentLocation.current = [latitude, longitude];
+                    this.preciseLocationAllowed = Boolean(coordinates.precisePermission);
+                    this.getGeolocalisation = true;
+                    return true;
                 }
                 catch(error){
-                    console.warn("Current location unavailable", error?.message || error);
                     this.getGeolocalisation = false;
+                    if(this.locationSessionActive && this.locationForeground && epoch === this.locationEpoch) this.dialog = true;
+                    return false;
                 }
-                if(!this.getGeolocalisation){
-                    this.shareLocalisation = false;
+            },
+            async enableOwnLocation(){
+                if(this.locationBusy) return;
+                this.locationConsentDialog = false;
+                this.locationBusy = true;
+                try{
+                    if(await this.initializeCurrentLocation()){
+                        this.shareLocalisation = true;
+                        await this.shareLoc();
+                    }
+                }
+                catch(error){
+                    await this.stopOwnLocation();
                     this.dialog = true;
+                }
+                finally{
+                    this.locationBusy = false;
                 }
             },
             /** Refresh alerts after a server-side mutation, without DB exposure. */
@@ -887,21 +932,10 @@
             },
             async toggleOwnLocation(){
                 if(this.shareLocalisation){
-                    this.shareLocalisation = false;
-                    if(this.isPublicMap && this.watchId){
-                        await Geolocation.clearWatch({ id: this.watchId });
-                        this.watchId = null;
-                    }
-                    this.checkSharedLoc();
-                    return;
+                    await this.stopOwnLocation();
                 }
-
-                if(!this.getGeolocalisation){
-                    await this.initializeCurrentLocation();
-                }
-                if(this.getGeolocalisation){
-                    this.shareLocalisation = true;
-                    this.shareLoc();
+                else{
+                    this.locationConsentDialog = true;
                 }
             },
             updateThresholdCheck() {
@@ -1671,81 +1705,11 @@
                 }
             },
             async updateLoc(){
-                // Obtention de la position actuelle
-                //const coordinates = await Geolocation.getCurrentPosition();
-                //const { latitude, longitude } = coordinates.coords;
-
-                
-                //await this.getCurrentRouteInfos();
-
-                // const latitude = this.routes[0].polylineDecoded[0][0];
-                // const longitude = this.routes[0].polylineDecoded[0][1];
-                // this.currentLocation.current = [latitude, longitude];
-
-                //console.log("localisation", latitude, longitude, this.itineraire.destination.location.latLng.latLngTab);
-                // const bounds = [[latitude, longitude], [43.60461578085957, 3.880710839194244]]
-                // if(this.$refs.mapRef){
-                //     this.currentLocation.current = [latitude, longitude];
-                //     this.$refs.mapRef.leafletObject.fitBounds(bounds, {
-                //         padding: [18, 18] // padding en pixels autour des limites.
-                //     });
-                // }
-
-                // this.routeAvail = true;
-                // this.routes = this.routeTmp.slice(0, 1);
-                //console.log(this.routes);
-
-                // this.shareLoc();
-
-                if (this.updateLocTimerId) {
-                    clearInterval(this.updateLocTimerId);
-                    this.updateLocTimerId = null;
-                }
-
-                this.updateLocTimerId = setInterval(async function () {
-                    if( this.getGeolocalisation ){
-                        const coordinates = await Geolocation.getCurrentPosition();
-                        const { latitude, longitude } = coordinates.coords;
-                        const currentPosition = [latitude, longitude]; // Obtenez la position actuelle
-                        if(!this.isPublicMap){
-                            this.updatePassedPoints(currentPosition);
-                            this.updateRemainingEstimates(currentPosition);
-                        }
-
-                        this.currentLocation.current = [latitude, longitude];
-
-                        if (!this.isPublicMap && this.shareLocalisation && this.socket) {
-                            if(this.mode_driver){
-                                for (let index = 0; index < this.contacts.length; index++) {
-                                    let newLoc = {
-                                        idTrip: this.tripSelected.id,
-                                        from: this.userUid,
-                                        to: this.contacts[index].user_id,
-                                        latLng: this.currentLocation.current, 
-                                        status: "send=",
-                                    }
-                                    this.socket.emit("send-localisation", newLoc);
-                                }
-                            }
-                            else if (this.currentContact.userUid) {
-                                let newLoc = {
-                                    idTrip: this.tripSelected.id,
-                                    from: this.userUid,
-                                    to: this.currentContact.userUid,
-                                    latLng: this.currentLocation.current,
-                                    status: "send=--",
-                                }
-                                this.socket.emit("send-localisation", newLoc);
-                            }
-                        }
-                        if(!this.isPublicMap){
-                            this.checkAndRerouteIfNeeded(currentPosition);
-                        }
-                    }
-
-                }.bind(this), 10000); // Met à jour toutes les secondes, par exemple
+                // One watcher owns position acquisition and stops with the sharing session.
+                await this.shareLoc();
             },
             sendIsIn(){
+                if(!this.shareLocalisation || !this.locationSessionActive || !this.locationForeground || document.hidden) return;
                 if(this.mode_driver){
                     for (let index = 0; index < this.contacts.length; index++) {
                         let newLoc = {
@@ -1770,14 +1734,17 @@
                 }
             },
             async shareLoc(){
-                if( this.getGeolocalisation && !this.watchId ){
-                    this.watchId = await Geolocation.watchPosition({}, async (position, err) => {
+                if( this.getGeolocalisation && this.shareLocalisation && !this.watchId ){
+                    const epoch = this.locationEpoch;
+                    const watchId = await Geolocation.watchPosition({ enableHighAccuracy: this.preciseLocationAllowed, timeout: 15000 }, async (position, err) => {
+                        if(!this.shareLocalisation || !this.locationSessionActive || !this.locationForeground || document.hidden || epoch !== this.locationEpoch) return;
                         if (err) {
-                            this.handleServerError(err, "Erreur lors de la mise à jour de votre position.");
+                            await this.stopOwnLocation();
+                            this.dialog = true;
                             return;
                         }
 
-                        console.log('New position:', position);
+
 
                         const { latitude, longitude } = position.coords || {};
                         if (typeof latitude !== 'number' || typeof longitude !== 'number') {
@@ -1786,6 +1753,8 @@
                         const currentPosition = [latitude, longitude]; // Obtenez la position actuelle
                         if(!this.isPublicMap){
                             this.updatePassedPoints(currentPosition);
+                            this.updateRemainingEstimates(currentPosition);
+                            this.checkAndRerouteIfNeeded(currentPosition);
                         }
 
                         this.currentLocation.current = [latitude, longitude];
@@ -1815,6 +1784,12 @@
                             }
                         }
                     });
+                    if(!this.shareLocalisation || !this.locationSessionActive || !this.locationForeground || document.hidden || epoch !== this.locationEpoch){
+                        await Geolocation.clearWatch({ id: watchId });
+                    }
+                    else{
+                        this.watchId = watchId;
+                    }
                 }
             },
             formatDate(date) {
@@ -1969,7 +1944,7 @@
                 //console.log(parseInt(this.routes[0].infosGoogle.duration.replaceAll("s", "")), percent, this.routes[0].infosGoogle.distanceMeters);
                 //this.updatePassedPoints(positionActuelle);
                 //console.log("positionActuel", positionActuelle, prochainPoint);
-                if ( prochainPoint ) {
+                if ( prochainPoint && this.shareLocalisation && this.locationSessionActive && this.locationForeground && !document.hidden ) {
                     // Mettre à jour la position de l'individu
                     //positionActuelle = this.calculerNouvellePosition(positionActuelle, prochainPoint, this.simuleMovement.vitesse);
                     

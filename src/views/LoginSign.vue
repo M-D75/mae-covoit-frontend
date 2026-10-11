@@ -270,12 +270,11 @@
     import { mapMutations, mapState } from "vuex";
 
     import { Browser } from '@capacitor/browser';
-    import { Plugins } from '@capacitor/core';
+    import { LocalNotifications } from '@capacitor/local-notifications';
     import { Capacitor } from '@capacitor/core';
     import { buildAuthCallbackUrl } from '@/services/authCallback.js';
     import { resolvePostAuthPath } from '@/services/authProfile.js';
 
-    const { LocalNotifications } = Plugins;
 
     const isNative = Capacitor.isNativePlatform();
 
@@ -500,7 +499,7 @@
             async sendNotification() {
                 const permission = await LocalNotifications.requestPermissions();
                
-                if( permission ){
+                if( permission.display === 'granted' ){
 
                     await LocalNotifications.registerActionTypes({
                         types: [

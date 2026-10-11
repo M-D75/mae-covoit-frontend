@@ -1,7 +1,7 @@
 {
-  "name": "MaeMzimaRide",
-  "short_name": "MzimaRide",
-  "description": "Application de covoiturage",
+  "name": "Covia",
+  "short_name": "Covia",
+  "description": "Covoiturage à Mayotte avec Covia",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",
