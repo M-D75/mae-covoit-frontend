@@ -1,4 +1,4 @@
-export const privacyContactEmail = process.env.VUE_APP_PRIVACY_CONTACT_EMAIL || '';
+export const privacyContactEmail = process.env.VUE_APP_PRIVACY_CONTACT_EMAIL || 'mourdas.mohamed@mae-solutions.yt';
 export const privacySections = [
     {
         title: 'Responsable du traitement',
