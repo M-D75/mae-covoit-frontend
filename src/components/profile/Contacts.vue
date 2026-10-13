@@ -18,7 +18,9 @@
         position: absolute;
         top: 0;
         width: 100%;
-        height: 100vh;
+        height: 100%;
+        overflow-y: auto;
+        padding-bottom: var(--safe-bottom, 0px);
         background-color: var(--bg-app-color);
         .v-toolbar{
             color: var(--font-color-label);

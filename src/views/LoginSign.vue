@@ -89,7 +89,7 @@
     .foot-part {
         height: 100px;
         position: absolute;
-        bottom: 0px;
+        bottom: var(--safe-bottom, 0px);
         width: 100%;
     }
 

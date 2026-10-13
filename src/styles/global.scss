@@ -38,6 +38,21 @@
 
 :root{
     overflow: hidden;
+    --safe-bottom: max(var(--safe-area-inset-bottom, 0px), env(safe-area-inset-bottom, 0px));
+}
+
+// Vuetify already reserves the app navigation/footer height on some routes.
+// Use the larger inset rather than adding the system bar a second time.
+.v-application .v-main {
+    padding-bottom: max(var(--v-layout-bottom, 0px), var(--safe-bottom));
+}
+
+.v-snackbar.v-snackbar--bottom {
+    margin-bottom: calc(8px + var(--safe-bottom));
+}
+
+.v-dialog {
+    padding-bottom: var(--safe-bottom);
 }
  
 .v-application__wrap {

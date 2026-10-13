@@ -97,7 +97,7 @@
             overflow-y: auto;
             overscroll-behavior: contain;
             -webkit-overflow-scrolling: touch;
-            padding-bottom: calc(12px + var(--safe-area-inset-bottom, 0px));
+            padding-bottom: calc(12px + var(--sheet-safe-bottom, var(--safe-bottom, 0px)));
             .bar-up {
                 cursor: pointer;
                 margin: auto;

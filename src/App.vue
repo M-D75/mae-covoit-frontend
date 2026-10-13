@@ -164,6 +164,7 @@
             // console.log("[App] beforeMount")
         },
         async mounted(){
+            this.refreshSafeArea();
             // The keyboard plugin hides this by default. Keep iOS's native
             // dismissal control available, including on numeric keyboards.
             if(isIOS){
@@ -392,9 +393,6 @@
             
             window.addEventListener('resize', this.updateIsSmallScreen); 
 
-            if(SafeAreaController)
-                SafeAreaController.injectCSSVariables();
-
             if(isAndroid || isIOS)
                 StatusBar.setOverlaysWebView({ overlay: true });
             this.updateStatusBarStyle();
@@ -414,6 +412,17 @@
             },
         },
         methods: {
+            async refreshSafeArea() {
+                if (!Capacitor.isNativePlatform()) return;
+                try {
+                    await Promise.all([
+                        SafeAreaController.addStatusBarHeight(),
+                        SafeAreaController.addSafeAreaVariables(),
+                    ]);
+                } catch (error) {
+                    console.warn('[App] Unable to refresh system bar insets:', error);
+                }
+            },
             updateStatusBarStyle() {
                 if (!Capacitor.isNativePlatform()) return;
                 StatusBar.setStyle({ style: this.darkMode ? Style.Dark : Style.Light })
@@ -425,6 +434,7 @@
             ...mapMutations("general", ["SET_IS_NATIVE", "SET_APP_IS_ACTIVE"]),
             handleAppStateChange(state) {
                 if (state.isActive) {
+                    this.refreshSafeArea();
                     console.log("L'application est au premier plan");
                     this.SET_APP_IS_ACTIVE({app: state.isActive});
                 } 
@@ -494,6 +504,7 @@
             },
             updateIsSmallScreen() {
                 this.isSmallScreen = window.innerWidth <= 600;
+                this.refreshSafeArea();
             },
             async hideStatusBar(){
                 await StatusBar.hide();

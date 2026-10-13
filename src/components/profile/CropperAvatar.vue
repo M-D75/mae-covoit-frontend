@@ -15,7 +15,7 @@
 
     .v-btn.btn-crop {
         position: absolute;
-        bottom: 20px;
+        bottom: calc(20px + var(--safe-bottom, 0px));
         right: 20px;
     }
 

@@ -25,13 +25,14 @@
         position: fixed;
         padding: 0;
         padding-top: var(--safe-top);
+        padding-bottom: var(--safe-bottom, 0px);
         background-color: var(--bg-app-color);
         width: 100%;
         max-width: 100%;
         height: 100vh;
         z-index: 99991;
         .sub-cont {
-            height: 100vh;
+            height: 100%;
             &.scrolling {
                 overflow: scroll;
             }

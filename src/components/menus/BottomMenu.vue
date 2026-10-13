@@ -229,6 +229,7 @@
             overflow: auto;
             overscroll-behavior: contain;
             -webkit-overflow-scrolling: touch;
+            padding-bottom: var(--sheet-safe-bottom, var(--safe-bottom, 0px));
             .bar-up {
                 cursor: pointer;
                 margin: auto;

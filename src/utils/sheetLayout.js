@@ -27,6 +27,7 @@ export default {
             return {
                 top: `${this.y}px`,
                 bottom: `${this.viewportBottomInset}px`,
+                '--sheet-safe-bottom': `max(0px, calc(var(--safe-bottom, 0px) - ${this.viewportBottomInset}px))`,
                 maxHeight: `${Math.max(0, this.sizeScreen - this.getSafeTop())}px`,
             };
         },
