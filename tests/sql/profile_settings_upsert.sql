@@ -4,6 +4,8 @@ create table public.settings (
     account_id bigint,
     auto_accept_trip boolean default true
 );
+create table public.account (id bigint primary key, firstname text);
+insert into public.account values (1, 'Existing profile');
 create unique index settings_account_id_uidx
     on public.settings (account_id) where account_id is not null;
 insert into public.settings values (1, false), (null, true), (null, true);
@@ -18,6 +20,25 @@ begin
     exception when invalid_column_reference then
         raise notice 'Reproduced the original failure (42P10)';
     end;
+end;
+$$;
+
+\ir ../../supabase/migrations/023_add_account_village.sql
+update public.account set village = 'Sada' where id = 1;
+\ir ../../supabase/migrations/023_add_account_village.sql
+insert into public.account (id, firstname, village) values (2, 'New profile', null);
+
+do $$
+begin
+    if (select village from public.account where id = 1) is distinct from 'Sada' then
+        raise exception 'Existing villages must survive migration replay';
+    end if;
+    if (select firstname from public.account where id = 1) <> 'Existing profile' then
+        raise exception 'Existing profiles must remain unchanged';
+    end if;
+    if (select village from public.account where id = 2) is not null then
+        raise exception 'Village must remain optional';
+    end if;
 end;
 $$;
 
