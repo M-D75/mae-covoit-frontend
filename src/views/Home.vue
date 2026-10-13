@@ -133,6 +133,7 @@
 <!--  -->
 <script>
     import { mapActions, mapState } from 'vuex'
+    import { getDefaultAuthPath } from '@/services/authEntry.js';
 
     export default {
         name: 'home-view',
@@ -147,7 +148,7 @@
         methods: {
             ...mapActions("auth", ["checkSession"]),
             goToLoginSign(){
-                this.$router.push({ path: '/login' });
+                this.$router.push({ path: getDefaultAuthPath() });
             },
             async checkSessionIn(){
                 await this.checkSession();
@@ -158,7 +159,7 @@
                 else{
                     // Do not leave a delayed redirect alive: on a cold native
                     // OAuth return it could overwrite App.vue's callback route.
-                    this.$router.replace("/login");
+                    this.$router.replace(getDefaultAuthPath());
                 }
             },
         },

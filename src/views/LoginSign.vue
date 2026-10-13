@@ -87,10 +87,29 @@
     }
 
     .foot-part {
-        height: 100px;
-        position: absolute;
-        bottom: var(--safe-bottom, 0px);
-        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        align-items: center;
+        margin: 24px 0;
+        padding: 20px;
+        border: 1px solid var(--blue-color);
+        border-radius: 16px;
+        background-color: var(--white-bg-color);
+        p { color: var(--font-color-label); font-size: 16px; }
+    }
+
+    .auth-title {
+        position: static;
+        transform: none;
+        color: var(--font-color-label);
+        font-size: 26px;
+        text-align: center;
+        margin-top: 24px;
+    }
+
+    .auth-container {
+        padding-bottom: calc(24px + var(--safe-bottom, 0px));
     }
 
     .line-p {
@@ -114,11 +133,15 @@
 <!--  -->
 <template>
     <v-app class="ligth-mode login-sign">
-        <v-container >
+        <v-container class="auth-container">
+            <h1 class="auth-title">{{ passwordForgetMode ? 'Réinitialiser le mot de passe' : modeLogin ? 'Se connecter' : 'Créer un compte' }}</h1>
+            <v-alert v-if="confirmationPending" type="success" variant="tonal" class="mt-4" role="status">
+                Vérifiez votre boîte mail pour confirmer votre inscription avant de vous connecter.
+            </v-alert>
             <!-- From Sign/Connexion -->
             <v-row class="bloc-part">
                 <v-col>
-                    <v-form>
+                    <v-form ref="authForm" validate-on="submit" @submit.prevent="submitEmailAuth">
                         <v-text-field
                             v-model="email"
                             :error-messages="emailErrors"
@@ -126,6 +149,9 @@
                             type="email"
                             required
                             variant="solo"
+                            :rules="[rules.requiredEmail, rules.email]"
+                            :disabled="authSubmitting"
+                            autocomplete="email"
                         ></v-text-field>
 
                         <v-text-field
@@ -134,7 +160,9 @@
                             v-model="password"
                             type="password"
                             :error-messages="passwordErrors"
-                            :rules="[rules.required, rules.min]"
+                            :rules="modeLogin ? [rules.requiredPassword] : [rules.requiredPassword, rules.min]"
+                            :disabled="authSubmitting"
+                            :autocomplete="modeLogin ? 'current-password' : 'new-password'"
                             label="Mot de passe"
                             required
                         ></v-text-field>
@@ -144,7 +172,9 @@
                                 <v-btn
                                     v-if="!passwordForgetMode"
                                     class="mr-4 text-none"
-                                    @click="authService( modeLogin ? 'emailSignIn' : 'emailSignUp')"
+                                    type="submit"
+                                    :loading="authSubmitting"
+                                    :disabled="authSubmitting"
                                     rounded="xl" 
                                     size="x-large"
                                     variant="outlined"
@@ -157,7 +187,9 @@
                                 <v-btn 
                                     v-else
                                     class="mr-4 text-none"
-                                    @click="recoveryPasswordSupabase()"
+                                    type="submit"
+                                    :loading="authSubmitting"
+                                    :disabled="authSubmitting"
                                     rounded="xl" 
                                     size="x-large"
                                     variant="outlined"
@@ -170,13 +202,20 @@
 
                         <v-row v-if="modeLogin && !passwordForgetMode">
                             <v-col>
-                                <span @click="passwordForgetMode=true" >Mot de passe oublié ?</span>
+                                <v-btn variant="text" class="text-none" :disabled="authSubmitting" @click="showPasswordRecovery">Mot de passe oublié ?</v-btn>
                             </v-col>
                         </v-row>
                     </v-form>
                 </v-col>
             </v-row>
 
+
+        <div class="foot-part">
+            <p>{{ passwordForgetMode ? 'Vous connaissez votre mot de passe ?' : modeLogin ? 'Pas encore de compte ?' : 'Vous avez déjà un compte ?' }}</p>
+            <v-btn id="create-or-login" variant="tonal" color="primary" rounded="xl" size="large" block class="text-none" :disabled="authSubmitting" @click="createOrLoginSwitchMode">
+                {{ passwordForgetMode || !modeLogin ? 'Se connecter' : 'Créer un compte' }}
+            </v-btn>
+        </div>
 
             <!-- Connectez vous avec -->
             <v-row 
@@ -188,7 +227,7 @@
                 <v-row>
                     <v-col style="display: flex;">
                         <div class="line-p" style="border: solid 1px #bbb;"></div>
-                        <p class="con-with" style="color: gray; width:700px; text-align:center;">Connectez vous avec</p>
+                        <p class="con-with" style="color: gray; width:700px; text-align:center;">{{ modeLogin ? 'Connectez-vous avec' : 'Inscrivez-vous avec' }}</p>
                         <div class="line-p" style="border: solid 1px #bbb"></div>
                     </v-col>
                 </v-row>
@@ -204,6 +243,7 @@
                         rounded="xl"
                         size="large"
                         @click="authServiceSupabse(icon.fn)"
+                        :disabled="authSubmitting || overlayLoad"
                     >
                         <v-icon dark>
                             {{ icon.icn }}
@@ -216,12 +256,6 @@
             </v-row>
 
         </v-container>
-
-        <div class="foot-part">
-            <v-col>
-                <span id="create-or-login" @click="createOrLoginSwitchMode()">{{ labelModeCreateOrLogin }}</span>
-            </v-col>
-        </div>
 
         <!-- message -->
         <v-snackbar
@@ -274,6 +308,7 @@
     import { Capacitor } from '@capacitor/core';
     import { buildAuthCallbackUrl } from '@/services/authCallback.js';
     import { resolvePostAuthPath } from '@/services/authProfile.js';
+    import { rememberAuthEntry } from '@/services/authEntry.js';
 
 
     const isNative = Capacitor.isNativePlatform();
@@ -284,6 +319,7 @@
         },
         computed: {
             ...mapState("auth", ["logged_in", "account_created"]),
+            modeLogin() { return this.$route.path === '/login'; },
         },
         data() {
             return {
@@ -293,8 +329,8 @@
                 messageSnackbarError: "Error",
                 overlayLoad: true,
                 supabase: inject('supabase'),
-                modeLogin: this.$route.path == '/login' ? true : false,
-                labelModeCreateOrLogin: this.$route.path == '/login' ? "Pas encore de compte ?" : "Vous avez déjà un compte ?",
+                authSubmitting: false,
+                confirmationPending: false,
                 email: "",
                 emailErrors: "",
                 password: "",
@@ -309,9 +345,10 @@
                     "Invalid login credentials": "login ou mot de passe invalide",
                 },
                 rules: {
-                    required: value => !!value || 'Required.',
-                    min: v => v.length >= 8 || 'Min 8 characters',
-                    emailMatch: () => (`The email and password you entered don't match`),
+                    requiredEmail: value => !!value?.trim() || 'Veuillez renseigner votre e-mail.',
+                    requiredPassword: value => !!value || 'Veuillez renseigner votre mot de passe.',
+                    min: value => (value || '').length >= 8 || '8 caractères minimum.',
+                    email: value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((value || '').trim()) || 'Veuillez renseigner un e-mail valide.',
                 },
                 icons: [
                     {icn: 'mdi-apple', color:"black", fn:"apple"},
@@ -333,6 +370,38 @@
         },
         methods: {
             ...mapMutations("auth", ["SET_TOKEN"]),
+            async submitEmailAuth() {
+                if (this.authSubmitting || this.overlayLoad) return;
+                this.authSubmitting = true;
+                this.showSnackbarError = false;
+                try {
+                    const { valid } = await this.$refs.authForm.validate();
+                    if (!valid) return;
+                    this.confirmationPending = false;
+                    this.showSnackbar = false;
+                    this.email = this.email.trim();
+                    if (this.passwordForgetMode) await this.recoveryPasswordSupabase();
+                    else await this.authService(this.modeLogin ? 'emailSignIn' : 'emailSignUp');
+                } catch (error) {
+                    console.error('Email authentication failed:', error);
+                    this.messageSnackbarError = "La demande n'a pas pu être terminée. Veuillez réessayer.";
+                    this.showSnackbarError = true;
+                } finally {
+                    this.authSubmitting = false;
+                    this.overlayLoad = false;
+                }
+            },
+            async resetAuthValidation() {
+                this.emailErrors = '';
+                this.passwordErrors = '';
+                await this.$nextTick();
+                this.$refs.authForm?.resetValidation();
+            },
+            async showPasswordRecovery() {
+                this.passwordForgetMode = true;
+                this.password = '';
+                await this.resetAuthValidation();
+            },
             async authService(service){
                 switch (service) {
                     case "google":
@@ -379,7 +448,7 @@
             },
             async signUpEmailSupabase(){
                 this.overlayLoad = true;
-                let { error } = await this.supabase.auth.signUp({
+                let { data, error } = await this.supabase.auth.signUp({
                     email: this.email,
                     password: this.password,
                     options: {
@@ -406,6 +475,15 @@
 
                 this.email = "";
                 this.password = "";
+                rememberAuthEntry();
+                await this.resetAuthValidation();
+
+                if (data?.session) {
+                    await this.checkSessionIn();
+                    return;
+                }
+
+                this.confirmationPending = true;
 
                 this.overlayLoad = false;
                 this.messageSnackbar = "Inscription réussie! Vérifiez votre e-mail pour confirmer votre compte.";
@@ -427,6 +505,7 @@
                 }
 
                 this.email = "";
+                await this.resetAuthValidation();
 
                 this.overlayLoad = false;
                 this.messageSnackbar = "Demande reçue. Vérifiez votre e-mail pour réinitialiser le mot de passe.";
@@ -479,11 +558,11 @@
             },
             //Other
             createOrLoginSwitchMode(){
-                const link = this.$route.path == '/login' ? "/sign" : "/login";
-                this.labelModeCreateOrLogin = link == '/login' ? "Pas encore de compte ?" : "Vous avez déjà un compte ?";
-                this.$router.push({ path: link });
-                this.modeLogin = link == '/login' ? true : false;
+                const link = this.passwordForgetMode || !this.modeLogin ? '/login' : '/sign';
                 this.passwordForgetMode = false;
+                this.$router.push({ path: link, query: this.$route.query });
+                this.password = '';
+                this.resetAuthValidation();
             },
             async checkSessionIn(){
                 await this.$store.dispatch("auth/checkSession");
@@ -551,6 +630,12 @@
             },
         },
         watch: {
+            '$route.path'() {
+                this.passwordForgetMode = false;
+                this.password = '';
+                this.showSnackbarError = false;
+                this.resetAuthValidation();
+            },
         },
     }
 </script>

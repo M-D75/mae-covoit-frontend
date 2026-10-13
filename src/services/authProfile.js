@@ -58,12 +58,13 @@ export function resolveAuthGuardRedirect({
     requestedPath,
     authenticated,
     hasAccount,
+    unauthenticatedPath = '/login',
 }) {
     if(!requiresAuth) return null;
 
     if(!authenticated){
         return {
-            path: '/login',
+            path: unauthenticatedPath,
             query: fullPath ? { redirect: fullPath } : undefined,
         };
     }

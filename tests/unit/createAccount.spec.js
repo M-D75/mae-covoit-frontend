@@ -22,6 +22,7 @@ const auth = loadOptions(readFileSync('src/store/auth.js', 'utf8'), {
     '../router': {}, '../store': {},
     '@/utils/supabaseClient.js': { auth: { getUser } },
     '@/utils/serverApi.js': { serverRequest },
+    '@/services/authEntry.js': { rememberAuthEntry: vi.fn() },
 });
 const { descriptor } = parse(readFileSync('src/views/CreateAccount.vue', 'utf8'));
 const view = loadOptions(descriptor.script.content, {

@@ -203,6 +203,7 @@ import {
     resolveAuthGuardRedirect,
 } from '@/services/authProfile.js';
 import store from '../store'; 
+import { getDefaultAuthPath, rememberAuthEntry } from '@/services/authEntry.js';
 
 
 
@@ -247,6 +248,7 @@ router.beforeEach(async (to, from, next) => {
     if (to.meta.requiresAuth) {
         const authProfile = await fetchAuthProfileState(supabase);
         const hasAccount = Boolean(authProfile.account);
+        if (authProfile.authenticated) rememberAuthEntry();
 
         store.commit('auth/SET_LOGGED_IN', authProfile.authenticated);
         store.commit('auth/SET_ACCOUNT_CREATED', hasAccount);
@@ -264,6 +266,7 @@ router.beforeEach(async (to, from, next) => {
             requestedPath: to.query.redirect,
             authenticated: authProfile.authenticated,
             hasAccount,
+            unauthenticatedPath: getDefaultAuthPath(),
         });
         if(authRedirect){
             return next(authRedirect);

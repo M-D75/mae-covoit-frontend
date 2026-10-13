@@ -3,6 +3,7 @@
 import router from '../router';  
 import supabase from '@/utils/supabaseClient.js';
 import { serverRequest } from '@/utils/serverApi.js';
+import { rememberAuthEntry } from '@/services/authEntry.js';
 
 import store from '../store'; 
 
@@ -152,6 +153,7 @@ export default {
             commit('SET_LOGGED_IN', false);
             commit('SET_ACCOUNT_CREATED', false);
             if(data.session){
+                rememberAuthEntry();
                 commit('SET_LOGGED_IN', true);
                 commit('SET_TOKEN', {
                     token: data.session.access_token,
