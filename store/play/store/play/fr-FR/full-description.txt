@@ -1,0 +1,24 @@
+Covia — Ensemble, sur la même voie.
+
+Pensée pour les déplacements à Mayotte, Covia met en relation les conducteurs et les passagers qui souhaitent partager un trajet. Pour aller au travail, retrouver vos proches ou vous déplacer entre les communes de l’île, trouvez une place ou proposez celles de votre véhicule.
+
+TROUVEZ UN TRAJET
+Indiquez votre départ, votre destination, votre date et le nombre de passagers. Consultez les trajets proposés et leurs détails pour choisir celui qui correspond à votre déplacement, puis demandez votre réservation.
+
+PARTAGEZ VOS PLACES DISPONIBLES
+Vous prenez la route ? Publiez votre trajet, renseignez votre véhicule et les places proposées, puis gérez les demandes de réservation des passagers.
+
+ORGANISEZ VOTRE COVOITURAGE
+Échangez avec les participants grâce à la messagerie, retrouvez vos réservations et suivez vos trajets depuis votre compte. Les notifications vous tiennent informé des événements liés à votre covoiturage lorsque vous les activez.
+
+GÉREZ VOS PAIEMENTS
+Réglez vos réservations par carte bancaire ou avec votre solde prépayé. Rechargez vos crédits et consultez vos opérations depuis l’application. Les conducteurs peuvent suivre leurs gains et configurer leur compte Stripe pour recevoir leurs versements.
+
+RETROUVEZ-VOUS PLUS FACILEMENT
+La carte vous aide à vous repérer. Pendant un trajet, vous pouvez activer le partage de votre position avec les participants pour faciliter votre rencontre. La localisation est facultative et le partage reste sous votre contrôle.
+
+UNE APPLICATION ANCRÉE À MAYOTTE
+Covia accompagne les déplacements sur l’île et facilite la rencontre entre les personnes qui empruntent la même voie. Partager une voiture, c’est aussi partager les frais du trajet et un moment du quotidien.
+
+Une question ou besoin d’aide ?
+mourdas.mohamed@mae-solutions.yt
