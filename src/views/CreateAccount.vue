@@ -66,7 +66,7 @@
                 <v-card-subtitle>
                     Veuillez compléter les informations ci-dessous pour procéder.
                 </v-card-subtitle>
-                <v-form @submit.prevent>
+                <v-form @submit.prevent="tryCreateAccount">
                     <v-container>
                         <v-row>
                             <v-col>
@@ -81,7 +81,6 @@
                                         :rules="rules"
                                         :persistent-placeholder="false"
                                         :persistent-hint="false"
-                                        @input="name = keepLetterValue($event)"
                                     ></v-text-field>
                                 </div>
                             </v-col>
@@ -101,7 +100,6 @@
                                         :rules="rules"
                                         :persistent-placeholder="false"
                                         :persistent-hint="false"
-                                        @input="firstname = keepLetterValue($event)"
                                     ></v-text-field>
                                 </div>
                             </v-col>
@@ -134,7 +132,8 @@
                                     block 
                                     rounded="xl" 
                                     type="submit" 
-                                    @click="tryCreateAccount()" 
+                                    :loading="submitting"
+                                    :disabled="submitting"
                                     size="large"
                                 >
                                     Valider
@@ -183,7 +182,6 @@
 <!--  -->
 <script>
     import { mapActions, mapState } from 'vuex'
-    import { keepLetter } from '@/utils/utils.js';
     import { resolvePostAuthPath } from '@/services/authProfile.js';
 
     // Components
@@ -201,6 +199,7 @@
             return {
                 overlayLoad: true,
                 dialog: false,
+                submitting: false,
                 // user interact
                 name: "",
                 firstname: "",
@@ -208,10 +207,11 @@
                 // cond
                 rules: [
                     value => {
-                        if (value) return true
+                        if (value && value.trim()) return true
 
                         return 'Veuillez remplir ce champ'
                     },
+                    value => !value || value.trim().length <= 100 || '100 caractères maximum',
                 ],
                 showSnakBarInfo: {
                     showError: false,
@@ -223,10 +223,20 @@
             ...mapActions("auth", ["createAccount"]),
             ...mapActions("search", ['getVillages']),
             async tryCreateAccount(){
-                if( this.firstname != "" && this.name != "" ){
-                    const res = await this.createAccount({name: this.name, firstname: this.firstname, village: this.village});
+                if (this.submitting) return;
+                const name = this.name.trim();
+                const firstname = this.firstname.trim();
+                if (!name || !firstname || name.length > 100 || firstname.length > 100) {
+                    this.showSnakBarInfo.messageError = 'Veuillez renseigner un nom et un prénom de 100 caractères maximum.';
+                    this.showSnakBarInfo.showError = true;
+                    return;
+                }
+                this.submitting = true;
+                this.showSnakBarInfo.showError = false;
+                try {
+                    const res = await this.createAccount({name, firstname, village: this.village});
                     if( res.status == 0 && this.account_created ){
-                        this.$router.replace(resolvePostAuthPath({
+                        await this.$router.replace(resolvePostAuthPath({
                             authenticated: true,
                             hasAccount: true,
                             requestedPath: this.$route.query.redirect,
@@ -236,17 +246,28 @@
                         this.showSnakBarInfo.messageError = res.message;
                         this.showSnakBarInfo.showError = true;
                     }
+                } catch (error) {
+                    console.error('Profile completion failed:', error);
+                    this.showSnakBarInfo.messageError = "La validation n'a pas pu être terminée. Veuillez réessayer.";
+                    this.showSnakBarInfo.showError = true;
+                } finally {
+                    this.submitting = false;
                 }
-            },
-            keepLetterValue(event){
-                event.target.value = keepLetter(event.target.value);
-                return event.target.value;
             },
         },
         async mounted() {
-            await this.getVillages();
-            this.overlayLoad = false;
-            this.dialog = true;
+            try {
+                if (await this.getVillages() === false) {
+                    throw new Error('Villages unavailable');
+                }
+            } catch (error) {
+                console.error('Village loading failed:', error);
+                this.showSnakBarInfo.messageError = 'La liste des villages est indisponible. Vous pouvez compléter votre profil sans village.';
+                this.showSnakBarInfo.showError = true;
+            } finally {
+                this.overlayLoad = false;
+                this.dialog = true;
+            }
         },
     }
 </script>

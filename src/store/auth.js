@@ -55,14 +55,12 @@ export default {
     actions: {
         async createAccount({state, commit, rootState}, info){
 
-            const { data: { user } } = await supabase.auth.getUser();
-
-            if(!user){
-                console.log("user not exist")
-                return {status: 1, message: "Un probléme est survenu, veuillez réessayer plus tard"}
-            }
-            
             try {
+                const { data, error } = await supabase.auth.getUser();
+                if (error || !data?.user) {
+                    return {status: 1, message: "Votre session a expiré. Veuillez vous reconnecter."};
+                }
+
                 const profileResponse = await serverRequest('post', '/account/profile', {
                     mode: rootState.profil?.modeCo,
                     data: {
