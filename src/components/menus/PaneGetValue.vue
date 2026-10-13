@@ -6,7 +6,8 @@
             position: relative;
             .btn-close {
                 color: var(--font-color-label);
-                background-color: var(--bg-app-color);
+                background-color: transparent;
+                box-shadow: none;
             }
             .vc-calendar-pi {
                 box-shadow: none;
@@ -68,9 +69,11 @@
         <div class="sub-cont" :class="mode=='date' ? 'scrolling' : 'not-scroll'">
             
             <v-btn
-                v-if="mode=='date'"
                 class="btn-close"
                 icon="mdi-close"
+                variant="text"
+                :elevation="0"
+                aria-label="Fermer"
                 style="position: absolute; left: 0; top: 0;"
                 @click="$emit('close')"
             />
@@ -97,28 +100,26 @@
             />
 
             <Search 
-                v-if="mode=='depart'"
+                v-if="mode=='depart' || mode=='arriver'"
                 ref="SearchRef"
-                title="D'ou partez vous ?"
+                :title="mode=='depart' ? 'D’où partez-vous ?' : 'Où allez-vous ?'"
                 label="Saisissez un village"
                 :focus="true"
                 :items="villagesSortedFiltered"
                 :history="communesHistory"
                 @selected="getSelected()" 
                 @saisi="getSaisi()"
-            />
-
-            <Search 
-                v-if="mode=='arriver'"
-                ref="SearchRef"
-                title="Où allez vous ?"
-                label="Saisissez un village"
-                :focus="true"
-                :items="villagesSortedFiltered"
-                :history="communesHistory"
-                @selected="getSelected()" 
-                @saisi="getSaisi()"
-            />
+            >
+                <template #status>
+            <div class="px-6" role="status" aria-live="polite">
+                <p v-if="villagesLoading">Chargement des communes…</p>
+                <div v-else-if="villagesError">
+                    <p>Impossible de charger les communes. Vérifiez votre connexion.</p>
+                    <v-btn @click="loadVillages()">Réessayer</v-btn>
+                </div>
+            </div>
+                </template>
+            </Search>
         </div>
 
     </v-container>
@@ -133,6 +134,8 @@
 
     import { useScreens } from 'vue-screen-utils';
     import { Capacitor } from '@capacitor/core';
+    import { App } from '@capacitor/app';
+    import { Keyboard } from '@capacitor/keyboard';
 
     const isIOS = Capacitor.getPlatform() === 'ios';
 
@@ -153,8 +156,7 @@
                 }
                 else {
                     return this.villages.filter(
-                            (dataVillage) => this.saisi != dataVillage.village 
-                            && dataVillage.village.toLowerCase().replaceAll("'", "").includes(this.saisi.toLocaleLowerCase().replaceAll("'", "")) 
+                            (dataVillage) => dataVillage.village.toLowerCase().replaceAll("'", "").includes(this.saisi.toLocaleLowerCase().replaceAll("'", ""))
                             && dataVillage.village != this.depart 
                             && dataVillage.village != this.destination
                         )
@@ -189,6 +191,10 @@
                 columns: null,
                 expanded: false,
                 opened: false,
+                villagesLoading: false,
+                villagesError: false,
+                backListener: null,
+                backListenerEpoch: 0,
             }
         },
         created() {
@@ -218,9 +224,41 @@
             this.date = new Date(`${month}/${day}/${year}`);
 
         },
+        beforeUnmount() {
+            this.removeBackListener();
+        },
         methods: {
-            ...mapActions("search", ['ajouterAuHistorique', 'sauvegarderHistorique', 'chargerHistorique']),
+            ...mapActions("search", ['ajouterAuHistorique', 'sauvegarderHistorique', 'chargerHistorique', 'getVillages']),
+            async loadVillages() {
+                this.villagesLoading = true;
+                this.villagesError = false;
+                try {
+                    this.villagesError = !await this.getVillages() || this.villages.length === 0;
+                } catch {
+                    this.villagesError = true;
+                } finally {
+                    this.villagesLoading = false;
+                }
+            },
+            removeBackListener() {
+                this.backListenerEpoch++;
+                this.backListener?.remove();
+                this.backListener = null;
+            },
+            async listenForBack() {
+                this.removeBackListener();
+                if (Capacitor.getPlatform() !== 'android') return;
+                const epoch = this.backListenerEpoch;
+                const listener = await App.addListener('backButton', () => this.$emit('close'));
+                if (epoch !== this.backListenerEpoch || !this.openP) {
+                    await listener.remove();
+                    return;
+                }
+                this.backListener = listener;
+            },
             open(){
+                this.listenForBack().catch(console.error);
+                if (this.mode !== 'date') this.loadVillages();
                 console.log("bar-hei-", this.barHeight);
                 $(".pan-get-value").removeClass("closed");
                 const vue = this;
@@ -248,6 +286,8 @@
                 
             },
             close(){
+                this.removeBackListener();
+                if (Capacitor.isNativePlatform()) Keyboard.hide().catch(() => {});
                 const vue = this;
                 $(".pan-get-value").animate({top: `${this.sizeScreen}px`}, "fast", function(){
                     $(this).addClass("closed");

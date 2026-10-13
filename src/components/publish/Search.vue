@@ -227,7 +227,7 @@
                 
             </v-list>
         </v-card>
-        
+        <slot name="status" />
         <v-card
             class="mx-auto list"
         >
