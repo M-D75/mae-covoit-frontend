@@ -1,8 +1,9 @@
 /* eslint-disable no-console */
 
 import { register } from 'register-service-worker'
+import { Capacitor } from '@capacitor/core'
 
-if (process.env.NODE_ENV === 'production') {
+if (process.env.NODE_ENV === 'production' && !Capacitor.isNativePlatform()) {
   register(`${process.env.BASE_URL}service-worker.js`, {
     ready () {
       console.log(

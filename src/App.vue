@@ -108,7 +108,7 @@
     import $ from 'jquery';
     
     // nativ
-    import { StatusBar } from '@capacitor/status-bar';
+    import { StatusBar, Style } from '@capacitor/status-bar';
     import { SafeAreaController } from '@aashu-dubey/capacitor-statusbar-safe-area';
     import { Capacitor } from '@capacitor/core';
     import { LocalNotifications } from '@capacitor/local-notifications';
@@ -397,6 +397,7 @@
 
             if(isAndroid || isIOS)
                 StatusBar.setOverlaysWebView({ overlay: true });
+            this.updateStatusBarStyle();
 
             console.log("[App] Platforme", isAndroid ? 'isAndroid': 'isNotAndroid', isIOS ? 'isIOS' : 'isNotIOS');
 
@@ -407,7 +408,17 @@
             this.appStateListener?.remove();
             this.appUrlOpenListener?.remove();
         },
+        watch: {
+            darkMode() {
+                this.updateStatusBarStyle();
+            },
+        },
         methods: {
+            updateStatusBarStyle() {
+                if (!Capacitor.isNativePlatform()) return;
+                StatusBar.setStyle({ style: this.darkMode ? Style.Dark : Style.Light })
+                    .catch(error => console.error('[App] Status bar style:', error));
+            },
             ...mapActions("search", ["getOwnTrajetsEk", "getTrajetsEk", "getVillages"]),
             ...mapMutations("profil", ["SET_DARKMODE"]),
             ...mapMutations("auth", ["SET_TOKEN", "SET_REGISTER_DEVICE_TOKEN"]),
