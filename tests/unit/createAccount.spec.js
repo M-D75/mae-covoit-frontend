@@ -138,8 +138,20 @@ describe('profile completion form', () => {
             ? vi.fn().mockResolvedValue(false)
             : vi.fn().mockRejectedValue(new Error('Network'));
         await view.mounted.call(ctx);
-        expect(ctx.dialog).toBe(true);
         expect(ctx.overlayLoad).toBe(false);
         expect(ctx.showSnakBarInfo.showError).toBe(true);
+    });
+
+    it('finds villages from a partial name regardless of case or accents', () => {
+        expect(view.methods.filterVillage('M’Tsangamouji', 'TSANGA')).toBe(true);
+        expect(view.methods.filterVillage('Village École', 'ecol')).toBe(true);
+        expect(view.methods.filterVillage('Mamoudzou', '  mamo  ')).toBe(true);
+        expect(view.methods.filterVillage('Sada', 'mamo')).toBe(false);
+    });
+
+    it('submits an empty optional village after clearing the selection', async () => {
+        const ctx = { ...viewContext(), village: null };
+        await view.methods.tryCreateAccount.call(ctx);
+        expect(ctx.createAccount).toHaveBeenCalledWith({ name: "D'Angelo", firstname: 'Anne-Marie', village: '' });
     });
 });

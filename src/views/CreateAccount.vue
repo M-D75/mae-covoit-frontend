@@ -1,185 +1,154 @@
-
-<style lang="scss" model>
-
-    .v-card.create-account {
-        .v-input {
-            margin: 0;
-            .v-input__control{
-                width: 100% !important;
-                margin-left: inherit !important;
-                margin: auto !important;
-            }
-        }
+<style lang="scss">
+    // Keep this onboarding screen white, including when the app uses dark mode.
+    .v-main.profile-onboarding,
+    .v-main.profile-onboarding * {
+        --bg-app-color: #fff;
+        --white-bg-color: #fff;
+        --font-color-label: #1e1f26;
+        --gray-icon-color: #64748b;
     }
 
+    .v-card.create-account .v-input {
+        height: auto;
+        margin: 0;
+        .v-input__control { width: 100% !important; margin: 0 !important; }
+    }
 </style>
 
-<!-- scoped -->
 <style lang="scss" scoped>
-    .v-card {
-        background-color: #f5f5f5;
-        height: 90vh;
-        .v-card-subtitle{
-            white-space: inherit;
-        }
-
-        .v-input .v-input__control{
-            margin-left: inherit !important;
-            margin: auto !important;
-        }
-
-        .contain-input{
-            margin: 5px 0;
-            .label {
-                margin-top: 14px;
-                font-size: 14px;
-                text-transform: capitalize;
-                color: #1E1F26;
-            }
-            .v-field{
-                box-shadow: none;
-            }
-            .v-text-field {
-                font-size: 16px;
-                height: 50px;
-                .v-field__input {
-                    color: #1E1F26;
-                }
-            }
-        }
+    .profile-onboarding {
+        min-height: 100dvh;
+        background: #fff;
+        color: #1e1f26;
+        padding-top: calc(32px + var(--safe-area-inset-top, 0px));
     }
-
+    .onboarding-container {
+        max-width: 520px;
+        padding: 24px;
+    }
+    .create-account {
+        background: #fff;
+        overflow: visible;
+    }
+    .welcome-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 56px;
+        height: 56px;
+        margin-bottom: 24px;
+        border-radius: 18px;
+        background: #edf8f7;
+        color: #147d78;
+    }
+    h1 {
+        position: static;
+        transform: none;
+        font-size: 28px;
+        line-height: 1.25;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        text-align: left;
+        color: #1e1f26;
+    }
+    .intro {
+        margin-top: 12px;
+        margin-bottom: 32px;
+        color: #64748b;
+        font-size: 16px;
+        line-height: 1.6;
+    }
+    .profile-form {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+    .continue-button {
+        margin-top: 12px;
+        font-weight: 600;
+        letter-spacing: 0;
+    }
+    .profile-note {
+        margin-top: 20px;
+        color: #64748b;
+        text-align: center;
+        font-size: 13px;
+        line-height: 1.5;
+    }
 </style>
 
-
-<!--  -->
 <template>
-  
-    <v-main >
+    <v-main class="profile-onboarding">
+        <v-container class="onboarding-container">
+            <v-card class="create-account" theme="light" elevation="0" rounded="0">
+                <div class="welcome-icon" aria-hidden="true">
+                    <v-icon icon="mdi-account-outline" size="30" />
+                </div>
+                <h1>Qui êtes-vous ?</h1>
+                <p class="intro">Bienvenue sur Covia ! Présentez-vous pour que les autres voyageurs puissent vous reconnaître.</p>
 
-        <v-dialog
-            v-model="dialog"
-            persistent
-        >
-            <v-card class="create-account">
-                <v-toolbar color="gray" title="Qui êtes vous ?"></v-toolbar>
-                <v-card-subtitle>
-                    Veuillez compléter les informations ci-dessous pour procéder.
-                </v-card-subtitle>
-                <v-form @submit.prevent="tryCreateAccount">
-                    <v-container>
-                        <v-row>
-                            <v-col>
-                                <div 
-                                    class="contain-input"
-                                >
-                                    <!-- <div class="label text-subtitle">Nom</div> -->
-                                    <v-text-field 
-                                        v-model="name" 
-                                        label="Nom"
-                                        variant="solo"
-                                        :rules="rules"
-                                        :persistent-placeholder="false"
-                                        :persistent-hint="false"
-                                    ></v-text-field>
-                                </div>
-                            </v-col>
-                                
-                            <!-- </div> -->
-                        </v-row>
-
-                        <v-row>
-                            <v-col>
-                                <div 
-                                    class="contain-input"
-                                >
-                                    <v-text-field 
-                                        v-model="firstname" 
-                                        label="Prénom"
-                                        variant="solo"
-                                        :rules="rules"
-                                        :persistent-placeholder="false"
-                                        :persistent-hint="false"
-                                    ></v-text-field>
-                                </div>
-                            </v-col>
-                        </v-row>
-
-                        <v-row>
-                            <v-col>
-                                <div 
-                                    class="contain-input"
-                                >
-                                    <v-select
-                                        v-model="village"
-                                        label="Village"
-                                        :items="listVillages"
-                                        :persistent-placeholder="false"
-                                        variant="solo"
-                                    ></v-select>
-                                </div>
-
-                            </v-col>
-                        </v-row>
-
-                        <v-row>
-                            <v-col>
-                                <div 
-                                    class="contain-input"
-                                >
-                                <v-btn 
-                                    variant="plain"
-                                    block 
-                                    rounded="xl" 
-                                    type="submit" 
-                                    :loading="submitting"
-                                    :disabled="submitting"
-                                    size="large"
-                                >
-                                    Valider
-                                </v-btn>
-                                </div>
-                            </v-col>
-                        </v-row>
-                    </v-container>
+                <v-form class="profile-form" @submit.prevent="tryCreateAccount">
+                    <v-text-field
+                        v-model="name"
+                        label="Nom"
+                        autocomplete="family-name"
+                        variant="outlined"
+                        color="#147d78"
+                        :rules="rules"
+                        :disabled="submitting"
+                    />
+                    <v-text-field
+                        v-model="firstname"
+                        label="Prénom"
+                        autocomplete="given-name"
+                        variant="outlined"
+                        color="#147d78"
+                        :rules="rules"
+                        :disabled="submitting"
+                    />
+                    <v-autocomplete
+                        v-model="village"
+                        label="Village (facultatif)"
+                        :items="listVillages"
+                        :custom-filter="filterVillage"
+                        variant="outlined"
+                        color="#147d78"
+                        :disabled="submitting"
+                        :menu-props="{ maxHeight: 280, theme: 'light' }"
+                        clearable
+                        hint="Tapez quelques lettres, puis choisissez votre village."
+                        persistent-hint
+                        no-data-text="Aucun village trouvé. Essayez une autre recherche."
+                    />
+                    <v-btn
+                        class="continue-button text-none"
+                        color="#147d78"
+                        variant="flat"
+                        block
+                        rounded="xl"
+                        type="submit"
+                        :loading="submitting"
+                        :disabled="submitting"
+                        size="x-large"
+                    >
+                        Continuer
+                        <template #append><v-icon icon="mdi-arrow-right" /></template>
+                    </v-btn>
                 </v-form>
-
+                <p class="profile-note">Vous pourrez compléter vos informations depuis votre profil.</p>
             </v-card>
-        </v-dialog>
-
+        </v-container>
     </v-main>
 
-    <!-- Load -->
-    <v-overlay
-        :model-value="overlayLoad"
-        class="align-center justify-center"
-    >
-        <v-progress-circular
-            color="black"
-            indeterminate
-            size="64"
-        ></v-progress-circular>
+    <v-overlay :model-value="overlayLoad" class="align-center justify-center">
+        <v-progress-circular color="#147d78" indeterminate size="48" />
     </v-overlay>
-
-    <!-- message error -->
-    <v-snackbar
-        class="error-snackbar"
-        v-model="showSnakBarInfo.showError"
-        :timeout="4000"
-        color="error"
-    >
-        <div class="contain-ico">
-            <v-icon icon="mdi-alert-circle"></v-icon> 
-        </div>
-        <div>
-            <span>{{ showSnakBarInfo.messageError }}</span>
-        </div>
+    <v-snackbar class="error-snackbar" v-model="showSnakBarInfo.showError" :timeout="5000" color="error">
+        <div class="contain-ico"><v-icon icon="mdi-alert-circle" /></div>
+        <div><span>{{ showSnakBarInfo.messageError }}</span></div>
     </v-snackbar>
-
 </template>
 
-
-<!--  -->
 <script>
     import { mapActions, mapState } from 'vuex'
     import { resolvePostAuthPath } from '@/services/authProfile.js';
@@ -198,7 +167,6 @@
         data() {
             return {
                 overlayLoad: true,
-                dialog: false,
                 submitting: false,
                 // user interact
                 name: "",
@@ -222,6 +190,14 @@
         methods: {
             ...mapActions("auth", ["createAccount"]),
             ...mapActions("search", ['getVillages']),
+            filterVillage(value, query) {
+                const normalize = text => String(text || '')
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '')
+                    .toLocaleLowerCase('fr')
+                    .trim();
+                return normalize(value).includes(normalize(query));
+            },
             async tryCreateAccount(){
                 if (this.submitting) return;
                 const name = this.name.trim();
@@ -234,7 +210,7 @@
                 this.submitting = true;
                 this.showSnakBarInfo.showError = false;
                 try {
-                    const res = await this.createAccount({name, firstname, village: this.village});
+                    const res = await this.createAccount({name, firstname, village: this.village || ''});
                     if( res.status == 0 && this.account_created ){
                         await this.$router.replace(resolvePostAuthPath({
                             authenticated: true,
@@ -266,7 +242,6 @@
                 this.showSnakBarInfo.showError = true;
             } finally {
                 this.overlayLoad = false;
-                this.dialog = true;
             }
         },
     }
