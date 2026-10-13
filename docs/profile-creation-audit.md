@@ -17,6 +17,22 @@ existants, la réapplication et la possibilité de ne pas renseigner de village.
 
 ## Correctif SQL
 
+Un second extrait des logs, après correction de `village`, révèle `23505`
+sur `settings_pkey` avec l'ID 3. Le serveur ne fournit pas `settings.id` :
+le défaut est donc dans sa génération côté base. La migration 024 répare
+le compteur serial/identity lorsqu'il est en retard, sans le faire reculer
+s'il est déjà en avance. Elle échoue explicitement si aucune séquence
+associée à `settings.id` n'existe, afin de ne pas masquer un défaut différent.
+Le test SQL reproduit la collision et vérifie la réapplication et l'absence
+de recul d'une séquence saine.
+
+La création du profil et des préférences est actuellement en deux opérations.
+Le profil peut donc exister malgré un échec des préférences ; au redémarrage,
+le garde de navigation se base sur la présence du profil et laisse entrer
+l'utilisateur. Cela ne prouve pas que ses préférences ont été créées.
+Une reprise de `/account/profile` avec la session du même utilisateur répare
+les préférences sans supprimer le profil, une fois le schéma corrigé.
+
 Le serveur crée `account`, puis utilise un upsert de `settings` avec
 `onConflict: 'account_id'` et `ignoreDuplicates: true`. L'index de la migration
 010 est partiel (`where account_id is not null`) : PostgreSQL ne peut pas
@@ -59,7 +75,7 @@ migration, sa réapplication, l'absence de doublons et la conservation des
 préférences existantes. La compilation affiche des avertissements sur les
 dépréciations Sass, l'ancienneté de Browserslist et la taille des bundles.
 
-Appliquer les migrations 022 et 023 sur Supabase après les migrations précédentes,
+Appliquer les migrations 022, 023 et 024 sur Supabase après les migrations précédentes,
 puis déployer la nouvelle version du frontend. Le serveur n'a pas besoin
 de modification pour ce correctif.
 
