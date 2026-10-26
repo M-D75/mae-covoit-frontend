@@ -8,6 +8,7 @@ import {
 } from '@/components/maps/mapSurfaceUtils.js';
 import {
     getMapProvider,
+    getEffectiveMapProvider,
     MAP_PROVIDER_STORAGE_KEY,
     normalizeMapProvider,
     setMapProvider,
@@ -15,6 +16,7 @@ import {
 
 afterEach(() => {
     window.localStorage.removeItem(MAP_PROVIDER_STORAGE_KEY);
+    vi.unstubAllEnvs();
 });
 
 describe('map provider contract', () => {
@@ -54,6 +56,41 @@ describe('map provider contract', () => {
             color: '#ffa726',
             icon: 'mdi-traffic-cone',
         });
+    });
+
+    it.each(['google', 'leaflet'])('uses the %s renderer configured by the environment', provider => {
+        vi.stubEnv('VUE_APP_MAP_PROVIDER', provider);
+        vi.stubEnv('VUE_APP_API_VUE_GOOGLE_MAP', 'test-key');
+        expect(getMapProvider()).toBe(provider);
+        expect(getEffectiveMapProvider()).toBe(provider);
+    });
+
+    it('keeps an explicit screen override ahead of browser and environment choices', () => {
+        vi.stubEnv('VUE_APP_MAP_PROVIDER', 'google');
+        window.localStorage.setItem(MAP_PROVIDER_STORAGE_KEY, 'google');
+        expect(getMapProvider('leaflet')).toBe('leaflet');
+    });
+
+    it('keeps the saved browser choice ahead of the environment default', () => {
+        vi.stubEnv('VUE_APP_MAP_PROVIDER', 'google');
+        window.localStorage.setItem(MAP_PROVIDER_STORAGE_KEY, 'leaflet');
+        expect(getMapProvider()).toBe('leaflet');
+        window.localStorage.removeItem(MAP_PROVIDER_STORAGE_KEY);
+        expect(getMapProvider()).toBe('google');
+    });
+
+    it('falls back to Leaflet for an unknown or missing environment choice', () => {
+        vi.stubEnv('VUE_APP_MAP_PROVIDER', 'unknown');
+        expect(getMapProvider()).toBe('leaflet');
+        vi.stubEnv('VUE_APP_MAP_PROVIDER', '');
+        expect(getMapProvider()).toBe('leaflet');
+    });
+
+    it('uses Leaflet if Google is requested without its display key', () => {
+        vi.stubEnv('VUE_APP_MAP_PROVIDER', 'google');
+        vi.stubEnv('VUE_APP_API_VUE_GOOGLE_MAP', '');
+        expect(getMapProvider()).toBe('google');
+        expect(getEffectiveMapProvider()).toBe('leaflet');
     });
 
     it('can switch the global renderer at runtime', () => {
