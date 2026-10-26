@@ -82,6 +82,7 @@
         <!-- Le contrôleur métier reste identique ; seul le moteur de rendu change. -->
         <MapSurface
             :provider="mapProvider"
+            :reserve-bottom-space="open_b"
             :zoom="zoom"
             :center="center"
             :origin="itineraire.origin"

@@ -1014,6 +1014,7 @@
                 this.mode = this.modePublish.work[this.indexMode].otherWay[0].mode;
             },
             setItineraire(loc, infoVillage){
+                this.itineraire[loc].infos.villageId = infoVillage.id;
                 this.itineraire[loc].infos.village = infoVillage.village;
                 this.itineraire[loc].infos.commune = infoVillage.commune;
                 this.itineraire[loc].location.latLng.latitude = infoVillage.lat;

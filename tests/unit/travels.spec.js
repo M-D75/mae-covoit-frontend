@@ -62,3 +62,10 @@ describe('normalizePassengerTrips', () => {
     expect(trip.price).toBeGreaterThan(0); // fallback random price
   });
 });
+
+it('retains village IDs for unambiguous map zones without changing the stored route', () => {
+    const [trip] = normalizePassengerTrips([baseRecord], () => 'Miréréni');
+    expect(trip.village_departure_id).toBe(1);
+    expect(trip.village_arrival_id).toBe(2);
+    expect(trip.route).toBe(baseRecord.trip.route);
+});

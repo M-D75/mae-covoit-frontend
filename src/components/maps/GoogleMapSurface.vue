@@ -7,6 +7,10 @@
         :options="mapOptions"
         @tilesloaded="handleReady"
     >
+        <GMapPolygon v-for="zone in zonePolygons" :key="zone.key" :paths="zone.googlePaths"
+            :options="{ strokeColor: zone.color, strokeWeight: 2, fillColor: zone.color,
+                fillOpacity: zone.fillOpacity, clickable: false, zIndex: 1 }" />
+
         <GMapMarker v-if="originCoordinate" :position="originCoordinate">
             <GMapInfoWindow>{{ originLabel }}</GMapInfoWindow>
         </GMapMarker>
@@ -103,10 +107,14 @@ import {
 
 const svgDataUrl = (svg) => `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 
+import { villageZonePolygons } from './villageZoneUtils.js';
+
 export default defineComponent({
     name: 'GoogleMapSurface',
     emits: ['ready', 'route-select', 'alert-select'],
     props: {
+        bottomPadding: { type: Number, default: 24 },
+        villageZones: { type: Array, default: () => [] },
         center: { type: [Array, Object], required: true },
         zoom: { type: Number, default: 11 },
         origin: { type: Object, default: null },
@@ -145,6 +153,7 @@ export default defineComponent({
         };
     },
     computed: {
+        zonePolygons() { return villageZonePolygons(this.villageZones); },
         googleCenter() {
             return toGoogleCoordinate(this.center) || { lat: -12.7850694, lng: 45.1658908 };
         },
@@ -186,6 +195,10 @@ export default defineComponent({
         },
     },
     watch: {
+        bottomPadding() { this.fitRouteBounds(); },
+        villageZones() { this.fitRouteBounds(); },
+        origin() { this.fitRouteBounds(); },
+        destination() { this.fitRouteBounds(); },
         routes() {
             this.fitRouteBounds();
         },
@@ -246,6 +259,7 @@ export default defineComponent({
             const coordinates = [
                 toCoordinateArray(this.origin),
                 toCoordinateArray(this.destination),
+                ...this.zonePolygons.flatMap(zone => zone.leafletPaths.flat()),
                 ...this.routes.flatMap((route) => route.polylineDecoded || []).map(toCoordinateArray),
             ].filter(Boolean);
             if (coordinates.length < 2) {
@@ -253,7 +267,7 @@ export default defineComponent({
             }
             const bounds = new window.google.maps.LatLngBounds();
             coordinates.forEach(([latitude, longitude]) => bounds.extend({ lat: latitude, lng: longitude }));
-            map.fitBounds(bounds, 18);
+            map.fitBounds(bounds, { top: 90, right: 24, bottom: this.bottomPadding, left: 24 });
         },
     },
 });

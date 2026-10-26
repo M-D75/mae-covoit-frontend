@@ -49,6 +49,10 @@
             attribution="&copy; OpenStreetMap contributors"
         />
 
+        <l-polygon v-for="zone in zonePolygons" :key="zone.key"
+            :lat-lngs="zone.leafletPaths" :color="zone.color" :weight="2"
+            :fill-color="zone.color" :fill-opacity="zone.fillOpacity" :interactive="false" />
+
         <l-marker v-if="originCoordinate" :lat-lng="originCoordinate">
             <l-popup>{{ originLabel }}</l-popup>
         </l-marker>
@@ -141,6 +145,7 @@ import {
     LMap,
     LMarker,
     LPolyline,
+    LPolygon,
     LPopup,
     LTileLayer,
     LTooltip,
@@ -153,6 +158,8 @@ import {
     toCoordinateArray,
 } from './mapSurfaceUtils.js';
 
+import { villageZonePolygons } from './villageZoneUtils.js';
+
 export default defineComponent({
     name: 'LeafletMapSurface',
     components: {
@@ -160,12 +167,15 @@ export default defineComponent({
         LMap,
         LMarker,
         LPolyline,
+        LPolygon,
         LPopup,
         LTileLayer,
         LTooltip,
     },
     emits: ['ready', 'route-select', 'alert-select'],
     props: {
+        bottomPadding: { type: Number, default: 24 },
+        villageZones: { type: Array, default: () => [] },
         center: { type: [Array, Object], required: true },
         zoom: { type: Number, default: 11 },
         origin: { type: Object, default: null },
@@ -185,6 +195,7 @@ export default defineComponent({
         };
     },
     computed: {
+        zonePolygons() { return villageZonePolygons(this.villageZones); },
         leafletCenter() {
             return toCoordinateArray(this.center) || [-12.7850694, 45.1658908];
         },
@@ -223,6 +234,10 @@ export default defineComponent({
         },
     },
     watch: {
+        bottomPadding() { this.fitRouteBounds(); },
+        villageZones() { this.fitRouteBounds(); },
+        origin() { this.fitRouteBounds(); },
+        destination() { this.fitRouteBounds(); },
         routes() {
             this.fitRouteBounds();
         },
@@ -256,11 +271,12 @@ export default defineComponent({
             }
             await nextTick();
             const routePoints = this.routes.flatMap((route) => route.polylineDecoded || []);
-            const bounds = [this.originCoordinate, this.destinationCoordinate, ...routePoints]
+            const zonePoints = this.zonePolygons.flatMap(zone => zone.leafletPaths.flat());
+            const bounds = [this.originCoordinate, this.destinationCoordinate, ...routePoints, ...zonePoints]
                 .map((point) => toCoordinateArray(point))
                 .filter(Boolean);
             if (bounds.length >= 2 && this.$refs.mapRef?.leafletObject) {
-                this.$refs.mapRef.leafletObject.fitBounds(bounds, { padding: [18, 18] });
+                this.$refs.mapRef.leafletObject.fitBounds(bounds, { paddingTopLeft: [24, 90], paddingBottomRight: [24, this.bottomPadding] });
             }
         },
     },

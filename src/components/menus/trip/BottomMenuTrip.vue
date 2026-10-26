@@ -824,6 +824,7 @@
                                     </v-icon>
                                     {{ booking.in_car ? 'Confirmé' : 'En attente' }}
                                 </v-chip>
+                                <v-btn v-if="isDriver && !booking.in_car && booking.is_accepted" size="small" variant="text" @click.stop="$emit('confirm-boarding', booking)">Code de montée</v-btn>
                                 <v-btn
                                     v-if="isDriver && !booking.in_car"
                                     size="small"
@@ -927,7 +928,7 @@
     export default defineComponent({
         name: 'bottom-menu',
         mixins: [sheetLayout],
-        emits: ["opened", "close", "alert", "select-alert-type", "confirm-alert", "mark-passenger-no-show", "vote-alert"],
+        emits: ["opened", "close", "alert", "select-alert-type", "confirm-alert", "mark-passenger-no-show", "confirm-boarding", "vote-alert"],
         components: {
             SheetDragHandle,
         },

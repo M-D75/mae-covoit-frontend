@@ -170,9 +170,9 @@
             <v-btn 
                 v-else-if="!isPublicMap && !mode_driver && !passengerConfirmedInCar"
                 icon
-                @click="InCar()"
+                @click="boardingDialog = true"
             >
-                <v-icon>mdi-check</v-icon>
+                <v-icon>mdi-key</v-icon>
             </v-btn>
 
             <v-chip
@@ -182,7 +182,7 @@
                 prepend-icon="mdi-check-circle"
                 class="confirmation-chip"
             >
-                Présence validée
+                Montée confirmée
             </v-chip>
         </div>
 
@@ -201,9 +201,12 @@
         <!-- Les interactions trajet/alertes sont identiques quel que soit le moteur. -->
         <MapSurface
             :provider="mapProvider"
+            :reserve-bottom-space="open_b"
             :zoom="zoom"
             :center="center"
             :origin="isPublicMap ? null : itineraire.origin"
+            :origin-village-id="isPublicMap ? null : tripSelected.village_departure_id"
+            :destination-village-id="isPublicMap ? null : tripSelected.village_arrival_id"
             :destination="isPublicMap ? null : itineraire.destination"
             :routes="isPublicMap ? [] : routes"
             :route-available="!isPublicMap && routeAvail"
@@ -259,9 +262,12 @@
         @confirm-alert="createLocalAlert"
         @vote-alert="voteSelectedAlert"
         @mark-passenger-no-show="markPassengerNoShow"
+        @confirm-boarding="boardingDialog = true"
         @close="handleBottomMenuClose"
         @opened="open_b = true"
     />
+
+    <BoardingCode v-model="boardingDialog" :is-driver="mode_driver" :bookings="tripSelected?.bookings || []" :user-id="userId" :mode="modeCo" @confirmed="applyBoardingConfirmation" />
 
     <!-- Load -->
     <v-overlay
@@ -402,6 +408,8 @@
     //componants
     import BottomMenuTrip from '@/components/menus/trip/BottomMenuTrip.vue';
     import MapSurface from '@/components/maps/MapSurface.vue';
+    import BoardingCode from '@/components/trip/BoardingCode.vue';
+    import { boardingReservations } from '@/components/trip/boardingUtils.js';
 
     export default defineComponent({
         name: 'results-view',
@@ -420,8 +428,8 @@
                 return this.tripSelected.bookings.filter((booking) => !booking.passenger_no_show);
             },
             passengerConfirmedInCar(){
-                const booking = this.getPassengerBooking();
-                return booking ? Boolean(booking.in_car) : false;
+                const bookings = boardingReservations(this.tripSelected?.bookings || [], false, this.userId);
+                return bookings.length > 0 && bookings.every(booking => Boolean(booking.in_car));
             },
             center() {
                 if(this.isPublicMap && Array.isArray(this.currentLocation.current) && this.currentLocation.current.length >= 2){
@@ -487,6 +495,7 @@
         components: {
             BottomMenuTrip,
             MapSurface,
+            BoardingCode,
         },
         props: {
             mapProvider: {
@@ -534,6 +543,7 @@
         },
         data() {
             return {
+                boardingDialog: false,
                 
                 nowDate: new Date(),
                 timer: null,
@@ -807,23 +817,7 @@
                 this.localisation = this.localisation.filter((loc) => loc.idTrip != infos.idTrip);
             });
 
-            this.socket.on('check-passenger-in-car', (infos) => {
-                console.log("check-passenger-in-car", infos);
-                const markBooking = () => {
-                    this.tripSelected.bookings.map((booking) => {
-                        if( booking.id == infos.idBooking ){
-                            booking.in_car = true;
-                        }
-                    });
-                };
 
-                if( this.mode_driver ){
-                    markBooking();
-                }
-                else if( infos.from == this.userUid ){
-                    markBooking();
-                }
-            });
             
             console.log("tripSelected", this.tripSelected);
 
@@ -946,49 +940,14 @@
                 console.log("updateThresholdCheck", this.isBeforeThreshold, departure, diffInMin, this.minutesBefore);
                 
             },
-            /** Confirm passenger presence and settle the related payment server-side. */
-            async InCar(){
-                console.log("InCar", this.tripSelected);
-
-                try{
-                    const response = await serverRequest('post', '/bookings/presence', {
-                        mode: this.modeCo,
-                        data: { tripId: this.tripSelected.id },
-                    });
-                    const result = response.data?.data;
-                    const updatedBookings = Array.isArray(result?.bookings) ? result.bookings : [];
-                    if( updatedBookings.length === 0 ){
-                        throw new Error("Réservation introuvable pour ce trajet.");
-                    }
-
-                    const updatesById = new Map(updatedBookings.map((booking) => [booking.id, booking]));
-                    const localBookings = (this.tripSelected.bookings || []).map((booking) => (
-                        updatesById.has(booking.id)
-                            ? { ...booking, ...updatesById.get(booking.id) }
-                            : booking
-                    ));
-                    this.SET_TRIP_SELECTED({
-                        ...this.tripSelected,
-                        bookings: localBookings,
-                        booking: localBookings,
-                    });
-                    await this.$store.dispatch("profil/getSoldes");
-
-                    const passengerBooking = updatedBookings[0];
-                    if( this.socket && this.currentContact?.userUid ){
-                        this.socket.emit("in_car", {
-                            idBooking: passengerBooking.id,
-                            from: this.userUid,
-                            to: this.currentContact.userUid,
-                        });
-                    }
-
-                    this.showSuccess("Présence validée, bon trajet !");
-                }
-                catch(error){
-                    this.handleServerError(error, error?.message || "Nous n'avons pas pu valider votre présence.");
-                }
-
+            applyBoardingConfirmation(result){
+                const ids = new Set((result.bookingIds || []).map(Number));
+                if (!(this.tripSelected.bookings || []).some(booking => ids.has(Number(booking.id)) && !booking.in_car)) return;
+                const updates = new Map((result.bookings || []).map(booking => [Number(booking.id), booking]));
+                const bookings = (this.tripSelected.bookings || []).map(booking => ids.has(Number(booking.id))
+                    ? { ...booking, ...updates.get(Number(booking.id)), in_car: true } : booking);
+                this.SET_TRIP_SELECTED({ ...this.tripSelected, bookings, booking: bookings });
+                if (!this.mode_driver) this.$store.dispatch('profil/getSoldes');
             },
             async ensurePassengerBookings(){
                 if(this.mode_driver || !this.tripSelected){

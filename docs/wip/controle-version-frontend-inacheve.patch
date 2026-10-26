@@ -1,0 +1,412 @@
+diff --git a/src/App.vue b/src/App.vue
+index 3efdf62..6164df1 100644
+--- a/src/App.vue
++++ b/src/App.vue
+@@ -97,9 +97,11 @@
+ <template>
+     <!-- ligth-mode or dark-mode init ligth-mode -->
+     <v-app class="ligth-mode"> 
++        <VersionGate>
+         <router-view ref="routerViewRef"/>
+         <!-- Menu Nav -->
+         <BottomNav v-if="isMobileOrSmallScreen && bottomNav"/>
++        </VersionGate>
+     </v-app>
+ </template>
+ 
+@@ -136,11 +138,13 @@
+ 
+     //Component
+     import BottomNav from './components/menus/BottomNav.vue';
++    import VersionGate from './components/VersionGate.vue';
+ 
+     export default {
+         name: 'App',
+         components: {
+             BottomNav,
++            VersionGate,
+         },
+         computed: {
+             ...mapState("profil", ["darkMode", "userUid", "notification", "profil"]),
+diff --git a/src/registerServiceWorker.js b/src/registerServiceWorker.js
+index a09ed87..00c8345 100644
+--- a/src/registerServiceWorker.js
++++ b/src/registerServiceWorker.js
+@@ -21,7 +21,7 @@ if (process.env.NODE_ENV === 'production' && !Capacitor.isNativePlatform()) {
+       console.log('New content is downloading.')
+     },
+     updated () {
+-      console.log('New content is available; please refresh.')
++      window.dispatchEvent(new CustomEvent('covia-web-update-ready'))
+     },
+     offline () {
+       console.log('No internet connection found. App is running in offline mode.')
+diff --git a/src/utils/serverApi.js b/src/utils/serverApi.js
+index 1e3eb7d..10f4945 100644
+--- a/src/utils/serverApi.js
++++ b/src/utils/serverApi.js
+@@ -1,4 +1,5 @@
+ import axios from 'axios';
++import { getClientHeaders, notifyUpdateRequired } from '@/utils/clientIdentity.js';
+ import supabase from '@/utils/supabaseClient.js';
+ 
+ const SERVER_URLS = {
+@@ -33,6 +34,7 @@ export async function getAuthenticatedConfig(config = {}) {
+         ...config,
+         headers: {
+             ...(config.headers || {}),
++            ...await getClientHeaders(),
+             Authorization: `Bearer ${accessToken}`,
+         },
+     };
+@@ -56,12 +58,17 @@ export async function serverRequest(method, path, options = {}) {
+ 
+     const authenticatedConfig = await getAuthenticatedConfig(config);
+ 
+-    return axios({
++    try {
++        return await axios({
+         timeout: 20000,
+         ...authenticatedConfig,
+         method,
+         url: `${getServerUrl(mode)}${path}`,
+         data,
+         params,
+-    });
++        });
++    } catch (error) {
++        if (error.response?.status === 426 && error.response?.data?.code === 'APP_UPDATE_REQUIRED') notifyUpdateRequired(error.response.data.compatibility);
++        throw error;
++    }
+ }
+diff --git a/src/utils/supabaseClient.js b/src/utils/supabaseClient.js
+index 452ce9a..a60c464 100644
+--- a/src/utils/supabaseClient.js
++++ b/src/utils/supabaseClient.js
+@@ -1,8 +1,22 @@
+ import { createClient } from '@supabase/supabase-js';
++import { getClientHeaders, notifyUpdateRequired } from '@/utils/clientIdentity.js';
+ 
++// Headers reach the publication trigger too; auth and RLS remain independent.
++export async function versionedFetch(input, init = {}) {
++    const headers = new Headers(init.headers || (typeof Request !== 'undefined' && input instanceof Request ? input.headers : undefined));
++    for (const [key, value] of Object.entries(await getClientHeaders())) headers.set(key, value);
++    const response = await fetch(input, { ...init, headers });
++    if (!response.ok) {
++        try {
++            const error = await response.clone().json();
++            if (error.message === 'APP_UPDATE_REQUIRED') notifyUpdateRequired();
++        } catch { /* Keep the original response available to Supabase. */ }
++    }
++    return response;
++}
+ const supabase = createClient(
+     process.env.VUE_APP_API_SUPABASE_URL,
+-    process.env.VUE_APP_API_SUPABASE_KEY
++    process.env.VUE_APP_API_SUPABASE_KEY,
++    { global: { fetch: versionedFetch } }
+ );
+-
+ export default supabase;
+diff --git a/src/components/VersionGate.vue b/src/components/VersionGate.vue
+new file mode 100644
+index 0000000..8a8ef76
+--- /dev/null
++++ b/src/components/VersionGate.vue
+@@ -0,0 +1,102 @@
++<template>
++    <slot />
++    <v-alert v-if="showBanner" class="version-banner" type="info" role="status">
++        <p>{{ required ? 'Mise à jour requise. Seuls vos trajets, messages et les actions de récupération restent accessibles.' : 'Une nouvelle version de Covia est disponible.' }}</p>
++        <v-btn v-if="canUpdate" size="small" :loading="updating" @click="update">Mettre à jour</v-btn>
++        <v-btn v-if="!required" size="small" variant="text" @click="dismissed = notificationKey">Plus tard</v-btn>
++        <p v-if="!canUpdate">Le lien de distribution n’est pas encore configuré.</p>
++        <p v-if="updateError" role="alert">{{ updateError }}</p>
++    </v-alert>
++    <v-alert v-else-if="state.offline && !required" class="version-banner" type="warning" role="status">
++        Vérification des versions indisponible. Vos informations restent accessibles ; certaines opérations peuvent demander de réessayer.
++        <v-btn size="small" variant="text" :loading="state.checking" @click="check">Réessayer</v-btn>
++    </v-alert>
++    <v-dialog :model-value="required && !recoveryAllowed && !authRoute" persistent max-width="480" aria-labelledby="version-update-title">
++        <v-card>
++            <v-card-title id="version-update-title">Mettez à jour Covia</v-card-title>
++            <v-card-text>
++                <p>Cette version n’est plus compatible pour de nouvelles opérations.</p>
++                <p v-if="isNative">Installez la nouvelle version depuis votre canal de distribution habituel.</p>
++                <p v-else>Rechargez l’application pour utiliser la version disponible.</p>
++                <p v-if="!canUpdate">Le lien de distribution n’est pas encore configuré. Réessayez ou contactez votre interlocuteur Covia.</p>
++                <p v-if="state.offline">Connexion indisponible. La dernière obligation connue reste en vigueur.</p>
++                <p v-if="updateError" role="alert">{{ updateError }}</p>
++            </v-card-text>
++            <v-card-actions class="flex-column align-stretch">
++                <v-btn v-if="canUpdate" :loading="updating" @click="update">Mettre à jour</v-btn>
++                <v-btn :loading="state.checking" @click="check">Vérifier à nouveau</v-btn>
++                <v-btn variant="text" @click="openRecovery">Accéder à mes trajets et messages</v-btn>
++            </v-card-actions>
++        </v-card>
++    </v-dialog>
++</template>
++<script>
++import { Capacitor } from '@capacitor/core';
++import { App } from '@capacitor/app';
++import { Browser } from '@capacitor/browser';
++import { versionState, checkCompatibility, acceptCompatibility } from '@/services/versionCompatibility.js';
++import { getClientIdentity } from '@/utils/clientIdentity.js';
++import { updateWebApp } from '@/services/webUpdate.js';
++const recoveryPaths = new Set(['/profil', '/trip', '/message', '/itineraire']);
++export default {
++    name: 'VersionGate',
++    data: () => ({ state: versionState, recovery: false, dismissed: '', updating: false, updateError: '', nativeListener: null, timer: null, disposed: false }),
++    computed: {
++        required() { return this.state.compatibility?.status === 'update_required'; },
++        isNative() { return Capacitor.isNativePlatform(); },
++        canUpdate() { return !this.isNative || Boolean(this.state.compatibility?.updateUrl); },
++        authRoute() { return ['/login', '/sign', '/auth/callback'].includes(this.$route.path); },
++        recoveryAllowed() { return this.recovery && recoveryPaths.has(this.$route.path); },
++        notificationKey() { const value = this.state.compatibility; return `${value?.status}:${value?.latestBuild}:${value?.latestBundleBuild}:${this.state.swReady}`; },
++        showBanner() { return this.required ? this.recoveryAllowed || this.authRoute : (this.state.compatibility?.status === 'update_available' || this.state.swReady) && this.dismissed !== this.notificationKey; },
++    },
++    mounted() {
++        this.check();
++        document.addEventListener('visibilitychange', this.visible);
++        window.addEventListener('online', this.check);
++        window.addEventListener('covia-update-required', this.rejected);
++        window.addEventListener('covia-web-update-ready', this.workerReady);
++        this.timer = setInterval(() => { if (document.visibilityState === 'visible') checkCompatibility(); }, 300000);
++        if (this.isNative) App.addListener('appStateChange', ({ isActive }) => { if (isActive) this.check(); }).then(listener => {
++            if (this.disposed) listener.remove(); else this.nativeListener = listener;
++        }).catch(() => {});
++    },
++    beforeUnmount() {
++        this.disposed = true; clearInterval(this.timer); this.nativeListener?.remove();
++        document.removeEventListener('visibilitychange', this.visible);
++        window.removeEventListener('online', this.check);
++        window.removeEventListener('covia-update-required', this.rejected);
++        window.removeEventListener('covia-web-update-ready', this.workerReady);
++    },
++    methods: {
++        check() { return checkCompatibility(true); },
++        visible() { if (document.visibilityState === 'visible') checkCompatibility(); },
++        workerReady() { this.state.swReady = true; },
++        rejected(event) {
++            if (event.detail) acceptCompatibility(event.detail);
++            else acceptCompatibility({ status: 'update_required', mode: 'enforce' });
++            this.check();
++        },
++        openRecovery() { this.recovery = true; this.$router.push('/profil'); },
++        async update() {
++            if (this.updating) return;
++            this.updating = true; this.updateError = '';
++            try {
++                if (this.isNative) {
++                    const url = this.state.compatibility?.updateUrl;
++                    if (!url) throw new Error('Lien de distribution indisponible.');
++                    await Browser.open({ url });
++                } else {
++                    const identity = await getClientIdentity();
++                    const target = this.state.compatibility;
++                    await updateWebApp({ attemptKey: `covia-reload:${identity.bundleBuild}:${target?.minBuild}:${target?.latestBuild}:${target?.minBundleBuild}:${target?.latestBundleBuild}` });
++                }
++            } catch (error) { this.updateError = error.message || 'Mise à jour indisponible. Réessayez plus tard.'; }
++            finally { this.updating = false; }
++        },
++    },
++};
++</script>
++<style scoped>
++.version-banner { position: fixed; z-index: 2300; top: var(--safe-top, 0px); left: 8px; right: 8px; max-height: 40vh; overflow-y: auto; }
++</style>
+diff --git a/src/services/versionCompatibility.js b/src/services/versionCompatibility.js
+new file mode 100644
+index 0000000..f7c09c8
+--- /dev/null
++++ b/src/services/versionCompatibility.js
+@@ -0,0 +1,48 @@
++import { reactive } from 'vue';
++import axios from 'axios';
++import { getServerUrl } from '@/utils/serverApi.js';
++import { getClientIdentity, getClientHeaders } from '@/utils/clientIdentity.js';
++export const versionState = reactive({ compatibility: null, checking: false, offline: false, swReady: false });
++let pending;
++let checkedAt = 0;
++let cacheKey;
++const safeUrl = value => { try { const url = new URL(value); return url.protocol === 'https:' && !url.username && !url.password ? url.href : null; } catch { return null; } };
++export function acceptCompatibility(value) {
++    if (!value || !['current', 'update_available', 'update_required'].includes(value.status)) return false;
++    if (value.status === 'update_required' && value.mode !== 'enforce') return false;
++    const compatibility = { ...value, updateUrl: safeUrl(value.updateUrl) };
++    versionState.compatibility = compatibility;
++    if (cacheKey) {
++        try { localStorage.setItem(cacheKey, JSON.stringify({ value: compatibility, at: Date.now() })); } catch { /* Private browsing/storage full. */ }
++    }
++    return true;
++}
++export async function checkCompatibility(force = false) {
++    if (pending) return pending;
++    if (!force && Date.now() - checkedAt < 15000) return;
++    pending = (async () => {
++        versionState.checking = true;
++        try {
++            const identity = await getClientIdentity();
++            const key = `covia-version:${identity.platform}:${identity.build}:${identity.bundleBuild}:${identity.protocol}`;
++            if (cacheKey !== key) {
++                cacheKey = key;
++                try {
++                    const cached = JSON.parse(localStorage.getItem(key));
++                    if (cached && (cached.value.status === 'update_required' || Date.now() - cached.at < 86400000)) acceptCompatibility(cached.value);
++                } catch { /* Cache is optional; never cache tokens or account data. */ }
++            }
++            const response = await axios.get(`${getServerUrl()}/client/compatibility`, {
++                headers: { ...await getClientHeaders(), 'Cache-Control': 'no-cache' },
++                params: { _: Date.now() }, timeout: 5000,
++            });
++            if (!acceptCompatibility(response.data?.data)) throw new Error('Invalid version response');
++            versionState.offline = false;
++        } catch {
++            // Preserve a known requirement; an unknown network state alone does
++            // not hide an ongoing trip. API/SQL still gate new business writes.
++            versionState.offline = true;
++        } finally { versionState.checking = false; checkedAt = Date.now(); }
++    })().finally(() => { pending = null; });
++    return pending;
++}
+diff --git a/src/services/webUpdate.js b/src/services/webUpdate.js
+new file mode 100644
+index 0000000..e9ef757
+--- /dev/null
++++ b/src/services/webUpdate.js
+@@ -0,0 +1,34 @@
++// Updating is always an explicit user action. There is no automatic reload.
++export async function updateWebApp({ navigatorObject = navigator, locationObject = window.location, storage = sessionStorage, attemptKey }) {
++    const registration = await navigatorObject.serviceWorker?.getRegistration();
++    let alreadyTried = false;
++    try { alreadyTried = Boolean(storage.getItem(attemptKey)); } catch { /* Storage can be disabled. */ }
++    if (registration) {
++        await registration.update();
++        if (!registration.waiting && registration.installing) {
++            await new Promise(resolve => {
++                const worker = registration.installing;
++                const finish = () => { clearTimeout(timer); worker.removeEventListener('statechange', changed); resolve(); };
++                const changed = () => { if (['installed', 'redundant'].includes(worker.state)) finish(); };
++                const timer = setTimeout(finish, 8000);
++                worker.addEventListener('statechange', changed);
++                changed();
++            });
++        }
++        if (registration.waiting) {
++            await new Promise((resolve, reject) => {
++                const serviceWorker = navigatorObject.serviceWorker;
++                const changed = () => { clearTimeout(timer); serviceWorker.removeEventListener('controllerchange', changed); resolve(); };
++                const timer = setTimeout(() => { serviceWorker.removeEventListener('controllerchange', changed); reject(new Error('La mise à jour n’est pas encore prête. Réessayez dans un instant.')); }, 8000);
++                serviceWorker.addEventListener('controllerchange', changed);
++                registration.waiting.postMessage({ type: 'SKIP_WAITING' });
++            });
++        } else if (alreadyTried) {
++            throw new Error('Cette version est toujours installée. Vérifiez votre connexion et réessayez plus tard, ou fermez puis rouvrez Covia.');
++        }
++    } else if (alreadyTried) {
++        throw new Error('La nouvelle version n’est pas encore disponible sur cette page. Réessayez plus tard.');
++    }
++    try { storage.setItem(attemptKey, '1'); } catch { /* Still only one reload per click. */ }
++    locationObject.reload();
++}
+diff --git a/src/utils/clientIdentity.js b/src/utils/clientIdentity.js
+new file mode 100644
+index 0000000..e51ead4
+--- /dev/null
++++ b/src/utils/clientIdentity.js
+@@ -0,0 +1,28 @@
++import { Capacitor } from '@capacitor/core';
++const counter = value => /^\d{1,10}$/.test(String(value ?? '')) && Number(value) <= 2147483647 ? Number(value) : 0;
++let pending;
++export async function getClientIdentity() {
++    if (!pending) pending = (async () => {
++        const platform = Capacitor.getPlatform();
++        const bundleBuild = counter(process.env.VUE_APP_RELEASE_BUILD);
++        if (Capacitor.isNativePlatform()) {
++            const { App } = await import('@capacitor/app');
++            const info = await App.getInfo();
++            return { platform, build: counter(info.build), bundleBuild, protocol: 1, version: info.version };
++        }
++        return { platform: 'web', build: bundleBuild, bundleBuild, protocol: 1, version: process.env.VUE_APP_RELEASE_VERSION || 'development' };
++    })().catch(error => { pending = null; throw error; });
++    return pending;
++}
++export async function getClientHeaders() {
++    let client;
++    try { client = await getClientIdentity(); }
++    catch { client = { platform: Capacitor.getPlatform(), build: 0, bundleBuild: 0, protocol: 1 }; }
++    return {
++        'X-Covia-Platform': client.platform, 'X-Covia-Build': String(client.build),
++        'X-Covia-Bundle-Build': String(client.bundleBuild), 'X-Covia-Protocol': String(client.protocol),
++    };
++}
++export function notifyUpdateRequired(compatibility) {
++    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('covia-update-required', { detail: compatibility }));
++}
+diff --git a/supabase/migrations/029_client_version_policy.sql b/supabase/migrations/029_client_version_policy.sql
+new file mode 100644
+index 0000000..bde69da
+--- /dev/null
++++ b/supabase/migrations/029_client_version_policy.sql
+@@ -0,0 +1,60 @@
++-- Prepared only. Run manually after review; ALL policies start disabled.
++begin;
++create table if not exists public.client_version_policy (
++    platform text primary key check (platform in ('web','android','ios','legacy')),
++    mode text not null default 'off' check (mode in ('off','observe','enforce')),
++    min_build integer not null default 0 check (min_build >= 0),
++    latest_build integer not null default 0 check (latest_build >= min_build),
++    min_bundle_build integer not null default 0 check (min_bundle_build >= 0),
++    latest_bundle_build integer not null default 0 check (latest_bundle_build >= min_bundle_build),
++    min_protocol integer not null default 1 check (min_protocol >= 1),
++    update_url text,
++    check (update_url is null or update_url ~ '^https://[^[:space:]]+$'),
++    -- No forced native update without a real distribution channel.
++    check (mode <> 'enforce' or platform in ('web','legacy') or update_url is not null)
++);
++alter table public.client_version_policy enable row level security;
++revoke all on public.client_version_policy from public, anon, authenticated;
++grant select on public.client_version_policy to service_role;
++insert into public.client_version_policy(platform) values ('web'),('android'),('ios'),('legacy') on conflict do nothing;
++
++-- A header is a compatibility declaration, not proof of a signed binary.
++-- Business authentication, ownership checks and RLS still apply independently.
++create or replace function public.client_version_counter(value text)
++returns integer language sql immutable set search_path = pg_catalog as $$
++    select case when value ~ '^[0-9]{1,10}$' and length(value) <= 10 then
++        case when value::bigint <= 2147483647 then value::integer else 0 end else 0 end
++$$;
++revoke all on function public.client_version_counter(text) from public, anon, authenticated;
++
++-- Trip publication currently bypasses Node and inserts directly through RLS.
++-- Protect that actual write path as well, without changing reads or recovery.
++create or replace function public.guard_trip_client_version()
++returns trigger language plpgsql security definer set search_path = public, pg_temp as $$
++declare
++    headers jsonb;
++    client_platform text;
++    policy public.client_version_policy%rowtype;
++begin
++    if coalesce(auth.role(), '') <> 'authenticated' then return new; end if;
++    headers := coalesce(nullif(current_setting('request.headers', true), ''), '{}')::jsonb;
++    client_platform := headers->>'x-covia-platform';
++    if client_platform is null or client_platform not in ('web','android','ios') then client_platform := 'legacy'; end if;
++    select * into policy from public.client_version_policy where platform = client_platform;
++    if not found then raise exception using errcode = 'P0001', message = 'VERSION_POLICY_UNAVAILABLE'; end if;
++    if policy.mode = 'enforce' and (
++        client_platform = 'legacy'
++        or public.client_version_counter(headers->>'x-covia-protocol') < policy.min_protocol
++        or public.client_version_counter(headers->>'x-covia-build') < policy.min_build
++        or public.client_version_counter(headers->>'x-covia-bundle-build') < policy.min_bundle_build
++    ) then
++        raise exception using errcode = 'P0001', message = 'APP_UPDATE_REQUIRED',
++            hint = 'Mettez à jour Covia avant de publier un nouveau trajet.';
++    end if;
++    return new;
++end $$;
++revoke all on function public.guard_trip_client_version() from public, anon, authenticated;
++drop trigger if exists trip_client_version_required on public.trip;
++create trigger trip_client_version_required before insert on public.trip
++for each row execute function public.guard_trip_client_version();
++commit;

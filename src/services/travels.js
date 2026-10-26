@@ -85,6 +85,8 @@ export function normalizePassengerTrips(records, resolveVillageName) {
             driver_id: trip.driver_id,
             avatar: trip.account?.avatar,
             name: trip.account?.username,
+            village_departure_id: trip.village_departure_id,
+            village_arrival_id: trip.village_arrival_id,
             depart: resolve(trip.village_departure_id),
             destination: resolve(trip.village_arrival_id),
             departure_time: trip.departure_time,
