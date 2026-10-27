@@ -22,6 +22,11 @@ module.exports = defineConfig({
     },
     pwa: {
         name: "Covia",
+        assetsVersion: 'covia-20261026',
+        iconPaths: {
+            faviconSVG: null, favicon32: 'icons/covia-256.png', favicon16: null,
+            appleTouchIcon: 'icons/covia-256.png', maskIcon: null, msTileImage: 'icons/covia-256.png',
+        },
         themeColor: '#1a1a1a',
         msTileColor: '#000000',
         appleMobileWebAppCapable: 'yes',
