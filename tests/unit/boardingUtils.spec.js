@@ -14,7 +14,10 @@ describe('boarding reservations', () => {
         expect(boardingReservations([booking(1, { in_car: true })], false, 20)[0].in_car).toBe(true);
     });
     it('preserves leading zeroes and rejects incomplete or non-numeric input', () => {
-        expect(validBoardingCode('000123')).toBe(true);
-        for (const input of [123456, '12345', '1234567', '123 45', 'abcdef', undefined]) expect(validBoardingCode(input)).toBe(false);
+        expect(validBoardingCode('0007')).toBe(true);
+        expect(validBoardingCode('000123')).toBe(false);
+        expect(validBoardingCode('000123', 6)).toBe(true);
+        expect(validBoardingCode('0007', 6)).toBe(false);
+        for (const input of [1234, '123', '12345', '1234567', '123 45', 'abcdef', undefined]) expect(validBoardingCode(input)).toBe(false);
     });
 });

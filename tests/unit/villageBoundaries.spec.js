@@ -72,3 +72,23 @@ describe('shared Supabase boundary cache', () => {
         now = 60001; await load([15]); expect(client.rpc).toHaveBeenCalledTimes(2);
     });
 });
+
+describe('public contour catalog caching', () => {
+    it('batches the full catalog once for concurrent maps and seeds the per-ID cache', async () => {
+        let now = 0;
+        const select = vi.fn(async () => ({ data: [row(15), row(51)], error: null }));
+        const client = { rpc: vi.fn(() => ({ select })) };
+        const load = createVillageBoundaryLoader(client, () => now);
+        const [first, second] = await Promise.all([load.catalog(), load.catalog()]);
+        expect(first).toEqual(second); expect(client.rpc).toHaveBeenCalledOnce();
+        expect((await load([15]))[15].village_id).toBe(15); expect(client.rpc).toHaveBeenCalledOnce();
+        now = 600001; await load.catalog(); expect(client.rpc).toHaveBeenCalledTimes(2);
+    });
+    it('does not cache a failed catalog request', async () => {
+        const select = vi.fn().mockResolvedValueOnce({ data: null, error: new Error('offline') })
+            .mockResolvedValueOnce({ data: [row(15)], error: null });
+        const client = { rpc: vi.fn(() => ({ select })) }; const load = createVillageBoundaryLoader(client);
+        await expect(load.catalog()).rejects.toThrow('offline');
+        expect(await load.catalog()).toHaveLength(1); expect(client.rpc).toHaveBeenCalledTimes(2);
+    });
+});

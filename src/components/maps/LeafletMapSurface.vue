@@ -50,11 +50,11 @@
         />
 
         <l-polygon v-for="zone in zonePolygons" :key="zone.key"
-            :lat-lngs="zone.leafletPaths" :color="zone.color" :weight="2"
+            :lat-lngs="zone.leafletPaths" :color="zone.color" :weight="zone.weight" :opacity="zone.strokeOpacity"
             :fill-color="zone.color" :fill-opacity="zone.fillOpacity" :interactive="false" />
 
         <l-marker v-if="originCoordinate" :lat-lng="originCoordinate">
-            <l-popup>{{ originLabel }}</l-popup>
+
         </l-marker>
 
         <l-marker
@@ -114,7 +114,7 @@
         </l-circle-marker>
 
         <l-circle-marker
-            v-if="currentCoordinate"
+            v-if="actorMarkers === null && currentCoordinate"
             :lat-lng="currentCoordinate"
             :radius="9"
             :weight="2"
@@ -124,7 +124,7 @@
         />
 
         <l-circle-marker
-            v-for="(location, index) in validSharedLocations"
+            v-for="(location, index) in (actorMarkers === null ? validSharedLocations : [])"
             :key="`shared-location-${index}`"
             :lat-lng="location"
             :radius="9"
@@ -133,11 +133,16 @@
             :fill-color="sharedLocationColors[index % sharedLocationColors.length] || '#43a047'"
             :fill-opacity="0.7"
         />
+        <l-marker v-for="actor in actorAssets" :key="`actor-${actor.id}`" :lat-lng="actor.latLng"
+            :icon="actorLeafletIcon(actor)" :options="{ title: actor.label, alt: actor.label, keyboard: true }">
+            <l-tooltip>{{ actor.label }}</l-tooltip>
+        </l-marker>
     </l-map>
 </template>
 
 <script>
 import { defineComponent, nextTick } from 'vue';
+import { actorMarkerAsset } from './tripActorMarkers.js';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import {
@@ -146,7 +151,6 @@ import {
     LMarker,
     LPolyline,
     LPolygon,
-    LPopup,
     LTileLayer,
     LTooltip,
 } from '@vue-leaflet/vue-leaflet';
@@ -168,12 +172,12 @@ export default defineComponent({
         LMarker,
         LPolyline,
         LPolygon,
-        LPopup,
-        LTileLayer,
+            LTileLayer,
         LTooltip,
     },
     emits: ['ready', 'route-select', 'alert-select'],
     props: {
+        actorMarkers: { type: Array, default: null },
         bottomPadding: { type: Number, default: 24 },
         villageZones: { type: Array, default: () => [] },
         center: { type: [Array, Object], required: true },
@@ -195,6 +199,9 @@ export default defineComponent({
         };
     },
     computed: {
+        zoneGeometryKey() { return this.zonePolygons.map(zone => zone.key).join(':'); },
+        routeBoundsKey() { const route = this.routes.find(route => route.current) || this.routes[0]; return JSON.stringify(route ? [route.id, route.originalPolyline || route.polylineDecoded] : []); },
+        actorAssets() { return (this.actorMarkers || []).map(actor => ({ ...actor, asset: actorMarkerAsset(actor) })); },
         zonePolygons() { return villageZonePolygons(this.villageZones); },
         leafletCenter() {
             return toCoordinateArray(this.center) || [-12.7850694, 45.1658908];
@@ -235,14 +242,13 @@ export default defineComponent({
     },
     watch: {
         bottomPadding() { this.fitRouteBounds(); },
-        villageZones() { this.fitRouteBounds(); },
+        zoneGeometryKey() { this.fitRouteBounds(); },
         origin() { this.fitRouteBounds(); },
         destination() { this.fitRouteBounds(); },
-        routes() {
-            this.fitRouteBounds();
-        },
+        routeBoundsKey() { this.fitRouteBounds(); },
     },
     methods: {
+        actorLeafletIcon(actor) { return L.icon({ iconUrl: actor.asset.url, iconSize: [actor.asset.size, actor.asset.size], iconAnchor: [actor.asset.anchor, actor.asset.anchor] }); },
         formatAlertTime,
         handleReady() {
             if (this.ready) {
@@ -270,7 +276,8 @@ export default defineComponent({
                 return;
             }
             await nextTick();
-            const routePoints = this.routes.flatMap((route) => route.polylineDecoded || []);
+            const route = this.routes.find(route => route.current) || this.routes[0];
+            const routePoints = route?.originalPolyline || route?.polylineDecoded || [];
             const zonePoints = this.zonePolygons.flatMap(zone => zone.leafletPaths.flat());
             const bounds = [this.originCoordinate, this.destinationCoordinate, ...routePoints, ...zonePoints]
                 .map((point) => toCoordinateArray(point))

@@ -1,6 +1,11 @@
 
 <style lang="scss" model>
 
+
+.bottom-menu.showing-boarding-code { z-index: 2400; }
+.driver-code-action { min-height: 44px; text-transform: none; letter-spacing: normal; }
+.current-village { margin: 0 0 8px; color: rgb(var(--v-theme-on-surface)); font-size: 12px; opacity: .8; }
+.passenger-code-entry { margin: 0 16px 12px; }
 </style>
 
 <style lang="scss" scoped>
@@ -573,7 +578,7 @@
     <!--  -->
     <v-container
         class="bottom-menu"
-        :class="[...className, {closed: !open_b, 'is-dragging': isDragging, 'viewport-tracking': viewportTracking}]"
+        :class="[...className, {closed: !open_b, 'showing-boarding-code': showBoardingCode, 'is-dragging': isDragging, 'viewport-tracking': viewportTracking}]"
         :style="bottomMenuStyle"
     >
         <SheetDragHandle
@@ -588,12 +593,17 @@
 
             <div class="sheet-content" ref="sheetContent">
 
+            <PassengerBoardingAccess v-if="showRouteInfo && passengerBoardingAccess && !showBoardingCode" class="passenger-code-entry" :show-reason="showBoardingReason" :access="passengerBoardingAccess" @open="$emit('confirm-boarding')" />
+
+            <slot v-if="mode === 'map' && showBoardingCode" name="boarding-code" />
+
             <!-- Map -->
             
             <div 
-                v-if="mode=='map' && showRouteInfo"
+                v-if="mode=='map' && showRouteInfo && !showBoardingCode"
                 class="map"
             >
+                <p v-if="currentVillage" class="current-village" role="status">Village actuel · {{ currentVillage.label }}</p>
                 <div class="infos-route">
                     <span class="time">{{ mapInfos.time }}</span> <span class="distance"> ({{ mapInfos.distance }})</span>
                 </div>
@@ -810,9 +820,9 @@
                         <template #append>
                             <div class="d-flex align-center">
                                 <v-chip
-                                    :color="booking.in_car ? 'green' : 'orange'"
+                                    :color="booking.in_car ? 'success' : undefined"
                                     size="small"
-                                    variant="flat"
+                                    variant="tonal"
                                     label
                                     class="mr-2"
                                 >
@@ -822,9 +832,9 @@
                                     >
                                         {{ booking.in_car ? 'mdi-check-circle' : 'mdi-timer-sand' }}
                                     </v-icon>
-                                    {{ booking.in_car ? 'Confirmé' : 'En attente' }}
+                                    {{ booking.is_refused ? 'Annulée' : !booking.is_accepted ? 'À confirmer' : booking.in_car ? 'À bord' : 'À récupérer' }}
                                 </v-chip>
-                                <v-btn v-if="isDriver && !booking.in_car && booking.is_accepted" size="small" variant="text" @click.stop="$emit('confirm-boarding', booking)">Code de montée</v-btn>
+                                <v-btn v-if="isDriver && !booking.in_car && booking.is_accepted && !booking.is_refused && !booking.passenger_no_show" size="small" variant="tonal" color="primary" prepend-icon="mdi-dialpad" aria-label="Saisir le code du passager" class="driver-code-action" @click.stop="$emit('confirm-boarding', booking)">Code</v-btn>
                                 <v-btn
                                     v-if="isDriver && !booking.in_car"
                                     size="small"
@@ -851,7 +861,7 @@
         <div class="sub-cont-sup" :class="className.join(' ')" ref="subContSup">
             <!-- Map -->
             <div
-                v-if="mode=='map' && showRouteInfo"
+                v-if="mode=='map' && showRouteInfo && !showBoardingCode"
                 class="map"
             >
                 <v-card
@@ -922,6 +932,7 @@
 
     // Components
     import SheetDragHandle from '@/components/menus/SheetDragHandle.vue';
+    import PassengerBoardingAccess from '@/components/trip/PassengerBoardingAccess.vue';
     import sheetLayout from '@/utils/sheetLayout.js';
     
 
@@ -931,6 +942,7 @@
         emits: ["opened", "close", "alert", "select-alert-type", "confirm-alert", "mark-passenger-no-show", "confirm-boarding", "vote-alert"],
         components: {
             SheetDragHandle,
+            PassengerBoardingAccess,
         },
         computed: {
             numericRule() {
@@ -945,6 +957,9 @@
             },
         },
         props: {
+            showBoardingCode: Boolean, showBoardingReason: Boolean,
+            currentVillage: { type: Object, default: null },
+            passengerBoardingAccess: { type: Object, default: null },
             mode: {
                 type: String,
                 default: "history",

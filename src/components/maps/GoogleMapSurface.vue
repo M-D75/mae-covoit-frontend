@@ -8,11 +8,11 @@
         @tilesloaded="handleReady"
     >
         <GMapPolygon v-for="zone in zonePolygons" :key="zone.key" :paths="zone.googlePaths"
-            :options="{ strokeColor: zone.color, strokeWeight: 2, fillColor: zone.color,
+            :options="{ strokeColor: zone.color, strokeWeight: zone.weight, strokeOpacity: zone.strokeOpacity, fillColor: zone.color,
                 fillOpacity: zone.fillOpacity, clickable: false, zIndex: 1 }" />
 
         <GMapMarker v-if="originCoordinate" :position="originCoordinate">
-            <GMapInfoWindow>{{ originLabel }}</GMapInfoWindow>
+
         </GMapMarker>
 
         <GMapMarker
@@ -78,24 +78,28 @@
         />
 
         <GMapMarker
-            v-if="currentCoordinate"
+            v-if="actorMarkers === null && currentCoordinate"
             :position="currentCoordinate"
             :icon="positionIcon('#33BBFF')"
             :clickable="false"
         />
 
         <GMapMarker
-            v-for="(location, index) in validSharedLocations"
+            v-for="(location, index) in (actorMarkers === null ? validSharedLocations : [])"
             :key="`shared-location-${index}`"
             :position="location"
             :icon="positionIcon(sharedLocationColors[index % sharedLocationColors.length] || '#43a047')"
             :clickable="false"
         />
+        <GMapMarker v-for="actor in actorAssets" :key="`actor-${actor.id}`"
+            :position="{ lat: actor.latLng[0], lng: actor.latLng[1] }" :title="actor.label"
+            :icon="{ url: actor.asset.url, scaledSize: { width: actor.asset.size, height: actor.asset.size }, anchor: { x: actor.asset.anchor, y: actor.asset.anchor } }" />
     </GMapMap>
 </template>
 
 <script>
 import { defineComponent, nextTick } from 'vue';
+import { actorMarkerAsset } from './tripActorMarkers.js';
 import {
     alertDefinition,
     displayedRoutes,
@@ -113,6 +117,7 @@ export default defineComponent({
     name: 'GoogleMapSurface',
     emits: ['ready', 'route-select', 'alert-select'],
     props: {
+        actorMarkers: { type: Array, default: null },
         bottomPadding: { type: Number, default: 24 },
         villageZones: { type: Array, default: () => [] },
         center: { type: [Array, Object], required: true },
@@ -153,6 +158,9 @@ export default defineComponent({
         };
     },
     computed: {
+        zoneGeometryKey() { return this.zonePolygons.map(zone => zone.key).join(':'); },
+        routeBoundsKey() { const route = this.routes.find(route => route.current) || this.routes[0]; return JSON.stringify(route ? [route.id, route.originalPolyline || route.polylineDecoded] : []); },
+        actorAssets() { return (this.actorMarkers || []).map(actor => ({ ...actor, asset: actorMarkerAsset(actor) })); },
         zonePolygons() { return villageZonePolygons(this.villageZones); },
         googleCenter() {
             return toGoogleCoordinate(this.center) || { lat: -12.7850694, lng: 45.1658908 };
@@ -196,12 +204,10 @@ export default defineComponent({
     },
     watch: {
         bottomPadding() { this.fitRouteBounds(); },
-        villageZones() { this.fitRouteBounds(); },
+        zoneGeometryKey() { this.fitRouteBounds(); },
         origin() { this.fitRouteBounds(); },
         destination() { this.fitRouteBounds(); },
-        routes() {
-            this.fitRouteBounds();
-        },
+        routeBoundsKey() { this.fitRouteBounds(); },
     },
     methods: {
         formatAlertTime,
@@ -256,11 +262,12 @@ export default defineComponent({
             if (!map) {
                 return;
             }
+            const route = this.routes.find(route => route.current) || this.routes[0];
             const coordinates = [
                 toCoordinateArray(this.origin),
                 toCoordinateArray(this.destination),
                 ...this.zonePolygons.flatMap(zone => zone.leafletPaths.flat()),
-                ...this.routes.flatMap((route) => route.polylineDecoded || []).map(toCoordinateArray),
+                ...(route?.originalPolyline || route?.polylineDecoded || []).map(toCoordinateArray),
             ].filter(Boolean);
             if (coordinates.length < 2) {
                 return;

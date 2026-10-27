@@ -79,7 +79,7 @@
                 align-items: center;
                 justify-content: center;
                 background: var(--alert-color, #ff9800);
-                border: 2px solid #fff;
+                border: 1px solid rgba(var(--v-theme-on-surface), .14);
                 box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
                 .mdi {
                     font-size: 20px;
@@ -167,23 +167,6 @@
                 <v-icon>mdi-close</v-icon>
             </v-btn>
 
-            <v-btn 
-                v-else-if="!isPublicMap && !mode_driver && !passengerConfirmedInCar"
-                icon
-                @click="boardingDialog = true"
-            >
-                <v-icon>mdi-key</v-icon>
-            </v-btn>
-
-            <v-chip
-                v-if="!isPublicMap && !mode_driver && passengerConfirmedInCar"
-                size="small"
-                color="green-darken-2"
-                prepend-icon="mdi-check-circle"
-                class="confirmation-chip"
-            >
-                Montée confirmée
-            </v-chip>
         </div>
 
         <div class="menu left">
@@ -213,9 +196,13 @@
             :current-location="shareLocalisation ? currentLocation.current : []"
             :shared-locations="isPublicMap ? [] : localisation"
             :shared-location-colors="colorsLoc"
+            :actor-markers="isPublicMap ? null : visibleTripActors"
+            :vehicle-position="zoneVehiclePosition"
+            :progress-context="isPublicMap ? '' : `${tripSelected.id}:${userUid}:${zoneProgressRevision}`"
             :alerts="activeAlerts"
             :alert-types="alertTypes"
             @ready="isLoaded"
+            @zone-progress="currentVillage = $event.current"
             @route-select="trajetSelected"
             @alert-select="openAlertDetails"
         />
@@ -249,6 +236,10 @@
         :passenger-bookings="passengerBookings"
         :no-show-processing-id="noShowProcessingId"
         :is-driver="mode_driver"
+        :passenger-boarding-access="isBoardingPassenger ? passengerCodeAccess : null"
+        :show-boarding-code="passengerCodeOpen"
+        :show-boarding-reason="passengerCodeNotice"
+        :current-village="currentVillage"
         :is-dark-mode="darkMode"
         :selected-alert="selectedAlert"
         :selected-alert-context-message="selectedAlertContextMessage"
@@ -262,12 +253,27 @@
         @confirm-alert="createLocalAlert"
         @vote-alert="voteSelectedAlert"
         @mark-passenger-no-show="markPassengerNoShow"
-        @confirm-boarding="boardingDialog = true"
+        @confirm-boarding="isBoardingPassenger ? openPassengerCode() : boardingDialog = true"
         @close="handleBottomMenuClose"
         @opened="open_b = true"
-    />
+    >
+        <template #boarding-code>
+            <BoardingCode v-if="passengerCodeOpen" inline :model-value="true" :bookings="tripSelected?.bookings || []"
+                :user-id="userId" :user-uid="userUid" :mode="modeCo" @update:model-value="hidePassengerCode" @confirmed="applyBoardingConfirmation" />
+        </template>
+    </BottomMenuTrip>
 
-    <BoardingCode v-model="boardingDialog" :is-driver="mode_driver" :bookings="tripSelected?.bookings || []" :user-id="userId" :mode="modeCo" @confirmed="applyBoardingConfirmation" />
+    <BoardingCode v-if="!isBoardingPassenger" v-model="boardingDialog" :is-driver="userUid === tripSelected.driver_id" :bookings="tripSelected?.bookings || []" :user-id="userId" :user-uid="userUid" :mode="modeCo" @confirmed="applyBoardingConfirmation" />
+
+    <div v-if="!isPublicMap" class="trip-boarding-status" :class="{ 'has-boarding-access': isBoardingPassenger }" role="status" aria-live="polite">
+        <template v-if="userUid === tripSelected.driver_id"><v-icon size="16" icon="mdi-account-check-outline" aria-hidden="true" /> {{ boardingSummary.onboard }} à bord <span class="status-divider">·</span> <v-icon size="16" icon="mdi-account-clock-outline" aria-hidden="true" /> {{ boardingSummary.waiting }} à récupérer</template>
+        <template v-else-if="isBoardingPassenger"><span v-if="!passengerIsBoarded" class="passenger-waiting-label">En attente du véhicule</span><PassengerBoardingAccess compact :access="passengerCodeAccess" @open="openPassengerCode" @explain="explainPassengerCode" /><span v-if="passengerIsBoarded && !driverPosition"> · position indisponible</span></template>
+        <template v-else-if="passengerIsBoarded">À bord · véhicule du conducteur<span v-if="!driverPosition"> · position indisponible</span></template>
+        <template v-else-if="boardingSummary.hasBooking">En attente du véhicule</template>
+        <template v-else>Suivi du trajet</template>
+    </div>
+    <TripSimulationPanel v-if="simulationAllowed" :onboard="passengerIsBoarded" :vehicle-speed="vehicleSpeed" :role="liveTripState.role" :connected="liveConnected"
+        :payments="liveTripState.testPaymentsConfirmed" :message="simulationMessage" @command="simulationCommand" />
 
     <!-- Load -->
     <v-overlay
@@ -398,6 +404,10 @@
     import { calculateRoutes } from '@/services/routingService.js';
 
     import L from "leaflet";
+    import { createRouteProgress } from '@/services/routeProgress.js';
+    import { createTripSimulation, normalizeTripPosition } from '@/services/tripSimulation.js';
+    import { tripActorMarkers, summarizeBoarding } from '@/components/maps/tripActorMarkers.js';
+    import TripSimulationPanel from '@/components/trip/TripSimulationPanel.vue';
     import { SafeAreaController } from '@aashu-dubey/capacitor-statusbar-safe-area';
     // import $ from 'jquery';
 
@@ -409,12 +419,42 @@
     import BottomMenuTrip from '@/components/menus/trip/BottomMenuTrip.vue';
     import MapSurface from '@/components/maps/MapSurface.vue';
     import BoardingCode from '@/components/trip/BoardingCode.vue';
-    import { boardingReservations } from '@/components/trip/boardingUtils.js';
+    import { passengerBoardingAccess, isOwnPassengerBooking } from '@/components/trip/boardingUtils.js';
+    import PassengerBoardingAccess from '@/components/trip/PassengerBoardingAccess.vue';
 
     export default defineComponent({
         name: 'results-view',
         emits: ["trajet-selected"],
         computed: {
+            simulationAllowed() { return process.env.NODE_ENV !== 'production' && process.env.VUE_APP_SIMULATION_ENABLED === 'true'
+                && !this.isPublicMap && this.liveTripState?.simulation === true; },
+            liveBookings() {
+                return this.liveTripState?.bookings || (this.tripSelected.bookings || [])
+                    .filter(b => b.is_accepted && !b.is_refused && !b.passenger_no_show)
+                    .map(b => ({ id: b.id, userId: b.account?.user_id, in_car: Boolean(b.in_car) }));
+            },
+            boardingSummary() { return summarizeBoarding(this.liveBookings, this.userUid); },
+            passengerIsBoarded() { return this.userUid !== this.tripSelected.driver_id && this.boardingSummary.selfOnboard; },
+            driverPosition() { return this.localisation.find(p => p.from === this.tripSelected.driver_id
+                && Number(p.idTrip) === Number(this.tripSelected.id) && this.liveNow - p.receivedAt <= 120000) || null; },
+            vehicleSpeed() { return Number.isFinite(this.driverPosition?.speedKmh) ? Math.round(this.driverPosition.speedKmh) : null; },
+            zoneVehiclePosition() {
+                if (this.isPublicMap) return null;
+                if (this.userUid === this.tripSelected.driver_id) {
+                    if (!this.shareLocalisation || this.currentLocation.current.length !== 2) return null;
+                    return { latLng: this.currentLocation.current, observedAt: this.ownPositionAt,
+                        measuredAt: this.ownMeasuredAt, accuracyMeters: this.ownAccuracyMeters };
+                }
+                const position = this.driverPosition;
+                return position ? { latLng: position.latLng, observedAt: position.receivedAt,
+                    measuredAt: position.timestamp, accuracyMeters: position.accuracyMeters } : null;
+            },
+            visibleTripActors() {
+                const bookings = this.liveBookings;
+                return tripActorMarkers({ userId: this.userUid, driverId: this.tripSelected.driver_id, bookings,
+                    positions: this.localisation.filter(p => Number(p.idTrip) === Number(this.tripSelected.id)), ownPosition: this.shareLocalisation ? this.currentLocation.current : [],
+                    ownHeading: this.currentHeading, ownReceivedAt: this.ownPositionAt, now: this.liveNow });
+            },
             ...mapState("profil", ["modeCo", "userUid", "userId", "userName", "profil", "darkMode"]),
             ...mapState("trip", ["tripSelected", "notMessageVue", "chat"]),
             ...mapGetters("search", ["getVillagesByName", "GET_ID_VILLAGE_BY_NAME"]),
@@ -427,9 +467,17 @@
                 }
                 return this.tripSelected.bookings.filter((booking) => !booking.passenger_no_show);
             },
-            passengerConfirmedInCar(){
-                const bookings = boardingReservations(this.tripSelected?.bookings || [], false, this.userId);
-                return bookings.length > 0 && bookings.every(booking => Boolean(booking.in_car));
+            isBoardingPassenger() {
+                return !this.isPublicMap && Boolean(this.userUid && this.tripSelected?.driver_id)
+                    && this.userUid !== this.tripSelected.driver_id;
+            },
+            passengerCodeAccess() {
+                if (this.passengerIsBoarded) return { status: 'onboard', canOpen: false, message: 'À bord · montée confirmée' };
+                return passengerBoardingAccess(this.tripSelected?.bookings || [], this.userId, this.userUid, this.tripSelected?.departure_time, this.liveNow);
+            },
+            routeProgressKey() {
+                const route = this.routes.find(route => route.current) || this.routes[0];
+                return JSON.stringify([this.tripSelected?.id, this.userUid, route?.id, route?.originalPolyline || route?.polylineDecoded || []]);
             },
             center() {
                 if(this.isPublicMap && Array.isArray(this.currentLocation.current) && this.currentLocation.current.length >= 2){
@@ -438,7 +486,8 @@
                 if(this.routes.length == 0){
                     return [ -12.7850694, 45.1658908 ]
                 }
-                const polylinePoints = this.routes.slice().reverse()[this.routes.length - 1].polylineDecoded // Vous devrez remplir ceci en fonction de vos données
+                const selected = this.routes.find(route => route.current) || this.routes[0];
+                const polylinePoints = selected.originalPolyline || selected.polylineDecoded || [];
 
 
                 const latitudes = [
@@ -496,6 +545,8 @@
             BottomMenuTrip,
             MapSurface,
             BoardingCode,
+            PassengerBoardingAccess,
+            TripSimulationPanel,
         },
         props: {
             mapProvider: {
@@ -543,7 +594,10 @@
         },
         data() {
             return {
-                boardingDialog: false,
+                boardingDialog: false, passengerCodeOpen: false, passengerCodeNotice: false, currentVillage: null, routeProgressTrackers: new Map(),
+                liveTripState: null, liveNow: Date.now(), liveTimer: null, liveConnected: false,
+                zoneProgressRevision: 0, ownAccuracyMeters: null, ownMeasuredAt: null, currentHeading: 0, ownPositionAt: Date.now(), simulationSettings: { speed: 25, acceleration: 1, gpsAvailable: true }, positionSequence: 0, simulationEngine: null, simulationTimer: null,
+                simulationMessage: '', simulationNetworkPaused: false,
                 
                 nowDate: new Date(),
                 timer: null,
@@ -786,35 +840,29 @@
             this.socket.on('connect', () => {
                 console.log('Map-Connecté au serveur Socket.IO!');
                 this.overlayLoad = false;
+                this.liveConnected = true;
+                this.socket.emit('trip-location-subscribe', { idTrip: this.tripSelected.id });
+                this.refreshLiveTripState();
                 const engine = this.socket.io.engine;
                 console.log(engine.transport.name);
             });
 
-            this.socket.on('get-localisation', (loc) => {
-                console.log('Localisation reçu:', loc);
-                const indexLoc = this.localisation.findIndex(loca => loca.from == loc.from);
-
-                if( this.shareLocalisation ){
-                    if(indexLoc !== -1 ){
-                        this.localisation[indexLoc].latLng = loc.latLng;
-                    }
-                    else{
-                        let newLoc = {
-                            idTrip: loc.idTrip,
-                            from: loc.from,
-                            to: loc.to,
-                            latLng: loc.latLng,
-                        };
-
-                        this.localisation.push(newLoc);
-                    }
-                }
-
+            this.socket.on('get-localisation', this.receiveTripPosition);
+            this.socket.on('trip-location-state', state => {
+                if (Number(state.tripId) !== Number(this.tripSelected.id)) return;
+                this.liveTripState = { ...this.liveTripState, ...state };
+                for (const position of state.positions || []) this.receiveTripPosition(position);
             });
+            this.socket.on('disconnect', () => { this.liveConnected = false; });
+            this.liveTimer = setInterval(() => {
+                this.liveNow = Date.now();
+                if (this.passengerIsBoarded && !this.driverPosition) this.currentLocation.current = [];
+                if (this.liveConnected && this.locationForeground && !document.hidden && this.liveNow - (this.lastLiveRefresh || 0) >= 5000) this.refreshLiveTripState();
+            }, 1000);
 
             this.socket.on('stop-shared-loc', (infos) => {
                 console.log("shared-stoped", infos);
-                this.localisation = this.localisation.filter((loc) => loc.idTrip != infos.idTrip);
+                this.localisation = this.localisation.filter(loc => !(Number(loc.idTrip) === Number(infos.idTrip) && loc.from === infos.from));
             });
 
 
@@ -834,6 +882,7 @@
             
         },
         beforeUnmount() {
+            clearInterval(this.liveTimer); clearInterval(this.simulationTimer); this.simulationEngine?.pause();
             this.locationSessionActive = false;
             document.removeEventListener('visibilitychange', this.handleLocationVisibility);
             if (this.locationStateListener) this.locationStateListener.remove();
@@ -860,11 +909,18 @@
             ...mapActions("search", ['getVillages']),
             ...mapActions("trip", ["getContacts"]),
             ...mapMutations("trip", ["SET_NOT_MESSAGE_VUE", "SET_TRIP_SELECTED"]),
+            explainPassengerCode() { this.switchToMapMenu(); this.passengerCodeNotice = true; },
+            openPassengerCode() {
+                if (!this.isBoardingPassenger || !this.passengerCodeAccess.canOpen || this.passengerCodeOpen) return;
+                this.switchToMapMenu(); this.passengerCodeNotice = false; this.passengerCodeOpen = true;
+            },
+            hidePassengerCode() { this.passengerCodeOpen = false; },
             handleLocationVisibility(){
                 this.locationForeground = !document.hidden;
-                if(document.hidden) this.stopOwnLocation();
+                if(document.hidden) { this.hidePassengerCode(); this.simulationEngine?.pause(); this.stopOwnLocation(); }
             },
             async stopOwnLocation(){
+                this.simulationEngine?.pause();
                 this.locationEpoch++;
                 this.shareLocalisation = false;
                 if(this.updateLocTimerId){
@@ -890,6 +946,7 @@
                     if(!this.locationSessionActive || !this.locationForeground || document.hidden || epoch !== this.locationEpoch) return false;
                     const { latitude, longitude } = coordinates.coords;
                     this.currentLocation.current = [latitude, longitude];
+                    this.ownPositionAt = Date.now();
                     this.preciseLocationAllowed = Boolean(coordinates.precisePermission);
                     this.getGeolocalisation = true;
                     return true;
@@ -942,6 +999,7 @@
             },
             applyBoardingConfirmation(result){
                 const ids = new Set((result.bookingIds || []).map(Number));
+                if (this.liveTripState) this.liveTripState.bookings = this.liveTripState.bookings.map(b => ids.has(Number(b.id)) ? { ...b, in_car: true } : b);
                 if (!(this.tripSelected.bookings || []).some(booking => ids.has(Number(booking.id)) && !booking.in_car)) return;
                 const updates = new Map((result.bookings || []).map(booking => [Number(booking.id), booking]));
                 const bookings = (this.tripSelected.bookings || []).map(booking => ids.has(Number(booking.id))
@@ -1038,7 +1096,7 @@
                     return null;
                 }
 
-                return this.tripSelected.bookings.find((booking) => booking.passenger_account_id == this.userId && !booking.passenger_no_show) || null;
+                return this.tripSelected.bookings.find((booking) => isOwnPassengerBooking(booking, this.userId, this.userUid) && !booking.passenger_no_show) || null;
             },
             async markPassengerNoShow(booking){
                 if(
@@ -1325,6 +1383,7 @@
                 }
             },
             setBottomMenuMode(mode, button = null){
+                if (mode !== 'map') this.hidePassengerCode();
                 this.bottomMenuMode = mode;
                 this.currentModeButton = button;
                 if( this.$refs.BottomMenuRef ){
@@ -1340,6 +1399,7 @@
                 this.setBottomMenuMode('alert-detail', 'alert');
             },
             handleBottomMenuClose(){
+                this.hidePassengerCode();
                 this.open_b = false;
                 this.selectedAlertId = null;
                 this.selectedAlertContext = null;
@@ -1639,116 +1699,107 @@
                 }
             },
             checkSharedLoc(){
-                if(this.isPublicMap){
-                    return;
-                }
-                if(!this.shareLocalisation){
-                    if(this.mode_driver){
-                        for (let index = 0; index < this.contacts.length; index++) {
-                            let infos = {
-                                idTrip: this.tripSelected.id,
-                                from: this.userUid,
-                                to: this.contacts[index].user_id,
-                            }
-                            this.socket.emit("stop-shared-localisation", infos);
-                        }
-                    }
-                    else{
-                        let infos = {
-                            idTrip: this.tripSelected.id,
-                            from: this.userUid,
-                            to: this.currentContact.userUid,
-                        }
-                        this.socket.emit("stop-shared-localisation", infos);
-                    }
-                }
+                if (this.isPublicMap || this.shareLocalisation || !this.socket?.connected) return;
+                this.socket.emit('stop-shared-localisation', { idTrip: this.tripSelected.id });
             },
             async updateLoc(){
                 // One watcher owns position acquisition and stops with the sharing session.
                 await this.shareLoc();
             },
-            sendIsIn(){
-                if(!this.shareLocalisation || !this.locationSessionActive || !this.locationForeground || document.hidden) return;
-                if(this.mode_driver){
-                    for (let index = 0; index < this.contacts.length; index++) {
-                        let newLoc = {
-                            idTrip: this.tripSelected.id,
-                            from: this.userUid,
-                            to: this.contacts[index].user_id,
-                            latLng: this.currentLocation.current, 
-                            status: "send=:-",
-                        }
-                        this.socket.emit("send-is-in", newLoc);
+            receiveTripPosition(position) {
+                if (Number(position?.idTrip) !== Number(this.tripSelected.id) || !position.from || !Number.isFinite(position.receivedAt)) return;
+                const index = this.localisation.findIndex(p => p.from === position.from);
+                if (index >= 0 && this.localisation[index].receivedAt > position.receivedAt) return;
+                if (index >= 0) this.localisation.splice(index, 1, position); else this.localisation.push(position);
+                if (this.passengerIsBoarded && position.from === this.tripSelected.driver_id) this.syncPassengerToVehicle();
+            },
+            async refreshLiveTripState() {
+                if (this.isPublicMap || !this.tripSelected?.id || this.simulationNetworkPaused) return;
+                this.lastLiveRefresh = Date.now();
+                try {
+                    const response = await serverRequest('get', `/trips/${this.tripSelected.id}/live-state`, { mode: this.modeCo });
+                    if (Number(response.data.data?.tripId) !== Number(this.tripSelected.id)) return;
+                    this.liveTripState = response.data.data;
+                    const confirmed = this.liveTripState.bookings.filter(b => b.in_car).map(b => b.id);
+                    if (confirmed.length) this.applyBoardingConfirmation({ bookingIds: confirmed });
+                } catch { this.simulationMessage = 'État du trajet indisponible. Vérifiez la connexion et le backend.'; }
+            },
+            enterVehicleFollow() {
+                this.resetRouteProgress();
+                this.simulationEngine?.pause(); clearInterval(this.simulationTimer); this.simulationTimer = null;
+                this.locationEpoch++;
+                if (this.watchId) { Geolocation.clearWatch({ id: this.watchId }).catch(() => {}); this.watchId = null; }
+                this.simulationMessage = 'À bord : déplacement piloté par le conducteur.';
+                this.syncPassengerToVehicle();
+            },
+            syncPassengerToVehicle() {
+                if (!this.passengerIsBoarded) return;
+                const position = this.driverPosition;
+                if (!position) { this.currentLocation.current = []; return; }
+                this.currentLocation.current = [...position.latLng]; this.currentHeading = position.heading;
+                this.ownPositionAt = position.receivedAt;
+                this.updatePassedPoints({ latLng: position.latLng, accuracyMeters: position.accuracyMeters,
+                    observedAt: position.receivedAt, measuredAt: position.timestamp, source: position.source });
+                this.updateRemainingEstimates();
+            },
+            applyTripPosition(position) {
+                if (this.passengerIsBoarded) return;
+                if (!this.shareLocalisation || !this.locationSessionActive || !this.locationForeground || document.hidden) return;
+                const point = normalizeTripPosition(position, this.currentLocation.current, this.currentHeading);
+                if (!point) return;
+                this.currentLocation.current = point.latLng; this.currentHeading = point.heading; this.ownPositionAt = Date.now(); this.ownMeasuredAt = point.timestamp;
+                this.ownAccuracyMeters = point.accuracyMeters; this.liveNow = Date.now();
+                if (!this.isPublicMap) {
+                    if (this.userUid === this.tripSelected.driver_id) {
+                        this.updatePassedPoints({ ...point, observedAt: this.ownPositionAt, measuredAt: point.timestamp }); this.updateRemainingEstimates();
+                        if (point.source === 'gps') this.checkAndRerouteIfNeeded(point.latLng);
                     }
-                }
-                else{
-                    let newLoc = {
-                        idTrip: this.tripSelected.id,
-                        from: this.userUid,
-                        to: this.currentContact.userUid,
-                        latLng: this.currentLocation.current, 
-                        status: "send=--",
-                    }
-                    this.socket.emit("send-localisation", newLoc);
+                    if (this.socket?.connected) this.socket.emit('send-localisation', { ...point, idTrip: this.tripSelected.id, sequence: ++this.positionSequence });
                 }
             },
+            async simulationCommand(command, value) {
+                if (!this.simulationAllowed) return;
+                if (this.passengerIsBoarded && command !== 'network') {
+                    this.simulationMessage = 'À bord : la session conducteur pilote le véhicule.'; return;
+                }
+                try {
+                    if (command === 'configure') { this.simulationSettings = value; if (this.simulationEngine) Object.assign(this.simulationEngine.state, value); return; }
+                    if (command === 'real') {
+                        await this.stopOwnLocation(); clearInterval(this.simulationTimer); this.simulationEngine = null; this.zoneProgressRevision++; this.resetRouteProgress();
+                        this.simulationNetworkPaused = false; this.socket?.connect(); this.locationConsentDialog = true; return;
+                    }
+                    if (command === 'network') {
+                        this.simulationNetworkPaused = value;
+                        if (value) this.socket?.disconnect(); else this.socket?.connect(); return;
+                    }
+                    if (!this.simulationEngine) {
+                        if (!['start', 'reset', 'seek', 'place'].includes(command)) return;
+                        const route = this.routes.find(r => r.current) || this.routes[0];
+                        const engine = createTripSimulation(route?.originalPolyline || route?.polylineDecoded || [], position => this.applyTripPosition(position));
+                        await this.stopOwnLocation(); this.simulationEngine = engine; this.zoneProgressRevision++; Object.assign(engine.state, this.simulationSettings);
+                        this.simulationTimer = setInterval(() => this.simulationEngine?.tick(), 1000);
+                    }
+                    if (command === 'configure') { Object.assign(this.simulationEngine.state, value); return; }
+                    if (command === 'pause') { this.simulationEngine.pause(); return; }
+                    this.shareLocalisation = true; this.getGeolocalisation = true;
+                    if (command === 'start') this.simulationEngine.start();
+                    if (command === 'reset') { this.zoneProgressRevision++; this.resetRouteProgress(); this.simulationEngine.reset(); }
+                    if (command === 'seek') this.simulationEngine.seek(value);
+                    if (command === 'place') this.simulationEngine.place(value);
+                    this.simulationMessage = 'Simulation de position active. La montée reste indépendante et exige le vrai PIN.';
+                } catch (error) { this.simulationMessage = error.message; }
+            },
             async shareLoc(){
-                if( this.getGeolocalisation && this.shareLocalisation && !this.watchId ){
+                if (this.simulationEngine || this.passengerIsBoarded) return;
+                if (this.getGeolocalisation && this.shareLocalisation && !this.watchId) {
                     const epoch = this.locationEpoch;
                     const watchId = await Geolocation.watchPosition({ enableHighAccuracy: this.preciseLocationAllowed, timeout: 15000 }, async (position, err) => {
-                        if(!this.shareLocalisation || !this.locationSessionActive || !this.locationForeground || document.hidden || epoch !== this.locationEpoch) return;
-                        if (err) {
-                            await this.stopOwnLocation();
-                            this.dialog = true;
-                            return;
-                        }
-
-
-
-                        const { latitude, longitude } = position.coords || {};
-                        if (typeof latitude !== 'number' || typeof longitude !== 'number') {
-                            return;
-                        }
-                        const currentPosition = [latitude, longitude]; // Obtenez la position actuelle
-                        if(!this.isPublicMap){
-                            this.updatePassedPoints(currentPosition);
-                            this.updateRemainingEstimates(currentPosition);
-                            this.checkAndRerouteIfNeeded(currentPosition);
-                        }
-
-                        this.currentLocation.current = [latitude, longitude];
-
-                        if (!this.isPublicMap && this.shareLocalisation && this.socket) {
-                            if(this.mode_driver){
-                                for (let index = 0; index < this.contacts.length; index++) {
-                                    let newLoc = {
-                                        idTrip: this.tripSelected.id,
-                                        from: this.userUid,
-                                        to: this.contacts[index].user_id,
-                                        latLng: this.currentLocation.current, 
-                                        status: "send=",
-                                    }
-                                    this.socket.emit("send-localisation", newLoc);
-                                }
-                            }
-                            else if (this.currentContact.userUid) {
-                                let newLoc = {
-                                    idTrip: this.tripSelected.id,
-                                    from: this.userUid,
-                                    to: this.currentContact.userUid,
-                                    latLng: this.currentLocation.current,
-                                    status: "send=--",
-                                }
-                                this.socket.emit("send-localisation", newLoc);
-                            }
-                        }
+                        if (!this.shareLocalisation || !this.locationSessionActive || !this.locationForeground || document.hidden || epoch !== this.locationEpoch) return;
+                        if (err) { await this.stopOwnLocation(); this.dialog = true; return; }
+                        this.applyTripPosition(position);
                     });
-                    if(!this.shareLocalisation || !this.locationSessionActive || !this.locationForeground || document.hidden || epoch !== this.locationEpoch){
-                        await Geolocation.clearWatch({ id: watchId });
-                    }
-                    else{
-                        this.watchId = watchId;
-                    }
+                    if (!this.shareLocalisation || !this.locationSessionActive || !this.locationForeground || document.hidden || epoch !== this.locationEpoch) await Geolocation.clearWatch({ id: watchId });
+                    else this.watchId = watchId;
                 }
             },
             formatDate(date) {
@@ -1776,45 +1827,23 @@
 
                 return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}${sign}${offsetHours}${offsetMinutes}`;
             },
-            // updatePassedPoints(currentPosition) {
-            //     // console.log("updatePassedPoints", currentPosition);
-            //     // Ajoute le point actuel à la liste des points de passage
-            //     this.currentLocation.passedPoints.push(currentPosition);
-
-            //     // Vérifie chaque point de la route
-            //     for (let index = 0; index < this.routes.length; index++) {
-            //         this.routes[index].polylineDecoded = this.routes[index].polylineDecoded.filter(routePoint => {
-            //             return !this.isPointCloseToAnyPassedPoint(routePoint, this.currentLocation.passedPoints);
-            //         });
-            //     }
-                
-            // },
-            updatePassedPoints(currentPosition) {
-                // Ajoute le point actuel à la liste des points de passage
-                this.currentLocation.passedPoints.push(currentPosition);
-
-                // Parcourir chaque route
-                for (let routeIndex = 0; routeIndex < this.routes.length; routeIndex++) {
-                    const basePolyline = Array.isArray(this.routes[routeIndex].originalPolyline)
-                        ? this.routes[routeIndex].originalPolyline
-                        : this.routes[routeIndex].polylineDecoded;
-                    let indexPointSuivant = -1;
-
-                    // Identifier le point suivant après le dernier point "passé"
-                    for (let pointIndex = 0; pointIndex < basePolyline.length - 1; pointIndex++) {
-                        const routePointActuel = basePolyline[pointIndex];
-                        const routePointSuivant = basePolyline[pointIndex + 1];
-
-                        if (this.isPointCloseToAnyPassedPoint(routePointActuel, this.currentLocation.passedPoints) &&
-                            !this.isPointCloseToAnyPassedPoint(routePointSuivant, this.currentLocation.passedPoints)) {
-                            indexPointSuivant = pointIndex + 1;
-                            break;
-                        }
-                    }
-
-                    // Supprimer tous les points jusqu'au point suivant après le dernier point "passé"
-                    if (indexPointSuivant !== -1) {
-                        this.routes[routeIndex].polylineDecoded = basePolyline.slice(indexPointSuivant);
+            resetRouteProgress() {
+                this.routeProgressTrackers = new Map();
+                this.currentLocation.passedPoints = [];
+                for (const route of this.routes) {
+                    if (route.originalPolyline) route.polylineDecoded = route.originalPolyline.slice();
+                    route.remainingMeters = null; route.totalPolylineMeters = null;
+                }
+            },
+            updatePassedPoints(sample) {
+                for (const route of this.routes) {
+                    if (!route.originalPolyline) route.originalPolyline = (route.polylineDecoded || []).slice();
+                    let tracker = this.routeProgressTrackers.get(route.originalPolyline);
+                    if (!tracker) { tracker = createRouteProgress(route.originalPolyline); this.routeProgressTrackers.set(route.originalPolyline, tracker); }
+                    const result = tracker.update(sample);
+                    if (result.progressed) {
+                        route.polylineDecoded = result.path; route.remainingMeters = result.remainingMeters;
+                        route.totalPolylineMeters = result.totalMeters;
                     }
                 }
             },
@@ -1844,25 +1873,14 @@
                 }
                 return minDistance;
             },
-            updateRemainingEstimates(currentPosition) {
-                if (!this.routes.length || !Array.isArray(this.routes[0].polylineDecoded)) {
-                    return;
-                }
-                const itineraire = this.routes[0].polylineDecoded;
-                if (!itineraire.length) {
-                    return;
-                }
-                const reste = this.calculerDistanceRestante(currentPosition, itineraire);
-                this.itin.distance = (reste / 1000).toFixed(2);
-
-                const totalDistance = this.routes[0]?.infosGoogle?.distanceMeters || 0;
-                const totalDurationSeconds = this.routes[0]?.infosGoogle?.duration
-                    ? parseInt(this.routes[0].infosGoogle.duration.replaceAll("s", ""))
-                    : 0;
-
-                if (totalDistance > 0 && totalDurationSeconds > 0) {
-                    const percent = Math.min(Math.max(reste / totalDistance, 0), 1);
-                    this.itin.duration = this.convertSecondsToHoursAndMinutes(Math.round(percent * totalDurationSeconds)).toString();
+            updateRemainingEstimates() {
+                const route = this.routes.find(route => route.current) || this.routes[0];
+                if (!route || !Number.isFinite(route.remainingMeters)) return;
+                this.itin.distance = (route.remainingMeters / 1000).toFixed(2);
+                const totalDurationSeconds = typeof route.infosGoogle?.duration === 'string'
+                    ? parseInt(route.infosGoogle.duration.replaceAll('s', '')) : 0;
+                if (route.totalPolylineMeters > 0 && totalDurationSeconds > 0) {
+                    this.itin.duration = this.convertSecondsToHoursAndMinutes(Math.round(totalDurationSeconds * route.remainingMeters / route.totalPolylineMeters));
                 }
             },
             isPointCloseToAnyPassedPoint(routePoint, passedPoints) {
@@ -2027,6 +2045,10 @@
             }
         },
         watch: {
+            routeProgressKey() { this.resetRouteProgress(); if (this.passengerIsBoarded) this.syncPassengerToVehicle(); },
+            passengerCodeAccess(access) { if (!access.canOpen && this.passengerCodeOpen) this.hidePassengerCode(); if (access.canOpen) this.passengerCodeNotice = false; },
+            userUid() { this.boardingDialog = false; this.passengerCodeNotice = false; this.hidePassengerCode(); this.resetRouteProgress(); this.currentVillage = null; },
+            passengerIsBoarded: { immediate: true, handler(boarded) { if (boarded) this.enterVehicleFollow(); } },
             tripSelected: {
                 handler(newTrip, oldTrip){
                     if(this.isPublicMap){
@@ -2034,6 +2056,14 @@
                     }
                     this.ensurePassengerBookings();
                     if( newTrip?.id && (!oldTrip || newTrip.id !== oldTrip.id) ){
+                        this.boardingDialog = false; this.passengerCodeNotice = false; this.hidePassengerCode(); this.currentVillage = null; this.resetRouteProgress();
+                        if (oldTrip?.id && this.socket?.connected) this.socket.emit('stop-shared-localisation', { idTrip: oldTrip.id });
+                        this.simulationEngine?.pause(); clearInterval(this.simulationTimer); this.simulationEngine = null;
+                        this.localisation = []; this.liveTripState = null;
+                        this.mode_driver = newTrip.driver_id === this.userUid;
+                        this.stopOwnLocation();
+                        if (this.socket?.connected) this.socket.emit('trip-location-subscribe', { idTrip: newTrip.id });
+                        this.refreshLiveTripState();
                         this.initializeAlertSync();
                     }
                 },
@@ -2042,3 +2072,14 @@
         },
     });
 </script>
+
+<style scoped>
+.trip-boarding-status { position: absolute; top: calc(var(--safe-top, 0px) + 12px); left: 50%; transform: translateX(-50%); z-index: 2200; max-width: calc(100% - 130px); border: 1px solid rgba(var(--v-theme-on-surface), .14); border-radius: 12px; padding: 3px 10px; background: rgb(var(--v-theme-surface)); color: rgb(var(--v-theme-on-surface)); font-size: 12px; text-align: center; box-shadow: 0 2px 8px #0004; }
+</style>
+
+<style scoped>
+.trip-boarding-status.has-boarding-access { width: max-content; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.passenger-waiting-label { font-size: 12px; }
+.status-divider { margin: 0 3px; opacity: .6; }
+@media (max-width: 430px) { .passenger-waiting-label { display: none; } }
+</style>

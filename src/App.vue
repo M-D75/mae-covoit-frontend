@@ -96,7 +96,7 @@
 
 <template>
     <!-- ligth-mode or dark-mode init ligth-mode -->
-    <v-app class="ligth-mode"> 
+    <v-app :theme="darkMode ? 'dark' : 'light'" :class="darkMode ? 'dark-mode' : 'ligth-mode'">
         <router-view ref="routerViewRef"/>
         <!-- Menu Nav -->
         <BottomNav v-if="isMobileOrSmallScreen && bottomNav"/>

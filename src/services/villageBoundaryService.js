@@ -5,7 +5,7 @@ import { isVillageGeometry } from '@/components/maps/villageZoneUtils.js';
 export function createVillageBoundaryLoader(client, now = () => Date.now()) {
     const cache = new Map();
     const pending = new Map();
-    return async function loadVillageBoundaries(ids, { refresh = false } = {}) {
+    const loadVillageBoundaries = async function loadVillageBoundaries(ids, { refresh = false } = {}) {
         const requested = [...new Set(ids.filter(id => Number.isSafeInteger(id) && id > 0))];
         const missing = [];
         const waits = requested.map(id => {
@@ -51,6 +51,24 @@ export function createVillageBoundaryLoader(client, now = () => Date.now()) {
         const values = await Promise.all(waits);
         return Object.fromEntries(requested.map((id, index) => [id, values[index]]));
     };
+    let catalogCache = null, catalogPending = null;
+    loadVillageBoundaries.catalog = async ({ refresh = false } = {}) => {
+        if (!refresh && catalogCache && catalogCache.expires > now()) return catalogCache.rows;
+        if (!catalogPending) catalogPending = (async () => {
+            const { data, error } = await client.rpc('get_village_effective_boundaries', {}, { get: true })
+                .select('village_id,boundary_village_id,village,commune,resolution,geometry,source');
+            if (error) throw error;
+            if (!Array.isArray(data)) throw new Error('Invalid village catalog response');
+            const rows = data.filter(row => Number.isSafeInteger(Number(row.village_id)) && Number(row.village_id) > 0 && isVillageGeometry(row.geometry));
+            for (const row of rows) cache.set(Number(row.village_id), { value: row, expires: now() + 600000 });
+            catalogCache = { rows, expires: now() + (rows.length ? 600000 : 60000) };
+            return rows;
+        })().finally(() => { catalogPending = null; });
+        return catalogPending;
+    };
+    return loadVillageBoundaries;
 }
 
 export const loadVillageBoundaries = createVillageBoundaryLoader(supabase);
+
+export const loadVillageBoundaryCatalog = options => loadVillageBoundaries.catalog(options);
