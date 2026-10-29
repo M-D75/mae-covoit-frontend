@@ -110,6 +110,11 @@
                 v-for="(info, index) in infos_panneau"
                 :key="index"
                 :class="{btn : info.btn}"
+                :role="info.btn ? 'button' : undefined"
+                :tabindex="info.btn ? 0 : undefined"
+                :aria-label="info.text"
+                @keydown.enter.prevent="info.btn && choiceFunctionBtnInfo(info.text)"
+                @keydown.space.prevent="info.btn && choiceFunctionBtnInfo(info.text)"
                 @click="choiceFunctionBtnInfo(info.text)"
             >
                 <div v-if="info.label && ! info.icon" class="label text-body-2">{{ info.label }}</div>

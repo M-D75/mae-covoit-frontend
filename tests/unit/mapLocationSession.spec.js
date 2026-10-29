@@ -195,3 +195,10 @@ it('keeps map center based on the selected full route during vehicle progress', 
     const center=component.computed.center.call(map);map.routes[0].polylineDecoded=[[-12.8,45.019],[-12.8,45.02]];
     expect(component.computed.center.call(map)).toEqual(center);
 });
+
+it('derives the chat badge from unread trips and clears it for another selected trip', () => {
+    const vm={notMessageVue:['1'],tripSelected:{id:1}};
+    expect(component.computed.notifChat.call(vm)).toBe(true);
+    vm.tripSelected={id:2};expect(component.computed.notifChat.call(vm)).toBe(false);
+    vm.tripSelected={id:1};vm.notMessageVue=[];expect(component.computed.notifChat.call(vm)).toBe(false);
+});

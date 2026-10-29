@@ -15,6 +15,7 @@ function load(name, template = false) {
     const module = { exports: {} };
     const resolve = name => name === 'vue' ? Vue : name === 'vuex'
         ? Object.fromEntries(['mapState', 'mapGetters', 'mapActions', 'mapMutations'].map(key => [key, () => ({})]))
+        : name.endsWith('sheetViewport.js') ? {observeSheetViewport:callback=>{callback({height:700,top:0});return ()=>{};}}
         : name.endsWith('serverApi.js') ? { serverRequest: request }
             : name.endsWith('boardingUtils.js') ? boarding
             : name.endsWith('PassengerBoardingAccess.vue') ? { __esModule: true, default: accessComponent }
@@ -199,4 +200,15 @@ it('binds the real app shell theme to the reactive app setting rather than an OS
     const host=document.createElement('div'),app=Vue.createApp({data:()=>({darkMode:false,isMobileOrSmallScreen:false,bottomNav:false}),render:module.exports.render});
     app.component('BottomNav',wrapper);app.component('v-app',wrapper);app.component('router-view',wrapper);app.component('v-main',wrapper);
     const vm=app.mount(host);try{expect(host.querySelector('[data-theme]').dataset.theme).toBe('light');vm.darkMode=true;await Vue.nextTick();expect(host.querySelector('[data-theme]').dataset.theme).toBe('dark');expect(host.querySelector('[data-theme]').classList.contains('dark-mode')).toBe(true);}finally{app.unmount();}
+});
+
+function pinContext(){const view=load('trip/BoardingCode');const context={...view.data(),modelValue:true,isDriver:true,reservations:[row(1)],mode:'dev',$emit:vi.fn()};for(const [key,method] of Object.entries(view.methods))context[key]=method.bind(context);return context;}
+it('keeps a confirmation error visible through later successful status polling without blocking input',async()=>{
+ request.mockReset();const vm=pinContext();vm.codes[1]='0007';request.mockRejectedValueOnce({response:{data:{code:'BOARDING_WRONG_CODE',message:'Refus fictif'}}});await vm.confirm(row(1));expect(vm.errors[1]).toBe('Refus fictif');expect(vm.errorKinds[1]).toBe('code');request.mockResolvedValueOnce({data:{data:{confirmed:false}}});await vm.refresh();expect(vm.errors[1]).toBe('Refus fictif');expect(vm.busy).toBe(false);expect(vm.refreshing).toBe(false);
+});
+it('permits confirmation during a slow status poll and ignores the superseded poll',async()=>{
+ request.mockReset();const vm=pinContext();let resolve;request.mockReturnValueOnce(new Promise(done=>{resolve=done;}));const poll=vm.refresh();expect(vm.busy).toBe(false);vm.codes[1]='0007';request.mockResolvedValueOnce({data:{data:{confirmed:true,bookingIds:[1],settlementPending:true}}});await vm.confirm(row(1));resolve({data:{data:{confirmed:false}}});await poll;expect(vm.states[1].confirmed).toBe(true);expect(vm.notice).toContain('règlement');expect(vm.$emit).toHaveBeenCalledWith('confirmed',expect.objectContaining({settlementPending:true}));expect(vm.busy).toBe(false);
+});
+it('rejects a successful HTTP response that does not prove server boarding confirmation',async()=>{
+ request.mockReset();const vm=pinContext();vm.codes[1]='0007';request.mockResolvedValueOnce({data:{data:{confirmed:false,bookingIds:[1]}}});await vm.confirm(row(1));expect(vm.states[1]).toBeUndefined();expect(vm.$emit).not.toHaveBeenCalled();expect(vm.errorKinds[1]).toBe('service');
 });

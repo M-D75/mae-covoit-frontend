@@ -140,7 +140,7 @@
                             :color="darkMode ? 'white' : 'black'"
                             icon="mdi-chat-processing-outline"
                             variant="text"
-                            @click="$router.push('/message')"
+                            @click="$router.push({path:'/message',query:{tripId:String(tripSelected.id),peerId:item.userUid}})"
                         ></v-btn>
 
                         <v-btn

@@ -41,7 +41,7 @@
         .v-row.home-search-view{
             .title {
                 font-size: var(--font-size-h1);
-                color: var(--font-color-label);
+                color: rgb(var(--v-theme-on-background));
                 font-weight: bold;
                 width: 100%;
                 padding: 0 39px 0px 39px;
@@ -92,17 +92,18 @@
             <!-- Title -->
             <div
                 class="title text-center"
-            >Prix mini, voyage maxi</div>
+            >{{ launchSlogan }}</div>
 
             <!-- image -->
             <v-col style="z-index: 30;">
-                <v-img
-                    style="margin: auto; z-index: 2; overflow: visible;"
-                    :width="200"
-                    aspect-ratio="16/9"
-                    cover
-                    src="@/assets/car-removebg-preview.png"
-                ></v-img>
+                <img
+                    style="margin: auto; z-index: 2;"
+                    class="carpool-hero"
+                    width="960"
+                    height="640"
+                    alt="Un conducteur et une passagère partagent leur trajet dans une voiture grise"
+                    :src="carpoolHero"
+                />
             </v-col>
         </v-row>
 
@@ -202,6 +203,8 @@
 
 
 <script>
+    import carpoolHero from '@/assets/covia-carpool-hero.webp';
+    import {getLaunchSlogan} from '@/services/launchSlogan.js';
     import { defineComponent } from 'vue';
     import { mapMutations, mapState, mapActions } from 'vuex';
     // import axios from 'axios';
@@ -216,6 +219,7 @@
     export default defineComponent({
         name: 'home-search-view',
         computed: {
+            launchSlogan(){return getLaunchSlogan();},
             ...mapState("search", ['depart', "destination", "nbPassenger", "trajetSelected"]),
             ...mapState("profil", ['userUid', 'history']),
             ...mapState("trip", ['member']),
@@ -230,6 +234,7 @@
         },
         data() {
             return {
+                carpoolHero,
                 overlay: false,
                 openP: false,
                 modePanel: "date",
@@ -435,3 +440,7 @@
         },
     });
 </script>
+
+<style scoped>
+.carpool-hero{display:block;aspect-ratio:1.5;object-fit:contain;width:clamp(230px,68vw,360px)!important;max-width:100%;height:auto;background:transparent}.home-search-view .title{color:rgb(var(--v-theme-on-background));white-space:normal;text-wrap:balance;line-height:1.3;flex:0 0 100%;max-width:none;width:100%;margin-inline:auto;padding-inline:12px}
+</style>

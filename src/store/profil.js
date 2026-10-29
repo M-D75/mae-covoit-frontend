@@ -9,6 +9,8 @@ import router from '@/router';
 
 import { fetchPassengerTrips, normalizePassengerTrips } from '@/services/travels.js';
 import { humanizeSupabaseError } from '@/utils/errorMessages.js';
+import {saveProfilePhoto} from '@/services/profilePhoto.js';
+import {fetchProfileHistory} from '@/services/profileHistory.js';
 import { serverRequest } from '@/utils/serverApi.js';
 import { createRequestId } from '@/utils/requestId.js';
 
@@ -135,7 +137,9 @@ export default {
             myPublish: [],
             loadGetTripPublish: false,
         },
+        avatarDraft:null,
         history: {
+            error: null,
             historycalBooking: {},
             load: false,
             datesTripPassenger: [],
@@ -149,6 +153,8 @@ export default {
     getters: {
     },
     mutations: {
+        SET_AVATAR_DRAFT(state,value){state.avatarDraft=value;},
+        CLEAR_HISTORY(state){state.history.historycalBooking={};state.history.error=null;state.history.load=false;},
         SET_USER_UID(state, userUid) {
             state.userUid = userUid;
         },
@@ -319,13 +325,10 @@ export default {
             console.log("autovalidation", state.auto_accept_trip ? "activated" : "desactivated");
             return {status: 0, message: ""};
         },
-        async updateAvatar({state}, avatar){
-            // update
-            await supabase
-                .from('account')
-                .update({ avatar: avatar })
-                .eq('user_id', state.userUid)
-                .select()
+        async updateAvatar({state,commit},image){
+            const owner=state.userUid;const saved=await saveProfilePhoto(supabase,owner,image);
+            if(state.userUid!==owner)throw new Error('Votre session a changé.');
+            commit('SET_AVATAR_URL',saved);commit('SET_AVATAR_DRAFT',null);return saved;
         },
         async updatePreference({state}){
             
@@ -790,37 +793,13 @@ export default {
             }
         },
         async buildHistoriqueBooking({state}){
-
-            state.history.load = true;
-
+            const owner=state.userUid;state.history.load=true;state.history.error=null;
             try{
-                if(!await store.dispatch("search/getVillages")) {
-                    throw new Error("Impossible de charger les villages.");
-                }
-                const resolveVillage = (id) => store.getters["search/GET_VILLAGE_BY_ID"](id);
-                const bookings = await fetchPassengerTrips({ passengerAccountId: state.userId, includeHistory: true });
-                const normalized = normalizePassengerTrips(bookings, resolveVillage);
-
-                const simplified = normalized.map((trip_current) => ({
-                    depart: trip_current.depart,
-                    destination: trip_current.destination,
-                    departure_time: trip_current.departure_time,
-                    avatar: trip_current.avatar != null ? trip_current.avatar : "https://avataaars.io/?avatarStyle=Circle&topType=ShortHairDreads01&accessoriesType=Blank&hairColor=PastelPink&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Wink&eyebrowType=DefaultNatural&mouthType=Serious&skinColor=Tanned",
-                    price: trip_current.price,
-                }));
-    
-                console.log("_bookings", simplified);
-    
-                const bookingGrouped = mapToObject(groupByDate(simplified));
-                console.log("grouped: ", bookingGrouped);
-                state.history.historycalBooking = bookingGrouped;
-            }
-            catch(error){
-                console.error("buildHistoriqueBooking error:", error);
-            }
-            finally{
-                state.history.load = false;
-            }
+                if(!await store.dispatch('search/getVillages'))throw new Error('Villages indisponibles.');
+                const rows=await fetchProfileHistory(supabase,{userId:owner,accountId:state.userId,resolveVillage:id=>store.getters['search/GET_VILLAGE_BY_ID'](id)});
+                if(state.userUid===owner)state.history.historycalBooking=mapToObject(groupByDate(rows));
+            }catch{if(state.userUid===owner)state.history.error='Votre historique n’a pas pu être chargé. Réessayez.';}
+            finally{if(state.userUid===owner)state.history.load=false;}
         },
         // stripe
         async getProvider({state}){

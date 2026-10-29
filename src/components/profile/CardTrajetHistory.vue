@@ -102,14 +102,14 @@
         @click="overlay = false"
     ></v-overlay>
 
-    <div class="card-trajet-history">
+    <div class="card-trajet-history" :data-help-trip-id="infos.id" :class="{ 'notification-target': String($route.query.tripId) === String(infos.id) }">
 
         <v-card
             class="mx-auto"
             max-width="500"
             
         >
-            <div @click="headerClick()" class="header">
+            <div @click="headerClick()" @keydown.enter.prevent="headerClick()" @keydown.space.prevent="headerClick()" role="button" tabindex="0" :aria-label="mode==='planning'?'Voir les passagers et demandes':'Voir le profil du conducteur'" class="header" :data-context-help="mode==='planning'?'driver-passengers':'passenger-driver'">
                 <v-avatar v-if="mode!='planning'">
                     <v-img
                         alt="Avatar"
@@ -187,6 +187,9 @@
             </v-icon>
             
             <v-list
+                :data-context-help="mode==='planning'?'driver-chat':'passenger-chat'"
+                role="button" tabindex="0" aria-label="Ouvrir le trajet"
+                @keydown.enter.prevent="selectTrip()" @keydown.space.prevent="selectTrip()"
                 @click="selectTrip()"
             >
                 <v-icon
@@ -318,11 +321,13 @@
             };
         },
         mounted(){
+            this.focusNotificationTrip();
             // if( this.infos.notifMessage != undefined && this.infos.notifMessage ){
             //     this.notifMessage = true;
             // }
         },
         methods: {
+            focusNotificationTrip(){ if(String(this.$route.query.tripId)===String(this.infos.id))this.$nextTick(()=>this.$el.scrollIntoView({block:'nearest',inline:'center'})); },
             ...mapMutations("trip", ["SET_TRIP_SELECTED"]),
             ...mapActions("trip", ["getContacts", "getProfilMember"]),
             ...mapActions("profil", ["removeBooking", "cancelTripPublication"]),
@@ -420,6 +425,7 @@
             }
         },
         watch: {
+            '$route.query.tripId'() { this.focusNotificationTrip(); },
             overlay(){
                 if( ! this.overlay ){
                     if ( this.$refs.BottomMenuRefConfirmChoice ) {
@@ -430,3 +436,9 @@
         }
     };
 </script>
+
+<style scoped>
+.notification-target {outline:2px solid rgb(var(--v-theme-primary));outline-offset:3px;border-radius:24px;}
+</style>
+
+<style scoped>.header:focus-visible,[data-context-help]:focus-visible{outline:2px solid rgb(var(--v-theme-primary));outline-offset:3px}</style>

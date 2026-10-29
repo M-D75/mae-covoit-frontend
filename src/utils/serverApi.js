@@ -1,4 +1,5 @@
 import axios from 'axios';
+import {getClientHeaders,notifyUpdateRequired} from '@/utils/clientIdentity.js';
 import supabase from '@/utils/supabaseClient.js';
 
 const SERVER_URLS = {
@@ -33,6 +34,7 @@ export async function getAuthenticatedConfig(config = {}) {
         ...config,
         headers: {
             ...(config.headers || {}),
+            ...await getClientHeaders(),
             Authorization: `Bearer ${accessToken}`,
         },
     };
@@ -42,7 +44,7 @@ export async function getAuthenticatedConfig(config = {}) {
 export function createSocketAuth() {
     return async (callback) => {
         const { data } = await supabase.auth.getSession();
-        callback({ token: data?.session?.access_token || '' });
+        callback({ token: data?.session?.access_token || '', client:await getClientHeaders() });
     };
 }
 
@@ -56,12 +58,17 @@ export async function serverRequest(method, path, options = {}) {
 
     const authenticatedConfig = await getAuthenticatedConfig(config);
 
-    return axios({
+    try { return await axios({
         timeout: 20000,
         ...authenticatedConfig,
         method,
         url: `${getServerUrl(mode)}${path}`,
         data,
         params,
-    });
+    }); } catch(error) {if(error.response?.status===426)notifyUpdateRequired(error.response.data?.compatibility);throw error;}
+}
+
+export function attachClientVersionListeners(socket){
+ socket.on('connect_error',error=>{if(error.data?.compatibility)notifyUpdateRequired(error.data.compatibility);});
+ socket.on('client:compatibility',error=>{notifyUpdateRequired(error.compatibility);});
 }

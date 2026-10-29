@@ -1,8 +1,22 @@
 .DS_Store
 node_modules
 /dist
-android
-ios
+/android/**
+!/android/app/
+!/android/app/src/
+!/android/app/src/main/
+!/android/app/src/main/java/
+!/android/app/src/main/java/com/
+!/android/app/src/main/java/com/maecovoit/
+!/android/app/src/main/java/com/maecovoit/app/
+!/android/app/src/main/java/com/maecovoit/app/TripTracking*.java
+!/android/app/src/main/res/
+!/android/app/src/main/res/drawable/
+!/android/app/src/main/res/drawable/ic_trip_tracking.xml
+/ios/**
+!/ios/App/
+!/ios/App/App/
+!/ios/App/App/TripTrackingPlugin.swift
 
 # local env files
 .env.local

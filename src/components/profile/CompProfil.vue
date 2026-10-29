@@ -205,7 +205,6 @@
 <script>
     import { defineComponent } from 'vue';
     import { mapState, mapActions, mapMutations } from 'vuex';
-    import { serverRequest } from '@/utils/serverApi.js';
 
     // import $ from 'jquery';
 
@@ -430,26 +429,9 @@
                         this.onglet = "table-bord";
                 }
             },
-            askNewMessage(){
-                const typeUrl = this.modeCo;
-                if(this.infosTravels.length > 0){
-                    serverRequest('post', '/askNewMessage', {
-                            mode: typeUrl,
-                            data: { userId: this.userUid },
-                        })
-                        .then(response => {
-                            console.log("askNewMessage", response.data);
-                            const data = response.data;
-
-                            this.SET_NOT_MESSAGE_VUE(data.idsTrip);
-                            if( this.infosTravels.length > 0){
-                                this.updateNotifMessage();
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Il y a eu une erreur :', error);
-                        });
-                }
+            async askNewMessage(){
+                await this.$store.dispatch('trip/refreshUnread');
+                this.updateNotifMessage();
             },
             updateNotifMessage(){
                 console.log("updateNotifMessage");
@@ -536,6 +518,11 @@
             },
         },
         watch: {
+            '$route.params.action'(action) {
+                if(action==='open-trip-driver'){this.SET_MODE_DRIVER(true);this.onglet='planning';this.updateTripInfos();}
+                if(action==='open-trip-passenger'){this.onglet='trajets';this.updateTripInfos();}
+            },
+            notMessageVue() { this.updateNotifMessage(); },
             darkMode(){
                 this.infos_panneau[2].icon = ! this.darkMode ? "mdi-lightbulb-on" : "mdi-moon-waning-crescent";
             },

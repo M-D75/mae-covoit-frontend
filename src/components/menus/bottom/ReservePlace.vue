@@ -351,11 +351,11 @@
 
 
 <script>
+    import {requestContextHelp} from '@/services/contextualHelp.js';
     import { serverRequest } from '@/utils/serverApi.js';
     
     import { mapActions, mapState, mapMutations } from 'vuex';
     import { Capacitor } from '@capacitor/core';
-    import { LocalNotifications } from '@capacitor/local-notifications';
 
 
     const isAndroid = Capacitor.getPlatform() === 'android';
@@ -452,72 +452,12 @@
                 }
             },
             async sendNotification() {
-                const permission = await LocalNotifications.requestPermissions();
-            
-                if( permission.display === 'granted' && this.notification ){
-                    await LocalNotifications.schedule({
-                        notifications: [{
-                            id: 1,
-                            title: "Tchoup Tchoup",
-                            body: `Super ! Votre trajet de ${this.trajetSelected.depart} à destination de ${this.trajetSelected.destination} à ${this.trajetSelected.hour_start} à bien été validé.`,
-                            summaryText: "sumaryText!",
-                            schedule: { at: new Date(Date.now() + 3000) }, // dans 5 secondes
-                            iconColor: "red",
-                            smallIcon: "res://icon",
-                            largeIcon: "res://icon",
-                        }]
-                    });
-                }
-                else{
-                    console.log("permission non accordé");
-                }
-
-                let dateString = "";
-
-                // Nettoyage de la chaîne pour respecter le format ISO 8601 (suppression des microsecondes et conversion de +00 en Z)
-                //dateString = this.trajetSelected.departure_time.replace(' ', 'T').slice(0, -3) + 'Z';
-                dateString = this.trajetSelected.departure_time;
-                let date = new Date(dateString);
-
-                // Créez une nouvelle date ajustée pour le fuseau horaire local
-                date.setMinutes(date.getMinutes() - 30);
-                console.log("localDate", date);
-
-                let currentDate = new Date();
-
-                // Calculez la différence en millisecondes
-                let difference = currentDate.getTime() - date.getTime();
-
-                // Convertissez cette différence en minutes
-                let differenceInMinutes = difference / (1000 * 60);
-
-                // Vérifiez si la différence est supérieure à 30 minutes
-                if ( differenceInMinutes > 30 )
-                    console.log("diff-ok");
-                else
-                    console.log("non-diff");
-
-                const typeUrl = this.modeCo;
-                serverRequest('post', '/reservation', {
-                    mode: typeUrl,
-                    data: {
-                        userId: this.userUid,
-                        date: date,
-                        title: "Tchipou Tchipou",
-                        body: `Tsiyo, soyez prêt pour vôtre départ ! Horaire : ${this.trajetSelected.hour_start}. Ne soyez pas en retard !`,
-                        data: {
-                            largeBody: `Tsiyo : Votre trajet de ${this.trajetSelected.depart} à destination de ${this.trajetSelected.destination} part à ${this.trajetSelected.hour_start}. Ne soyez pas en retard.`,
-                        },
-                    }
-                })
-                .then(response => {
-                    console.log(response.data);
-                })
-                .catch(error => {
-                    console.error('Il y a eu une erreur :', error);
-                });   
+                if(!this.notification)return;
+                try { await serverRequest('post','/reservation',{mode:this.modeCo,data:{tripId:this.trajetSelected.id}}); }
+                catch { /* The reservation remains valid if its reminder is unavailable. */ }
             },
             async tryReserve(){
+                const helpOwner=this.userUid;
                 if( this.overlayLoad ){
                     return;
                 }
@@ -580,6 +520,7 @@
                         this.sendNotification();
                     }
 
+                    if(!reserved.replayed&&helpOwner===this.userUid)requestContextHelp(helpOwner,'passenger',{accepted:Boolean(reserved.accepted),tripId:this.trajetSelected.id});
                     this.message = reserved.message;
                     this.accepted = reserved.accepted;
                     // Keep the candidate even when driver approval is pending;

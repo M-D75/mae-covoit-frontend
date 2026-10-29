@@ -60,6 +60,8 @@
     <v-overlay v-model="overlay" contained persistent style="z-index: 10;" @click="overlay = false"></v-overlay>
 
     <v-main class="rating" >
+        <v-btn variant="text" @click="skip">Plus tard · revenir à l’accueil</v-btn>
+        <p class="text-center">Votre avis est facultatif.</p>
         <div v-if="ratingDriver" ref="ratingRef">
             <!-- Avatar -->
             <Avatar :name="ratingDriver.firstname + ' ' + ratingDriver.lastname" :modeEdit="false" :avatar="ratingDriver.avatar" :sub-title="'Non spécifié'" />
@@ -143,6 +145,9 @@
     import { mapState, mapActions, mapMutations } from 'vuex';
     import { onMounted, onUnmounted, ref } from 'vue';
 
+    import {App} from '@capacitor/app';
+    import {Capacitor} from '@capacitor/core';
+    import {deferRating} from '@/services/ratingPreferences.js';
     import { serverRequest } from '@/utils/serverApi.js';
 
 
@@ -156,7 +161,7 @@
     export default defineComponent({
         name: 'rating-view',
         computed: {
-            ...mapState("profil", ["profil", "userName", "userId", "modeDriver", "avatarUrl", "darkMode"]),
+            ...mapState("profil", ["profil", "userName", "userId", "userUid", "modeDriver", "avatarUrl", "darkMode"]),
             ...mapState("profil", {
                 nbTrip: state => state.profil.nbTrip,
             }),
@@ -208,7 +213,7 @@
                 badDescription: "",
                 notHappy: false,
                 avis: 3,
-                isSubmitting: false,
+                isSubmitting: false,disposed:false,backListener:null,
                 ratingError: "",
                 overlay: false,
                 about: "discution",
@@ -233,29 +238,36 @@
             }
         },
         mounted() {
+            if(Capacitor.getPlatform()==='android')App.addListener('backButton',()=>this.skip()).then(listener=>{if(this.disposed)listener.remove();else this.backListener=listener;}).catch(()=>{});
             if( !this.ratingDriver ){
                 this.$router.replace("/");
             }
         },
+        beforeUnmount(){this.disposed=true;this.backListener?.remove();},
+        beforeRouteLeave(to,from,next){this.rememberDeferral();next();},
         methods: {
+            currentTripId(){return this.ratings?.data?.[0]?.trip_id||this.ratingTrip?.id;},
+            rememberDeferral(){const id=this.currentTripId();if(id&&this.ratings.rating){deferRating(this.userUid,id);this.SET_RATINGS_REMOVE({id,markRated:false});}},
+            skip(){this.rememberDeferral();this.$router.replace('/search');},
             ...mapActions("profil", ["getNotation"]),
             ...mapMutations("trip", ["SET_RATINGS_REMOVE"]),
             back() {
-                this.$router.push("/profil")
+                this.skip()
             },
             async rated(){
+                if(this.isSubmitting)return;
                 if( !this.ratings.rating || !this.ratings.data || !this.ratings.data[0] ){
                     return;
                 }
 
-                const bookingData = this.ratings.data[0];
-                const tripId = bookingData.trip_id || (bookingData.trip && bookingData.trip[0] && bookingData.trip[0].id);
+                const tripId = this.currentTripId();
 
                 if( !tripId ){
                     this.$router.push("/");
                     return;
                 }
 
+                const owner=this.userUid;
                 this.ratingError = "";
                 this.isSubmitting = true;
                 try {
@@ -270,6 +282,7 @@
                         data: { tripId, score: Number(this.avis), goodIndices, badIndices },
                     });
         
+                    if(this.disposed||this.userUid!==owner)return;
                     this.SET_RATINGS_REMOVE({
                         id: tripId,
                         markRated: true,
@@ -277,7 +290,7 @@
                     this.$router.push("/");
                 }
                 catch(error){
-                    console.error("rating error:", error);
+                    if(this.disposed||this.userUid!==owner)return;
                     if( error.response?.data?.code === 'RATING_ALREADY_SUBMITTED' ){
                         this.SET_RATINGS_REMOVE({ id: tripId, markRated: true });
                         this.$router.push("/");

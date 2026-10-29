@@ -3,10 +3,10 @@ import { getDefaultAuthPath, rememberAuthEntry } from '@/services/authEntry.js';
 import { resolveAuthGuardRedirect } from '@/services/authProfile.js';
 
 describe('authentication entry preference', () => {
-    it('opens signup on a new device and login after successful authentication', () => {
+    it('opens login on both new and returning devices', () => {
         const values = new Map();
         const storage = { getItem: key => values.get(key), setItem: (key, value) => values.set(key, value) };
-        expect(getDefaultAuthPath(storage)).toBe('/sign');
+        expect(getDefaultAuthPath(storage)).toBe('/login');
         rememberAuthEntry(storage);
         expect(getDefaultAuthPath(storage)).toBe('/login');
         expect([...values.values()]).toEqual(['login']);
@@ -17,14 +17,14 @@ describe('authentication entry preference', () => {
             getItem: vi.fn(() => { throw new Error('Storage disabled'); }),
             setItem: vi.fn(() => { throw new Error('Storage full'); }),
         };
-        expect(getDefaultAuthPath(storage)).toBe('/sign');
+        expect(getDefaultAuthPath(storage)).toBe('/login');
         expect(() => rememberAuthEntry(storage)).not.toThrow();
     });
 
-    it('retains the requested destination when directing a first visit to signup', () => {
+    it('retains the requested destination when directing a first visit to login', () => {
         expect(resolveAuthGuardRedirect({
             requiresAuth: true, authenticated: false,
-            fullPath: '/publish?seats=2', unauthenticatedPath: '/sign',
-        })).toEqual({ path: '/sign', query: { redirect: '/publish?seats=2' } });
+            fullPath: '/publish?seats=2', unauthenticatedPath: '/login',
+        })).toEqual({ path: '/login', query: { redirect: '/publish?seats=2' } });
     });
 });

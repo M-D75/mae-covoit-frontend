@@ -121,3 +121,31 @@ describe('email signup and login form', () => {
         expect(ctx.password).toBe('');
     });
 });
+
+
+describe('login first entry and existing authentication actions', () => {
+    it('defaults to login while retaining an explicit signup route', () => {
+        expect(context('/').modeLogin).toBe(true);
+        expect(context('/login').modeLogin).toBe(true);
+        expect(context('/sign').modeLogin).toBe(false);
+    });
+    it('submits login to the existing password service and preserves the destination', async () => {
+        const ctx = context('/login');
+        ctx.supabase.auth.signInWithPassword = vi.fn().mockResolvedValue({data:{session:{access_token:'fixture',expires_at:123}},error:null});
+        ctx.SET_TOKEN=vi.fn();ctx.checkSessionIn=vi.fn();
+        await ctx.submitEmailAuth();
+        expect(ctx.supabase.auth.signInWithPassword).toHaveBeenCalledWith({email:'test@example.com',password:'password123'});
+        expect(ctx.supabase.auth.signUp).not.toHaveBeenCalled();expect(ctx.checkSessionIn).toHaveBeenCalledOnce();
+    });
+    it('retains password recovery through the same form without submitting a login', async () => {
+        const ctx = context('/login');ctx.supabase.auth.resetPasswordForEmail=vi.fn().mockResolvedValue({error:null});
+        await ctx.showPasswordRecovery();expect(ctx.password).toBe('');await ctx.submitEmailAuth();
+        expect(ctx.supabase.auth.resetPasswordForEmail).toHaveBeenCalledWith('test@example.com');expect(ctx.supabase.auth.signUp).not.toHaveBeenCalled();expect(ctx.showSnackbar).toBe(true);
+    });
+    it('keeps OAuth on its existing callback and exposes provider errors', async () => {
+        const ctx = context('/login');ctx.supabase.auth.signInWithOAuth=vi.fn().mockResolvedValue({error:{message:'unavailable'}});
+        await ctx.authServiceSupabse('google');
+        expect(ctx.supabase.auth.signInWithOAuth).toHaveBeenCalledWith({provider:'google',options:{redirectTo:'https://app.example/auth/callback',skipBrowserRedirect:false}});
+        expect(ctx.overlayLoad).toBe(false);expect(ctx.showSnackbarError).toBe(true);
+    });
+});

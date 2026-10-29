@@ -20,6 +20,8 @@ const getUser = vi.fn();
 const serverRequest = vi.fn();
 const auth = loadOptions(readFileSync('src/store/auth.js', 'utf8'), {
     '../router': {}, '../store': {},
+    '@/services/tripNotifications.js': { clearTripNotifications: vi.fn().mockResolvedValue() },
+    '@/services/nativeTripTracking.js': { nativeTripTracking: { stop: vi.fn().mockResolvedValue() } },
     '@/utils/supabaseClient.js': { auth: { getUser } },
     '@/utils/serverApi.js': { serverRequest },
     '@/services/authEntry.js': { rememberAuthEntry: vi.fn() },

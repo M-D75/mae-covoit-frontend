@@ -1,4 +1,5 @@
 // import { createStore } from 'vuex'
+import {requestContextHelp} from '@/services/contextualHelp.js';
 import supabase from '@/utils/supabaseClient.js';
 import router from '@/router';
 import store from '@/store'; 
@@ -73,6 +74,7 @@ export default {
                 return {status: 1, message: "Votre trajet n'a pas pu être publié !"};
             }
 
+            if(data?.length&&store.state.profil.userUid===tripDriver.driverId)requestContextHelp(tripDriver.driverId,'driver',{tripId:data[0].id});
             return {status: 0, message: "Votre trajet a bien été publié !"};
         },
         async newTripMultple({state}, tripDriver){
@@ -190,6 +192,7 @@ export default {
 
             
 
+            if(data?.length&&store.state.profil.userUid===tripDriver.driverId)requestContextHelp(tripDriver.driverId,'driver',{tripId:data[0].id});
             return {status: 0, message: "Vos trajets ont bien été publié !"}
         },
     },

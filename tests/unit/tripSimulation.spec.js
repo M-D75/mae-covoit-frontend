@@ -94,3 +94,7 @@ it('recolors only car body, uses a north-facing top view and keeps every orienta
     expect(invalid).toContain('fill="#737373"');expect(invalid).not.toContain('onload');
     expect(decodeURIComponent(actorMarkerAsset({kind:'pedestrian',heading:90}).url)).not.toContain('rotate(90');
 });
+it('renders only the unchanged car artwork without a surrounding disc, keeping passenger discs',()=>{
+ const svg=decodeURIComponent(actorMarkerAsset({kind:'car',heading:0}).url);expect(svg).not.toContain('<circle');expect(svg).not.toContain('<rect');
+ expect(decodeURIComponent(actorMarkerAsset({kind:'pedestrian'}).url)).toContain('<circle');expect(decodeURIComponent(actorMarkerAsset({kind:'self'}).url)).toContain('<circle');
+});

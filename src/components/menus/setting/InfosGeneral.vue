@@ -37,6 +37,8 @@
         <div class="title ">{{ title }}</div>
         <br>
         <div class="text">{{ text }}</div>
+        <v-btn v-if="mode==='infos-general'" variant="text" block @click="replayHelp">Revoir l’aide</v-btn>
+        <v-btn v-if="mode==='infos-general'" variant="text" block @click="showVersion">Version de Covia et mises à jour</v-btn>
 
         <v-btn
             v-if="mode=='infos-general' && !cguAccepted"
@@ -122,6 +124,7 @@
 
     // Components
     import BottomMenu from '@/components/menus/BottomMenu.vue';
+    import {requestContextHelp} from '@/services/contextualHelp.js';
     import { privacyContactEmail } from '@/services/privacyPolicy.js';
 
     export default {
@@ -161,6 +164,8 @@
         mounted() {
         },
         methods: {
+            replayHelp(){requestContextHelp(this.$store.state.profil.userUid,'choose',{replay:true});},
+            showVersion(){window.dispatchEvent(new CustomEvent('covia-show-version'));},
             ...mapMutations("profil", ["SET_CGU_ACCEPTED"]),
             ...mapActions("auth", ["removeAccount"]),
             callDeleteAccount(){

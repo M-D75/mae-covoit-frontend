@@ -97,9 +97,12 @@
 <template>
     <!-- ligth-mode or dark-mode init ligth-mode -->
     <v-app :theme="darkMode ? 'dark' : 'light'" :class="darkMode ? 'dark-mode' : 'ligth-mode'">
+        <VersionGate>
         <router-view ref="routerViewRef"/>
         <!-- Menu Nav -->
         <BottomNav v-if="isMobileOrSmallScreen && bottomNav"/>
+        </VersionGate>
+        <ContextualHelp />
     </v-app>
 </template>
 
@@ -111,7 +114,6 @@
     import { StatusBar, Style } from '@capacitor/status-bar';
     import { SafeAreaController } from '@aashu-dubey/capacitor-statusbar-safe-area';
     import { Capacitor } from '@capacitor/core';
-    import { LocalNotifications } from '@capacitor/local-notifications';
     import { App } from '@capacitor/app';
     import { Browser } from '@capacitor/browser';
     import { Keyboard } from '@capacitor/keyboard';
@@ -136,11 +138,13 @@
 
     //Component
     import BottomNav from './components/menus/BottomNav.vue';
+    import ContextualHelp from './components/ContextualHelp.vue';
+    import VersionGate from './components/VersionGate.vue';
 
     export default {
         name: 'App',
         components: {
-            BottomNav,
+            BottomNav,VersionGate,ContextualHelp,
         },
         computed: {
             ...mapState("profil", ["darkMode", "userUid", "notification", "profil"]),
@@ -164,6 +168,8 @@
             // console.log("[App] beforeMount")
         },
         async mounted(){
+            this.messagingUnreadTimer=setInterval(()=>{if(this.userUid&&!document.hidden)this.$store.dispatch('trip/refreshUnread');},15000);
+            if(this.userUid)this.$store.dispatch('trip/refreshUnread');
             this.refreshSafeArea();
             // The keyboard plugin hides this by default. Keep iOS's native
             // dismissal control available, including on numeric keyboards.
@@ -402,11 +408,13 @@
             console.log("[App] END : mounted App.vue\n\n");
         },
         beforeUnmount() {
+            clearInterval(this.messagingUnreadTimer);
             window.removeEventListener('resize', this.updateIsSmallScreen);
             this.appStateListener?.remove();
             this.appUrlOpenListener?.remove();
         },
         watch: {
+            userUid() { this.$store.dispatch('trip/refreshUnread'); },
             darkMode() {
                 this.updateStatusBarStyle();
             },
@@ -434,6 +442,7 @@
             ...mapMutations("general", ["SET_IS_NATIVE", "SET_APP_IS_ACTIVE"]),
             handleAppStateChange(state) {
                 if (state.isActive) {
+                    this.$store.dispatch('trip/refreshUnread');
                     this.refreshSafeArea();
                     console.log("L'application est au premier plan");
                     this.SET_APP_IS_ACTIVE({app: state.isActive});
@@ -509,35 +518,7 @@
             async hideStatusBar(){
                 await StatusBar.hide();
             },
-            async sendNotification(title, body, data) {
-                const permission = await LocalNotifications.requestPermissions();
-               
-                if( permission.display === 'granted' && this.notification ){
 
-                    let option = {
-                        id: 1,
-                        title: title,
-                        body: body,
-                        summaryText: "!",
-                        schedule: { at: new Date(Date.now() + 2000) }, // dans 5 secondes
-                        iconColor: "red",
-                        smallIcon: "res://icon",
-                        largeIcon: "res://icon",
-                    };
-
-                    if( data.largeBody != undefined )
-                        option["largeBody"] = data.largeBody;
-
-                    await LocalNotifications.schedule({
-                        notifications: [
-                            option,
-                        ]
-                    });
-                }
-                else{
-                    console.log("[App] permission non accordé");
-                }
-            },
         },
         
 

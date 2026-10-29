@@ -46,7 +46,7 @@ if (typeof window !== 'undefined') {
     window.localStorage.removeItem('vuex');
 }
 
-export default createStore({
+const appStore = createStore({
     modules: {
         auth,
         profil,
@@ -77,17 +77,17 @@ export default createStore({
                 'profil.userUid',
                 'profil.userName',
                 'profil.autoValidation',
-                'profil.avatarUrl',
                 'profil.cars',
                 'profil.preferenceVirementMode',
                 'profil.history.datesTripPassenger',
                 'profil.history.datesTripDriver',
                 'search.communesFrequency',
-                'trip.notMessageVue',
-                'trip.ratings.rating',
-                'trip.ratings.bookings',
-                'trip.ratings.ratedTripIds',
             ]
         })
     ],
 });
+
+appStore.commit('trip/CLEAR_MESSAGING');
+appStore.commit('trip/RESET_RATING_PROMPT');
+appStore.watch(state=>state.profil.userUid,()=>{appStore.commit('trip/CLEAR_MESSAGING');appStore.commit('trip/RESET_RATING_PROMPT');appStore.commit('profil/SET_AVATAR_DRAFT',null);appStore.commit('profil/CLEAR_HISTORY');});
+export default appStore;

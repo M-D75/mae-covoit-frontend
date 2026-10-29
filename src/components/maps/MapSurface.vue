@@ -20,29 +20,7 @@
             @route-select="$emit('route-select', $event)"
             @alert-select="$emit('alert-select', $event)"
         />
-        <div v-if="hasVillagePoints" class="village-zone-legend" :class="{ 'has-progress': Boolean(progressContext) }" aria-label="Zones des villages">
-            <div v-for="zone in endpointLegend" :key="zone.key" class="village-zone-label">
-                <span class="zone-swatch" :style="{ backgroundColor: zone.color, opacity: zone.phase === 'visited' ? .3 : 1 }" aria-hidden="true"></span>
-                <span><strong>{{ zone.roles?.length > 1 ? 'Départ et arrivée' : zone.role === 'origin' ? 'Départ' : 'Arrivée' }}</strong> · {{ zone.label }}<small v-if="phaseLabel(zone)"> · {{ phaseLabel(zone) }}</small></span>
-            </div>
-            <details v-if="intermediateLegend.length" class="intermediate-zones">
-                <summary>Villages traversés · {{ intermediateLegend.length }} {{ intermediateLegend.length === 1 ? 'zone' : 'zones' }}</summary>
-                <div v-for="zone in intermediateLegend" :key="zone.key" class="village-zone-label">
-                    <span class="zone-swatch" :style="{ backgroundColor: zone.color, opacity: zone.phase === 'visited' ? .3 : 1 }" aria-hidden="true"></span>
-                    <span>{{ zone.label }}<small v-if="phaseLabel(zone)"> · {{ phaseLabel(zone) }}</small></span>
-                </div>
-                <small>Passage géométrique ; aucun arrêt garanti.</small>
-            </details>
-            <div v-if="catalogStatus === 'error'" class="village-zone-status">Villages traversés indisponibles.</div>
-            <div v-if="progressContext && !visits.reliable" class="village-zone-status">Progression suspendue : position véhicule indisponible ou imprécise.</div>
-            <div class="village-zone-status" role="status" aria-live="polite">
-                <span v-if="boundaryStatus === 'loading'">Chargement des zones…</span>
-                <template v-else-if="boundaryStatus === 'error' || missingBoundary">
-                    <span>Zone indisponible : repère affiché.</span>
-                    <button type="button" @click="fetchBoundaries(true)">Réessayer</button>
-                </template>
-            </div>
-        </div>
+
     </div>
 </template>
 
@@ -62,11 +40,12 @@ export default defineComponent({
         GoogleMapSurface,
         LeafletMapSurface,
     },
-    emits: ['ready', 'route-select', 'alert-select', 'zone-progress'],
+    emits: ['ready', 'route-select', 'alert-select', 'zone-progress', 'route-details'],
     props: {
         vehiclePosition: { type: Object, default: null },
         progressContext: { type: String, default: '' },
         actorMarkers: { type: Array, default: null },
+        extraBottomSpace: { type: Number, default: 0 },
         reserveBottomSpace: { type: Boolean, default: false },
         originVillageId: { type: [Number, String], default: null },
         destinationVillageId: { type: [Number, String], default: null },
@@ -96,7 +75,7 @@ export default defineComponent({
     },
     computed: {
         bottomPadding() {
-            return this.reserveBottomSpace ? Math.min(320, Math.round(this.viewportHeight * 0.4)) + 24 : 24;
+            return this.reserveBottomSpace ? Math.min(Math.round(this.viewportHeight * .75), Math.min(320, Math.round(this.viewportHeight * .4)) + this.extraBottomSpace) + 24 : 24;
         },
         villageIds() {
             const villages = this.$store?.state?.search?.villages || [];
@@ -132,6 +111,13 @@ export default defineComponent({
         villageZones() { return this.geometryZones.map(zone => ({ ...zone, phase: this.visits.phases[zone.key] || 'upcoming' })); },
         endpointLegend() { return this.villageZones.filter(zone => zone.role !== 'intermediate'); },
         intermediateLegend() { return this.villageZones.filter(zone => zone.role === 'intermediate'); },
+        routeDetails() {
+            const origin=this.endpointLegend.filter(zone=>zone.roles?.includes('origin'));
+            const destination=this.endpointLegend.filter(zone=>!zone.roles?.includes('origin'));
+            return { key:`${this.progressContext}:${this.villageKey}:${this.routeKey}`,tracking:Boolean(this.progressContext),reliable:this.visits.reliable,
+                boundaryStatus:this.boundaryStatus,catalogStatus:this.catalogStatus,missingBoundary:this.missingBoundary,
+                zones:[...origin,...this.intermediateLegend,...destination].map(({key,label,role,roles,color,phase})=>({key,label,role,roles,color,phase})) };
+        },
         missingBoundary() { return this.endpointZones.some(zone => !zone.boundary); },
         selectedProvider() {
             return getEffectiveMapProvider(this.provider || this.runtimeProvider);
@@ -141,6 +127,7 @@ export default defineComponent({
         },
     },
     watch: {
+        routeDetails: {deep:true,immediate:true,handler(value){this.$emit('route-details',value);}},
         villageKey: { immediate: true, handler() { this.fetchBoundaries(); this.resetVisits(); } },
         routeKey() { this.resetVisits(); },
         progressContext() { this.resetVisits(); },
@@ -215,14 +202,4 @@ export default defineComponent({
 
 <style scoped>
 .village-map-wrapper { position: relative; width: 100%; height: 100%; }
-.village-zone-legend { position: absolute; top: calc(12px + var(--safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); z-index: 500;
-    width: max-content; max-width: min(330px, calc(100% - 148px)); padding: 9px 12px; border-radius: 12px;
-    background: rgba(var(--v-theme-surface), .96); color: rgb(var(--v-theme-on-surface)); border: 1px solid rgba(var(--v-theme-on-surface), .12); box-shadow: 0 2px 10px #0002;
-    font-size: 12px; max-height: 32vh; overflow-y: auto; pointer-events: auto; }
-.village-zone-label { display: flex; align-items: baseline; gap: 7px; margin: 2px 0; }
-.zone-swatch { width: 10px; height: 10px; border-radius: 3px; flex: 0 0 10px; }
-.village-zone-status { font-size: 11px; color: rgba(var(--v-theme-on-surface), .75); }
-.village-zone-status button { min-height: 44px; padding: 4px 6px; pointer-events: auto; text-decoration: underline; margin-left: 6px; }
- .village-zone-legend.has-progress { top: calc(64px + var(--safe-area-inset-top, 0px)); }
-.intermediate-zones summary { min-height: 44px; display: list-item; align-content: center; cursor: pointer; margin-top: 4px; color: rgb(var(--v-theme-primary)); font-weight: 600; }
 </style>

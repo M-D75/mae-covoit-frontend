@@ -63,9 +63,10 @@
 
 <template>
 
+    <v-alert v-if="history.error" type="error" role="alert">{{ history.error }}<v-btn variant="text" @click="$store.dispatch('profil/buildHistoriqueBooking')">Réessayer</v-btn></v-alert>
     <!-- nothing and loading -->
     <div 
-        v-if="Object.keys(history.historycalBooking).length==0"
+        v-if="!history.error && Object.keys(history.historycalBooking || {}).length==0"
         class="group-list-cards-history-empty"
         @click="overlayLoad=true"
         >
@@ -97,7 +98,7 @@
 
     <!--  -->
     <div 
-        v-else
+        v-else-if="!history.error"
         class="group-list-cards-history" 
         >
         <div

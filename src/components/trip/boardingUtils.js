@@ -41,3 +41,9 @@ export function passengerBoardingAccess(bookings = [], userId, userUid, departur
         message: 'La fenêtre de montée est expirée (une heure après le départ).' };
     return { status: 'available', canOpen: true, availableAt, expiresAt, message: 'En attente du véhicule' };
 }
+
+export function boardingFailure(error){
+ const code=error?.response?.data?.code||'BOARDING_UNAVAILABLE';
+ const kinds={BOARDING_RECOVERY_REQUIRED:'payment',BOARDING_SETTLEMENT_PENDING:'payment',BOARDING_WRONG_CODE:'code',BOARDING_LOCKED:'blocked',BOARDING_TOO_EARLY:'window',BOARDING_EXPIRED:'window',BOARDING_FORBIDDEN:'access',BOARDING_INVALID:'reservation',BOARDING_GROUP_CHANGED:'reservation',BOARDING_NOT_ISSUED:'reservation',SIMULATION_OPERATION_DISABLED:'simulation',SIMULATION_GROUP_FORBIDDEN:'simulation',APP_UPDATE_REQUIRED:'version',AUTH_REQUIRED:'session',SESSION_INVALID:'session'};
+ return {code,kind:kinds[code]||'service',message:error?.response?.data?.message||'Validation indisponible. Actualisez l’état avant de réessayer.'};
+}

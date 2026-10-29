@@ -83,7 +83,7 @@
                     alt="Avatar"
                     :src="avatar"
                 ></v-img>
-                <v-icon class="picture" v-if="modeEdit" @click="triggerFileInput">
+                <v-icon class="picture" v-if="modeEdit" role="button" tabindex="0" aria-label="Changer la photo de profil" @click.stop="triggerFileInput" @keydown.enter.prevent="triggerFileInput" @keydown.space.prevent="triggerFileInput">
                     mdi-camera-plus
                 </v-icon>
 
@@ -112,6 +112,7 @@
             <v-icon>{{ icon }}</v-icon>{{ subTitle }}
         </div>
     </div>
+    <v-snackbar v-model="showPhotoError" color="error" role="alert">{{ photoError }}</v-snackbar>
 
 </template>
 
@@ -120,7 +121,8 @@
 <!--  -->
 <script>    
     import { defineComponent } from 'vue';
-    import { mapMutations } from 'vuex';
+    import { mapMutations,mapState } from 'vuex';
+    import {readProfilePhoto} from '@/services/profilePhoto.js';
     
 
     // Components
@@ -128,8 +130,7 @@
 
     export default defineComponent({
         name: 'avatar-profil-comp',
-        computed: {
-        },
+        computed: {...mapState('profil',['userUid'])},
         components: {
         },
         props: {
@@ -160,11 +161,11 @@
         },
         data() {
             return {
-                
+                showPhotoError:false,photoError:'',
             }
         },
         methods: {
-            ...mapMutations("profil", ["SET_AVATAR_URL"]),
+            ...mapMutations("profil", ["SET_AVATAR_DRAFT"]),
             avatarTouchedEmit(){
                 this.$emit("avatar-touched");
             },
@@ -172,33 +173,12 @@
                 // Active le clic sur l'input de type file
                 this.$refs.fileInput.click();
             },
-            handleFileChange(event) {
-                // Affiche l'image sélectionnée
-                const file = event.target.files[0];
-                if (file) {
-                    // type de fichier
-                    const validTypes = ['image/jpeg', 'image/png'];
-                    if ( ! validTypes.includes(file.type) ) {
-                        alert("Ce type de fichier n'est pas pris en charge.");
-                        return;
-                    }
-
-                    console.log("size-file", file.size);
-
-                    // taille de l'image 
-                    const maxSizeInBytes = 3e6; // 3 Megabytes
-                    if (file.size > maxSizeInBytes) {
-                        alert("Oups ! Cette image dépasse la taille maximale autorisée. Veuillez choisir une image plus légère.");
-                        return;
-                    }
-
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        this.SET_AVATAR_URL(e.target.result);
-                        this.$router.replace("/cropper");
-                    };
-                    reader.readAsDataURL(file);
-                }
+            async handleFileChange(event) {
+                const file=event.target.files?.[0];if(!file)return;
+                const owner=this.userUid;
+                try{const dataUrl=await readProfilePhoto(file);if(this.userUid!==owner)return;this.SET_AVATAR_DRAFT({owner,dataUrl});this.$router.push('/cropper');}
+                catch(error){this.photoError=error.message;this.showPhotoError=true;}
+                finally{event.target.value='';}
             },
         }
     });

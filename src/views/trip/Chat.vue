@@ -1,850 +1,169 @@
-
-<style lang="scss" model>
-     .v-menu.contact{
-        .v-list{
-            &.contact{
-                .v-list-item:not(:last-child){
-                    border-bottom: 0.5px solid #33333333;
-                }
-
-                .v-list-item__content{
-                    display: flex;
-                    flex: auto;
-                    .v-list-item-title{
-                        margin-right: 50px;
-                    }
-                    .nb-message{
-                        position: fixed;
-                        right: 10px;
-                        border-radius: 100px;
-                        padding: 0px 10px;
-                        background: #333333AA;
-                        margin-left: 10px;
-                        color: white;
-                        &.red{
-                            background-color: #c60707aa;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    .v-toolbar{
-        .v-toolbar__content{
-            .v-toolbar__append {
-                .v-btn {
-                    .v-btn__content {
-                        span.notif-message{
-                            width: 10px;
-                            height: 10px;
-                            display: block;
-                            z-index: 9999;
-                            background: rgba(216, 8, 8, 0.825);
-                            border-radius: 100px;
-                            position: absolute;
-                            right: 10px;
-                            bottom: 13px;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    .v-footer{
-        .card-foot{
-            .v-text-field{
-                .v-input__details{
-                    display: none;
-                }
-
-                .v-input__control {
-                    .v-field{
-                        .v-field__field{
-                            background-color: var(--bg-app-color) !important;
-                            color: var(--font-color-label) !important;
-                        }
-                    }
-                }
-            }
-        }
-    }
-</style>
-
-<!-- scss -->
-<style lang="scss" scoped>
-    .v-app-bar {
-        .v-toolbar{
-            z-index: 1;
-            background-color: var(--bg-app-color);
-            box-shadow: var(--box-shadow-card);
-            // natif
-            padding-top: var(--safe-area-inset-top);
-            margin-top: var(--safe-area-inset-top);
-            // padding-top: 58px;
-            // margin-top: 58px;
-
-            .v-btn i.v-icon {
-                margin-right: 0 !important;
-                color: var(--gray-icon-color);
-            }
-            .v-toolbar-title {
-                font-size: var(--font-size-h1-toolbar);
-                color: var(--font-color-label);
-            }
-
-            .v-avatar {
-                margin-left: 15px;
-            }
-            .v-list{
-                &.contact{
-                    .v-list-item{
-                        border-bottom: 0.5px solid gray;
-                    }
-                }
-            }
-        }
-    }
-
-    .v-application{
-        height: 100% !important;
-        .v-application__wrap{
-            overflow: auto !important;
-        }
-    }
-
-    .v-main{
-        height: auto !important;
-        overflow: auto;
-        width: 100vw !important;
-        transform: inherit !important;
-        z-index: 0 !important;
-        background-color: var(--bg-app-color);
-        .messages {
-            height: 100%;
-            overflow: auto;
-            padding-bottom: calc(80px + var(--safe-area-inset-bottom)); // 80 taille du champ de text
-            .message-info-no-data {
-                display: flex;
-                height: 100%;
-                justify-content: center;
-                align-content: center;
-                align-items: center;
-                text-align: center;
-                padding: 20px;
-                color: var(--font-color-label);
-            }
-
-            .in{
-                overflow-y: auto; /* Active le défilement vertical si nécessaire */
-                display: flex;
-                flex-direction: column-reverse;
-                padding: 5px 10px;
-            }
-            .contain-mess{
-                height:auto;
-                width:100%;
-                margin: 5px 0;
-            }
-
-            .mess-chip{
-                border-radius: 15px;
-                background: #77777744;
-                padding: 10px 15px;
-                width: fit-content;
-                max-width: 80%;
-                // text-align: justify;
-                color: var(--font-color-label);
-                &.send{
-                    float: right;
-                    background-color: rgb(0 209 255 / 40%);
-                    span {
-                        &.time{
-                            color: cadetblue;
-                        }
-                        &.status{
-                            color: cadetblue;
-                        }
-                    }
-                }
-                &.recipe{
-                    float: left;
-                    background-color: #B2BBBD44;
-                    span  {
-                        &.time{
-                            color: #858484b9;
-                        }
-                        &.status{
-                            color: #858484b9;
-                        }
-                    }
-
-                }
-                span {
-                    &.time{
-                        display: contents;
-                        color: #323232;
-                        font-weight: italic;
-                        opacity: 0.5;
-                    }
-                    &.status{
-                        margin-left: 5px;
-                        font-size: 13px;
-                    }
-                }
-            }
-        }
-    }
-
-    .v-footer{
-        background-color: var(--bg-app-color);
-        .card-foot{
-            display: flex;
-            flex: auto;
-            .v-text-field{
-                
-                .v-input__control {
-                    .v-field{
-                        .v-field__field{
-                            background-color: var(--bg-app-color) !important;
-                            color: var(--font-color-label) !important;
-                        }
-                    }
-                }
-                .v-input__details{
-                    display: none;
-                }
-                
-            }
-        }
-        .v-btn{
-            padding-right: 0;
-            font-size: 25px;
-            height: 55px;
-        }
-    }
-</style>
-   
-<!--  -->
 <template>
-    <!--  -->
-    <v-app-bar
-        absolute
-        permanent
-        extended
-        :extension-height="barHeight"
-    >
-        <v-toolbar
-            class=""
-            dark
-            permanent
-        >
-            <template
-                v-if="mode_driver"
-                v-slot:prepend
-            >
-                <v-btn icon
-                    @click="$router.replace('/profil')"
-                >
-                    <v-icon>mdi-chevron-left</v-icon>
-                </v-btn>
-            </template>
-
-            <v-avatar
-                size="47px"
-                @click="handlerAvatar()"
-            >
-                <v-img
-                    alt="Avatar"
-                    :src="currentContact.avatarContact"
-                ></v-img>
-            </v-avatar>
-
-            <v-toolbar-title
-                @click="handlerAvatar()"
-                class="ml-5 mr-5"
-            >
-                {{ currentContact.username }}
-            </v-toolbar-title>
-
-            <template 
-                v-if="!mode_driver"
-                v-slot:append
-            >
-                <v-btn icon
-                    @click="$router.push('/trip')"
-                >
-                    <v-icon>mdi-map-legend</v-icon>
-                </v-btn>
-            </template>
-
-            <template 
-                v-else
-                v-slot:append
-            >
-                <v-btn icon
-                    @click="$router.push('/trip')"
-                >
-                    <v-icon>mdi-map-legend</v-icon>
-                </v-btn>
-                <v-menu 
-                    class="contact"
-                >
-                    <template v-slot:activator="{ props }">
-                        <v-btn icon
-                            v-bind="props"
-                        >
-                            <v-icon>mdi-account-supervisor-circle-outline</v-icon>
-                            <span 
-                                v-if="notifMessage"
-                                class="notif-message"
-                            ></span>
-                        </v-btn>
-                    </template>
-
-                    <v-list class="contact">
-                        <v-list-item
-                            v-for="(contact, i) in contacts"
-                            :key="i"
-                            :value="contact.username"
-                            :prepend-avatar="contact.avatar"
-                            @click="selectContact(contact.username)"
-                        >
-                            <v-list-item-title>{{ contact.username }}</v-list-item-title>
-                            <span class="nb-message" :class="{red: contact.messageNumber > 0 || contact.messageNumber=='9+'}">{{ contact.messageNumber }}</span>
-                            
-                        </v-list-item>
-                    </v-list>
-                </v-menu>
-            </template>
-
-        </v-toolbar>
-    </v-app-bar>
-
-    <!--  -->
-    <v-navigation-drawer 
-        class="v-main"
-    >
-        <div id="messages" class="messages">
-            <div v-if="messages.length == 0" class="message-info-no-data">
-                <span>⚠️ Attention : Cette messagerie n'est pas privée. Veuillez éviter de communiquer toute donnée sensible. 🚫</span>
-            </div>
-
-            <div class="in">
-                <div
-                    v-for="(message, index) in messages.slice().reverse().filter((msg) => msg)" 
-                    :key="index"
-                    class="contain-mess"
-                >
-                    
-                    <div 
-                        class="mess-chip"
-                        :class="{ 'send': userUid == message.from, 'recipe': userUid != message.from }"
-                    >
-                        <span>{{ message.message }}</span> 
-                        <br> 
-                        <span class="time">{{ message.time }}</span>
-                        <span 
-                            v-if="userUid == message.from"
-                            class="status">
-                            <v-icon v-if="message.status=='send'"><font-awesome-icon :icon="['fas', 'clock']" spin /></v-icon>
-                            <v-icon v-if="message.status=='sended'">mdi-check</v-icon>
-                            <v-icon v-if="message.status=='vue'">mdi-check-all</v-icon>
-                        </span>
-                    </div>
-                </div>
-            </div>
+    <section class="trip-chat" :style="visibleHeight ? {height:visibleHeight+'px'} : {}">
+        <header class="chat-toolbar">
+            <v-btn icon="mdi-chevron-left" aria-label="Retour au profil" variant="text" @click="$router.push('/profil')" />
+            <div class="chat-peer-avatar" aria-hidden="true"><img v-if="activeContact?.avatar" :src="activeContact.avatar" alt="" /><v-icon v-else icon="mdi-account-circle-outline" size="40" /></div>
+            <div class="chat-title"><strong>{{ activeContact?.username || 'Messages du trajet' }}</strong><small>{{ tripLabel }}</small></div>
+            <v-btn prepend-icon="mdi-map-legend" variant="text" @click="openMap">Carte</v-btn>
+        </header>
+        <label v-if="isTripDriver && contacts.length" class="contact-select">Passager
+            <select v-model="peerId" aria-label="Choisir un passager"><option v-for="contact in contacts" :key="contact.userId" :value="contact.userId">{{ contact.username }}{{ contact.unread ? ` · ${contact.unread} non lu(s)` : '' }}</option></select>
+        </label>
+        <p class="privacy-note">Messages texte conservés 15 jours après chaque envoi. Évitez les informations sensibles.</p>
+        <p v-if="error" role="alert" class="chat-error">{{ error }} <button type="button" @click="reload">Réessayer le chargement</button></p>
+        <p v-if="notice" role="status">{{ notice }}</p>
+        <p v-if="loading" role="status">Chargement…</p>
+        <div ref="history" class="chat-history" role="log" aria-label="Messages de cet échange" @scroll.passive="markVisibleRead">
+            <v-btn v-if="nextCursor" variant="text" :loading="olderLoading" @click="loadOlder">Messages précédents</v-btn>
+            <p v-if="showEmpty">{{ peerId ? 'Aucun message conservé pour cet échange.' : 'Aucun échange disponible pour ce trajet.' }}</p>
+            <article v-for="message in messages" :key="message.clientId || message.id" class="chat-message" :class="{ own: message.from===userUid }" :data-message-id="message.id">
+                <p>{{ message.text }}</p>
+                <small class="message-meta">{{ formatTime(message.createdAt) }}<span v-if="message.from===userUid" class="message-status" role="img" :aria-label="messageStatus(message).label" :title="messageStatus(message).label"><v-icon :icon="messageStatus(message).icon" size="16" aria-hidden="true" /></span></small>
+                <button v-if="message.error" type="button" @click="retry(message)">Réessayer cet envoi</button>
+            </article>
         </div>
-
-        <!-- loading -->
-        <v-overlay :model-value="overlayLoad" class="align-center justify-center">
-            <v-progress-circular color="blue" indeterminate size="64"></v-progress-circular>
-        </v-overlay>
-
-    </v-navigation-drawer>
-
-    <!--  -->
-    <v-footer
-        app
-        name="footer"
-        :height="80 + (footerDown ? barBottom :  0)"
-        class="down"
-    >
-        <div
-            class="card-foot"
-        >
-            <v-text-field
-                class="write-message"
-                v-model="newMessage"
-                variant="solo"
-                label="Écrire un message..."
-                @keyup.enter="sendMessage"
-            ></v-text-field>
-
-            <v-btn
-                v-if="newMessage==''"
-                icon
-                :active="false"
-                :ripple="false"
-                variant="plain"
-                :color="darkMode ? 'white' : 'gray'"
-                style="opacity: 0.7"
-            >
-                <!-- <v-icon>mdi-send-variant</v-icon> -->
-                <v-icon style="transform: rotate(45deg);"><font-awesome-icon :icon="['fas', 'location-arrow']" /></v-icon>
-            </v-btn >
-
-            <v-btn
-                v-else
-                icon
-                :active="false"
-                :ripple="false"
-                variant="plain"
-                color="info"
-                @click="sendMessage"
-            >
-                <!-- <v-icon>mdi-send-variant</v-icon> -->
-                <v-icon style="transform: rotate(45deg);"><font-awesome-icon :icon="['fas', 'location-arrow']" /></v-icon>
-            </v-btn >
-        </div>
-    </v-footer>
+        <form v-if="peerId" class="chat-compose" @submit.prevent="send">
+            <label class="sr-only" for="trip-chat-text">Votre message</label>
+            <textarea id="trip-chat-text" v-model="draft" rows="2" maxlength="2000" :disabled="!canSend" placeholder="Écrire un message…" />
+            <v-btn type="submit" icon variant="plain" color="info" class="chat-send" aria-label="Envoyer le message" :disabled="!canSend || !draft.trim()"><font-awesome-icon :icon="['fas','location-arrow']" aria-hidden="true" /></v-btn>
+        </form>
+        <p v-if="peerId && historyInitialized && !error && !canSend" class="privacy-note">L’envoi est fermé : réservation indisponible ou plus de 24 h après le départ. L’historique non expiré reste consultable.</p>
+        <v-btn v-if="serverMessages.length" variant="text" class="report-button" @click="openReport">Signaler cet échange</v-btn>
+        <v-dialog v-model="reportOpen" max-width="520">
+            <v-card title="Signaler cet échange">
+                <v-card-text>
+                    <p>Les {{ reportIds.length }} derniers messages chargés de cet échange seront joints au signalement pour examen par l’administration. Le rapport sera supprimé à l’expiration du plus ancien message joint, sans dépasser les 15 jours depuis son envoi.</p>
+                    <v-select v-model="reportReason" label="Motif" :items="reportReasons" item-title="title" item-value="value" />
+                    <v-textarea v-model="reportDetails" label="Précisions facultatives" maxlength="1000" counter="1000" />
+                    <p v-if="reportError" role="alert">{{ reportError }}</p>
+                </v-card-text>
+                <v-card-actions><v-btn :disabled="reportBusy" @click="reportOpen=false">Annuler</v-btn><v-btn :loading="reportBusy" @click="submitReport">Enregistrer le signalement</v-btn></v-card-actions>
+            </v-card>
+        </v-dialog>
+    </section>
 </template>
-
-
-
-<!--  -->
 <script>
-    import $ from 'jquery'
-    import { defineComponent } from 'vue';
-    import { mapState, mapActions } from 'vuex';
-    // Importez la bibliothèque Socket.IO client
-    import io from 'socket.io-client';
-    import supabase from '@/utils/supabaseClient.js';
-    import { createSocketAuth, getServerUrl } from '@/utils/serverApi.js';
-    import { SafeAreaController, SafeArea } from '@aashu-dubey/capacitor-statusbar-safe-area';
-    import { Keyboard } from '@capacitor/keyboard';
-
-    import { Plugins, Capacitor } from '@capacitor/core';
-    const { App } = Plugins;
-
-    const isAndroid = Capacitor.getPlatform() === 'android';
-    const isIOS = Capacitor.getPlatform() === 'ios';
-
-    // Components
-
-    export default defineComponent({
-        name: 'chat-view',
-        computed: {
-            ...mapState("profil", ['userUid', 'darkMode', "userName", "modeCo"]),
-            ...mapState("auth", ['registerDeviceToken']),
-            ...mapState("trip", ['tripSelected', 'chat']),
+import supabase from '@/utils/supabaseClient.js';
+import {observeSheetViewport} from '@/utils/sheetViewport.js';
+import { mapState } from 'vuex';
+import io from 'socket.io-client';
+import { Capacitor } from '@capacitor/core';
+import { App } from '@capacitor/app';
+import { attachClientVersionListeners, createSocketAuth,getServerUrl } from '@/utils/serverApi.js';
+import { createRequestId } from '@/utils/requestId.js';
+import { chatRequest,conversationPath,mergeChatMessages,chatViewActive,chatMessageStatus } from '@/services/tripMessaging.js';
+export default {
+    name:'chat-view',
+    data:()=>({ visibleHeight:0,stopViewport:null,roleDriverId:null,contactsLoaded:false,contacts:[],peerId:'',messages:[],draft:'',canSend:false,nextCursor:null,historyInitialized:false,loading:false,olderLoading:false,error:'',notice:'',
+        socket:null,timer:null,foreground:true,appListener:null,epoch:0,disposed:false,reading:false,refreshing:false,
+        reportOpen:false,reportReason:'harassment',reportDetails:'',reportRequestId:'',reportIds:[],reportBusy:false,reportError:'',
+        reportReasons:[{title:'Harcèlement ou insultes',value:'harassment'},{title:'Comportement inquiétant',value:'unsafe'},{title:'Spam',value:'spam'},{title:'Autre',value:'other'}] }),
+    computed:{
+        ...mapState('profil',['userUid','modeCo']),...mapState('trip',['tripSelected']),
+        activeContact(){return this.contacts.find(contact=>contact.userId===this.peerId)||null;},
+        isTripDriver(){const driver=Number(this.tripSelected?.id)===this.tripId&&this.tripSelected?.driver_id?this.tripSelected.driver_id:this.roleDriverId;return Boolean(driver&&driver===this.userUid);},
+        showEmpty(){return !this.loading&&!this.error&&!this.messages.length&&(this.peerId?this.historyInitialized&&!this.refreshing:this.contactsLoaded);},
+        tripId(){return Number(this.$route.query.tripId || this.tripSelected?.id)||null;},
+        tripLabel(){return Number(this.tripSelected?.id)===this.tripId && this.tripSelected.depart && this.tripSelected.destination ? `${this.tripSelected.depart} → ${this.tripSelected.destination}` : 'Échange conducteur / passager';},
+        serverMessages(){return this.messages.filter(m=>m.id && !m.pending);},
+    },
+    async mounted(){
+        this.stopViewport=observeSheetViewport(viewport=>{this.visibleHeight=viewport.height;});
+        document.addEventListener('visibilitychange',this.viewChanged);window.addEventListener('focus',this.viewChanged);window.addEventListener('blur',this.viewChanged);
+        if(Capacitor.isNativePlatform())this.appListener=await App.addListener('appStateChange',({isActive})=>{this.foreground=isActive;this.viewChanged();});
+        if(this.disposed){this.appListener?.remove();return;}
+        this.socket=io(getServerUrl(this.modeCo),{auth:createSocketAuth(),reconnection:true});
+        attachClientVersionListeners(this.socket);
+        this.socket.on('connect',()=>{this.notice='';this.restartHistory();this.reload();});
+        this.socket.on('disconnect',()=>{this.notice='Connexion interrompue. Les envois non confirmés peuvent être réessayés sans doublon.';});
+        this.socket.on('chat:changed',data=>{this.$store.dispatch('trip/refreshUnread');if(Number(data.tripId)===this.tripId)this.reload();});
+        this.timer=setInterval(()=>{this.messages=mergeChatMessages(this.messages,[]);if(this.activeView()){this.presence();this.refreshHistory();this.$store.dispatch('trip/refreshUnread');}},5000);
+        this.resolveChatRole();
+        await this.reload();
+    },
+    beforeUnmount(){this.stopViewport?.();this.disposed=true;this.epoch++;this.$store.commit('trip/SET_ACTIVE_CHAT',null);this.socket?.emit('chat:presence',{active:false});this.socket?.disconnect();clearInterval(this.timer);this.appListener?.remove();
+        document.removeEventListener('visibilitychange',this.viewChanged);window.removeEventListener('focus',this.viewChanged);window.removeEventListener('blur',this.viewChanged);},
+    watch:{
+        '$route.query.peerId'(value){if(this.contacts.some(c=>c.userId===value))this.peerId=value;},
+        peerId(){this.epoch++;this.messages=[];this.nextCursor=null;this.historyInitialized=false;this.canSend=false;this.draft='';this.reportOpen=false;this.refreshHistory();},
+        tripId(){this.reset();this.resolveChatRole();this.reload();},userUid(){this.reset();this.socket?.disconnect();this.$router.replace('/profil');},
+    },
+    methods:{
+        messageStatus:chatMessageStatus,
+        async resolveChatRole(){
+            if(Number(this.tripSelected?.id)===this.tripId&&this.tripSelected?.driver_id)return;
+            const owner=this.userUid,trip=this.tripId;if(!owner||!trip)return;
+            try{const {data,error}=await supabase.from('trip').select('id,driver_id').eq('id',trip).maybeSingle();if(!error&&!this.disposed&&this.userUid===owner&&this.tripId===trip&&Number(data?.id)===trip)this.roleDriverId=data.driver_id;}catch{/* Unknown role keeps the participant selector hidden. */}
         },
-        components: {
+        activeView(){return !this.disposed && chatViewActive({foreground:this.foreground,hidden:document.hidden,focused:document.hasFocus(),path:this.$route.path});},
+        reset(){this.roleDriverId=null;this.contactsLoaded=false;this.$store.commit('trip/SET_ACTIVE_CHAT',null);this.epoch++;this.messages=[];this.contacts=[];this.peerId='';this.draft='';this.reportOpen=false;this.socket?.emit('chat:presence',{active:false});},
+        presence(){const value={active:this.activeView() && Boolean(this.peerId),tripId:this.tripId,peerId:this.peerId};this.socket?.emit('chat:presence',value);this.$store.commit('trip/SET_ACTIVE_CHAT',value);},
+        restartHistory(){this.messages=this.messages.filter(m=>!m.id);this.historyInitialized=false;this.nextCursor=null;},
+        viewChanged(){this.presence();if(this.activeView()){this.restartHistory();this.refreshHistory();this.$store.dispatch('trip/refreshUnread');}},
+        async reload(){
+            if(!this.tripId||this.disposed)return;
+            const epoch=this.epoch,trip=this.tripId;this.loading=true;
+            try{const data=await chatRequest('get',`/trips/${trip}/conversations`,this.modeCo);if(epoch!==this.epoch||this.disposed)return;
+                this.contacts=data.contacts;this.contactsLoaded=true;const preferred=this.$route.query.peerId;
+                if(!this.contacts.some(c=>c.userId===this.peerId))this.peerId=this.contacts.find(c=>c.userId===preferred)?.userId||this.contacts[0]?.userId||'';
+                else await this.refreshHistory();this.error='';
+            }catch(error){if(epoch===this.epoch)this.error=error.response?.data?.code==='CHAT_MIGRATION_OR_SERVICE_UNAVAILABLE'?'La messagerie n’est pas encore disponible sur ce serveur. Réessayez après sa mise à jour.':'Impossible de charger cet échange. Vérifiez la connexion ou réessayez.';}
+            finally{this.loading=false;}
         },
-        data() {
-            return {
-                barHeight: 0,
-                barBottom: 0,
-                footerDown: true,
-                sizeScreen: 0,
-                mode_driver: false,
-                currentContact: {
-                    username: "Username",
-                    avatarContact: "https://avataaars.io/?avatarStyle=Circle&topType=LongHairStraight&accessoriesType=Blank&hairColor=BrownDark&facialHairType=Blank&clotheType=BlazerShirt&eyeType=Default&eyebrowType=Default&mouthType=Default&skinColor=Light'",
-                    userUid: "",
-                },
-                newMessage: '',
-                messages: [
-                    // { from: this.userUid, message: "Bonjour, c'est Marc. Je suis votre conducteur pour le covoiturage de demain.", type: 0, time: "08:22", status: "vue" },
-                    // { from: "this.userUid", message: "Salut Marc, ici Léa. Oui, je me réjouis de notre trajet !", type: 1, time: "08:22", status: "vue" },
-                    // { from: this.userUid, message: "Super ! Pouvez-vous confirmer l'heure et le lieu de départ ?", type: 0, time: "08:23", status: "vue" },
-                    // { from: "this.userUid", message: "Bien sûr. On avait dit 8h devant la gare, n'est-ce pas ?", type: 1, time: "08:24", status: "vue" },
-                    // { from: this.userUid, message: "Exactement. Et votre destination finale est bien la rue de Rivoli ?", type: 0, time: "08:24", status: "vue" },
-                    // { from: "this.userUid", message: "Oui, c'est parfait. Combien de temps pensez-vous que le trajet va durer ?", type: 1, time: "08:25", status: "vue" },
-                    // { from: this.userUid, message: "En général, ça prend une heure, mais je prévois un peu de marge pour le trafic.", type: 0, time: "08:26", status: "vue" },
-                    // { from: "this.userUid", message: "Ça marche. Aurons-nous le temps de faire une pause café en cours de route ?", type: 1, time: "08:26", status: "vue" },
-                    // { from: this.userUid, message: "Bien sûr, je pense qu'une petite pause serait agréable.", type: 0, time: "08:26", status: "vue" },
-                    // { from: "this.userUid", message: "Super ! J'apporterai des croissants.", type: 1, time: "08:27" },
-                    // { from: this.userUid, message: "C'est très gentil, merci ! Vous avez des préférences musicales pour le trajet ?", type: 0, time: "08:27", status: "vue" },
-                    // { from: "this.userUid", message: "Pas vraiment, je suis assez éclectique. Et vous ?", type: 1, time: "08:28", status: "vue" },
-                    // { from: this.userUid, message: "Pareil ici. J'ai une playlist assez variée, on devrait trouver quelque chose d'agréable.", type: 0, time: "08:28", status: "vue" },
-                    // { from: "this.userUid", message: "Parfait. Avez-vous assez de place pour une petite valise ?", type: 1, time: "08:28" },
-                    // { from: this.userUid, message: "Oui, aucun souci pour la valise. Vous avez besoin d'aide pour la porter ?", type: 0, time: "08:28", status: "vue" },
-                    // { from: "this.userUid", message: "Ça ira, merci. Elle n'est pas très lourde.", type: 1, time: "08:29", status: "vue" },
-                    // { from: this.userUid, message: "D'accord. Je conduis une voiture bleue, juste pour que vous sachiez.", type: 0, time: "08:29", status: "vue" },
-                    // { from: "this.userUid", message: "Super, je serai à l'heure demain.", type: 1, time: "08:29", status: "vue" },
-                    // { from: this.userUid, message: "Parfait. Si vous avez le moindre changement, n'hésitez pas à me le faire savoir.", type: 0, time: "08:30", status: "vue" },
-                    // { from: "this.userUid", message: "Je le ferai. Merci encore et à demain !", type: 1, time: "08:30", status: "vue" },
-                    // { from: this.userUid, message: "Avec plaisir. Bonne soirée et à demain !", type: 0, time: "08:30", status: "vue" },
-                    // { from: "this.userUid", message: "Bonne soirée à vous aussi !", type: 1, time: "08:30", status: "sended" },
-                ],
-                contacts: [
-                    {
-                        username: 'Léa Duval', 
-                        avatar: 'https://avataaars.io/?avatarStyle=Circle&topType=LongHairStraight&accessoriesType=Blank&hairColor=BrownDark&facialHairType=Blank&clotheType=BlazerShirt&eyeType=Default&eyebrowType=Default&mouthType=Default&skinColor=Light',
-                        messageNumber: "9+",
-                    },
-                    {
-                        username:'Louis David', 
-                        avatar:'https://avataaars.io/?avatarStyle=Circle&topType=WinterHat4&accessoriesType=Kurt&hatColor=Red&hairColor=Red&facialHairType=MoustacheMagnum&facialHairColor=BrownDark&clotheType=Overall&clotheColor=Gray01&eyeType=Wink&eyebrowType=AngryNatural&mouthType=Serious&skinColor=Pale',
-                        messageNumber: 2,
-                    },
-                    {
-                        username:'Omar Bob', 
-                        avatar:'https://avatars0.githubusercontent.com/u/9064066?v=4&s=460',
-                        messageNumber: 0,
-                    },
-                ],
-                notifMessage: false,
-                socket: null,
-                overlayLoad: true,
-            };
+        async refreshHistory(){
+            if(!this.peerId||this.refreshing||this.disposed)return;
+            const epoch=this.epoch;this.refreshing=true;const box=this.$refs.history;const follow=!this.messages.length||(box&&box.scrollHeight-box.scrollTop-box.clientHeight<64);
+            try{const data=await chatRequest('get',`${conversationPath(this.tripId,this.peerId)}/messages`,this.modeCo);
+                if(epoch!==this.epoch||this.disposed)return;
+                this.messages=mergeChatMessages(this.messages,data.messages);this.error='';this.canSend=data.canSend;if(!this.historyInitialized){this.nextCursor=data.nextCursor;this.historyInitialized=true;}
+                this.presence();await this.$nextTick();if(follow&&box)box.scrollTop=box.scrollHeight;this.markVisibleRead();
+            }catch{if(epoch===this.epoch)this.error='Historique indisponible. Aucun message n’a été effacé localement.';}
+            finally{this.refreshing=false;if(epoch!==this.epoch&&!this.disposed)this.refreshHistory();}
         },
-        mounted(){
-            App.addListener('appStateChange', this.handleAppStateChange);
-            SafeAreaController.injectCSSVariables();
-
-            this.initStatusBarHeight();
-
-            this.sizeScreen = $(window).innerHeight();
-            console.log("H,", $('#messages')[0].clientHeight);
-
-            if(isAndroid || isIOS){
-                Keyboard.addListener('keyboardWillShow', info => {
-                    console.log('keyboard will show with height:', info.keyboardHeight);
-                    $(window).innerHeight(this.sizeScreen-info.keyboardHeight-this.barHeight-this.barBottom-80)
-                });
-
-                Keyboard.addListener('keyboardDidShow', info => {
-                    console.log('keyboard did show with height:', info.keyboardHeight);
-                    $(window).innerHeight(this.sizeScreen-info.keyboardHeigh-this.barHeight-this.barBottom-80)
-                    this.footerDown = false;
-
-                    var hauteurDiv = $('#messages')[0].clientHeight;
-                    console.log("hauteurDiv", hauteurDiv);
-                    //$('#message').scrollTop(hauteurDiv);
-                    $(".v-main").animate({ scrollTop: hauteurDiv+80 }, "fast");
-                    $("#messages").animate({ scrollTop: hauteurDiv+80 }, "fast");
-
-                    // setTimeout(function(){
-                        
-                    // }.bind(this), 1000);
-                    
-                    console.log("interre heigh-----", $(window).innerHeight());
-                });
-
-                Keyboard.addListener('keyboardWillHide', () => {
-                    console.log('keyboard will hide');
-                    $(window).innerHeight(this.sizeScreen)
-                });
-
-                Keyboard.addListener('keyboardDidHide', () => {
-                    console.log('keyboard did hide');
-                    $(window).innerHeight(this.sizeScreen)
-                    console.log("interre heigh---_____", $(window).innerHeight());
-                    this.footerDown = true;
-                });
+        async loadOlder(){
+            if(this.olderLoading||!this.nextCursor)return;this.olderLoading=true;const epoch=this.epoch;
+            try{const data=await chatRequest('get',`${conversationPath(this.tripId,this.peerId)}/messages?before=${encodeURIComponent(this.nextCursor)}`,this.modeCo);
+                if(epoch!==this.epoch||this.disposed)return;this.messages=mergeChatMessages(this.messages,data.messages);this.nextCursor=data.nextCursor;
+            }catch{this.error='Les messages précédents ne sont pas disponibles. Réessayez.';}finally{this.olderLoading=false;}
+        },
+        send(){if(!this.canSend||!this.draft.trim())return;const message={clientId:createRequestId(),from:this.userUid,to:this.peerId,text:this.draft,createdAt:new Date().toISOString(),expiresAt:new Date(Date.now()+15*86400000).toISOString(),pending:true};this.messages.push(message);this.draft='';this.retry(this.messages.find(m=>m.clientId===message.clientId));this.$nextTick(()=>{const box=this.$refs.history;if(box)box.scrollTop=box.scrollHeight;});},
+        async retry(message){
+            if(message.sending)return;message.sending=true;message.pending=true;message.error=false;const epoch=this.epoch;
+            try{const data=await chatRequest('post',`${conversationPath(this.tripId,message.to)}/messages`,this.modeCo,{clientId:message.clientId,text:message.text});
+                if(epoch!==this.epoch||this.disposed)return;this.messages=mergeChatMessages(this.messages,[data.message]);this.error='';
+            }catch{if(epoch===this.epoch){message.pending=false;message.error=true;}}finally{message.sending=false;}
+        },
+        async markVisibleRead(){
+            if(!this.activeView()||this.reading||!this.peerId||!this.socket?.connected)return;
+            const box=this.$refs.history;if(!box)return;const bounds=box.getBoundingClientRect();
+            const visible=new Set([...box.querySelectorAll('[data-message-id]')].filter(el=>{const r=el.getBoundingClientRect();return r.top>=bounds.top&&r.bottom<=Math.min(bounds.bottom,window.innerHeight);}).map(el=>el.dataset.messageId));
+            const ids=this.serverMessages.filter(m=>m.to===this.userUid&&!m.readAt&&visible.has(m.id)).map(m=>m.id).slice(0,100);
+            if(!ids.length)return;this.reading=true;this.presence();const epoch=this.epoch;
+            try{await chatRequest('post',`${conversationPath(this.tripId,this.peerId)}/read`,this.modeCo,{messageIds:ids});if(epoch===this.epoch)this.$store.dispatch('trip/refreshUnread');}
+            catch{/* A failed receipt is retried only while this view stays active. */}finally{this.reading=false;}
+        },
+        openReport(){this.reportIds=this.serverMessages.slice(-50).map(m=>m.id);this.reportRequestId=createRequestId();this.reportDetails='';this.reportError='';this.reportOpen=true;},
+        async submitReport(){if(this.reportBusy)return;this.reportBusy=true;const epoch=this.epoch;
+            try{await chatRequest('post',`${conversationPath(this.tripId,this.peerId)}/reports`,this.modeCo,{messageIds:this.reportIds,requestId:this.reportRequestId,reason:this.reportReason,details:this.reportDetails});
+                if(epoch!==this.epoch||this.disposed)return;this.reportOpen=false;this.notice='Signalement enregistré pour examen par l’administration.';
+            }catch{this.reportError='Signalement non confirmé. Vous pouvez réessayer sans créer de doublon.';}finally{this.reportBusy=false;}
+        },
+        async openMap(){
+            if(Number(this.tripSelected?.id)!==this.tripId){
+                await Promise.all([this.$store.dispatch('profil/getTravels'),this.$store.dispatch('profil/getPublish')]);
+                const profile=this.$store.state.profil.profil;
+                const trip=[...(profile.myTravels||[]),...(profile.myPublish||[])].flatMap(day=>day.infos||[]).find(t=>Number(t.id)===this.tripId);
+                if(!trip){this.error='La carte de ce trajet n’est plus disponible. L’échange conservé reste accessible.';return;}this.$store.commit('trip/SET_TRIP_SELECTED',trip);
             }
-
-            // this.messages = [
-            //         { from: this.userUid, message: "Bonjour, c'est Marc. Je suis votre conducteur pour le covoiturage de demain.", type: 0, time: "08:22", status: "vue" },
-            //         { from: "this.userUid", message: "Salut Marc, ici Léa. Oui, je me réjouis de notre trajet !", type: 1, time: "08:22", status: "vue" },
-            //         { from: this.userUid, message: "Super ! Pouvez-vous confirmer l'heure et le lieu de départ ?", type: 0, time: "08:23", status: "vue" },
-            //         { from: "this.userUid", message: "Bien sûr. On avait dit 8h devant la gare, n'est-ce pas ?", type: 1, time: "08:24", status: "vue" },
-            //         { from: this.userUid, message: "Exactement. Et votre destination finale est bien la rue de Rivoli ?", type: 0, time: "08:24", status: "vue" },
-            //         { from: "this.userUid", message: "Oui, c'est parfait. Combien de temps pensez-vous que le trajet va durer ?", type: 1, time: "08:25", status: "vue" },
-            //         { from: this.userUid, message: "En général, ça prend une heure, mais je prévois un peu de marge pour le trafic.", type: 0, time: "08:26", status: "vue" },
-            //         { from: "this.userUid", message: "Ça marche. Aurons-nous le temps de faire une pause café en cours de route ?", type: 1, time: "08:26", status: "vue" },
-            //         { from: this.userUid, message: "Bien sûr, je pense qu'une petite pause serait agréable.", type: 0, time: "08:26", status: "vue" },
-            //         { from: "this.userUid", message: "Super ! J'apporterai des croissants.", type: 1, time: "08:27" },
-            //         { from: this.userUid, message: "C'est très gentil, merci ! Vous avez des préférences musicales pour le trajet ?", type: 0, time: "08:27", status: "vue" },
-            //         { from: "this.userUid", message: "Pas vraiment, je suis assez éclectique. Et vous ?", type: 1, time: "08:28", status: "vue" },
-            //         { from: this.userUid, message: "Pareil ici. J'ai une playlist assez variée, on devrait trouver quelque chose d'agréable.", type: 0, time: "08:28", status: "vue" },
-            //         { from: "this.userUid", message: "Parfait. Avez-vous assez de place pour une petite valise ?", type: 1, time: "08:28" },
-            //         { from: this.userUid, message: "Oui, aucun souci pour la valise. Vous avez besoin d'aide pour la porter ?", type: 0, time: "08:28", status: "vue" },
-            //         { from: "this.userUid", message: "Ça ira, merci. Elle n'est pas très lourde.", type: 1, time: "08:29", status: "vue" },
-            //         { from: this.userUid, message: "D'accord. Je conduis une voiture bleue, juste pour que vous sachiez.", type: 0, time: "08:29", status: "vue" },
-            //         { from: "this.userUid", message: "Super, je serai à l'heure demain.", type: 1, time: "08:29", status: "vue" },
-            //         { from: this.userUid, message: "Parfait. Si vous avez le moindre changement, n'hésitez pas à me le faire savoir.", type: 0, time: "08:30", status: "vue" },
-            //         { from: "this.userUid", message: "Je le ferai. Merci encore et à demain !", type: 1, time: "08:30", status: "vue" },
-            //         { from: this.userUid, message: "Avec plaisir. Bonne soirée et à demain !", type: 0, time: "08:30", status: "vue" },
-            //         { from: "this.userUid", message: "Bonne soirée à vous aussi !", type: 1, time: "08:30", status: "sended" },
-            //     ];
-
-            this.messages = [];
-
-            setTimeout(function(){
-                this.scrollToBottom();
-            }.bind(this), 500);
-
-            const serverUrl = getServerUrl(this.modeCo);
-            if( Object.keys(this.tripSelected).length > 0 && this.userUid != this.tripSelected.driver_id ){//mode passager
-                this.mode_driver = false;
-                this.socket = io(serverUrl, {
-                    reconnection: true,
-                    reconnectionDelay: 1000,
-                    reconnectionAttempts: 60,
-                    auth: createSocketAuth(),
-                    query: {
-                        chatIds: [[this.userUid, this.tripSelected.driver_id].sort((a, b) => {
-                                return a.localeCompare(b);
-                            }).join(":")],
-                    }
-                });
-
-                this.currentContact.userUid = this.tripSelected.driver_id;
-                this.currentContact.username = this.tripSelected.name;
-                this.currentContact.avatarContact = this.tripSelected.avatar;
-
-                this.updateName(this.tripSelected.driver_id);
-            }
-            else{
-                this.mode_driver = true;
-                this.contacts = Array.isArray(this.chat?.contacts) ? this.chat.contacts : [];
-
-                let chatIds = [];
-                for (let index = 0; index < this.contacts.length; index++) {
-                    chatIds.push([this.userUid, this.contacts[index].user_id].sort((a, b) => {
-                                return a.localeCompare(b);
-                            }).join(":"));
-                }
-
-                this.socket = io(serverUrl, {
-                    reconnection: true,
-                    reconnectionDelay: 1000,
-                    reconnectionAttempts: 60,
-                    auth: createSocketAuth(),
-                    query: {
-                        chatIds: chatIds,
-                    }
-                });
-                const firstContact = this.contacts[0];
-                if (firstContact) {
-                    this.currentContact.username = firstContact.username;
-                    this.currentContact.avatarContact = firstContact.avatar;
-                    this.currentContact.userUid = firstContact.user_id;
-                }
-            }
-
-            this.socket.on('connect', () => {
-                console.log('Connecté au serveur Socket.IO!');
-                this.overlayLoad = false;
-                const engine = this.socket.io.engine;
-                console.log(engine.transport.name); // in most cases, prints "polling"
-
-                // engine.once("upgrade", () => {
-                //     // called when the transport is upgraded (i.e. from HTTP long-polling to WebSocket)
-                //     console.log(engine.transport.name); // in most cases, prints "websocket"
-                // });
-
-                // engine.on("packet", ({ type, data }) => {
-                //     // called for each packet received
-                //     console.log("packet", type, data);
-                // });
-
-                // engine.on("packetCreate", ({ type, data }) => {
-                //     // called for each packet sent
-                //     console.log("packetCreate", type, data);
-                // });
-
-                // engine.on("drain", () => {
-                //     // called when the write buffer is drained
-                //     console.log("drain");
-                // });
-
-                // engine.on("close", (reason) => {
-                //     // called when the underlying connection is closed
-                //     console.log("packet", reason);
-                // });
-            });
-
-            this.socket.on('get messages', (data) => {
-                console.log('Get old messages', data);
-                if( data.length > 0 ){
-                    if( data[0].from == this.currentContact.userUid || data[0].to == this.currentContact.userUid ){//current contact ok
-                        this.messages = data;
-                        if( this.messages.length > 0 ){
-                            const messageNotSee = this.messages.filter((msg) => msg && msg.from != this.userUid && msg.status != "vue");
-                            if( messageNotSee.length > 0 )
-                                this.socket.emit("vue message", messageNotSee);
-                        }
-                        this.scrollToBottom();
-                    }
-                    else{//not current contact
-                        const messageNotSee = data.filter((msg) => msg && msg.from != this.userUid && msg.status != "vue");
-                        if( messageNotSee.length > 0 ){
-                            const index = this.contacts.findIndex(contact => contact.userUid == data[0].from || contact.userUid == data[0].to );
-                            const nbMessage = messageNotSee.length;
-                            if ( index !== -1 ) {
-                                this.notifMessage = true;
-                                this.contacts[index].messageNumber = nbMessage < 10 ? nbMessage : "9+";
-                            }
-                        }
-                        
-                    }
-                }
-                else{
-                    this.messages = [];
-                }
-            });
-
-            this.socket.on('chat message', (msg) => {
-                console.log('Message reçu:', msg);
-                if( msg.from == this.userUid ){
-                    this.messages[msg.index] = msg
-                }
-                else {
-                    //Check if account are created
-                    //this.updateName(msg.from);
-                    //msg.status = "vue";
-                    if( this.currentContact.userUid == msg.from ){
-                        this.messages.push(msg);
-                        this.socket.emit("vue message", [msg]);
-                    }
-                    else{
-                        const index = this.contacts.findIndex(contact => contact.user_id == msg.from );
-                        if( index !== -1 && this.contacts[index].messageNumber != "9+" ){
-                            this.notifMessage = true;
-                            this.contacts[index].messageNumber++;
-                            this.contacts[index].messageNumber = this.contacts[index].messageNumber < 10 ? this.contacts[index].messageNumber : "9+";
-                        }
-                    }
-                }
-            });
-
-            this.socket.on('connected', (data) => {
-                console.log('data id:', data);
-            });
-
-            this.socket.on("connect_error", (err) => {
-                console.log(err.message); // prints the message associated with the error
-            });
-
-            console.log("nb-m", this.messages.length);
-            
+            this.$router.push('/trip');
         },
-        beforeUnmount() {
-            if ( this.socket ) {
-                this.socket.emit('pre-disconnect', { userUid: this.userUid });
-                this.socket.disconnect();
-            }
-            App.removeAllListeners();
-        },
-        beforeRouteLeave(to, from, next) {
-            console.log("beforeRouteLeave", to, from);
-            if ( this.socket ) {
-                this.socket.emit('pre-disconnect', { userUid: this.userUid });
-            }
-            // Effectuer des actions avant de quitter cette page
-            next();
-        },
-        methods: {
-            ...mapActions("trip", ["getProfilMember"]),
-            async handlerAvatar(){
-                console.log("Avatar Touched");
-                let memberOk = false;
-                if( ! this.mode_driver ){
-                    memberOk = await this.getProfilMember({userUid: this.tripSelected.driver_id});   
-                }
-                else{
-                    memberOk = await this.getProfilMember({userUid: this.currentContact.userUid});
-                }
-
-                if( memberOk )
-                    this.$router.push('/member');
-                else{
-                    this.messageSnackbarError = "Nous n'avons pas pu récupérer les informations souhaité, désolé !";
-                    this.showSnackbarError = true;
-                }
-            },
-            handleAppStateChange(state) {
-                if (state.isActive) {
-                    console.log("L'application est au premier plan");
-                    if ( this.socket ) {
-                        this.socket.emit('re-connect', { userUid: this.userUid });
-                    }
-                } 
-                else {
-                    console.log("L'application est en arrière-plan");
-                    if ( this.socket ) {
-                        this.socket.emit('pre-disconnect', { userUid: this.userUid });
-                    }
-                }
-            },
-            async initStatusBarHeight(){
-                const insets = await this.getSafeAreaInsets();
-                this.barHeight = insets["top"];
-                this.barBottom = insets["bottom"];
-            },
-            async getSafeAreaInsets () {
-                const insets = await SafeArea.getSafeAreaInsets();
-                return insets; // Ex. { "bottom":34, "top":47, "right":0, "left":0 }
-            },
-            sendMessage() {
-                if ( this.newMessage.trim() !== '' ) {
-                    let newMsg = {
-                            idTrip: this.tripSelected.id,
-                            from: this.userUid,
-                            to: this.currentContact.userUid,
-                            fromName: this.userName,
-                            toName: this.currentContact.username,
-                            message: this.newMessage, 
-                            time: this.timeNow(), 
-                            status: "send", 
-                            index: this.messages.length,
-                        }
-                    this.messages.push(newMsg);
-                    this.socket.emit("chat message", newMsg)
-                    this.newMessage = '';
-                }
-
-                this.scrollToBottom();
-            },
-            scrollToBottom() {
-                this.$nextTick(() => {
-                    const container = $(".messages")[0];
-                    // console.log("scoll", container.clientHeight);
-                    $(".v-main").animate({ scrollTop: container.clientHeight }, "fast");
-                    $("#messages").animate({ scrollTop: container.clientHeight }, "fast");
-                });
-            },
-            timeNow() {
-                const now = new Date();
-                return now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
-            },
-            selectContact(value){
-                const index = this.contacts.findIndex((contact) => contact.username == value);
-                const currentContact = this.contacts[index];
-                this.currentContact.username = currentContact.username;
-                this.currentContact.avatarContact = currentContact.avatar;
-                this.currentContact.userUid = currentContact.user_id;
-
-                this.contacts[index].messageNumber = 0;
-                this.notifMessage = false;
-
-                this.socket.emit("ask messages", {
-                                    userUid: this.userUid, 
-                                    chatId: [this.userUid, this.currentContact.userUid].sort((a, b) => {
-                                        return a.localeCompare(b);
-                                    }).join(":")
-                                }
-                            );
-
-            },
-            async updateName(userUid){
-                //Check if account are created
-                let { data: account, error: error_account } = await supabase
-                    .from('account')
-                    .select('*')
-                    .eq('user_id', userUid);
-                
-                if(error_account){
-                    console.error("Error:", error_account);
-                }
-
-                this.currentContact.username = account[0].username;
-            }
-        },
-    });
+        formatTime(value){return new Intl.DateTimeFormat('fr-FR',{dateStyle:'short',timeStyle:'short'}).format(new Date(value));},
+    },
+};
 </script>
+<style scoped>
+.trip-chat { display:flex; flex-direction:column; height:100dvh; padding-top:var(--safe-area-inset-top,0px); padding-bottom:var(--safe-area-inset-bottom,0px); background:rgb(var(--v-theme-background));color:rgb(var(--v-theme-on-background)); }
+.chat-toolbar {display:flex;align-items:center;gap:8px;padding:8px;border-bottom:1px solid rgba(var(--v-theme-on-surface),.15);}.chat-title{flex:1;min-width:0;}.chat-title small{display:block;opacity:.7;}.contact-select{display:flex;align-items:center;gap:12px;padding:10px 16px;}.contact-select select{flex:1;min-height:44px;border:1px solid rgba(var(--v-theme-on-surface),.3);border-radius:8px;padding:6px;background:rgb(var(--v-theme-surface));color:rgb(var(--v-theme-on-surface));}
+.privacy-note{font-size:12px;opacity:.8;margin:8px 16px;}.chat-history{flex:1;overflow:auto;padding:12px 16px;}.chat-message{width:fit-content;max-width:85%;margin:10px 0;padding:10px 14px;border-radius:14px;background:rgba(var(--v-theme-on-surface),.08);overflow-wrap:anywhere;}.chat-message p{white-space:pre-wrap;margin:0 0 6px;}.chat-message.own{margin-left:auto;background:rgb(0 209 255 / 40%);}.chat-message small{font-size:11px;opacity:.75;}.chat-message button,.chat-error button{display:block;min-height:44px;text-decoration:underline;}.chat-compose{display:flex;align-items:center;gap:10px;padding:12px 16px;}.chat-compose textarea{flex:1;min-width:0;resize:vertical;max-height:150px;border:1px solid rgba(var(--v-theme-on-surface),.3);border-radius:24px;padding:12px 16px;background:rgb(var(--v-theme-surface));color:rgb(var(--v-theme-on-surface));}.chat-error{margin:8px 16px;color:rgb(var(--v-theme-error));}.report-button{align-self:flex-start;margin-left:8px;}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);}
+.chat-peer-avatar{width:44px;height:44px;flex:0 0 44px;border-radius:50%;overflow:hidden;display:grid;place-items:center}.chat-peer-avatar img{width:100%;height:100%;object-fit:cover}.chat-title strong{display:block;overflow-wrap:anywhere;font-size:16px}.chat-title small{font-size:12px}.message-meta{display:flex;align-items:center;justify-content:flex-end;gap:7px}.message-status{display:inline-flex;align-items:center}.chat-send{flex:0 0 48px;width:48px;height:48px}.chat-send :deep(svg){width:23px;height:23px;transform:rotate(45deg)}.chat-history{min-height:0;overscroll-behavior:contain}.chat-compose{padding-bottom:calc(12px + var(--safe-bottom,0px));background:rgb(var(--v-theme-surface))}.chat-compose textarea{min-height:48px;max-height:100px}.trip-chat{height:var(--chat-visible-height,100dvh)}
+</style>

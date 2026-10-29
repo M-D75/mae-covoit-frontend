@@ -33,6 +33,7 @@
         ref="cropper"
         :stencil-component="$options.components.CircleStencil"
         :src="img"
+        @error="photoLoadError"
         :stencil-props="{
             previewClass: 'preview',
         }"
@@ -42,9 +43,12 @@
         class="btn-crop"
         color="blue"
         icon="mdi-check-bold"
+        aria-label="Enregistrer la photo recadrée"
+        :disabled="overlayLoad"
         @click="crop()"
     />
 
+    <v-btn style="position:absolute;bottom:20px;left:20px" :disabled="overlayLoad" @click="cancel">Annuler</v-btn>
     <CircleStencil v-if="false"/>
 
     <!-- Load -->
@@ -83,12 +87,13 @@
     import { defineComponent } from 'vue';
     import { CircleStencil, Cropper } from 'vue-advanced-cropper';
     import 'vue-advanced-cropper/dist/style.css';
+    import {croppedProfilePhoto} from '@/services/profilePhoto.js';
     import { mapState, mapMutations, mapActions } from 'vuex';
 
     export default defineComponent({
         name: 'profil-view',
         computed:{
-            ...mapState("profil", ["avatarUrl"]),
+            ...mapState("profil", ["avatarDraft","userUid"]),
         },
         components: {
             Cropper,
@@ -97,7 +102,8 @@
         data() {
             return {
                 image: null,
-                img: 'https://images.unsplash.com/photo-1485178575877-1a13bf489dfe?ixlib=rb-1.2.1&auto=format&fit=crop&w=991&q=80',
+                img: '',
+                showSnackbarError:false,messageSnackbarError:'',
                 coordinates: {
                     width: 0,
                     height: 0,
@@ -111,35 +117,20 @@
                 },
             };
         },
-        beforeMount(){
-            this.img = this.avatarUrl;
-        },
-        mounted(){
-            this.img = this.avatarUrl;
-            console.log("mount-cropper");
-        },
+        beforeMount(){if(this.avatarDraft?.owner===this.userUid)this.img=this.avatarDraft.dataUrl;else this.$router.replace('/profil/perso');},
         methods: {
-            ...mapMutations("profil", ["SET_AVATAR_URL"]),
+            ...mapMutations("profil", ["SET_AVATAR_DRAFT"]),
             ...mapActions("profil", ["updateAvatar"]),
+            photoLoadError(){this.messageSnackbarError='Cette photo ne peut pas être affichée. Choisissez une autre image.';this.showSnackbarError=true;},
+            cancel(){this.SET_AVATAR_DRAFT(null);this.$router.replace('/profil/perso');},
             async crop() {
-                const { coordinates, canvas } = this.$refs.cropper.getResult();
-                this.coordinates = coordinates;
-                console.log("coordinate", coordinates);
-                try {
-                    
-                    this.image = canvas.toDataURL();
-                    this.overlayLoad = true;
-                    this.SET_AVATAR_URL(this.image);
-                    await this.updateAvatar(this.image);
-                    this.$router.replace("/profil");
-                    this.overlayLoad = false;
-                } 
-                catch (e) {
-                    this.showSnackbar.messageError = "Désolé veuillez réessayer avec une autre image"
-                    this.showSnackbar.showError = true;
-                    console.error('Erreur lors de la tentative de toDataURL', e);
-                }
-                
+                if(this.overlayLoad)return;const owner=this.userUid;this.overlayLoad=true;
+                try{
+                    if(this.avatarDraft?.owner!==owner)throw new Error('Sélectionnez de nouveau votre photo.');
+                    const {canvas}=this.$refs.cropper.getResult();const image=croppedProfilePhoto(canvas);
+                    await this.updateAvatar(image);if(this.userUid===owner)this.$router.replace('/profil/perso');
+                }catch(error){this.messageSnackbarError=error.message||'La photo ne peut pas être enregistrée.';this.showSnackbarError=true;}
+                finally{this.overlayLoad=false;}
             },
         },
     });

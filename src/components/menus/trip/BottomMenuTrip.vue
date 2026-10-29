@@ -3,6 +3,8 @@
 
 
 .bottom-menu.showing-boarding-code { z-index: 2400; }
+.native-tracking-state { padding: 4px 16px; font-size: 12px; color: rgb(var(--v-theme-on-surface)); }
+.native-tracking-state :deep(.v-btn) { min-height: 44px; text-transform: none; }
 .driver-code-action { min-height: 44px; text-transform: none; letter-spacing: normal; }
 .current-village { margin: 0 0 8px; color: rgb(var(--v-theme-on-surface)); font-size: 12px; opacity: .8; }
 .passenger-code-entry { margin: 0 16px 12px; }
@@ -597,6 +599,11 @@
 
             <slot v-if="mode === 'map' && showBoardingCode" name="boarding-code" />
 
+            <div v-if="mode === 'map' && !showBoardingCode && (nativeTrackingState.active || !['stopped', 'active'].includes(nativeTrackingState.reason))" class="native-tracking-state">
+                <p role="status"><v-icon size="16" icon="mdi-map-marker-radius-outline" /> {{ nativeTrackingState.active ? (nativeTrackingState.reason === 'network' ? 'Suivi natif · réseau en attente' : 'Suivi natif actif en arrière-plan') : 'Suivi natif arrêté ou indisponible' }}</p>
+                <v-btn v-if="nativeTrackingState.active" variant="text" @click="$emit('stop-native-tracking')">Arrêter mon partage</v-btn>
+                <v-btn v-if="nativeTrackingState.active && canEndNativeTracking" variant="text" @click="$emit('end-native-tracking')">Fin du suivi natif</v-btn>
+            </div>
             <!-- Map -->
             
             <div 
@@ -608,6 +615,7 @@
                     <span class="time">{{ mapInfos.time }}</span> <span class="distance"> ({{ mapInfos.distance }})</span>
                 </div>
                 <div class="infos-sup" v-if="mapInfos.infosSup != ''">Le plus rapide selon l'etat actuel de la circulation</div>
+                <VillageRouteDetails :details="routeDetails" :map-infos="mapInfos" :blocked="routeDetailsBlocked" @retry="$emit('retry-route-details')" @height="$emit('route-details-height',$event)" />
             </div>
 
             <!-- End Map -->
@@ -859,44 +867,7 @@
 
         <!-- sub-cont-sup -->
         <div class="sub-cont-sup" :class="className.join(' ')" ref="subContSup">
-            <!-- Map -->
-            <div
-                v-if="mode=='map' && showRouteInfo && !showBoardingCode"
-                class="map"
-            >
-                <v-card
-                    class="mx-auto"
-                >
-                    <v-list density="compact">
-                        <v-list-subheader>ITINERAIRE</v-list-subheader>
-                        <!-- <v-divider></v-divider> -->
 
-                        <!-- dep -->
-                        <v-list-item
-                            color="primary"
-                        >
-                            <template v-slot:prepend>
-                                <v-icon icon="mdi-google-maps"></v-icon>
-                            </template>
-
-                            <v-list-item-title v-text="mapInfos.depart"></v-list-item-title>
-                        </v-list-item>
-
-                        <v-divider></v-divider>
-
-                        <!-- destination -->
-                        <v-list-item
-                            color="primary"
-                        >
-                            <template v-slot:prepend>
-                                <v-icon icon="mdi-crosshairs-gps"></v-icon>
-                            </template>
-
-                            <v-list-item-title v-text="mapInfos.destination"></v-list-item-title>
-                        </v-list-item>
-                    </v-list>
-                </v-card>
-            </div>
         </div>
     </v-container>
 
@@ -927,6 +898,7 @@
 
 <!--  -->
 <script>
+import VillageRouteDetails from '@/components/maps/VillageRouteDetails.vue';
     import { defineComponent } from 'vue';
     //import supabase from '@/utils/supabaseClient';
 
@@ -939,8 +911,9 @@
     export default defineComponent({
         name: 'bottom-menu',
         mixins: [sheetLayout],
-        emits: ["opened", "close", "alert", "select-alert-type", "confirm-alert", "mark-passenger-no-show", "confirm-boarding", "vote-alert"],
+        emits: ["route-details-height","retry-route-details","stop-native-tracking", "end-native-tracking", "opened", "close", "alert", "select-alert-type", "confirm-alert", "mark-passenger-no-show", "confirm-boarding", "vote-alert"],
         components: {
+            VillageRouteDetails,
             SheetDragHandle,
             PassengerBoardingAccess,
         },
@@ -957,6 +930,9 @@
             },
         },
         props: {
+            routeDetails: {type:Object,default:null},routeDetailsBlocked:Boolean,
+            nativeTrackingState: { type: Object, default: () => ({ active: false, reason: 'stopped' }) },
+            canEndNativeTracking: Boolean,
             showBoardingCode: Boolean, showBoardingReason: Boolean,
             currentVillage: { type: Object, default: null },
             passengerBoardingAccess: { type: Object, default: null },

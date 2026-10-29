@@ -114,7 +114,8 @@
             <v-btn 
                 v-if="!isPublicMap"
                 icon
-                @click="$router.push('/message')"
+                @click="$router.push({path:'/message',query:{tripId:String(tripSelected.id)}})"
+                :aria-label="notifChat ? 'Messages du trajet, messages non lus' : 'Messages du trajet'"
             >
                 <v-icon>mdi-chat-processing-outline</v-icon>
                 <span v-if="notifChat" class="notif-chat"></span>
@@ -182,9 +183,10 @@
         </div>
 
         <!-- Les interactions trajet/alertes sont identiques quel que soit le moteur. -->
-        <MapSurface
+        <MapSurface ref="MapSurfaceRef"
             :provider="mapProvider"
             :reserve-bottom-space="open_b"
+            :extra-bottom-space="routeDetailsHeight"
             :zoom="zoom"
             :center="center"
             :origin="isPublicMap ? null : itineraire.origin"
@@ -201,6 +203,7 @@
             :progress-context="isPublicMap ? '' : `${tripSelected.id}:${userUid}:${zoneProgressRevision}`"
             :alerts="activeAlerts"
             :alert-types="alertTypes"
+            @route-details="routeDetails = $event"
             @ready="isLoaded"
             @zone-progress="currentVillage = $event.current"
             @route-select="trajetSelected"
@@ -240,6 +243,10 @@
         :show-boarding-code="passengerCodeOpen"
         :show-boarding-reason="passengerCodeNotice"
         :current-village="currentVillage"
+        :native-tracking-state="{ active: nativeTrackingActive, reason: nativeTrackingReason }"
+        :can-end-native-tracking="userUid === tripSelected.driver_id"
+        @stop-native-tracking="stopOwnLocation"
+        @end-native-tracking="endNativeTracking"
         :is-dark-mode="darkMode"
         :selected-alert="selectedAlert"
         :selected-alert-context-message="selectedAlertContextMessage"
@@ -248,6 +255,10 @@
         :selected-alert-is-owner="selectedAlertIsOwner"
         :alert-vote-loading="alertVoteLoading"
         :alert-vote-action="alertVoteAction"
+        :route-details="routeDetails"
+        :route-details-blocked="boardingDialog || passengerCodeOpen"
+        @route-details-height="routeDetailsHeight = $event"
+        @retry-route-details="$refs.MapSurfaceRef?.fetchBoundaries(true)"
         ref="BottomMenuRef"
         @select-alert-type="selectedAlertType = $event"
         @confirm-alert="createLocalAlert"
@@ -324,7 +335,9 @@
             <v-card-text>
                 <p v-if="isPublicMap">Votre position permet de vous situer sur la carte et de placer les signalements routiers. Elle n’est pas partagée en direct avec les autres utilisateurs de cette carte.</p>
                 <p v-else>Votre position permet de suivre le trajet. Lorsque vous activez cette option, elle est envoyée au serveur MAE Solutions et partagée en direct avec les participants de votre trajet.</p>
-                <p>La localisation approximative est acceptée. Une position précise améliore le suivi. Le suivi s’arrête quand vous désactivez cette option, quittez la carte ou passez l’application en arrière-plan.</p>
+                <p>La localisation approximative est acceptée. Une position précise améliore le suivi. Sur le web et sans suivi natif, le partage s’arrête en arrière-plan. Avec le suivi natif activé, la collecte et l’envoi continuent pendant le trajet, même si la carte est fermée ; arrêtez-les via le bouton de partage ou la notification Android.</p>
+                <v-checkbox v-if="nativeTrackingAvailable" v-model="backgroundTrackingRequested" label="Continuer en arrière-plan et écran verrouillé" hide-details />
+                <p v-if="nativeTrackingAvailable" class="text-caption">Notification Android ou indicateur de localisation iOS visible. Autorisation temporaire de suivi, sans accès aux paiements. L’arrêt forcé de l’app peut interrompre le suivi.</p>
             </v-card-text>
             <v-card-actions>
                 <v-btn @click="locationConsentDialog = false">Continuer sans</v-btn>
@@ -400,10 +413,11 @@
     import { mapActions, mapState, mapGetters, mapMutations } from 'vuex';
     import io from 'socket.io-client';
     import supabase from '@/utils/supabaseClient.js';
-    import { createSocketAuth, getServerUrl, serverRequest } from '@/utils/serverApi.js';
+    import { attachClientVersionListeners, createSocketAuth, getServerUrl, serverRequest } from '@/utils/serverApi.js';
     import { calculateRoutes } from '@/services/routingService.js';
 
     import L from "leaflet";
+    import { nativeTripTracking, installNativeTrackingLifecycle } from '@/services/nativeTripTracking.js';
     import { createRouteProgress } from '@/services/routeProgress.js';
     import { createTripSimulation, normalizeTripPosition } from '@/services/tripSimulation.js';
     import { tripActorMarkers, summarizeBoarding } from '@/components/maps/tripActorMarkers.js';
@@ -426,6 +440,7 @@
         name: 'results-view',
         emits: ["trajet-selected"],
         computed: {
+            notifChat() { return this.notMessageVue.includes(String(this.tripSelected?.id)); },
             simulationAllowed() { return process.env.NODE_ENV !== 'production' && process.env.VUE_APP_SIMULATION_ENABLED === 'true'
                 && !this.isPublicMap && this.liveTripState?.simulation === true; },
             liveBookings() {
@@ -458,6 +473,7 @@
             ...mapState("profil", ["modeCo", "userUid", "userId", "userName", "profil", "darkMode"]),
             ...mapState("trip", ["tripSelected", "notMessageVue", "chat"]),
             ...mapGetters("search", ["getVillagesByName", "GET_ID_VILLAGE_BY_NAME"]),
+            nativeTrackingAvailable() { return Capacitor.isNativePlatform() && !this.isPublicMap && !this.passengerIsBoarded && this.liveTripState?.simulation === false; },
             isPublicMap(){
                 return this.context === 'public';
             },
@@ -594,6 +610,8 @@
         },
         data() {
             return {
+                routeDetails:null,routeDetailsHeight:0,
+                nativeTrackingActive: false, nativeTrackingReason: 'stopped', nativeTrackingUnsubscribe: null, backgroundTrackingRequested: false,
                 boardingDialog: false, passengerCodeOpen: false, passengerCodeNotice: false, currentVillage: null, routeProgressTrackers: new Map(),
                 liveTripState: null, liveNow: Date.now(), liveTimer: null, liveConnected: false,
                 zoneProgressRevision: 0, ownAccuracyMeters: null, ownMeasuredAt: null, currentHeading: 0, ownPositionAt: Date.now(), simulationSettings: { speed: 25, acceleration: 1, gpsAvailable: true }, positionSequence: 0, simulationEngine: null, simulationTimer: null,
@@ -605,7 +623,7 @@
                 minutesBefore: 15,
                 dialog: false, //localisation dialog
                 dialog_annuler: false,
-                notifChat: false,
+                messageBadgeTimer: null,
                 open_b: true, //open bottom menu
                 bottomMenuMode: "map",
                 currentModeButton: null,
@@ -719,11 +737,23 @@
             // loads alerts without requiring location or a booking.
             document.addEventListener('visibilitychange', this.handleLocationVisibility);
             if (Capacitor.isNativePlatform()) {
+                installNativeTrackingLifecycle();
+                if (!this.isPublicMap) {
+                    this.nativeTrackingUnsubscribe = nativeTripTracking.observe(state => {
+                        if (state.active && (Number(state.tripId) !== Number(this.tripSelected.id) || state.userId !== this.userUid)) return;
+                        this.nativeTrackingActive = Boolean(state.active); this.nativeTrackingReason = state.reason;
+                        if (!state.active) { this.shareLocalisation = false; return; }
+                        this.shareLocalisation = true;
+                        if (state.position && this.locationForeground && !document.hidden) this.applyNativePosition(state.position);
+                    });
+                    await nativeTripTracking.restore(this.userUid, this.tripSelected.id);
+                }
                 const { App } = await import('@capacitor/app');
                 if(!this.locationSessionActive) return;
                 this.locationStateListener = await App.addListener('appStateChange', ({ isActive }) => {
                     this.locationForeground = isActive;
-                    if (!isActive) this.stopOwnLocation();
+                    if (!isActive && !this.nativeTrackingActive) this.stopOwnLocation();
+                    if (isActive && !this.isPublicMap) nativeTripTracking.restore(this.userUid, this.tripSelected.id).catch(() => {});
                 });
                 if(!this.locationSessionActive){
                     await this.locationStateListener.remove();
@@ -776,7 +806,8 @@
                 return;
             }
 
-            // this.askNewMessage();
+            this.askNewMessage();
+            this.messageBadgeTimer=setInterval(()=>{if(!document.hidden)this.askNewMessage();},15000);
             
             console.log("itineraire", this.itineraire);
             this.$nextTick(function(){
@@ -837,16 +868,19 @@
 
             this.bindAlertSocket();
 
+            attachClientVersionListeners(this.socket);
             this.socket.on('connect', () => {
                 console.log('Map-Connecté au serveur Socket.IO!');
                 this.overlayLoad = false;
                 this.liveConnected = true;
                 this.socket.emit('trip-location-subscribe', { idTrip: this.tripSelected.id });
                 this.refreshLiveTripState();
+                this.askNewMessage();
                 const engine = this.socket.io.engine;
                 console.log(engine.transport.name);
             });
 
+            this.socket.on('chat:changed',()=>this.askNewMessage());
             this.socket.on('get-localisation', this.receiveTripPosition);
             this.socket.on('trip-location-state', state => {
                 if (Number(state.tripId) !== Number(this.tripSelected.id)) return;
@@ -882,6 +916,8 @@
             
         },
         beforeUnmount() {
+            this.nativeTrackingUnsubscribe?.();
+            clearInterval(this.messageBadgeTimer);
             clearInterval(this.liveTimer); clearInterval(this.simulationTimer); this.simulationEngine?.pause();
             this.locationSessionActive = false;
             document.removeEventListener('visibilitychange', this.handleLocationVisibility);
@@ -893,7 +929,7 @@
             }
             this.locationEpoch++;
             this.shareLocalisation = false;
-            if(this.socket) this.checkSharedLoc();
+            if(this.socket && !this.nativeTrackingActive) this.checkSharedLoc();
             if (this.watchId) {
                 Geolocation.clearWatch({ id: this.watchId });
                 this.watchId = null;
@@ -917,9 +953,20 @@
             hidePassengerCode() { this.passengerCodeOpen = false; },
             handleLocationVisibility(){
                 this.locationForeground = !document.hidden;
-                if(document.hidden) { this.hidePassengerCode(); this.simulationEngine?.pause(); this.stopOwnLocation(); }
+                if(document.hidden) { this.hidePassengerCode(); this.simulationEngine?.pause(); if (!this.nativeTrackingActive) this.stopOwnLocation(); }
+            },
+            applyNativePosition(position) {
+                const [latitude, longitude] = position.latLng || [];
+                this.applyTripPosition({ native: true, source: 'gps', timestamp: position.timestamp,
+                    coords: { latitude, longitude, accuracy: position.accuracyMeters, heading: position.heading, speed: position.speedKmh / 3.6 } });
+            },
+            async endNativeTracking() {
+                try { await serverRequest('post', `/trips/${this.tripSelected.id}/tracking/end`, { mode: this.modeCo }); }
+                catch { this.showError('Fin du suivi non transmise. Votre partage local est arrêté ; réessayez lorsque le réseau revient.'); }
+                finally { await this.stopOwnLocation(); }
             },
             async stopOwnLocation(){
+                if (this.nativeTrackingActive || (this.locationBusy && this.backgroundTrackingRequested)) await nativeTripTracking.stop();
                 this.simulationEngine?.pause();
                 this.locationEpoch++;
                 this.shareLocalisation = false;
@@ -958,10 +1005,16 @@
                 }
             },
             async enableOwnLocation(){
+                if (this.passengerIsBoarded) { this.locationConsentDialog = false; return; }
                 if(this.locationBusy) return;
                 this.locationConsentDialog = false;
                 this.locationBusy = true;
                 try{
+                    if (this.backgroundTrackingRequested && this.nativeTrackingAvailable) {
+                        const started = await nativeTripTracking.start({ tripId: this.tripSelected.id, userId: this.userUid, mode: this.modeCo, simulation: false });
+                        if (started) { this.shareLocalisation = true; this.nativeTrackingActive = true; }
+                        return;
+                    }
                     if(await this.initializeCurrentLocation()){
                         this.shareLocalisation = true;
                         await this.shareLoc();
@@ -969,7 +1022,7 @@
                 }
                 catch(error){
                     await this.stopOwnLocation();
-                    this.dialog = true;
+                    if (this.backgroundTrackingRequested) this.showError(error.message || 'Suivi natif indisponible.'); else this.dialog = true;
                 }
                 finally{
                     this.locationBusy = false;
@@ -1072,23 +1125,7 @@
                     this.handleServerError(error, "Impossible d'annuler votre réservation.");
                 }
             },
-            askNewMessage(){
-                const typeUrl = this.modeCo;
-                serverRequest('post', '/askNewMessage', {
-                        mode: typeUrl,
-                        data: { userId: this.userUid },
-                    })
-                    .then(response => {
-                        console.log("askNewMessage", response.data);
-                        const data = response.data;
-
-                        this.SET_NOT_MESSAGE_VUE(data.idsTrip);
-                        this.notifChat = this.notMessageVue.includes(this.tripSelected.id + "");
-                    })
-                    .catch(error => {
-                        this.handleServerError(error, "Impossible de charger les messages.");
-                    });
-            },
+            askNewMessage(){ return this.$store.dispatch('trip/refreshUnread'); },
             getPassengerBooking(){
                 console.log("getPassengerBooking", this.tripSelected, this.userId);
 
@@ -1725,6 +1762,7 @@
                 } catch { this.simulationMessage = 'État du trajet indisponible. Vérifiez la connexion et le backend.'; }
             },
             enterVehicleFollow() {
+                if (this.nativeTrackingActive || (this.locationBusy && this.backgroundTrackingRequested)) nativeTripTracking.stop().catch(() => {});
                 this.resetRouteProgress();
                 this.simulationEngine?.pause(); clearInterval(this.simulationTimer); this.simulationTimer = null;
                 this.locationEpoch++;
@@ -1754,7 +1792,7 @@
                         this.updatePassedPoints({ ...point, observedAt: this.ownPositionAt, measuredAt: point.timestamp }); this.updateRemainingEstimates();
                         if (point.source === 'gps') this.checkAndRerouteIfNeeded(point.latLng);
                     }
-                    if (this.socket?.connected) this.socket.emit('send-localisation', { ...point, idTrip: this.tripSelected.id, sequence: ++this.positionSequence });
+                    if (!position.native && this.socket?.connected) this.socket.emit('send-localisation', { ...point, idTrip: this.tripSelected.id, sequence: ++this.positionSequence });
                 }
             },
             async simulationCommand(command, value) {
@@ -1790,7 +1828,7 @@
                 } catch (error) { this.simulationMessage = error.message; }
             },
             async shareLoc(){
-                if (this.simulationEngine || this.passengerIsBoarded) return;
+                if (this.simulationEngine || this.passengerIsBoarded || this.nativeTrackingActive) return;
                 if (this.getGeolocalisation && this.shareLocalisation && !this.watchId) {
                     const epoch = this.locationEpoch;
                     const watchId = await Geolocation.watchPosition({ enableHighAccuracy: this.preciseLocationAllowed, timeout: 15000 }, async (position, err) => {
@@ -2047,7 +2085,7 @@
         watch: {
             routeProgressKey() { this.resetRouteProgress(); if (this.passengerIsBoarded) this.syncPassengerToVehicle(); },
             passengerCodeAccess(access) { if (!access.canOpen && this.passengerCodeOpen) this.hidePassengerCode(); if (access.canOpen) this.passengerCodeNotice = false; },
-            userUid() { this.boardingDialog = false; this.passengerCodeNotice = false; this.hidePassengerCode(); this.resetRouteProgress(); this.currentVillage = null; },
+            userUid() { if (this.nativeTrackingActive || (this.locationBusy && this.backgroundTrackingRequested)) nativeTripTracking.stop().catch(() => {}); this.boardingDialog = false; this.passengerCodeNotice = false; this.hidePassengerCode(); this.resetRouteProgress(); this.currentVillage = null; },
             passengerIsBoarded: { immediate: true, handler(boarded) { if (boarded) this.enterVehicleFollow(); } },
             tripSelected: {
                 handler(newTrip, oldTrip){

@@ -46,12 +46,7 @@ export function groupByDate(data) {
             grouped.get(year).set(month, []);
         }
 
-        grouped.get(year).get(month).push({
-            depart: item.depart,
-            destination: item.destination,
-            price: item.price,
-            avatar: item.avatar
-        });
+        grouped.get(year).get(month).push({ ...item });
     });
 
     // Trier les années

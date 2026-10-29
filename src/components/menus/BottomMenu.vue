@@ -999,6 +999,7 @@
                     <span class="time">{{ mapInfos.time }}</span> <span class="distance"> ({{ mapInfos.distance }})</span>
                 </div>
                 <div class="infos-sup" v-if="mapInfos.infosSup != ''">Le plus rapide selon l'etat actuel de la circulation</div>
+                <VillageRouteDetails :details="routeDetails" :map-infos="mapInfos" :blocked="routeDetailsBlocked" @retry="$emit('retry-route-details')" @height="$emit('route-details-height',$event)" />
             </div>
 
             <!-- End Map -->
@@ -1008,44 +1009,7 @@
 
         <!-- sub-cont-sup -->
         <div class="sub-cont-sup" :class="className.join(' ')" ref="subContSup">
-            <!-- Map -->
-            <div
-                v-if="mode=='map'"
-                class="map"
-            >
-                <v-card
-                    class="mx-auto"
-                >
-                    <v-list density="compact">
-                        <v-list-subheader>ITINERAIRE</v-list-subheader>
-                        <!-- <v-divider></v-divider> -->
 
-                        <!-- dep -->
-                        <v-list-item
-                            color="primary"
-                        >
-                            <template v-slot:prepend>
-                                <v-icon icon="mdi-google-maps"></v-icon>
-                            </template>
-
-                            <v-list-item-title v-text="mapInfos.depart"></v-list-item-title>
-                        </v-list-item>
-
-                        <v-divider></v-divider>
-
-                        <!-- destination -->
-                        <v-list-item
-                            color="primary"
-                        >
-                            <template v-slot:prepend>
-                                <v-icon icon="mdi-crosshairs-gps"></v-icon>
-                            </template>
-
-                            <v-list-item-title v-text="mapInfos.destination"></v-list-item-title>
-                        </v-list-item>
-                    </v-list>
-                </v-card>
-            </div>
         </div>
 
         
@@ -1102,6 +1066,7 @@
 
 
 <script>
+import VillageRouteDetails from '@/components/maps/VillageRouteDetails.vue';
     import { defineComponent } from 'vue';
     import $ from 'jquery';
     import supabase from '@/utils/supabaseClient';
@@ -1134,7 +1099,7 @@
     export default defineComponent({
         name: 'bottom-menu',
         mixins: [sheetLayout],
-        emits: [
+        emits: ["route-details-height","retry-route-details",
             "close", "time-valided", "time-changed", 
             "day-valided", "day-not-selected",
             "opened", "close", "select-price", "drop-money", 
@@ -1145,6 +1110,7 @@
             "no"
         ],
         components: {
+            VillageRouteDetails,
             SheetDragHandle,
             TrajetMember,
             ReservePlace,
@@ -1176,6 +1142,7 @@
             },
         },
         props: {
+            routeDetails: {type:Object,default:null},routeDetailsBlocked:Boolean,
             mode: {
                 type: String,
                 default: "history",

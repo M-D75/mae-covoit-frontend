@@ -80,9 +80,10 @@
         </v-alert>
 
         <!-- Le contrôleur métier reste identique ; seul le moteur de rendu change. -->
-        <MapSurface
+        <MapSurface ref="MapSurfaceRef"
             :provider="mapProvider"
             :reserve-bottom-space="open_b"
+            :extra-bottom-space="routeDetailsHeight"
             :zoom="zoom"
             :center="center"
             :origin="itineraire.origin"
@@ -92,6 +93,7 @@
             :current-location="currentLocation.current"
             :alerts="activeAlerts"
             :alert-types="alertTypes"
+            @route-details="routeDetails = $event"
             @ready="isLoaded"
             @route-select="trajetSelected"
         />
@@ -107,6 +109,9 @@
                 depart: itineraire.origin.infos.village,
                 destination: itineraire.destination.infos.village,
             }"
+        :route-details="routeDetails"
+        @route-details-height="routeDetailsHeight = $event"
+        @retry-route-details="$refs.MapSurfaceRef?.fetchBoundaries(true)"
         ref="BottomMenuRef"
         v-on:close="open_b = false"
         v-on:opened="open_b = true"
@@ -132,7 +137,7 @@
     import { mapState } from 'vuex';
     import io from 'socket.io-client';
 
-    import { createSocketAuth, getServerUrl, serverRequest } from '@/utils/serverApi.js';
+    import { attachClientVersionListeners, createSocketAuth, getServerUrl, serverRequest } from '@/utils/serverApi.js';
     import { calculateRoutes } from '@/services/routingService.js';
 
     import L from "leaflet";
@@ -227,6 +232,7 @@
         },
         data() {
             return {
+                routeDetails:null,routeDetailsHeight:0,
                 open_b: true, //open bottom menu
                 overlayLoad: false,
                 zoom: 11,
@@ -273,6 +279,7 @@
                 reconnectionAttempts: 60,
                 auth: createSocketAuth(),
             });
+            attachClientVersionListeners(this.alertSocket);
             this.alertSocket.on('road-alerts:changed', () => this.fetchRemoteAlerts());
             this.initializeAlertSync();
             // Une route calculée avant la fin du chargement de la carte sera dessinée

@@ -1,5 +1,7 @@
 // import axios from 'axios'
 
+import { clearTripNotifications } from '@/services/tripNotifications.js';
+import { nativeTripTracking } from '@/services/nativeTripTracking.js';
 import router from '../router';  
 import supabase from '@/utils/supabaseClient.js';
 import { serverRequest } from '@/utils/serverApi.js';
@@ -293,6 +295,9 @@ export default {
             return true;
         },
         async logout({ commit }) {
+            await nativeTripTracking.stop().catch(() => {});
+            commit('trip/CLEAR_MESSAGING',null,{root:true});
+            await clearTripNotifications(store).catch(()=>{});
             let { error } = await supabase.auth.signOut();
             
             if (error) {
@@ -300,6 +305,7 @@ export default {
                 return;
             }
             commit('CLEAR_TOKEN');
+            commit('profil/SET_USER_UID','',{root:true});
             router.replace("/login");
         },
     },

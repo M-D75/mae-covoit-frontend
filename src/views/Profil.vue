@@ -186,13 +186,7 @@
         @click="overlay = false"
     ></v-overlay>
 
-    <!-- history -->
-    <BottomMenu
-        :class-name="modeBottomMenu=='history' ? ['history'] : ['none']" 
-        mode="history"
-        ref="BottomMenuRefHistory" 
-        v-on:close="overlay = false"
-        />
+    <ProfileHistoryDialog v-model="historyOpen" />
 
     <!-- register credit card -->
     <BottomMenu
@@ -231,9 +225,9 @@
 
 <!--  -->
 <script>
+    import ProfileHistoryDialog from '@/components/profile/ProfileHistoryDialog.vue';
     import { defineComponent } from 'vue';
     import { mapState, mapActions, mapMutations } from 'vuex';
-    import { serverRequest } from '@/utils/serverApi.js';
     // import { SafeArea } from '@aashu-dubey/capacitor-statusbar-safe-area';
     import { Capacitor } from '@capacitor/core';
 
@@ -261,6 +255,7 @@
             ...mapState("trip", ["notMessageVue"]),
         },
         components: {
+            ProfileHistoryDialog,
             ToolbarProfil,
             CompProfil,
             BottomMenu,
@@ -371,6 +366,7 @@
                             {mode:'confirme-up-money'},
                         ],
                 },
+                historyOpen:false,
                 infosTravels: [],
                 loadCreaditCard: false,
                 showSnackbarError: false,
@@ -436,20 +432,7 @@
             goToInfoPerso(){
                 this.$router.push("/profil/perso")
             },
-            onHistory(){
-                this.modeBottomMenu = "history"
-                if ( this.$refs.BottomMenuRefHistory ) {
-                    if( ! this.overlay ){
-                        this.overlay = this.$refs.BottomMenuRefHistory.open();
-                        if(this.overlay && ( this.history.historycalBooking == undefined || Object.keys(this.history.historycalBooking).length == 0 ) ){
-                            this.buildHistoriqueBooking();
-                        }
-                    }
-                    else {
-                        this.overlay = this.$refs.BottomMenuRefHistory.close();
-                    }
-                }
-            },
+            onHistory(){this.historyOpen=true;},
             callCloseBottomChild() {
                 if ( this.$refs.BottomMenuRef ) {
                     this.overlay = this.$refs.BottomMenuRef.close();
@@ -524,26 +507,9 @@
                         this.onglet = "table-bord";
                 }
             },
-            askNewMessage(){
-                const typeUrl = this.modeCo;
-                if(this.infosTravels.length > 0){
-                    serverRequest('post', '/askNewMessage', {
-                            mode: typeUrl,
-                            data: { userId: this.userUid },
-                        })
-                        .then(response => {
-                            console.log("askNewMessage", response.data);
-                            const data = response.data;
-
-                            this.SET_NOT_MESSAGE_VUE(data.idsTrip);
-                            if( this.infosTravels.length > 0){
-                                this.updateNotifMessage();
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Il y a eu une erreur :', error);
-                        });
-                }
+            async askNewMessage(){
+                await this.$store.dispatch('trip/refreshUnread');
+                this.updateNotifMessage();
             },
             updateNotifMessage(){
                 console.log("updateNotifMessage");
@@ -729,6 +695,11 @@
             },
         },
         watch: {
+            '$route.params.action'(action) {
+                if(action==='open-trip-driver'){this.SET_MODE_DRIVER(true);this.onglet='planning';this.updateTripInfos();}
+                if(action==='open-trip-passenger'){this.onglet='trajets';this.updateTripInfos();}
+            },
+            notMessageVue() { this.updateNotifMessage(); },
             darkMode(){
                 this.infos_panneau[2].icon = ! this.darkMode ? "mdi-lightbulb-on" : "mdi-moon-waning-crescent";
             },

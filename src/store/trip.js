@@ -2,28 +2,9 @@
 // import axios from 'axios'
 
 import supabase from '@/utils/supabaseClient.js';
+import {loadRatingContext} from '@/services/ratingPreferences.js';
 import { serverRequest } from '@/utils/serverApi.js';
 
-// import router from '@/router';
-// import store from '@/store'; 
-
-// import { defineStore } from 'pinia';
-
-// store/trips.js
-// export const useTripsStore = defineStore('trips', {
-//     state: () => ({
-//       list: []  // vos courses
-//     }),
-//     actions: {
-//       async fetchTrips() { /* ... */ },
-//       updateRefundStatus(tripId, status) {
-//         const t = this.list.find(t => t.id === tripId);
-//         if (t) t.refundStatus = status;
-//       }
-//     }
-//   });
-
-  
 export default {
     namespaced: true,
     state: {
@@ -187,12 +168,16 @@ export default {
             ],
         },
         indexPreference: ["discution", "smoke", "music", "animal"],
-        notMessageVue: [],//list id trip pour notification chat
+        notMessageVue: [], unreadConversations: [], unreadOwner: null, activeChat: null,
     },
     getters: {
         getTripSelected: (state) => state.tripSelected,
     },
-    mutations: { 
+    mutations: {
+        RESET_RATING_PROMPT(state){state.ratings={rating:false,bookings:[],ratedTripIds:[],data:null};},
+        SET_ACTIVE_CHAT(state,value) { state.activeChat=value?.active ? value : null; },
+        CLEAR_MESSAGING(state) { state.notMessageVue=[]; state.unreadConversations=[]; state.unreadOwner=null; state.activeChat=null; state.chat.contacts=[]; },
+        SET_CHAT_UNREAD(state,{owner,conversations}) { state.unreadOwner=owner; state.unreadConversations=conversations; state.notMessageVue=[...new Set(conversations.map(c=>String(c.tripId)))]; },
         SET_CONTACTS(state, contacts) {
             state.chat.contacts = contacts;
         },
@@ -294,6 +279,14 @@ export default {
         },
     },
     actions: {
+        async openRatingForTrip({state,rootState},tripId){const owner=rootState.profil.userUid;const data=await loadRatingContext(supabase,{tripId,accountId:rootState.profil.userId});if(rootState.profil.userUid!==owner)return false;state.ratings.data=data;state.ratings.rating=true;return true;},
+        async refreshUnread({commit,rootState}) {
+            const owner=rootState.profil.userUid;
+            if(!owner){commit('CLEAR_MESSAGING');return;}
+            try { const response=await serverRequest('get','/chat/unread',{mode:rootState.profil.modeCo});
+                if(rootState.profil.userUid===owner)commit('SET_CHAT_UNREAD',{owner,conversations:response.data.data.conversations});
+            } catch { if(rootState.profil.userUid===owner)commit('SET_CHAT_UNREAD',{owner,conversations:[]}); }
+        },
         async getContacts({ state, commit }){
             const bookings = state.tripSelected?.bookings;
             const tripId = state.tripSelected?.id;

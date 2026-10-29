@@ -213,11 +213,11 @@
                 <div class="publish blc-text mx-auto">
                     <v-text-field
                         v-if="focus_deley"
+                        class="village-search-input"
                         v-model="saisi"
                         label=""
+                        :aria-label="label"
                         :placeholder="label"
-                        :focused="false"
-                        :active="false"
                         :autofocus="focus"
                         persistent-hint
                         prepend-icon="mdi-navigation"
@@ -352,3 +352,9 @@
         }
     });
 </script>
+
+<style scoped>
+.village-search-input :deep(.v-field){background:transparent!important;box-shadow:none!important;border:0!important;color:var(--font-color-label)}
+.village-search-input :deep(.v-field__overlay),.village-search-input :deep(.v-field__outline){display:none}
+.blc-text:has(input:focus-visible){outline:2px solid rgb(var(--v-theme-primary));outline-offset:4px;border-radius:20px}
+</style>

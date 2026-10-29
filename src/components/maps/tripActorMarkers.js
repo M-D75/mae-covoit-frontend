@@ -39,6 +39,7 @@ export function actorMarkerAsset(actor) {
     const shape = actor.kind === 'car'
         ? `<g transform="rotate(${heading} 24 24)">${CAR_TOP_VIEW.replaceAll('__CAR_BODY__', bodyColor)}</g>`
         : `<path transform="translate(8 8) scale(1.3)" fill="#fff" d="${mdiWalk}"/>`;
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="${size}" height="${size}" role="img"${actor.stale ? ' opacity="0.55"' : ''}><circle cx="24" cy="24" r="22" fill="${actor.kind === 'car' ? '#fff' : '#0f766e'}" stroke="${actor.kind === 'car' ? '#334155' : '#fff'}" stroke-width="2"/>${shape}</svg>`;
+    const backing = actor.kind === 'car' ? '' : '<circle cx="24" cy="24" r="22" fill="#0f766e" stroke="#fff" stroke-width="2"/>';
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="${size}" height="${size}" role="img"${actor.stale ? ' opacity="0.55"' : ''}>${backing}${shape}</svg>`;
     return { url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`, size, anchor: size / 2 };
 }

@@ -5,28 +5,6 @@
         background-color: white !important;
     }*/
 
-    .login-sign.ligth-mode * {
-        --bg-app-color: #f5f5f5;
-        --white-bg-color: #FBFBFB;
-        --gray-bg-icon-color: #b1b1b1;
-        --blue-color: #2E8DFF;
-        --gray-icon-color: #B1B1B1;
-        
-        // font
-        --font-color-label: #1E1F26;
-        --font-size-h1: 24px;
-        --font-size-h1-toolbar: 16px;
-        --font-size-subtitle-toolbar: 8px;
-        --box-shadow-card: 0px 2px 24px rgba(17,17,17,0.04);
-        --box-shadow-card-v2: 0px 0px 16px rgba(17,17,17,0.16);
-    }
-
-    .v-field--variant-solo {
-        box-shadow: none !important;
-        background-color: white !important;
-        border-radius: 50px;
-    }
-
     .v-main {
         width: 100%;
     }
@@ -49,7 +27,7 @@
 <!-- scss -->
 <style lang="scss" scoped>
     .v-application {
-        background-color: #eee;
+        background-color: rgb(var(--v-theme-background));
         overflow: visible;
     }
 
@@ -57,7 +35,7 @@
         margin: auto;
         width: 100%;
         .bloc-part{
-            margin: 50px auto;
+            margin: 24px auto;
         }
 
         .v-snackbar {
@@ -86,30 +64,18 @@
         cursor: pointer;
     }
 
-    .foot-part {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        align-items: center;
-        margin: 24px 0;
-        padding: 20px;
-        border: 1px solid var(--blue-color);
-        border-radius: 16px;
-        background-color: var(--white-bg-color);
-        p { color: var(--font-color-label); font-size: 16px; }
-    }
-
     .auth-title {
         position: static;
         transform: none;
-        color: var(--font-color-label);
+        color: rgb(var(--v-theme-on-background));
         font-size: 26px;
         text-align: center;
         margin-top: 24px;
     }
 
     .auth-container {
-        padding-bottom: calc(24px + var(--safe-bottom, 0px));
+        max-width: 440px;
+        padding: calc(24px + var(--safe-top, 0px)) 24px calc(24px + var(--safe-bottom, 0px));
     }
 
     .line-p {
@@ -125,14 +91,14 @@
     }
 
     .v-btn{
-        color: var(--font-color-label);
+        color: rgb(var(--v-theme-on-background));
     }
 </style>
 
     
 <!--  -->
 <template>
-    <v-app class="ligth-mode login-sign">
+    <v-app class="login-sign" :theme="darkMode ? 'dark' : 'light'">
         <v-container class="auth-container">
             <h1 class="auth-title">{{ passwordForgetMode ? 'Réinitialiser le mot de passe' : modeLogin ? 'Se connecter' : 'Créer un compte' }}</h1>
             <v-alert v-if="confirmationPending" type="success" variant="tonal" class="mt-4" role="status">
@@ -141,7 +107,7 @@
             <!-- From Sign/Connexion -->
             <v-row class="bloc-part">
                 <v-col>
-                    <v-form ref="authForm" validate-on="submit" @submit.prevent="submitEmailAuth">
+                    <v-form ref="authForm" :aria-busy="authSubmitting || overlayLoad" validate-on="submit" @submit.prevent="submitEmailAuth">
                         <v-text-field
                             v-model="email"
                             :error-messages="emailErrors"
@@ -150,7 +116,7 @@
                             required
                             variant="solo"
                             :rules="[rules.requiredEmail, rules.email]"
-                            :disabled="authSubmitting"
+                            :disabled="authSubmitting || overlayLoad"
                             autocomplete="email"
                         ></v-text-field>
 
@@ -161,7 +127,7 @@
                             type="password"
                             :error-messages="passwordErrors"
                             :rules="modeLogin ? [rules.requiredPassword] : [rules.requiredPassword, rules.min]"
-                            :disabled="authSubmitting"
+                            :disabled="authSubmitting || overlayLoad"
                             :autocomplete="modeLogin ? 'current-password' : 'new-password'"
                             label="Mot de passe"
                             required
@@ -171,28 +137,30 @@
                             <v-col>
                                 <v-btn
                                     v-if="!passwordForgetMode"
-                                    class="mr-4 text-none"
+                                    class="auth-primary text-none"
                                     type="submit"
-                                    :loading="authSubmitting"
-                                    :disabled="authSubmitting"
+                                    :loading="authSubmitting || overlayLoad"
+                                    :disabled="authSubmitting || overlayLoad"
                                     rounded="xl" 
                                     size="x-large"
-                                    variant="outlined"
+                                    variant="flat"
+                                    color="primary"
                                     block
                                 >
-                                    {{ modeLogin ? "Connexion" : "S'inscrire" }}
+                                    {{ modeLogin ? 'Se connecter' : 'S’inscrire' }}
                                 </v-btn>
 
                                 <!-- btn-recovery-password -->
                                 <v-btn 
                                     v-else
-                                    class="mr-4 text-none"
+                                    class="auth-primary text-none"
                                     type="submit"
-                                    :loading="authSubmitting"
-                                    :disabled="authSubmitting"
+                                    :loading="authSubmitting || overlayLoad"
+                                    :disabled="authSubmitting || overlayLoad"
                                     rounded="xl" 
                                     size="x-large"
-                                    variant="outlined"
+                                    variant="flat"
+                                    color="primary"
                                     block
                                 >
                                     Envoyer
@@ -200,22 +168,19 @@
                             </v-col>
                         </v-row>
 
+                        <v-btn id="create-or-login" type="button" variant="text" rounded="xl" block class="auth-secondary text-none" :disabled="authSubmitting || overlayLoad" @click="createOrLoginSwitchMode">
+                            {{ passwordForgetMode ? 'Revenir à la connexion' : modeLogin ? 'Pas encore de compte ?' : 'Déjà un compte ? Se connecter' }}
+                        </v-btn>
+
                         <v-row v-if="modeLogin && !passwordForgetMode">
                             <v-col>
-                                <v-btn variant="text" class="text-none" :disabled="authSubmitting" @click="showPasswordRecovery">Mot de passe oublié ?</v-btn>
+                                <v-btn variant="text" class="text-none" :disabled="authSubmitting || overlayLoad" @click="showPasswordRecovery">Mot de passe oublié ?</v-btn>
                             </v-col>
                         </v-row>
                     </v-form>
                 </v-col>
             </v-row>
 
-
-        <div class="foot-part">
-            <p>{{ passwordForgetMode ? 'Vous connaissez votre mot de passe ?' : modeLogin ? 'Pas encore de compte ?' : 'Vous avez déjà un compte ?' }}</p>
-            <v-btn id="create-or-login" variant="tonal" color="primary" rounded="xl" size="large" block class="text-none" :disabled="authSubmitting" @click="createOrLoginSwitchMode">
-                {{ passwordForgetMode || !modeLogin ? 'Se connecter' : 'Créer un compte' }}
-            </v-btn>
-        </div>
 
             <!-- Connectez vous avec -->
             <v-row 
@@ -238,7 +203,7 @@
                     <v-btn
                         v-for="(icon, index) in icons" v-bind:key="index"
                         class="mx-2"
-                        fab
+                        :aria-label="`Continuer avec ${icon.label}`"
                         :color='icon.color'
                         rounded="xl"
                         size="large"
@@ -319,7 +284,8 @@
         },
         computed: {
             ...mapState("auth", ["logged_in", "account_created"]),
-            modeLogin() { return this.$route.path === '/login'; },
+            ...mapState("profil", ["darkMode"]),
+            modeLogin() { return this.$route.path !== '/sign'; },
         },
         data() {
             return {
@@ -351,9 +317,9 @@
                     email: value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((value || '').trim()) || 'Veuillez renseigner un e-mail valide.',
                 },
                 icons: [
-                    {icn: 'mdi-apple', color:"black", fn:"apple"},
-                    {icn: 'mdi-google', color:"red", fn:"google"},
-                    {icn: 'mdi-facebook', color:"indigo", fn:"facebook"},
+                    {icn: 'mdi-apple', label:'Apple', color:"black", fn:"apple"},
+                    {icn: 'mdi-google', label:'Google', color:"red", fn:"google"},
+                    {icn: 'mdi-facebook', label:'Facebook', color:"indigo", fn:"facebook"},
                 ],
                 provider: null,
             }
@@ -639,3 +605,10 @@
         },
     }
 </script>
+
+<style scoped>
+.login-sign .auth-primary{min-height:56px;font-weight:700;color:rgb(var(--v-theme-on-primary));letter-spacing:0;font-size:17px}
+.auth-secondary{min-height:44px;margin-top:8px;color:rgb(var(--v-theme-on-background));font-size:14px;letter-spacing:0}
+.login-sign :deep(.v-field--variant-solo){background:rgb(var(--v-theme-surface));color:rgb(var(--v-theme-on-surface));border-radius:20px;border:1px solid rgba(var(--v-theme-on-surface),.18);box-shadow:none}
+.auth-secondary :deep(.v-btn__content){white-space:normal;text-align:center}
+</style>

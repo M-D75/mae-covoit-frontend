@@ -139,7 +139,9 @@ describe('actual map adapter templates', () => {
             originVillageId: 1, destinationVillageId: 3, routes });
         await vm.fetchBoundaries(); await Vue.nextTick();
         expect(vm.intermediateLegend.map(zone => zone.key)).toEqual(['boundary:2']);
-        expect(host.textContent).toContain('Villages traversés');
+        expect(host.querySelector('.village-zone-legend')).toBeNull();
+        expect(vm.routeDetails.zones.map(zone=>zone.key)).toEqual(['boundary:1','boundary:2','boundary:3']);
+        expect(vm.routeDetails.tracking).toBe(false);
         const reads = catalog.mock.calls.length;
         vm.updateVisits(); vm.updateVisits();
         expect(vm.villageZones.every(zone => zone.phase === 'upcoming')).toBe(true);
@@ -173,9 +175,9 @@ describe('actual map adapter templates', () => {
         await vm.fetchBoundaries(); await Vue.nextTick();
         expect(vm.boundaryStatus).toBe('error');
         expect(vm.villageZones.every(zone => !zone.boundary)).toBe(true);
-        expect(host.textContent).toContain('repère affiché');
+        expect(vm.routeDetails.missingBoundary).toBe(true);
         load.mockResolvedValue({ 21: boundary });
-        host.querySelector('button').click();
+        vm.fetchBoundaries(true);
         await vi.waitFor(() => expect(vm.boundaryStatus).toBe('ready'));
         expect(load).toHaveBeenLastCalledWith([21, 15], { refresh: true });
     });
@@ -186,8 +188,8 @@ describe('actual map adapter templates', () => {
         const { vm, host } = mount(component, { center: [-12.8, 45.1], ...points });
         const next = vm.fetchBoundaries();
         resolvers[1]({ 21: boundary }); await next; await Vue.nextTick();
-        expect(host.textContent).toContain('Hachénoi · zone de Tsingoni');
-        expect(host.querySelector('button').textContent).toBe('Réessayer');
+        expect(vm.routeDetails.zones[0].label).toBe('Hachénoi · zone de Tsingoni');
+        expect(vm.routeDetails.missingBoundary).toBe(true);
         resolvers[0]({}); await Promise.resolve(); await Vue.nextTick();
         expect(vm.boundaries[21]).toEqual(boundary);
     });
@@ -218,4 +220,21 @@ it('publishes only a confirmed fresh village, with the canonical alias label, an
     expect(emit.mock.calls.at(-1)[0].current).toEqual({key:'boundary:70',label:'Tsingoni'});
     now=20000;vm.updateVisits();expect(emit.mock.calls.at(-1)[0].current).toBeNull();
     vm.resetVisits();expect(emit.mock.calls.at(-1)[0].current).toBeNull();
+});
+
+it('moves the legend into an emitted details model without altering contours, visits or boundary reads', async () => {
+ const load=vi.fn().mockResolvedValue({21:boundary});const catalog=vi.fn().mockResolvedValue([]),events=[];
+ const {vm,host}=mount(loadComponent('MapSurface',{'@/services/villageBoundaryService.js':{loadVillageBoundaries:load,loadVillageBoundaryCatalog:catalog}}),{center:[-12.8,45.1],...points,onRouteDetails:value=>events.push(value)});
+ await vm.fetchBoundaries();await Vue.nextTick();const visits=vm.visits,geometry=vm.villageZones.map(zone=>zone.boundary),calls=load.mock.calls.length;
+ expect(host.querySelector('.zones-toggle')).toBeNull();expect(events.at(-1).zones[0].color).toBe(vm.villageZones[0].color);
+ vm.viewportHeight=600;await Vue.nextTick();expect(vm.visits).toBe(visits);expect(vm.villageZones.map(zone=>zone.boundary)).toEqual(geometry);expect(load).toHaveBeenCalledTimes(calls);
+});
+
+it('passes measured details space to both map adapters without reloading boundaries or resetting visits',async()=>{
+ const adapter={__esModule:true,default:Vue.defineComponent({inheritAttrs:false,props:['bottomPadding'],setup:props=>()=>Vue.h('div',{'data-bottom-padding':props.bottomPadding})})};
+ const load=vi.fn().mockResolvedValue({21:boundary});const props=Vue.reactive({center:[-12.8,45.1],...points,reserveBottomSpace:true,extraBottomSpace:0});
+ const map=loadComponent('MapSurface',{'./GoogleMapSurface.vue':adapter,'./LeafletMapSurface.vue':adapter,'@/services/villageBoundaryService.js':{loadVillageBoundaries:load,loadVillageBoundaryCatalog:async()=>[]}});let vm;const {host}=mount(Vue.defineComponent({setup(){return ()=>Vue.h(map,{...props,ref:value=>{if(value)vm=value;}});}}),{});
+ await vm.fetchBoundaries();await Vue.nextTick();const reads=load.mock.calls.length,visits=vm.visits,before=Number(host.firstElementChild.firstElementChild.dataset.bottomPadding);
+ props.extraBottomSpace=180;await Vue.nextTick();const after=Number(host.firstElementChild.firstElementChild.dataset.bottomPadding);expect(after).toBeGreaterThan(before);expect(after).toBeLessThanOrEqual(Math.round(vm.viewportHeight*.75)+24);expect(load).toHaveBeenCalledTimes(reads);expect(vm.visits).toBe(visits);
+ props.reserveBottomSpace=false;await Vue.nextTick();expect(host.firstElementChild.firstElementChild.dataset.bottomPadding).toBe('24');
 });

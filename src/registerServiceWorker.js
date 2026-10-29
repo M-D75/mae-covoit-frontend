@@ -21,7 +21,7 @@ if (process.env.NODE_ENV === 'production' && !Capacitor.isNativePlatform()) {
       console.log('New content is downloading.')
     },
     updated () {
-      console.log('New content is available; please refresh.')
+      window.dispatchEvent(new CustomEvent('covia-web-update-ready'))
     },
     offline () {
       console.log('No internet connection found. App is running in offline mode.')

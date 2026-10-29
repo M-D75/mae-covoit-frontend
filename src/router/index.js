@@ -60,7 +60,7 @@ const routes = [
         path: '/cropper',
         name: 'cropper',
         component: CropperAvatar,
-        meta: { requiresAuth: false },
+        meta: { requiresAuth: true },
     },
     {
         path: '/login',
@@ -193,11 +193,9 @@ const router = createRouter({
 import { FirebaseMessaging } from '@capacitor-firebase/messaging';
 import { Capacitor } from '@capacitor/core';
 
-import { LocalNotifications } from '@capacitor/local-notifications';
 
 
 import supabase from '@/utils/supabaseClient.js';
-import { serverRequest } from '@/utils/serverApi.js';
 import {
     fetchAuthProfileState,
     resolveAuthGuardRedirect,
@@ -211,37 +209,8 @@ import { getDefaultAuthPath, rememberAuthEntry } from '@/services/authEntry.js';
 const isAndroid = Capacitor.getPlatform() === 'android';
 const isIOS = Capacitor.getPlatform() === 'ios';
 
-async function sendNotification(title, body, data) {
-    const permission = await LocalNotifications.requestPermissions();
-   
-    if( permission.display === 'granted' && this.notification ){
+import { installTripNotifications } from '@/services/tripNotifications.js';
 
-        let option = {
-            id: 1,
-            title: title,
-            body: body,
-            summaryText: "!",
-            schedule: { at: new Date(Date.now() + 2000) }, // dans 5 secondes
-            iconColor: "red",
-            smallIcon: "res://icon",
-            largeIcon: "res://icon",
-        };
-
-        if( data.largeBody != undefined )
-            option["largeBody"] = data.largeBody;
-
-        await LocalNotifications.schedule({
-            notifications: [
-                option,
-            ]
-        });
-    }
-    else{
-        console.log("[index.js] permission non accordé");
-    }
-}
-
-let initFireBase = false;
 router.beforeEach(async (to, from, next) => {
     console.log("[index.js] from", from);
 
@@ -275,146 +244,21 @@ router.beforeEach(async (to, from, next) => {
 
     if ( to.path === '/search' ) {
 
-        if( store.state.trip.ratings.rating ){
-            let bookings = store.state.trip.ratings.bookings;
-            const now = new Date();
-            if( bookings.length > 0 ){
-                console.log("[index.js] bookings-data", bookings);
-                bookings = bookings.filter((data) => new Date(data.date).getTime() + 15 * 60000 < now.getTime() );
-            }
-
-            if( bookings.length > 0 ){
-                const ratingCandidate = bookings[0];
-                const bookingId = Number(ratingCandidate.bookingId);
-                const tripId = Number(ratingCandidate.tripId || ratingCandidate.id);
-                const hasBookingId = Number.isSafeInteger(bookingId) && bookingId > 0;
-                const { data: trips, error } = await supabase
-                    .from('booking')
-                    .select(`
-                        id,
-                        trip_id,
-                        passenger_account_id,
-                        is_accepted,
-                        is_refused,
-                        in_car,
-                        trip (
-                            id, 
-                            driver_id,
-                            account (
-                                id,
-                                firstname,
-                                lastname,
-                                avatar
-                            ),
-                            village_departure_id,
-                            village_arrival_id,
-                            departure_time,
-                            max_seats,
-                            price,
-                            route
-                        )`)
-                    .eq(hasBookingId ? 'id' : 'trip_id', hasBookingId ? bookingId : tripId)
-                    .eq('is_accepted', true)
-                    .eq('is_refused', false)
-                    .eq('in_car', true);
-                
-                if( error ){
-                    console.log("[index.js] Error : check rating failed no boking gettting : ", error);
-                    return next();
-                }
-
-                console.log("[index.js] Get for rating success : ", trips);
-
-                store.state.trip.ratings.data = trips;
-                if(trips.length > 0)
-                    return next('/rating');
-            }
-            
-        }
-        
-
+        // Rating is voluntary and opened explicitly from trip history. A
+        // pending booking must never hijack navigation after launch or back.
         // ----------------------------- ------------------------------
-        const { data: sessionData } = (isIOS || isAndroid)
-            ? await supabase.auth.getSession()
-            : { data: { session: null } };
-        if( (isIOS || isAndroid) && !initFireBase && sessionData?.session ){
-            initFireBase = true;
-            FirebaseMessaging.requestPermissions().then(result => {
-                console.log("[index.js] FirebaseMessaging Access :", result.receive);
-                if ( result.receive === 'granted' ) { 
-                    const registerToken = (token) => {
-                        if (!token) {
-                            return;
-                        }
-
-                        store.commit('auth/SET_REGISTER_DEVICE_TOKEN', token);
-                        serverRequest('post', '/registerDeviceToken', {
-                            mode: store.state.profil.modeCo,
-                            data: {
-                                registerDeviceToken: token,
-                            },
-                        })
-                        .then(response => {
-                            console.log("[index.js] data:", response.data);
-                        })
-                        .catch(error => {
-                            console.error('[index.js] Il y a eu une erreur :', error);
-                        });
-                    };
-
-                    const fetchToken = async () => {
-                        try {
-                            const tokenResult = await FirebaseMessaging.getToken();
-                            if (tokenResult && tokenResult.token) {
-                                registerToken(tokenResult.token);
-                            }
-                        } catch (error) {
-                            console.error('[index.js] getToken error:', error);
-                        }
-                    };
-
-                    fetchToken();
-
-                    const addTokenReceivedListener = async () => {
-                        await FirebaseMessaging.addListener('tokenReceived', event => {
-                            registerToken(event.token);
-                        });
-                    };
-
-                    addTokenReceivedListener();
-
-                    const addNotificationReceivedListener = async () => {
-                        await FirebaseMessaging.addListener('notificationReceived', async (event) => {
-                            console.log('[index.js] notificationReceived', { event });
-                            await sendNotification(event.notification.title, event.notification.body, event.notification.data);
-                        });
-                    };
-
-                    addNotificationReceivedListener();
-
-                    const addNotificationActionPerformedListener = async () => {
-                        await FirebaseMessaging.addListener('notificationActionPerformed', event => {
-                            console.log('[index.js] notificationActionPerformed', { event });
-
-                            // actions:
-                            if( event.notification.data.actions != undefined ){
-
-                                // go to path ex: open mes trajets
-                                if( event.notification.data.actions.goTo != undefined ){
-                                    // next(event.notification.data.actions.goTo);
-                                    router.replace(event.notification.data.actions.goTo);
-                                }
-                            }
-                        });
-                    };
-
-                    addNotificationActionPerformedListener();
-                }
-                else {
-                    console.log("[index.js] Autoriasation Messaging failed:");
-                }
-            });
+        if(isIOS||isAndroid){
+            const permission=await FirebaseMessaging.requestPermissions();
+            if(permission.receive==='granted')installTripNotifications(store,router).catch(()=>{});
         }
+    }
+    if(to.meta.requiresAuth && (isIOS||isAndroid))installTripNotifications(store,router).catch(()=>{});
+    if(to.path==='/trip' && to.query.tripId && Number(store.state.trip.tripSelected?.id)!==Number(to.query.tripId)){
+        await Promise.all([store.dispatch('profil/getTravels'),store.dispatch('profil/getPublish')]);
+        const profile=store.state.profil.profil;
+        const selected=[...(profile.myTravels||[]),...(profile.myPublish||[])].flatMap(day=>day.infos||[]).find(t=>Number(t.id)===Number(to.query.tripId));
+        if(!selected)return next('/profil');
+        store.commit('trip/SET_TRIP_SELECTED',selected);
     }
 
     return next();
