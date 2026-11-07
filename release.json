@@ -2,6 +2,6 @@
   "schemaVersion": 1,
   "protocol": 2,
   "web": { "version": "0.1.0", "build": "3" },
-  "android": { "version": "1.0.3", "build": "6" },
+  "android": { "version": "1.0.3", "build": "7" },
   "ios": { "version": "1.0.0", "build": "1" }
 }

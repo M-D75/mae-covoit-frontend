@@ -330,7 +330,7 @@
         </template>
     </v-dialog>
 
-    <v-dialog v-model="locationConsentDialog" max-width="480">
+    <v-dialog v-model="locationConsentDialog" max-width="480" :z-index="10000">
         <v-card title="Utiliser ma position">
             <v-card-text>
                 <p v-if="isPublicMap">Votre position permet de vous situer sur la carte et de placer les signalements routiers. Elle n’est pas partagée en direct avec les autres utilisateurs de cette carte.</p>
