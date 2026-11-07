@@ -1,3 +1,4 @@
+import {readFileSync} from 'node:fs';
 import { describe, it, expect } from 'vitest';
 import { createTripSimulation, distanceMeters, normalizeTripPosition, SIMULATION_SPEEDS } from '@/services/tripSimulation.js';
 import { tripActorMarkers, actorMarkerAsset, summarizeBoarding } from '@/components/maps/tripActorMarkers.js';
@@ -91,10 +92,15 @@ it('recolors only car body, uses a north-facing top view and keeps every orienta
         expect(svg).not.toContain('<script');expect(svg).not.toContain('https://');
     }
     const invalid=decodeURIComponent(actorMarkerAsset({kind:'car',bodyColor:'red" onload="evil'}).url);
-    expect(invalid).toContain('fill="#737373"');expect(invalid).not.toContain('onload');
+    expect(invalid).toContain('fill="#171717"');expect(invalid).not.toContain('onload');
     expect(decodeURIComponent(actorMarkerAsset({kind:'pedestrian',heading:90}).url)).not.toContain('rotate(90');
 });
 it('renders only the unchanged car artwork without a surrounding disc, keeping passenger discs',()=>{
  const svg=decodeURIComponent(actorMarkerAsset({kind:'car',heading:0}).url);expect(svg).not.toContain('<circle');expect(svg).not.toContain('<rect');
  expect(decodeURIComponent(actorMarkerAsset({kind:'pedestrian'}).url)).toContain('<circle');expect(decodeURIComponent(actorMarkerAsset({kind:'self'}).url)).toContain('<circle');
+});
+
+it('keeps the shipped static car body consistent with the common map generator',()=>{
+ const svg=readFileSync('src/assets/maps/car-top-view.svg','utf8');expect(svg).toContain('fill="#171717"');expect(svg).not.toContain('#737373');expect(svg).not.toContain('#e2e8f0');expect(svg).toContain('fill="#bfdbfe"');expect(svg).toContain('fill="#ff0000"');expect(svg).not.toContain('<circle');expect(svg).not.toContain('<rect');
+ expect(decodeURIComponent(actorMarkerAsset({kind:'car'}).url)).toContain('fill="#171717"');
 });

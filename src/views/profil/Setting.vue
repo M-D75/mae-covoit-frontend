@@ -181,6 +181,11 @@
                 </div>
             </div>
 
+            <div v-if="mode === 'refunds'" class="other-mode pa-6">
+                <h2>Remboursements</h2>
+                <p>Pour annuler une réservation ou consulter son état, ouvrez Mes trajets. Le traitement du remboursement dépend de l’état de la réservation et des conditions d’annulation.</p>
+                <v-btn class="mt-4" @click="$router.push('/profil/open-trip-passenger')">Voir mes réservations</v-btn>
+            </div>
             <!-- champ input d'information personnel -->
             <div 
                 v-if="mode=='infos' "
@@ -335,6 +340,7 @@
                             {
                                 prependIcon: null,
                                 text:"Remboursement",
+                                fun: () => this.goToInfo('refunds'),
                                 chip:true,
                                 chipIcon: "mdi-chevron-right",
                                 chipText: "",

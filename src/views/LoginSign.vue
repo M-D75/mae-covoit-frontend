@@ -537,6 +537,7 @@
                     this.$router.replace(resolvePostAuthPath({
                         authenticated: this.logged_in,
                         hasAccount: this.account_created,
+                        profileError:this.$store.state.auth.profileLookupError,
                         requestedPath: this.$route.query.redirect,
                     }));
                 }

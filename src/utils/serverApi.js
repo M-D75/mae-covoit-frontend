@@ -30,8 +30,12 @@ export async function getAuthenticatedConfig(config = {}) {
         throw authError;
     }
 
+    const {expectedUserId,...requestConfig}=config;
+    if(expectedUserId&&data?.session?.user?.id!==expectedUserId){
+        const changed=new Error('Votre session a changé.');changed.code='SESSION_CHANGED';throw changed;
+    }
     return {
-        ...config,
+        ...requestConfig,
         headers: {
             ...(config.headers || {}),
             ...await getClientHeaders(),

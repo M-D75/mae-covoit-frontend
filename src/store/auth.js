@@ -5,10 +5,12 @@ import { nativeTripTracking } from '@/services/nativeTripTracking.js';
 import router from '../router';  
 import supabase from '@/utils/supabaseClient.js';
 import { serverRequest } from '@/utils/serverApi.js';
+import { runAuthSession } from '@/services/authSessionGuard.js';
 import { rememberAuthEntry } from '@/services/authEntry.js';
 
 import store from '../store'; 
 
+let sessionCheckGeneration = 0;
 export default {
     namespaced: true,
     state: {
@@ -21,12 +23,14 @@ export default {
         customer: null,
         token: "",
         tokenExpiry: 0,
+        profileLookupError: null,
         logged_in: false,
         account_created: false,
         // device Id pour Android, IOS
         registerDeviceToken: "",
     },
     mutations: {
+        SET_PROFILE_LOOKUP_ERROR(state,value){state.profileLookupError=value;},
         SET_LOGGED_IN(state, status) {
             state.logged_in = status;
         },
@@ -43,7 +47,15 @@ export default {
             state.token = token || "";
             state.tokenExpiry = expiry || 0;
         },
+        CLEAR_PAYMENT_PROFILE(state) {
+            state.customer_id = "";
+            state.provider_id = "";
+            state.provider = null;
+            state.customer = null;
+            state.stripe_provider = null;
+        },
         CLEAR_TOKEN(state) {
+            state.profileLookupError=null;
             state.token = "";
             state.tokenExpiry = 0;
             state.logged_in = false;
@@ -57,22 +69,27 @@ export default {
     },
     actions: {
         async createAccount({state, commit, rootState}, info){
+            const owner=rootState.profil.userUid, generation=rootState.profil.accountGeneration;
+            const current=()=>rootState.profil.userUid===owner && rootState.profil.accountGeneration===generation;
+            const details={lastname:info.name,firstname:info.firstname,village:info.village};
+            if(!owner)return {status:1,message:'Votre session a expiré. Veuillez vous reconnecter.'};
+            if(info.expectedUserId && (info.expectedUserId!==owner || info.accountGeneration!==generation))return {status:2,stale:true};
 
             try {
                 const { data, error } = await supabase.auth.getUser();
+                if(!current() || (owner && data?.user && data.user.id!==owner))return {status:2,stale:true};
                 if (error || !data?.user) {
                     return {status: 1, message: "Votre session a expiré. Veuillez vous reconnecter."};
                 }
 
                 const profileResponse = await serverRequest('post', '/account/profile', {
-                    mode: rootState.profil?.modeCo,
-                    data: {
-                        lastname: info.name,
-                        firstname: info.firstname,
-                        village: info.village,
-                    },
+                    mode: rootState.profil?.modeCo, expectedUserId:data.user.id,
+                    data:details,
                 });
 
+                if(!current())return {status:2,stale:true};
+                const account=profileResponse.data?.account;
+                if(!account?.id || (account.user_id && account.user_id!==data.user.id))throw new Error('Confirmation du profil invalide.');
                 commit('SET_ACCOUNT_CREATED', true);
                 rootState.profil.userId = profileResponse.data?.account?.id || null;
 
@@ -80,8 +97,9 @@ export default {
                 // committed Supabase profile into a false sign-up failure.
                 try {
                     const paymentResponse = await serverRequest('post', '/account/payment-profile', {
-                        mode: rootState.profil?.modeCo,
+                        mode: rootState.profil?.modeCo, expectedUserId:data.user.id,
                     });
+                    if(!current())return {status:2,stale:true};
                     const paymentProfile = paymentResponse.data;
                     state.customer_id = paymentProfile.customer?.id || "";
                     state.customer = paymentProfile.customer || null;
@@ -94,11 +112,13 @@ export default {
                         ?? !paymentProfile.provider?.onboardingComplete
                     );
                 } catch (paymentError) {
+                    if(!current() || paymentError.code==='SESSION_CHANGED')return {status:2,stale:true};
                     console.error("Payment profile will be initialized on retry:", paymentError);
                 }
 
                 return {status: 0, message: "Votre compte a été créé avec succès"};
             } catch (error) {
+                if(!current() || error.code==='SESSION_CHANGED')return {status:2,stale:true};
                 console.error("createAccount error:", error);
                 return {
                     status: error.response?.status || 2,
@@ -106,31 +126,27 @@ export default {
                 };
             }
         },
-        async removeAccount({ commit, rootState }){
+        async removeAccount({ commit, rootState }, intent = {}){
+            const owner=rootState.profil.userUid, generation=rootState.profil.accountGeneration;
+            const current=()=>rootState.profil.userUid===owner && rootState.profil.accountGeneration===generation;
+            const stale=()=>({status:2,stale:true});
+            if(!owner || (intent.expectedUserId && (intent.expectedUserId!==owner || intent.accountGeneration!==generation)))return stale();
             try {
-                const response = await serverRequest('delete', '/account', {
-                    mode: rootState.profil?.modeCo,
+                const response=await serverRequest('delete','/account',{
+                    mode:rootState.profil.modeCo, expectedUserId:owner,
                 });
-
-                // The remote user no longer exists, so only clear the local
-                // session. A global sign-out can fail after admin deletion.
-                await supabase.auth.signOut({ scope: 'local' });
+                if(!current())return stale();
+                const signedOut=()=>!rootState.profil.userUid && rootState.profil.accountGeneration===generation+1;
+                const {error}=await runAuthSession(supabase,{userId:owner,isCurrent:()=>current() || signedOut()},'signOut',{scope:'local'});
+                if(error)throw error;
+                if(!current() && !signedOut())return stale();
                 commit('CLEAR_TOKEN');
-                localStorage.removeItem('vuex');
-                localStorage.removeItem('mae-covoit-v2');
-
-                return {
-                    status: 0,
-                    message: response.data?.message || "Votre compte a été supprimé.",
-                    warnings: response.data?.warnings || [],
-                };
-            }
-            catch(error){
-                console.error("removeAccount error:", error);
-                return {
-                    status: error.response?.status || 1,
-                    message: error.response?.data?.message || "La suppression du compte n'a pas pu être terminée.",
-                };
+                for(const key of ['vuex','mae-covoit-v2','mae-covoit-v3'])localStorage.removeItem(key);
+                return {status:0,deletedUserId:owner,sessionGeneration:rootState.profil.accountGeneration,
+                    message:response.data?.message || "Votre compte a été supprimé.",warnings:response.data?.warnings || []};
+            }catch(error){
+                if(!current() || error.code==='SESSION_CHANGED')return stale();
+                return {status:error.response?.status || 1,message:error.response?.data?.message || "La suppression du compte n'a pas pu être terminée."};
             }
         },
         async refreshToken({state}){
@@ -150,7 +166,9 @@ export default {
             return true;
         },
         async checkSession({ state, commit, rootState }){
+            const request = ++sessionCheckGeneration, initialGeneration = rootState.profil.accountGeneration;
             let { data, error } = await supabase.auth.getSession();
+            if (request !== sessionCheckGeneration || initialGeneration !== rootState.profil.accountGeneration) return false;
 
             commit('SET_LOGGED_IN', false);
             commit('SET_ACCOUNT_CREATED', false);
@@ -163,6 +181,8 @@ export default {
                 });
                 const user = data.session.user;
                 commit('profil/SET_USER_UID', user.id, { root: true });
+                const generation = rootState.profil.accountGeneration;
+                const current = () => request === sessionCheckGeneration && rootState.profil.userUid === user.id && rootState.profil.accountGeneration === generation;
                 commit('SET_PROVIDER', user.app_metadata.provider);
                 console.log('User is already connected:', user);
 
@@ -175,13 +195,21 @@ export default {
                     `)
                     .eq('user_id', user.id)
 
+                if (!current()) return false;
+                if(error_account){
+                    commit('SET_PROFILE_LOOKUP_ERROR',{path:state.profileLookupError?.path||'/search'});
+                    return false;
+                }
+                commit('SET_PROFILE_LOOKUP_ERROR',null);
                 account = account || [];
 
                 if(account.length > 0){
-                    const settings = account[0].settings?.[0];
+                    const settings = Array.isArray(account[0].settings) ? account[0].settings[0] : account[0].settings;
                     if (settings) {
-                        store.state.profil.auto_accept_trip = settings.auto_accept_trip;
+                        store.state.profil.auto_accept_trip = typeof settings.auto_accept_trip === 'boolean' ? settings.auto_accept_trip : true;
+                        commit('profil/SET_PREFERENCES', settings.prefer, {root: true});
                     }
+                    commit('profil/SET_PROFILE_DETAILS', account[0], {root: true});
                     store.state.profil.identity = account[0].identity;
                 }
 
@@ -203,8 +231,9 @@ export default {
                             const paymentProfileResponse = await serverRequest(
                                 'post',
                                 '/account/payment-profile',
-                                { mode: store.state.profil.modeCo }
+                                { mode: store.state.profil.modeCo, expectedUserId:user.id }
                             );
+                            if (!current()) return false;
                             const paymentProfile = paymentProfileResponse.data;
 
                             state.customer_id = paymentProfile.customer?.id || "";
@@ -218,12 +247,14 @@ export default {
                                 ?? !paymentProfile.provider?.onboardingComplete
                             );
 
+                            store.state.profil.credit_card = { available: false, brand: '', last4: '0000' };
                             if (paymentProfile.customer?.card) {
                                 store.state.profil.credit_card.brand = paymentProfile.customer.card.brand;
                                 store.state.profil.credit_card.last4 = paymentProfile.customer.card.last4;
                                 store.state.profil.credit_card.available = true;
                             }
                         } catch (paymentProfileError) {
+                            if (!current()) return false;
                             console.error("Payment profile initialization failed:", paymentProfileError);
                         }
                     }
@@ -251,6 +282,7 @@ export default {
                         .select();
                 }
 
+                if(!current())return false;
                 if( account.length > 0 ){
                     const current_account = account[0];
                     if(current_account){
@@ -294,19 +326,26 @@ export default {
 
             return true;
         },
-        async logout({ commit }) {
-            await nativeTripTracking.stop().catch(() => {});
-            commit('trip/CLEAR_MESSAGING',null,{root:true});
-            await clearTripNotifications(store).catch(()=>{});
-            let { error } = await supabase.auth.signOut();
-            
-            if (error) {
-                console.error('Erreur lors de la deconnexion:', error.message);
-                return;
+        async logout({ commit, rootState }, intent = {}) {
+            const profile=rootState.profil, owner=profile.userUid, generation=profile.accountGeneration;
+            const current=()=>rootState.profil.userUid===owner && rootState.profil.accountGeneration===generation;
+            const signedOut=()=>!rootState.profil.userUid && rootState.profil.accountGeneration===generation+1;
+            if(!owner || (intent.expectedUserId && (intent.expectedUserId!==owner || intent.accountGeneration!==generation)))return {status:2,stale:true};
+            try{
+                await nativeTripTracking.stop().catch(()=>{});
+                if(!current())return {status:2,stale:true};
+                commit('trip/CLEAR_MESSAGING',null,{root:true});
+                await clearTripNotifications(store).catch(()=>{});
+                if(!current())return {status:2,stale:true};
+                const {error}=await runAuthSession(supabase,{userId:owner,isCurrent:()=>current() || signedOut()},'signOut');
+                if(error)throw error;
+                if(!current() && !signedOut())return {status:2,stale:true};
+                commit('CLEAR_TOKEN');commit('profil/SET_USER_UID','',{root:true});router.replace('/login');
+                return {status:0};
+            }catch(error){
+                if(!current() || error.code==='SESSION_CHANGED')return {status:2,stale:true};
+                return {status:1,message:error.message || 'La déconnexion a échoué. Réessayez.'};
             }
-            commit('CLEAR_TOKEN');
-            commit('profil/SET_USER_UID','',{root:true});
-            router.replace("/login");
         },
     },
     getters: {

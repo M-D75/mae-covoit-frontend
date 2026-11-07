@@ -336,8 +336,8 @@
             }
 
             if( this.$refs.BottomMenuRefHourDepOther ){
-                this.daysSelected.home = this.$refs.BottomMenuRefHourDepOther.daysSelected;
-                this.daysSelected.work = this.$refs.BottomMenuRefHourDepOther.daysSelected;
+                this.daysSelected.home = this.$refs.BottomMenuRefHourDepOther.daysSelected.map(day => ({...day}));
+                this.daysSelected.work = this.$refs.BottomMenuRefHourDepOther.daysSelected.map(day => ({...day}));
             }
 
             this.updateHourShow();
@@ -353,13 +353,19 @@
                 }
 
                 if( this.$refs["BottomMenuRefHourDepOther"] ){
-                    this.overlay = this.$refs["BottomMenuRefHourDepOther"].open();
+                    const group = this.daysHourShow[index];
+                    const menu = this.$refs.BottomMenuRefHourDepOther;
+                    menu.daysSelected = menu.daysSelected.map((day, dayIndex) => ({
+                        ...day,
+                        selected: dayIndex >= group.min && dayIndex <= group.max,
+                    }));
+                    this.overlay = menu.open();
                 }
             },
             getSelected(){
                 if( this.$refs.BottomMenuRefHourDepOther ){
                     if( this.labelMode == 'domicile' ){
-                        this.daysSelected.home = this.$refs.BottomMenuRefHourDepOther.daysSelected;
+                        this.daysSelected.home = this.$refs.BottomMenuRefHourDepOther.daysSelected.map(day => ({...day}));
                         
                         for (let index = 0; index < this.daysSelected.home.length; index++) {
                             if( this.daysSelected.home[index].selected ){
@@ -369,7 +375,7 @@
                         }
                     }
                     else{
-                        this.daysSelected.work = this.$refs.BottomMenuRefHourDepOther.daysSelected;
+                        this.daysSelected.work = this.$refs.BottomMenuRefHourDepOther.daysSelected.map(day => ({...day}));
 
                         for (let index = 0; index < this.daysSelected.work.length; index++) {
                             if( this.daysSelected.work[index].selected ){

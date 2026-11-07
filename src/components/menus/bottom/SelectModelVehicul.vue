@@ -179,10 +179,10 @@
         }
     }
 </style>
-   
+
 <!--  -->
 <template>
-    <v-container 
+    <v-container
         class="select-model-vehicul-comp"
     >
         <div v-if="mode=='select-model'">
@@ -190,7 +190,7 @@
                 class="title text-center"
             >Quel est le type de carrosserie de votre véhicule ?</div>
 
-            <div 
+            <div
                 class="card-contain"
             >
                 <v-card
@@ -215,23 +215,24 @@
             <div class="label text-center">{{ labelSaisie }}</div>
             <v-text-field v-model="matricul" placeholder="XX-000-XX" maxLength="9" variant="solo-inverted" ref="input" @input="checkPlaque($event)"></v-text-field>
             <v-container>
-                <v-color-picker 
+                <v-color-picker
                     v-model="color"
                     @update:model-value="getColor($event)"
-                    style="max-width: none; width: inherit;" 
-                    hide-canvas 
-                    hide-inputs 
+                    style="max-width: none; width: inherit;"
+                    hide-canvas
+                    hide-inputs
                     show-swatches
                 ></v-color-picker>
             </v-container>
             <SelectNumber v-if="max>1" class="select-nb-seat" :initNumber="max" :min="1" :max="max" ref="SelectNumberRef" v-on:number-changed="console.log('ok')" />
-            <v-btn 
+            <v-btn
                 class="text-none"
-                rounded="xl" 
+                rounded="xl"
                 size="x-large"
                 variant="outlined"
                 block
-                :disabled="matricul.length<9"
+                :disabled="matricul.length<9 || saving"
+                :loading="saving"
                 @click="valided()"
             >Valider</v-btn>
         </div>
@@ -244,7 +245,7 @@
             style="z-index: 99999;"
         >
             <div class="contain-ico">
-                <v-icon icon="mdi-alert-circle"></v-icon> 
+                <v-icon icon="mdi-alert-circle"></v-icon>
             </div>
             <div>
                 <span>{{ messageSnackbarSuccess }}</span>
@@ -259,7 +260,7 @@
             style="z-index: 99999;"
         >
             <div class="contain-ico">
-                <v-icon icon="mdi-alert-circle"></v-icon> 
+                <v-icon icon="mdi-alert-circle"></v-icon>
             </div>
             <div>
                 <span>{{ messageSnackbarError }}</span>
@@ -290,6 +291,7 @@
         data() {
             return {
                 mode: "select-model",
+                saving: false,
                 color: "#F44336",
                 infos: [
                     {model: "Moto", color: "silver", icon:"mdi-motorbike", maxSeats:1},
@@ -310,7 +312,7 @@
             };
         },
         mounted() {
-            
+
         },
         methods: {
             ...mapActions("profil", ["addCar"]),
@@ -335,28 +337,37 @@
                 this.matricul = e.target.value;
             },
             async valided(){
-                this.matricul = this.matricul.toUpperCase();
-                const infos = { 
-                        model: this.modelV,
-                        licence_plate: this.matricul,
-                        brand: "UNKNOWN",
-                        color: this.color,
-                        seats: this.$refs.SelectNumberRef.number
-                    };
-                // console.log("infos-to-add-car", infos);
-                const result = await this.addCar(infos);
-                if(result.status == 0){
-                    this.messageSnackbarSuccess = result.message;
-                    this.showSnackbarSuccess = true;
-                    this.$emit('car-valided');
-                    
-                    setTimeout(function(){
-                        this.mode = "select-model";
-                    }.bind(this), 1000);
-                }
-                else{
-                    this.messageSnackbarError = result.message;
+                if (this.saving) return;
+                this.saving = true;
+                try {
+                    this.matricul = this.matricul.toUpperCase();
+                    const infos = {
+                            model: this.modelV,
+                            licence_plate: this.matricul,
+                            brand: "UNKNOWN",
+                            color: this.color,
+                            seats: this.max === 1 ? 1 : this.$refs.SelectNumberRef.number
+                        };
+                    // console.log("infos-to-add-car", infos);
+                    const result = await this.addCar(infos);
+                    if(result?.status == 0){
+                        this.messageSnackbarSuccess = result.message;
+                        this.showSnackbarSuccess = true;
+                        this.$emit('car-valided');
+
+                        setTimeout(function(){
+                            this.mode = "select-model";
+                        }.bind(this), 1000);
+                    }
+                    else{
+                        this.messageSnackbarError = result?.message || "Impossible d’ajouter le véhicule.";
+                        this.showSnackbarError = true;
+                    }
+                } catch {
+                    this.messageSnackbarError = "Impossible d’ajouter le véhicule. Veuillez réessayer.";
                     this.showSnackbarError = true;
+                } finally {
+                    this.saving = false;
                 }
             }
         },

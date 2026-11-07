@@ -273,7 +273,7 @@
                     color="blue"
                     label
                 >
-                    {{infos.price}}€
+                    {{ infos.price == null ? 'Tarif indisponible' : infos.price + ' €' }}
                 </v-chip>
 
                 <v-chip
@@ -281,7 +281,7 @@
                     color="blue"
                     label
                 >
-                    {{ infos.passenger_number }}/4
+                    {{ infos.reserved_seats ?? infos.passenger_number ?? 0 }}/{{ infos.max_seats }}
                 </v-chip>
             </div>
 

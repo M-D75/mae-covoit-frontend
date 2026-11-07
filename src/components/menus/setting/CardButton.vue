@@ -123,6 +123,7 @@
                 v-if="switchBtn"
                 inset
                 v-model="validation"
+                :disabled="saving" :loading="saving"
                 @change="updateValidation()"
                 color="info"
             />
@@ -158,7 +159,7 @@
         },
         data() {
             return {
-                validation: false,
+                validation: false, saving: false,
                 showSnackbarError: false,
                 messageSnackbarError: "",
             }
@@ -216,11 +217,20 @@
                 this.fun();
             },
             async updateValidation(){
-                this.SET_AUTO_VALIDATION(this.validation);
-                const response = await this.updateAutoValidation();
-                if(response.status != 0){
-                    this.messageSnackbarError = response.message;
+                if (this.saving) return;
+                this.saving = true;
+                try {
+                    const response = await this.updateAutoValidation(this.validation);
+                    if(response?.status !== 0){
+                        this.messageSnackbarError = response?.message || 'La modification n’a pas été enregistrée.';
+                        this.showSnackbarError = true;
+                    }
+                } catch {
+                    this.messageSnackbarError = 'La modification n’a pas été enregistrée. Veuillez réessayer.';
                     this.showSnackbarError = true;
+                } finally {
+                    this.validation = this.auto_accept_trip;
+                    this.saving = false;
                 }
             },
         },

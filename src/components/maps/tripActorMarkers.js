@@ -33,7 +33,7 @@ export function tripActorMarkers({ userId, driverId, bookings = [], positions = 
 // One local SVG/anchor/rotation definition for both SDKs. No remote asset fetch.
 // Car: SHMECTOR CC0; pedestrian: mdiWalk Apache-2.0 (docs/licenses).
 export function actorMarkerAsset(actor) {
-    const bodyColor = /^#[0-9a-f]{6}$/i.test(actor.bodyColor || '') ? actor.bodyColor : '#737373';
+    const bodyColor = /^#[0-9a-f]{6}$/i.test(actor.bodyColor || '') ? actor.bodyColor : '#171717';
     const size = actor.kind === 'car' ? 48 : 44;
     const heading = Number.isFinite(actor.heading) ? ((actor.heading % 360) + 360) % 360 : 0;
     const shape = actor.kind === 'car'

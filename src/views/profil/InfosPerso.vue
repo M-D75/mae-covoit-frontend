@@ -26,6 +26,7 @@
             ref="BottomMenuRefModelVehicul" 
             :class-name="['model-vehicul']" 
             mode="select-model-vehicul"
+            v-on:car-valided="updateCar"
             v-on:close="overlay = false" 
         />
 
@@ -159,7 +160,7 @@
                                 about: "discution",
                                 prependIconColor: "var(--blue-color)",
                                 prependIcon: "mdi-forum",
-                                text: "j'aime bien discuter--",
+                                text: "j'aime bien discuter",
                                 chip: false,
                                 chipIcon: null,
                                 switchBtn: false,
@@ -271,10 +272,10 @@
             async updateCar() {
                 if (this.modeDriver) {
                     const result = await this.getCars();
-                    if ( result.status == 0 && this.cars.length > 0 ) {
+                    if ( result?.status == 0 && this.cars.length > 0 ) {
                         this.groupeParameters[1].parameters[0].text = this.cars[0].brand != "UNKNOWN" ? this.cars[0].brand : this.cars[0].license_plate;
                         this.groupeParameters[1].parameters[0].optionChip.color = this.cars[0].color;
-                        this.groupeParameters[1].parameters[0].prependIcon = this.infosModelVehicul.find((car) => car.model == this.cars[0].model).icon
+                        this.groupeParameters[1].parameters[0].prependIcon = this.infosModelVehicul.find((car) => car.model == this.cars[0].model)?.icon || 'mdi-car'
                     }
                 }
             },

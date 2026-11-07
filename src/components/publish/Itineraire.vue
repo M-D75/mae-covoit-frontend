@@ -81,6 +81,7 @@
             <div 
                 class="over"
             ></div>
+            <v-alert v-if="validationError" type="error" variant="tonal" role="alert">{{ validationError }}</v-alert>
             <Map ref="MapRef" :itineraire="itineraire" v-on:trajet-selected="itineraireValided()"></Map>
         </div>
     </v-main>
@@ -90,6 +91,8 @@
 
 <!--  -->
 <script>
+import {isPublishableRoute, PUBLICATION_ROUTE_ERROR} from '@/services/publicationRoute.js';
+
     import $ from 'jquery';
     import { defineComponent } from 'vue';
     import { mapState } from 'vuex';
@@ -147,6 +150,7 @@
                 overlay: false,
                 labelSelectorTime: "",
                 routes: [],
+                validationError: '',
             }
         },
         mounted(){
@@ -174,9 +178,11 @@
                 console.log("time-getting")
             },
             itineraireValided(){
-                console.log("itineraireValided", this.$refs.MapRef.routes)
-                this.routes = this.$refs.MapRef.routes;
-                this.$emit("itineraire-valided")
+                const map=this.$refs.MapRef;
+                if(!map?.canConfirmRoute || !isPublishableRoute(map.routes?.[0])){
+                    this.routes=[];this.validationError=PUBLICATION_ROUTE_ERROR;return false;
+                }
+                this.validationError='';this.routes=map.routes;this.$emit('itineraire-valided');return true;
             },
         },
         watch: {

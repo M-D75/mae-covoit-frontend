@@ -38,7 +38,8 @@ export async function installTripNotifications(store,router) {
         await LocalNotifications.addListener('localNotificationActionPerformed',event=>navigate(event.notification?.extra||{}));
         await FirebaseMessaging.addListener('notificationReceived',async event=>{
             const notification=event.notification||{},data=notification.data||{};
-            if(!store.state.profil.userUid || !store.state.profil.notification || (data.expiresAt && new Date(data.expiresAt).getTime()<=Date.now()))return;
+            if(!store.state.profil.userUid || (data.expiresAt && new Date(data.expiresAt).getTime()<=Date.now()))return;
+            window.dispatchEvent(new Event('covia-notifications-changed'));
             store.dispatch('trip/refreshUnread');
             const active=store.state.trip.activeChat;
             if(data.type==='chat' && active?.active && Number(active.tripId)===Number(data.tripId) && active.peerId===data.peerId

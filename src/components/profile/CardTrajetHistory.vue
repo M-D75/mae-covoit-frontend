@@ -234,7 +234,7 @@
                         color="blue"
                         label
                     >
-                        {{ infos.price }}€
+                        {{ infos.price == null ? 'Tarif indisponible' : infos.price + ' €' }}
                     </v-chip>
                 </div>
 
@@ -349,19 +349,8 @@
 
                 }
                 else{
-                    this.loading = true;
                     this.SET_TRIP_SELECTED(this.infos);
-                    await this.getContacts();
-                    console.log("contacts:", this.chat.contacts);
-                    if( this.chat.contacts.length > 0 ){
-                        this.loading = false;
-                        this.$router.push('/message');
-                    }
-                    else {
-                        this.messageSnackbarError = "Aucun passager n'a reserver ce trajet";
-                        this.showSnackbarError = true;
-                    }
-                    this.loading = false;
+                    this.$router.push('/trip');
 
                 }
             },

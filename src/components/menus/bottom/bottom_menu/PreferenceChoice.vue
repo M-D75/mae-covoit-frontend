@@ -23,6 +23,8 @@
    
 <!--  -->
 <template>
+    <p v-if="saving" role="status" class="text-center">Enregistrement…</p>
+    <p v-if="saveError" role="alert" class="text-center">{{ saveError }}</p>
 
     <!--  -->
     <GroupCard class="grouPreference" :groupeParameters="groupeParameters" />
@@ -211,6 +213,7 @@
                         },
                     ],
                 },
+                saving: false, saveError: '',
                 groupeParameters: [
                     {
                         label: "préferences de voyage",
@@ -265,10 +268,15 @@
         methods: {
             ...mapMutations("profil", ["SET_PREFERENCE_ABOUT"]),
             ...mapActions("profil", ["updatePreference"]),
-            updatePref(index){
-                this.SET_PREFERENCE_ABOUT(_.cloneDeep(this.groupeParameters[0].parameters[index-1]));
-                this.updatePreference();
-                this.$emit('pref-selected');
+            async updatePref(index){
+                if (this.saving) return;
+                this.saving = true; this.saveError = '';
+                try {
+                    const result = await this.updatePreference(_.cloneDeep(this.groupeParameters[0].parameters[index-1]));
+                    if (result?.status !== 0) { this.saveError = result?.message || 'Vos préférences n’ont pas été enregistrées.'; return; }
+                    this.$emit('pref-selected');
+                } catch { this.saveError = 'Vos préférences n’ont pas été enregistrées. Veuillez réessayer.'; }
+                finally { this.saving = false; }
             },
         },
         watch: {

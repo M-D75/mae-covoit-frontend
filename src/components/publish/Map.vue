@@ -56,7 +56,9 @@
             />
             <v-btn 
                 icon="mdi-check-bold"
-                @click="$emit('trajet-selected')"
+                :disabled="!canConfirmRoute"
+                aria-label="Valider cet itinéraire"
+                @click="confirmRoute()"
             />
         </div>
 
@@ -133,6 +135,8 @@
 </template>
 
 <script>
+import {isPublishableRoute, PUBLICATION_ROUTE_ERROR} from '@/services/publicationRoute.js';
+
     import { defineComponent } from 'vue';
     import { mapState } from 'vuex';
     import io from 'socket.io-client';
@@ -152,6 +156,7 @@
         name: 'results-view',
         emits: ["trajet-selected"],
         computed: {
+            canConfirmRoute(){return !this.overlayLoad && this.routeAvail && !this.routingErrorMessage && isPublishableRoute(this.routes[0]);},
             ...mapState("profil", ["modeCo"]),
             center() {
                 // const latitudes =  [this.itineraire.origin.location.latLng.latitude, this.itineraire.destination.location.latLng.latitude];
@@ -235,6 +240,8 @@
                 routeDetails:null,routeDetailsHeight:0,
                 open_b: true, //open bottom menu
                 overlayLoad: false,
+                routeRequest: 0,
+                routeDisposed: false,
                 zoom: 11,
                 routes: [],
                 customIcon: L.icon({
@@ -287,6 +294,7 @@
             this.$nextTick(() => this.getRouteInfos());
         },
         beforeUnmount(){
+            this.routeDisposed=true;this.routeRequest++;
             this.stopAlertCleanupTimer();
             if(this.alertSocket){
                 this.alertSocket.off('road-alerts:changed');
@@ -295,18 +303,25 @@
             }
         },
         methods: {
+            confirmRoute(){
+                if(!this.canConfirmRoute)return false;
+                this.$emit('trajet-selected');return true;
+            },
             trajetSelected(index){
+                if(this.overlayLoad||this.routeDisposed)return;
+                const request=this.routeRequest;
                 const selectedRoute = this.routes[index];
                 if( !selectedRoute ){
                     return;
                 }
                 if( selectedRoute.current ){
-                    this.$emit("trajet-selected");
+                    this.confirmRoute();
                 }
                 else{
                     this.overlayLoad = true;
 
                     setTimeout(function(){
+                        if(this.routeDisposed||request!==this.routeRequest)return;
                         this.routeAvail = false;
                         this.routes = [
                             selectedRoute,
@@ -324,9 +339,12 @@
                 }
             },
             swapRoute() {
+                if(this.overlayLoad||this.routeDisposed||this.routes.length<2)return;
+                const request=this.routeRequest;
                 this.overlayLoad = true;
 
                 setTimeout(function(){
+                    if(this.routeDisposed||request!==this.routeRequest)return;
                     this.routeAvail = false;
                     this.routes = this.shiftRight(this.routes);
                     this.itin.duration = this.routes[0].duration;
@@ -340,32 +358,19 @@
                 }.bind(this), 500); 
             },
             async getRouteInfos(){
-                this.overlayLoad = true;
-                this.routingErrorMessage = '';
-                try {
-                    const routes = await calculateRoutes({
-                        provider: this.mapProvider,
-                        origin: this.itineraire.origin,
-                        destination: this.itineraire.destination,
-                        departureTime: this.itineraire.departureTime,
-                        alternatives: true,
-                    });
-                    this.routeAvail = false;
-                    this.routes = routes;
-                    this.itin.duration = routes[0].duration;
-                    this.itin.distance = routes[0].distance;
-                    this.routeAvail = true;
-                }
-                catch (error) {
-                    console.error(error);
-                    this.routeAvail = false;
-                    this.routes = [];
-                    this.routingErrorMessage = error?.message
-                        || "Impossible de calculer l'itinéraire pour le moment.";
-                }
-                finally {
-                    this.overlayLoad = false;
-                }
+                const request=++this.routeRequest;
+                const current=()=>!this.routeDisposed&&request===this.routeRequest;
+                this.overlayLoad=true;this.routeAvail=false;this.routes=[];this.routingErrorMessage='';
+                try{
+                    const routes=await calculateRoutes({provider:this.mapProvider,origin:this.itineraire.origin,
+                        destination:this.itineraire.destination,departureTime:this.itineraire.departureTime,alternatives:true});
+                    if(!current())return;
+                    const valid=Array.isArray(routes)?routes.filter(isPublishableRoute):[];
+                    if(!valid.length)throw new Error(PUBLICATION_ROUTE_ERROR);
+                    this.routes=valid;this.itin.duration=valid[0].duration;this.itin.distance=valid[0].distance;this.routeAvail=true;
+                }catch(error){
+                    if(current()){this.routeAvail=false;this.routes=[];this.routingErrorMessage=error?.message||PUBLICATION_ROUTE_ERROR;}
+                }finally{if(current())this.overlayLoad=false;}
             },
             async getCurrentRouteInfos(){
                 this.overlayLoad = true;

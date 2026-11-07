@@ -168,6 +168,7 @@
             return {
                 overlayLoad: true,
                 submitting: false,
+                creationDisposed:false,creationEpoch:0,
                 // user interact
                 name: "",
                 firstname: "",
@@ -199,6 +200,12 @@
                 return normalize(value).includes(normalize(query));
             },
             async tryCreateAccount(){
+                const profile=this.$store.state.profil, owner=profile.userUid, generation=profile.accountGeneration;
+                const epoch=this.creationEpoch;
+                const current=()=>!this.creationDisposed && this.creationEpoch===epoch
+                    && this.$store.state.profil.userUid===owner && this.$store.state.profil.accountGeneration===generation;
+                if(this.creationDisposed)return;
+                if(!owner){this.showSnakBarInfo.messageError='Votre session a expiré. Veuillez vous reconnecter.';this.showSnakBarInfo.showError=true;return;}
                 if (this.submitting) return;
                 const name = this.name.trim();
                 const firstname = this.firstname.trim();
@@ -210,7 +217,8 @@
                 this.submitting = true;
                 this.showSnakBarInfo.showError = false;
                 try {
-                    const res = await this.createAccount({name, firstname, village: this.village || ''});
+                    const res = await this.createAccount({name, firstname, village: this.village || '',expectedUserId:owner,accountGeneration:generation});
+                    if(!current() || res?.stale)return;
                     if( res.status == 0 && this.account_created ){
                         await this.$router.replace(resolvePostAuthPath({
                             authenticated: true,
@@ -223,13 +231,19 @@
                         this.showSnakBarInfo.showError = true;
                     }
                 } catch (error) {
+                    if(!current())return;
                     console.error('Profile completion failed:', error);
                     this.showSnakBarInfo.messageError = "La validation n'a pas pu être terminée. Veuillez réessayer.";
                     this.showSnakBarInfo.showError = true;
                 } finally {
-                    this.submitting = false;
+                    if(current())this.submitting = false;
                 }
             },
+        },
+        beforeUnmount(){this.creationDisposed=true;this.creationEpoch++;},
+        watch:{
+            '$store.state.profil.userUid'(){this.creationEpoch++;this.submitting=false;},
+            '$store.state.profil.accountGeneration'(){this.creationEpoch++;this.submitting=false;},
         },
         async mounted() {
             try {

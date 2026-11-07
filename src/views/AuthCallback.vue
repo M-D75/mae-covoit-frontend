@@ -40,6 +40,7 @@ export default {
             await this.$router.replace(resolvePostAuthPath({
                 authenticated: this.$store.state.auth.logged_in,
                 hasAccount: this.$store.state.auth.account_created,
+                            profileError: this.$store.state.auth.profileLookupError,
                 requestedPath: this.$route.query.redirect,
             }));
         } catch (error) {

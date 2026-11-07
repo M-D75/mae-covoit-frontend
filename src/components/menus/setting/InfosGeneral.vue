@@ -155,42 +155,63 @@
         data() {
             return {
                 privacyContactEmail,
+                deleteOwner:null,deleteBusy:false,deleteDisposed:false,deleteEpoch:0,deleteTimer:null,
                 showDeleteError: false,
                 deleteError: "",
                 showDeleteWarning: false,
                 deleteWarning: "",
             };
         },
+        beforeUnmount(){this.deleteDisposed=true;this.deleteEpoch++;clearTimeout(this.deleteTimer);},
         mounted() {
+        },
+        watch:{
+            '$store.state.profil.userUid'(){this.resetDeletion();},
+            '$store.state.profil.accountGeneration'(){this.resetDeletion();},
         },
         methods: {
             replayHelp(){requestContextHelp(this.$store.state.profil.userUid,'choose',{replay:true});},
             showVersion(){window.dispatchEvent(new CustomEvent('covia-show-version'));},
             ...mapMutations("profil", ["SET_CGU_ACCEPTED"]),
             ...mapActions("auth", ["removeAccount"]),
+            resetDeletion(){
+                this.deleteEpoch++;this.deleteOwner=null;this.deleteBusy=false;
+                clearTimeout(this.deleteTimer);this.deleteTimer=null;
+                const sheet=this.$refs.BottomMenuRefConfirmChoice;
+                if(sheet){sheet.loadingBtn=false;sheet.close();}
+            },
             callDeleteAccount(){
+                if(this.deleteBusy)return;
+                const profile=this.$store.state.profil;
+                if(!profile.userUid)return;
+                this.deleteOwner={uid:profile.userUid,generation:profile.accountGeneration};
+                this.showDeleteError=false;this.showDeleteWarning=false;
                 this.$refs.BottomMenuRefConfirmChoice.open();
             },
             async deleteAccount(){
-                this.$refs.BottomMenuRefConfirmChoice.loadingBtn = true;
-                const result = await this.removeAccount();
-                this.$refs.BottomMenuRefConfirmChoice.loadingBtn = false;
-
-                if (result.status !== 0) {
-                    this.deleteError = result.message;
-                    this.showDeleteError = true;
-                    return;
-                }
-
-                this.$refs.BottomMenuRefConfirmChoice.close();
-                if (result.warnings?.length) {
-                    this.deleteWarning = result.warnings.join(" ");
-                    this.showDeleteWarning = true;
-                    setTimeout(() => this.$router.replace("/login"), 5000);
-                } else {
-                    this.$router.replace("/login");
-                }
+                if(this.deleteBusy || this.deleteDisposed)return;
+                const owner=this.deleteOwner, profile=this.$store.state.profil;
+                if(!owner || profile.userUid!==owner.uid || profile.accountGeneration!==owner.generation){this.resetDeletion();return;}
+                const epoch=++this.deleteEpoch, sheet=this.$refs.BottomMenuRefConfirmChoice;
+                let result;
+                const current=()=>!this.deleteDisposed && this.deleteEpoch===epoch && this.$refs.BottomMenuRefConfirmChoice===sheet
+                    && ((this.$store.state.profil.userUid===owner.uid && this.$store.state.profil.accountGeneration===owner.generation)
+                        || (result?.status===0 && result.deletedUserId===owner.uid && !this.$store.state.profil.userUid
+                            && this.$store.state.profil.accountGeneration===result.sessionGeneration));
+                this.deleteBusy=true;sheet.loadingBtn=true;
+                try{
+                    result=await this.removeAccount({expectedUserId:owner.uid,accountGeneration:owner.generation});
+                    if(!current() || result?.stale)return;
+                    if(result?.status!==0){this.deleteError=result?.message || "La suppression n'a pas pu être confirmée.";this.showDeleteError=true;return;}
+                    sheet.close();
+                    if(result.warnings?.length){
+                        this.deleteWarning=result.warnings.join(' ');this.showDeleteWarning=true;
+                        this.deleteTimer=setTimeout(()=>{if(current())this.$router.replace('/login');},5000);
+                    }else this.$router.replace('/login');
+                }catch(error){if(current()){this.deleteError=error.message || "La suppression n'a pas pu être confirmée.";this.showDeleteError=true;}}
+                finally{if(current()){this.deleteBusy=false;sheet.loadingBtn=false;}}
             }
+
         }
     };
 </script>

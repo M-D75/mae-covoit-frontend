@@ -120,7 +120,11 @@
    
 <!--  -->
 <template>
-    <div class="blc-pile" ref="blocPile">
+    <div v-if="error" role="alert" class="text-center pa-4">
+        <p>{{ error }}</p><v-btn :loading="load" :disabled="load" @click="getFastSearch">Réessayer</v-btn>
+    </div>
+    <p v-if="warning && !error" role="status" class="text-center">{{ warning }}</p>
+    <div v-show="!error" class="blc-pile" ref="blocPile">
         <TrajetMemberBtn v-if="fastSearch == false" @click="getFastSearch" :load="load" :empty="empty" class="tj main" style="z-index: 88; position: absolute; top:0%"/>
         <TrajetMember
             v-if="fastSearch == true"
@@ -185,11 +189,11 @@
             return { blocPile };
         },
         computed: {
-            ...mapState("search", ["trajets", "nbPassenger"]),
+            ...mapState("search", ["trajets", "nbPassenger", "error", "warning"]),
             trajetFiltered(){
                 const currentDate = new Date();
                 return this.trajets.filter(
-                    (trajet) => trajet.passenger_number + parseInt(this.nbPassenger) <= trajet.max_seats
+                    (trajet) => Number(trajet.reserved_seats ?? trajet.passenger_number ?? 0) + parseInt(this.nbPassenger) <= trajet.max_seats
                     && currentDate.getTime() < new Date(trajet.departure_time).getTime()
                     && this.isSameDay(currentDate, new Date(trajet.departure_time))
                 );
@@ -210,7 +214,7 @@
         },
         methods: {
             ...mapMutations("search", ["SET_TRAJET_SELECTED"]),
-            ...mapActions("search", ["getTrajets", "getTrajetsFake", "getTrajetsDate"]),
+            ...mapActions("search", ["getTrajets", "getTrajetsDate"]),
             reserve(index){
                 if( this.trajetFiltered.length > index ){
                     this.SET_TRAJET_SELECTED(this.trajetFiltered[index]);
@@ -218,12 +222,15 @@
                 }
             },
             async getFastSearch(){
+                if (this.load) return;
+                this.fastSearch = false;
                 this.empty = false;
                 this.info = {};
                 this.load = true;
 
                 //await this.getTrajets();
-                await this.getTrajetsDate({date: new Date()});
+                const result = await this.getTrajetsDate({date: new Date()});
+                if (result?.status !== 0) { this.load = false; return; }
                 // await this.getTrajetsFake();
                 
                 setTimeout(function(){

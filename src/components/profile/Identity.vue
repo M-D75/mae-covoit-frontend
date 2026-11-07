@@ -107,6 +107,8 @@
                     title="Identitée"
                     :subtitle="identity ? 'Identitée vérifiée' : 'Identitée non vérifiée'"
                     prepend-icon="mdi-card-account-details-outline"
+                    :loading="identityBusy"
+                    :disabled="identityBusy"
                     @click="checkIdentity()"
                 >
                     <template v-slot:append>
@@ -223,6 +225,7 @@
         },
         data() {
             return {
+                identityBusy: false,
                 clientSecret: "",
                 id: "",
                 showSnackbar: {
@@ -256,36 +259,53 @@
                     return;
                 }
 
+                await this.openIdentitySession(verificationSession);
+            },
+            async openIdentitySession(verificationSession){
+                if(!verificationSession?.id || !verificationSession?.client_secret){
+                    throw new Error('Session de vérification indisponible.');
+                }
                 this.clientSecret = verificationSession.client_secret;
                 this.id = verificationSession.id;
-                
-                const stripePK = await stripePromise;
-                stripePK.verifyIdentity(this.clientSecret).then(() => {
-                    console.log("recheck...");
-                    this.recheck(this.id)
-                });
+                if(!stripePromise){
+                    const { loadStripe } = await import('@stripe/stripe-js');
+                    stripePromise = loadStripe(process.env.VUE_APP_API_STRIPE_PK);
+                }
+                let stripePK;
+                try{
+                    stripePK = await stripePromise;
+                    if(!stripePK) throw new Error('Service de vérification indisponible.');
+                }catch(error){
+                    stripePromise = undefined;
+                    throw error;
+                }
+                const result = await stripePK.verifyIdentity(verificationSession.client_secret);
+                if(result?.error){
+                    this.showSnackbarMessage(2, result.error.message || 'La vérification n’a pas pu aboutir. Réessayez.');
+                    return;
+                }
+                await this.recheck(verificationSession.id);
             },
             async checkIdentity(){
-                if( ! this.identity ){
-                    if( this.stripe_provider && this.stripe_provider.metadata.vs_id ){
-                        await this.retrieveIdentity();
-                        return;
-                    }
-                    console.log("new verification identity...");
-                    const { data: verificationSession } = await serverRequest('post', '/connect/identity-session', {
-                        mode: this.$store.state.profil.modeCo,
-                    });
-
-                    this.clientSecret = verificationSession.client_secret;
-                    this.id = verificationSession.id;
-                    const stripePK = await stripePromise;
-                    stripePK.verifyIdentity(this.clientSecret).then(() => {
-                        console.log("recheck...");
-                        this.recheck(this.id)
-                    });
+                if(this.identityBusy) return;
+                if(this.identity){
+                    this.showSnackbarMessage(3, 'Identité déjà validée !');
+                    return;
                 }
-                else{
-                    this.showSnackbarMessage(3, "Identité déjà validée !")
+                this.identityBusy = true;
+                try{
+                    if(this.stripe_provider?.metadata?.vs_id){
+                        await this.retrieveIdentity();
+                    }else{
+                        const {data} = await serverRequest('post', '/connect/identity-session', {
+                            mode: this.$store.state.profil.modeCo,
+                        });
+                        await this.openIdentitySession(data);
+                    }
+                }catch{
+                    this.showSnackbarMessage(2, 'Impossible de terminer la vérification d’identité. Vérifiez la connexion puis réessayez.');
+                }finally{
+                    this.identityBusy = false;
                 }
             },
             async recheck(id){
@@ -360,12 +380,7 @@
         },
         async mounted(){
             await this.getProvider();
-            console.log("payouts_enabled", this.payouts_enabled);
-            //dynamic
-            if (!stripePromise) {
-                const { loadStripe } = await import('@stripe/stripe-js');
-                stripePromise = loadStripe(process.env.VUE_APP_API_STRIPE_PK);
-            }
+
         }
     });
 </script>

@@ -61,7 +61,8 @@
 
       class="mx-auto select-credit-card"
     >
-        <v-list lines="two">
+        <p v-if="paymentSessionExpired" role="alert">Votre session a changé. Fermez puis rouvrez ce panneau.</p>
+        <v-list v-else lines="two">
             <v-list-subheader inset>Cartes de credit</v-list-subheader>
     
             <v-list-item
@@ -85,6 +86,7 @@
                         color="red"
                         icon="mdi-delete-forever"
                         variant="text"
+                        :disabled="load || paymentSessionExpired"
                         @click="deleteSource(card.id, index)"
                     ></v-btn>
 
@@ -92,6 +94,7 @@
                         :color="card.select ? 'green' : 'grey-lighten-1'"
                         :icon="defaultSource == card.id ? 'mdi-radiobox-marked' : 'mdi-radiobox-blank'"
                         variant="text"
+                        :disabled="load || paymentSessionExpired"
                         @click="select(index)"
                     ></v-btn>
                 </template>
@@ -102,6 +105,7 @@
             <v-btn
                 :color="'blue'"
                 icon
+                :disabled="load || paymentSessionExpired"
                 @click="addOrSelect()"
             >
                 <v-progress-circular v-if="load" indeterminate color="white"></v-progress-circular>
@@ -115,16 +119,23 @@
 <script>
     import { defineComponent } from 'vue';
     import { mapState, mapMutations } from 'vuex';
+    import { paymentSession } from '@/services/paymentSession.js';
     import { serverRequest } from '@/utils/serverApi.js';
 
     export default defineComponent({
         emits: ["no-card-founded", "need-to-add-new-card", "card-selected", "mount", "checkout-error"],
         computed: {
+            paymentSessionExpired(){
+                const profile = this.$store.state.profil;
+                return this.paymentDisposed || Boolean(this.paymentOwner && (this.paymentOwner.uid !== profile.userUid || this.paymentOwner.generation !== profile.accountGeneration));
+            },
             ...mapState("profil", ["darkMode"]),
             ...mapState("auth", ["customer_id", "customer"]),
         },
         data: () => ({
             load: false,
+            paymentOwner: null,
+            paymentDisposed: false,
             cards: [
                 // {
                 //     id: 1,
@@ -146,13 +157,17 @@
             defaultSource: "",
             cardSelected: null,
         }),
+        beforeUnmount(){ this.paymentDisposed = true; },
         async mounted(){
+            const session = paymentSession(this);
+            if(!session.current()) return;
             this.$emit("mount");
             this.load = true;
             try {
                 const { data } = await serverRequest('get', '/payments/methods', {
-                    mode: this.$store.state.profil.modeCo,
+                    ...session.options,
                 });
+                if(!session.current()) return;
                 const customer = data.customer;
                 const cards = data.data || [];
                 if(cards.length === 0){
@@ -180,63 +195,68 @@
                     this.cards.push(infos);
                 }
             } catch (error) {
+                if(!session.current()) return;
                 console.error("Unable to retrieve payment methods:", error);
                 this.$emit(
                     "checkout-error",
                     error.response?.data?.message || "Impossible de récupérer vos moyens de paiement."
                 );
             } finally {
-                this.load = false;
+                if(session.current()) this.load = false;
             }
         },
         methods: {
             ...mapMutations("profil", ["SET_CREDIT_CARD"]),
             select(index){
-                const card = this.cards.find((card) => card.select == true);
-                
-                if(card && card.last4 != this.cards[index].last4)
-                    card.select = false;
-
-                if( ! card || card.last4 != this.cards[index].last4 ){
-                    this.cards[index].select = true;
-                    // console.log("obj-card", card);
-                    this.cardSelected = this.cards[index];
-                    this.load = true;
-                    this.$emit("card-selected");
-                }
+                if(this.load || !paymentSession(this).current()) return;
+                const target = this.cards[index];
+                if(!target || target.id === this.defaultSource || target.select) return;
+                this.cardSelected = target;
+                this.load = true;
+                this.$emit('card-selected');
+            },
+            confirmSelection(id){
+                this.cards.forEach(card => { card.select = card.id === id; });
+                this.defaultSource = id;
             },
             getLastNumber(number) {
                 const chaine = number.toString();
                 return chaine.length > 2 ? chaine.slice(-2) : chaine;
             },
             addOrSelect(){
+                if(this.load || !paymentSession(this).current()) return;
                 this.cardSelected = null;
                 this.$emit("need-to-add-new-card");
             },
             async deleteSource(id, index){
+                const session = paymentSession(this);
+                if(this.load || !session.current()) return;
                 console.log("id:", id, this.customer_id, this.cards[index]);
                 this.load = true;
                 try {
                     const { data: customerSource } = await serverRequest(
                         'delete',
                         `/payments/methods/${id}`,
-                        { mode: this.$store.state.profil.modeCo }
+                        { ...session.options }
                     );
 
+                    if(!session.current()) return;
+                    if(customerSource?.id !== id || customerSource.deleted !== true) throw new Error("Suppression non confirmée.");
                     this.cards = this.cards.slice().filter((card) => card.id != customerSource.id);
                     console.log("customerSource", customerSource, this.cards);
 
                     if( customerSource && customerSource.id == id){
-                        this.$router.go("/profil")
+                        this.$router.replace("/profil")
                     }
                 } catch (error) {
+                if(!session.current()) return;
                     console.error("Unable to delete payment method:", error);
                     this.$emit(
                         "checkout-error",
                         error.response?.data?.message || "Impossible de supprimer cette carte."
                     );
                 } finally {
-                    this.load = false;
+                    if(session.current()) this.load = false;
                 }
             },
         },

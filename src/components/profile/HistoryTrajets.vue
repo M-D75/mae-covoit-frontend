@@ -60,14 +60,19 @@
 <template>
     <div class="history-trajets">
 
+        <v-alert v-if="error" type="error" variant="tonal" role="alert" class="mx-4 mb-3">
+            {{ error }}
+            <div v-if="infos.length" class="text-body-2">Les derniers trajets chargés restent affichés.</div>
+            <v-btn variant="text" :loading="loading" @click="$emit('retry')">Réessayer</v-btn>
+        </v-alert>
+        <v-progress-linear v-if="loading && infos.length" indeterminate color="blue" aria-label="Chargement des trajets" />
         <div 
-            v-if="infos.length==0"
+            v-if="!error && infos.length==0"
             class="contain-history-empty"
         >
             <div
-                v-if="!profil.loadGetTripPublish"
+                v-if="!loading"
                 class="nothing label-filter text-caption mx-auto"
-                @click="overlayLoad=true"
             >
                 <div class="contenu">
                     <v-icon icon="mdi-alert-circle-outline"></v-icon>
@@ -83,7 +88,7 @@
 
             <!-- loading -->
             <div 
-                v-if="profil.loadGetTripPublish"
+                v-if="loading"
                 class="load-cont align-center justify-center"
                 >
 
@@ -96,7 +101,7 @@
         </div>
 
         <div 
-            v-else
+            v-if="infos.length > 0"
             class="contain-history"
         >
             <div 
@@ -121,7 +126,6 @@
 <!--  -->
 <script>
     import { defineComponent } from 'vue';
-    import { mapState } from 'vuex';
 
     // Components
     import GroupCardsHistory from './GroupCardsHistory.vue';
@@ -129,75 +133,20 @@
 
     export default defineComponent({
         name: 'history-trajets-comp',
-        emits: ["open-contacts", "open-member"],
-        computed: {
-            ...mapState("profil", ["profil"])
-        },
+        emits: ["open-contacts", "open-member", "booking-removed", "retry"],
         components: {
             GroupCardsHistory,
         },
         props: {
+            loading: Boolean,
+            error: {type: String, default: ''},
             mode: {
                 type: String,
                 default: "planning",
             },
             infos: {
                 type: Array,
-                default() {
-                    return [
-                        {
-                            date: "Aujourd'hui",
-                            infos: [
-                                {
-                                    depart: "Tsingoni",
-                                    destination: "Mamoudzou",
-                                    hour_start: "4:50",
-                                    hour_end: "6:55",
-                                    price: 4,
-                                    name: "Ledou",
-                                    passenger_number: 2
-                                },
-                                {
-                                    depart: "Tsingoni",
-                                    destination: "Mamoudzou",
-                                    hour_start: "5:50",
-                                    hour_end: "6:55",
-                                    price: 2,
-                                    name: "Mamadou",
-                                    passenger_number: 2
-                                },
-                            ],
-                        },
-                        {
-                            date: "Demain",
-                            infos: [
-                                {
-                                    depart: "Tsingoni",
-                                    destination: "Mamoudzou",
-                                    hour_start: "4:50",
-                                    hour_end: "6:55",
-                                    price: 4,
-                                    name: "Ledou",
-                                    passenger_number: 2
-                                },
-                            ],
-                        },
-                        {
-                            date: "Après Demain",
-                            infos: [
-                                {
-                                    depart: "Tsingoni",
-                                    destination: "Mamoudzou",
-                                    hour_start: "5:50",
-                                    hour_end: "6:55",
-                                    price: 2,
-                                    name: "Mamadou",
-                                    passenger_number: 2
-                                },
-                            ],
-                        },
-                    ];
-                },
+                default: () => [],
             },
         },
     });

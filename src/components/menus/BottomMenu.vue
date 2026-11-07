@@ -943,6 +943,8 @@
                         type="submit"
                         block
                         @click="changePassword()"
+                        :loading="passwordBusy"
+                        :disabled="passwordBusy"
                     >Continuer</v-btn>
                 </v-form>
             </div>
@@ -961,7 +963,7 @@
             <SelectModelVehicul
                 v-if="mode=='select-model-vehicul'"
                 v-on:switch-identity-car="reOpenB()"
-                v-on:car-valided="close()"
+                v-on:car-valided="close(); $emit('car-valided')"
             />
 
             <!-- Confime choice -->
@@ -1070,8 +1072,11 @@ import VillageRouteDetails from '@/components/maps/VillageRouteDetails.vue';
     import { defineComponent } from 'vue';
     import $ from 'jquery';
     import supabase from '@/utils/supabaseClient';
-    import { getISOWeekNumber, arrondirSpecial } from '@/utils/utils.js';
+    import { arrondirSpecial } from '@/utils/utils.js';
+    import { upcomingRecurringWeeks } from '@/services/recurringWeeks.js';
     import { mapState, mapActions, mapMutations } from 'vuex';
+    import { runAuthSession } from '@/services/authSessionGuard.js';
+    import { paymentSession } from '@/services/paymentSession.js';
     import { serverRequest } from '@/utils/serverApi.js';
     import { createRequestId } from '@/utils/requestId.js';
 
@@ -1099,7 +1104,7 @@ import VillageRouteDetails from '@/components/maps/VillageRouteDetails.vue';
     export default defineComponent({
         name: 'bottom-menu',
         mixins: [sheetLayout],
-        emits: ["route-details-height","retry-route-details",
+        emits: ["car-valided", "route-details-height","retry-route-details",
             "close", "time-valided", "time-changed", 
             "day-valided", "day-not-selected",
             "opened", "close", "select-price", "drop-money", 
@@ -1234,6 +1239,8 @@ import VillageRouteDetails from '@/components/maps/VillageRouteDetails.vue';
             return {
                 loading: false,
                 loadingBtn: false,
+                moneyDisposed:false, moneyEpoch:0,
+                passwordBusy:false,passwordTimer:null,passwordEpoch:0,
                 numericValues: ['', '', '', '', '', '', ''],
                 notif: false,
                 color: '#9fcb66',
@@ -1296,16 +1303,12 @@ import VillageRouteDetails from '@/components/maps/VillageRouteDetails.vue';
                 isIOS: false,
             }
         },
+        beforeUnmount(){this.moneyDisposed=true;this.moneyEpoch++;this.passwordEpoch++;clearTimeout(this.passwordTimer);},
         mounted() {
             this.isIOS = isIOS;
             // init en fonction d mode
             if (this.mode == 'select-week') {
-                    let numWeekCurrent = getISOWeekNumber(new Date())
-                    for (let index = 0; index < 4; index++) {
-                        // console.log("numWeekCurrent", numWeekCurrent);
-                        this.weeksSelected[index].week = `S${numWeekCurrent}`;
-                        numWeekCurrent = (numWeekCurrent + 1) % 52 == 0 ? 52 : (numWeekCurrent + 1) % 52;
-                    }
+                    this.weeksSelected=upcomingRecurringWeeks();
             }
             else if (this.mode == 'select-price'){
                     //init price recomended
@@ -1394,6 +1397,7 @@ import VillageRouteDetails from '@/components/maps/VillageRouteDetails.vue';
                 }
             },
             setNumberSelected(value){
+                this.moneyEpoch++;this.loadingBtn=false;
                 this.numberSelected = value;
                 this.topupAttemptId = null;
                 this.walletTransferAttemptId = null;
@@ -1402,115 +1406,65 @@ import VillageRouteDetails from '@/components/maps/VillageRouteDetails.vue';
                 }
             },
             resetMoneyAttempt(){
+                this.moneyEpoch++;this.loadingBtn=false;
                 this.topupAttemptId = null;
                 this.walletTransferAttemptId = null;
             },
             async recharger(){
-                console.log("number-up", this.$refs.SelectNumberRef.number);
-                this.topupAttemptId = this.topupAttemptId || createRequestId();
-                this.loadingBtn = true;
-                // TODO : get value
-                if(!this.modeDriver){
-                    // check-source
-                    let customer;
-                    try {
-                        const response = await serverRequest('get', '/payments/customer', {
-                            mode: this.modeCo,
-                        });
-                        customer = response.data;
-                    } catch (error) {
-                        console.error("Unable to initialize payment customer:", error);
-                        this.messageSnackbarError = error.response?.data?.message || "Le profil de paiement est indisponible.";
-                        this.showSnackbarError = true;
-                        this.loadingBtn = false;
-                        this.overlayLoad = false;
+                if(this.loadingBtn || this.moneyDisposed)return;
+                const profile=this.$store.state.profil, owner=profile.userUid, generation=profile.accountGeneration;
+                if(!owner)return;
+                const amount=Number(this.$refs.SelectNumberRef?.number), driver=this.modeDriver;
+                const epoch=++this.moneyEpoch, opened=this.open_b;
+                const current=()=>!this.moneyDisposed && this.moneyEpoch===epoch && this.open_b===opened
+                    && this.$store.state.profil.userUid===owner && this.$store.state.profil.accountGeneration===generation;
+                const options={mode:this.modeCo,expectedUserId:owner};
+                const identity={expectedUserId:owner,accountGeneration:generation};
+                this.loadingBtn=true;
+                try {
+                    if(driver){
+                        this.walletTransferAttemptId=this.walletTransferAttemptId || createRequestId();
+                        const result=await this.transfertGain({credit:amount,requestId:this.walletTransferAttemptId,...identity});
+                        if(!current() || result.stale)return;
+                        if(result.status===0){
+                            this.walletTransferAttemptId=null;
+                            this.messageSnackbarSuccess=result.message;this.showSnackbarSuccess=true;this.$emit('up-money');
+                        }else{this.messageSnackbarError=result.message;this.showSnackbarError=true;}
                         return;
                     }
-                    if( !(customer.metadata.source_selected 
-                            && (customer.metadata.source_selected == customer.default_source 
-                                || customer.metadata.source_selected == customer.invoice_settings.default_payment_method
-                                )
-                        ) || !customer.metadata.source_selected
-                    ){
-                        console.log("no-source-founded -> payment with card");
-                        
-                        try {
-                            const { data: paymentIntent } = await serverRequest('post', '/payments/topup-intent', {
-                                mode: this.modeCo,
-                                data: {
-                                    amount: Math.round(this.$refs.SelectNumberRef.number * 100),
-                                    confirmWithSavedMethod: false,
-                                    attemptId: this.topupAttemptId,
-                                },
-                            });
-                            this.paymentIntentId = paymentIntent.id;
-                            if(this.paymentIntentId == null)
-                                this.paymentIntentId = paymentIntent.id;
-
-                            this.$emit("payment-intent-recharge");
-                        } 
-                        catch (error) {
-                            this.loadingBtn = false;
-                            console.error("Erreur lors de la création de l'intention de paiement:", error);
-                            this.messageSnackbarError = error.response?.data?.message || "Le paiement n'a pas pu être préparé.";
-                            this.showSnackbarError = true;
-                            return;
-                        }
-                        this.loadingBtn = false;
-                        
-                        this.overlayLoad = false;
+                    this.topupAttemptId=this.topupAttemptId || createRequestId();
+                    const attemptId=this.topupAttemptId;
+                    const {data:customer}=await serverRequest('get','/payments/customer',options);
+                    if(!current())return;
+                    const selected=customer?.metadata?.source_selected;
+                    const saved=selected && (selected===customer.default_source || selected===customer.invoice_settings?.default_payment_method);
+                    if(!saved){
+                        const {data:paymentIntent}=await serverRequest('post','/payments/topup-intent',{
+                            ...options,data:{amount:Math.round(amount*100),confirmWithSavedMethod:false,attemptId},
+                        });
+                        if(!current())return;
+                        if(!paymentIntent?.id)throw new Error("Le paiement n'a pas pu être préparé.");
+                        this.paymentIntentId=paymentIntent.id;this.$emit('payment-intent-recharge');
                         return;
                     }
-                    else{
-                        const result = await this.addCredit({
-                            credit: this.$refs.SelectNumberRef.number,
-                            attemptId: this.topupAttemptId,
-                        });
-                        if(result.status == 0){
-                            this.topupAttemptId = null;
-                            this.messageSnackbarSuccess = result.message;
-                            this.showSnackbarSuccess = true;
-                            this.close();
-                        }
-                        else if(result.status == 3 && result.paymentIntentId){
-                            this.paymentIntentId = result.paymentIntentId;
-                            this.$emit("payment-intent-recharge");
-                        }
-                        else if(result.status == 1 && result.pending){
-                            // A processing PaymentIntent is neither failed nor
-                            // credited yet. A later reconciliation applies it.
-                            this.topupAttemptId = null;
-                            this.messageSnackbarInfo = result.message;
-                            this.showSnackbarInfo = true;
-                            this.close();
-                        }
-                        else{
-                            if( !result.retriable ){
-                                this.topupAttemptId = null;
-                            }
-                            this.messageSnackbarError = result.message;
-                            this.showSnackbarError = true;
-                        }
+                    const result=await this.addCredit({credit:amount,attemptId,...identity});
+                    if(!current() || result.stale)return;
+                    if(result.status===0){
+                        this.topupAttemptId=null;this.messageSnackbarSuccess=result.message;this.showSnackbarSuccess=true;this.close();
+                    }else if(result.status===3 && result.paymentIntentId){
+                        this.paymentIntentId=result.paymentIntentId;this.$emit('payment-intent-recharge');
+                    }else if(result.status===1 && result.pending){
+                        this.topupAttemptId=null;this.messageSnackbarInfo=result.message;this.showSnackbarInfo=true;this.close();
+                    }else{
+                        if(!result.retriable)this.topupAttemptId=null;
+                        this.messageSnackbarError=result.message;this.showSnackbarError=true;
                     }
-                    this.loadingBtn = false;
-                }
-                else{
-                    this.walletTransferAttemptId = this.walletTransferAttemptId || createRequestId();
-                    const result = await this.transfertGain({
-                        credit: this.$refs.SelectNumberRef.number,
-                        requestId: this.walletTransferAttemptId,
-                    });
-                    if(result.status == 0){
-                        this.walletTransferAttemptId = null;
-                        this.messageSnackbarSuccess = result.message;
-                        this.showSnackbarSuccess = true;
-                        this.$emit("up-money");
-                    }
-                    else{
-                        this.messageSnackbarError = result.message;
-                        this.showSnackbarError = true;
-                    }
-                    this.loadingBtn = false;
+                }catch(error){
+                    if(!current())return;
+                    this.messageSnackbarError=error.response?.data?.message || error.message || "Le rechargement n'a pas pu être effectué.";
+                    this.showSnackbarError=true;
+                }finally{
+                    if(current()){this.loadingBtn=false;this.overlayLoad=false;}
                 }
             },
             emit(value){
@@ -1529,22 +1483,32 @@ import VillageRouteDetails from '@/components/maps/VillageRouteDetails.vue';
                 this.$emit(value)
             },
             async changePassword(){
-                if( this.passwordChange.password.length >= 8 && this.passwordChange.password == this.passwordChange.passwordComfirmed ){
-                    let { error } = await supabase.auth.updateUser({ password: this.passwordChange.password });
-                    
-                    if( error ){
-                        this.messageSnackbarError = error.message == "New password should be different from the old password." ? "Le nouveau mot de passe doit être différent de l'ancien" : error.message;
-                        this.showSnackbarError = true;
-                        return;
-                    }
-                    
-                    this.messageSnackbarSuccess = "Changement de mot de passe effectuée. Vous allez être deconnecté";
-                    this.showSnackbarSuccess = true;
-                    
-                    setTimeout(async function(){
-                        await this.$store.dispatch("auth/logout");
-                    }.bind(this), 4000);
-                }
+                if(this.passwordBusy || this.moneyDisposed)return;
+                const profile=this.$store.state.profil, owner=profile.userUid, generation=profile.accountGeneration;
+                const password=this.passwordChange.password;
+                if(!owner || password.length<8 || password!==this.passwordChange.passwordComfirmed)return;
+                const epoch=++this.passwordEpoch, opened=this.open_b;
+                const current=()=>!this.moneyDisposed && this.passwordEpoch===epoch && this.open_b===opened
+                    && this.$store.state.profil.userUid===owner && this.$store.state.profil.accountGeneration===generation;
+                clearTimeout(this.passwordTimer);this.passwordBusy=true;
+                this.showSnackbarError=false;
+                try{
+                    const {error}=await runAuthSession(supabase,{userId:owner,isCurrent:current},'updateUser',{password});
+                    if(!current())return;
+                    if(error)throw error;
+                    this.passwordChange.password='';this.passwordChange.passwordComfirmed='';
+                    this.messageSnackbarSuccess='Votre mot de passe a été modifié. Vous allez être déconnecté.';this.showSnackbarSuccess=true;
+                    this.passwordTimer=setTimeout(async()=>{
+                        if(!current())return;
+                        const result=await this.$store.dispatch('auth/logout',{expectedUserId:owner,accountGeneration:generation});
+                        if(current() && result?.status===1){this.messageSnackbarError=result.message;this.showSnackbarError=true;}
+                    },4000);
+                }catch(error){
+                    if(!current() || error.code==='SESSION_CHANGED')return;
+                    this.messageSnackbarError=error.message==='New password should be different from the old password.'
+                        ? "Le nouveau mot de passe doit être différent de l'ancien." : (error.message || 'Le mot de passe n’a pas pu être modifié. Réessayez.');
+                    this.showSnackbarError=true;
+                }finally{if(current())this.passwordBusy=false;}
             },
             reserveNotif(){
                 this.reserve.message = this.$refs.ReservePlaceRef.message;
@@ -1568,23 +1532,27 @@ import VillageRouteDetails from '@/components/maps/VillageRouteDetails.vue';
                 this.notif = !this.notif;
             },
             async updateDefaultSourcePayment(){
-                const source = this.$refs.SelectCreditCardRef.cardSelected;
-                if(source != null && source.id != undefined){
-                    try {
-                        await serverRequest('put', '/payments/default-method', {
-                            mode: this.modeCo,
-                            data: { sourceId: source.id },
-                        });
-                        this.SET_CREDIT_CARD(source);
-                        this.$refs.SelectCreditCardRef.defaultSource = source.id;
-                    } catch (error) {
-                        this.messageSnackbarError = error.response?.data?.message || "La carte n'a pas pu être sélectionnée.";
-                        this.showSnackbarError = true;
-                    } finally {
-                        if (this.$refs.SelectCreditCardRef) {
-                            this.$refs.SelectCreditCardRef.load = false;
-                        }
-                    }
+                const child = this.$refs.SelectCreditCardRef;
+                const source = child?.cardSelected;
+                if(!source?.id) return;
+                const session = paymentSession(child);
+                const current = () => session.current() && this.$refs.SelectCreditCardRef === child;
+                if(!current()) return;
+                try {
+                    const {data} = await serverRequest('put', '/payments/default-method', {
+                        ...session.options, data: {sourceId: source.id},
+                    });
+                    if(!current()) return;
+                    const selected = data?.metadata?.source_selected || data?.invoice_settings?.default_payment_method || data?.default_source;
+                    if(selected !== source.id) throw new Error("La sélection n'a pas été confirmée.");
+                    this.SET_CREDIT_CARD(source);
+                    child.confirmSelection(source.id);
+                } catch (error) {
+                    if(!current()) return;
+                    this.messageSnackbarError = error.response?.data?.message || error.message || "La carte n'a pas pu être sélectionnée.";
+                    this.showSnackbarError = true;
+                } finally {
+                    if(current()) child.load = false;
                 }
             },
             async buildPaymentIntent(){
@@ -1627,6 +1595,9 @@ import VillageRouteDetails from '@/components/maps/VillageRouteDetails.vue';
             }
         },
         watch:{
+            open_b(){this.moneyEpoch++;this.loadingBtn=false;this.passwordEpoch++;this.passwordBusy=false;clearTimeout(this.passwordTimer);},
+            userUid(){this.passwordEpoch++;this.passwordBusy=false;clearTimeout(this.passwordTimer);this.passwordChange.password='';this.passwordChange.passwordComfirmed='';this.moneyEpoch++;this.loadingBtn=false;this.resetMoneyAttempt();this.paymentIntentId=null;},
+            '$store.state.profil.accountGeneration'(){this.passwordEpoch++;this.passwordBusy=false;clearTimeout(this.passwordTimer);this.moneyEpoch++;this.loadingBtn=false;this.resetMoneyAttempt();this.paymentIntentId=null;},
             timeInit(){
                 // console.log("timeInit-changed", this.timeInit);
                 this.timeCard = false;

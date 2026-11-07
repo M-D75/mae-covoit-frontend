@@ -103,6 +103,8 @@
         <BottomNav v-if="isMobileOrSmallScreen && bottomNav"/>
         </VersionGate>
         <ContextualHelp />
+        <ProfileLoadError />
+        <NotificationCenter />
     </v-app>
 </template>
 
@@ -138,13 +140,15 @@
 
     //Component
     import BottomNav from './components/menus/BottomNav.vue';
+    import ProfileLoadError from './components/ProfileLoadError.vue';
+    import NotificationCenter from './components/notifications/NotificationCenter.vue';
     import ContextualHelp from './components/ContextualHelp.vue';
     import VersionGate from './components/VersionGate.vue';
 
     export default {
         name: 'App',
         components: {
-            BottomNav,VersionGate,ContextualHelp,
+            BottomNav,VersionGate,ContextualHelp,ProfileLoadError,NotificationCenter,
         },
         computed: {
             ...mapState("profil", ["darkMode", "userUid", "notification", "profil"]),
@@ -477,6 +481,7 @@
                         await this.$router.replace(resolvePostAuthPath({
                             authenticated: this.$store.state.auth.logged_in,
                             hasAccount: this.$store.state.auth.account_created,
+                            profileError: this.$store.state.auth.profileLookupError,
                             requestedPath: parameters.get('redirect'),
                         }));
                     } catch (error) {

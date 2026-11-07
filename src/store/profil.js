@@ -6,6 +6,7 @@ import store from '../store';
 import supabase from '@/utils/supabaseClient.js';
 import { dateConverter, groupByDate, mapToObject } from '@/utils/utils.js';
 import router from '@/router';
+import { preferencesFromIndices, preferenceIndices } from '@/services/travelPreferences.js';
 
 import { fetchPassengerTrips, normalizePassengerTrips } from '@/services/travels.js';
 import { humanizeSupabaseError } from '@/utils/errorMessages.js';
@@ -39,7 +40,11 @@ function normalizeConnectProvider(provider = {}) {
     };
 }
 
-export default {
+let carRequest = 0;
+let notationRequest = 0;
+let passengerTripsRequest = 0;
+let driverTripsRequest = 0;
+const profilModule = {
     namespaced: true,
     state: {
         aboutPrefs: {
@@ -55,7 +60,7 @@ export default {
         modeDriver: false,
         darkMode: false,
         userId: null,
-        userUid: "",
+        userUid: "", accountGeneration: 0,
         userName: "",
         avatarUrl: 'https://avataaars.io/?avatarStyle=Circle&topType=ShortHairDreads01&accessoriesType=Blank&hairColor=PastelPink&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Wink&eyebrowType=DefaultNatural&mouthType=Serious&skinColor=Tanned',
         soldes: 0,
@@ -81,8 +86,8 @@ export default {
             satisfaction: 0,
             infos_perso: {
                 civilite: "Mr.",
-                nom: "Ledou",
-                prenom: "BG",
+                nom: "",
+                prenom: "",
                 email: "",
                 tel: "",
                 adress: {
@@ -91,47 +96,7 @@ export default {
                     code_postal: "",
                     commune: "",
                 },
-                preferences: [
-                    {
-                        about: "discution",
-                        prependIconColor: "var(--blue-color)",
-                        prependIcon:"mdi-forum",
-                        text:"j'aime bien discuter-",
-                        chip:false,
-                        chipIcon: null,
-                        switchBtn: false,
-                        chipText: "",
-                    },
-                    {
-                        about: "smoke",
-                        prependIconColor: "#ff5353",
-                        prependIcon:"mdi-smoking-off",
-                        text:"Pas de cigarette en voiture-",
-                        chip:false,
-                        chipIcon: null,
-                        chipText: "",
-
-                    },
-                    {
-                        about: "music",
-                        prependIconColor: "#9fcb66",
-                        prependIcon:"mdi-music",
-                        text:"Music tout au long !-",
-                        chip:false,
-                        chipIcon: null,
-                        chipText: "",
-
-                    },
-                    {
-                        about: "animal",
-                        prependIconColor: "#ff9c00",
-                        prependIcon:"mdi-paw",
-                        text:"J'aime bien les animaux-",
-                        chip:false,
-                        chipIcon: null,
-                        chipText: "",
-                    },
-                ],
+                preferences: preferencesFromIndices(),
             },
             myTravels: [],
             myPublish: [],
@@ -156,7 +121,19 @@ export default {
         SET_AVATAR_DRAFT(state,value){state.avatarDraft=value;},
         CLEAR_HISTORY(state){state.history.historycalBooking={};state.history.error=null;state.history.load=false;},
         SET_USER_UID(state, userUid) {
+            if (state.userUid !== userUid) {
+                const preferences = {darkMode: state.darkMode, modeDriver: state.modeDriver, notification: state.notification};
+                const generation = state.accountGeneration + 1;
+                Object.assign(state, JSON.parse(JSON.stringify(initialProfileState)), preferences, { accountGeneration: generation });
+            }
             state.userUid = userUid;
+        },
+        SET_PREFERENCES(state, indices) { state.profil.infos_perso.preferences = preferencesFromIndices(indices); },
+        SET_PROFILE_DETAILS(state, account) {
+            const infos = state.profil.infos_perso;
+            infos.civilite = account.salutation || '';
+            infos.tel = account.phone_number || '';
+            infos.adress.commune = account.village || '';
         },
         SET_INFOS(state, data){
             state.profil.infos_perso.civilite = data.civilite;
@@ -228,16 +205,19 @@ export default {
     },
     actions: {
         async getNotation({state}){
+            const owner = state.userUid, account = state.userId, generation = state.accountGeneration, request = ++notationRequest;
+            const current = () => owner === state.userUid && account === state.userId && generation === state.accountGeneration && request === notationRequest;
             try {
                 const [{ count, error }, summaryResponse] = await Promise.all([
                     supabase
                         .from('trip')
                         .select('id', { count: 'exact', head: true })
-                        .eq("driver_id", state.userUid),
-                    serverRequest('get', `/ratings/accounts/${state.userId}/summary`, {
-                        mode: state.modeCo,
+                        .eq("driver_id", owner),
+                    serverRequest('get', `/ratings/accounts/${account}/summary`, {
+                        mode: state.modeCo, expectedUserId: owner,
                     }),
                 ]);
+                if(!current()) return {status:2, stale:true};
                 if(error) throw error;
 
                 const summary = summaryResponse.data?.data;
@@ -250,6 +230,7 @@ export default {
                 state.profil.satisfaction = Number(summary.satisfaction || 0);
                 return {status: 0, message: "Nombre de trajets:"+state.profil.nbTrip}
             } catch (error) {
+                if(!current()) return {status:2, stale:true};
                 console.error("getNotation error:", error);
                 return {
                     status: 1,
@@ -258,98 +239,87 @@ export default {
             }
         },
         async addCar({state}, infos){
-
-            const sessionChecked = await store.dispatch("auth/checkSessionOnly");
-            if( ! sessionChecked ){
-                router.replace("/login");
-                return;
-            }
-
-            const { data, error } = await supabase
-                .from('car')
-                .insert([
-                    { driver_id: state.userUid, model: infos.model, license_plate: infos.licence_plate, brand: infos.brand, color: infos.color, seats: infos.seats }
-                ])
-                .select()
-
-            if(error){
-                console.log("Error add car:", error);
-                return {status: 1, message: "Une erreur s'est produite, veuillez réessayer plus tard !"};
-            }
-        
-            console.log("data-add-car:", data);
-            return {status: 0, message: "Votre véhicule à bien été ajouté."};
+            const owner = state.userUid, generation = state.accountGeneration;
+            const current = () => owner === state.userUid && generation === state.accountGeneration;
+            try {
+                if (!await store.dispatch('auth/checkSessionOnly')) return {status: 1, message: 'Votre session a expiré. Veuillez vous reconnecter.'};
+                if (!current()) return {status: 2, stale: true};
+                const { data, error } = await supabase.from('car').insert([{
+                    driver_id: owner, model: infos.model, license_plate: infos.licence_plate,
+                    brand: infos.brand, color: infos.color, seats: infos.seats,
+                }]).select();
+                if (!current()) return {status: 2, stale: true};
+                if (error || !data?.length) throw new Error();
+                state.cars = [...(state.cars || []), ...data];
+                return {status: 0, message: 'Votre véhicule a bien été ajouté.'};
+            } catch { return {status: 1, message: 'Impossible d’ajouter le véhicule. Veuillez réessayer.'}; }
         },
         async getCars({state}){
-            const sessionChecked = await store.dispatch("auth/checkSessionOnly");
-            if( ! sessionChecked ){
-                router.replace("/login");
-                return;
-            }
-
-            
-            let { data: cars, error } = await supabase
-                .from('car')
-                .select("*")
-                .eq('driver_id', state.userUid);
-                    
-
-            if(error){
-                console.log("Error add car:", error);
-                return {status: 1, message: "Une erreur s'est produite, veuillez réessayer plus tard !"};
-            }
-        
-            state.cars = cars;
-            console.log("data-get-car:", cars);
-            return {status: 0, message: "Votre véhicule à bien été ajouté."};
-
+            const owner = state.userUid, generation = state.accountGeneration, request = ++carRequest;
+            const current = () => owner === state.userUid && generation === state.accountGeneration && request === carRequest;
+            try {
+                if (!await store.dispatch('auth/checkSessionOnly')) return {status: 1, message: 'Votre session a expiré. Veuillez vous reconnecter.'};
+                if (!current()) return {status: 2, stale: true};
+                const { data, error } = await supabase.from('car').select('*').eq('driver_id', owner);
+                if (!current()) return {status: 2, stale: true};
+                if (error) throw error;
+                state.cars = data || [];
+                return {status: 0};
+            } catch { return {status: 1, message: 'Impossible de charger vos véhicules. Veuillez réessayer.'}; }
         },
-        async updateAutoValidation({ state }){
-            const { data, error } = await supabase
-                .from('settings')
-                .update({ auto_accept_trip: state.auto_accept_trip })
-                .eq('account_id', state.userId)
-                .select();
-
-            if(error){
-                console.error("Error", error)
-                state.auto_accept_trip = !state.auto_accept_trip;
-                return {status: 1, message: "Une erreur s'est produite, veuillez réessayer plus tard !"};
-            }
-
-            if( data ){
-                // console.log("data auto_accept_trip : ", data);
+        async updateAutoValidation({ state }, value){
+            const owner = state.userUid, generation = state.accountGeneration;
+            const previous = state.auto_accept_trip;
+            const selected = typeof value === 'boolean' ? value : previous;
+            try {
+                const { data, error } = await supabase.from('settings').update({auto_accept_trip: selected})
+                    .eq('account_id', state.userId).select();
+                if (owner !== state.userUid || generation !== state.accountGeneration) return {status: 2, stale: true};
+                if (error || !data?.length || typeof data[0].auto_accept_trip !== 'boolean') throw new Error();
                 state.auto_accept_trip = data[0].auto_accept_trip;
+                return {status: 0};
+            } catch {
+                if (owner === state.userUid && generation === state.accountGeneration) state.auto_accept_trip = previous;
+                return {status: 1, message: 'La validation automatique n’a pas été enregistrée. Réessayez.'};
             }
-
-            console.log("autovalidation", state.auto_accept_trip ? "activated" : "desactivated");
-            return {status: 0, message: ""};
         },
         async updateAvatar({state,commit},image){
             const owner=state.userUid;const saved=await saveProfilePhoto(supabase,owner,image);
             if(state.userUid!==owner)throw new Error('Votre session a changé.');
             commit('SET_AVATAR_URL',saved);commit('SET_AVATAR_DRAFT',null);return saved;
         },
-        async updatePreference({state}){
-            
-            const { data, error } = await supabase
-                .from('settings')
-                .update({ prefer: state.profil.infos_perso.preferences.map( (pref) => pref.index ) })
-                .eq('account_id', state.userId)
-                .select()
-
-            if( error ){
-                console.error("Error update setting : ", error)
-            }
-
-            console.log("setting-update", data);
-
+        async updatePreference({state, commit}, choice){
+            const owner = state.userUid, generation = state.accountGeneration;
+            const preferences = state.profil.infos_perso.preferences.map(pref => pref.about === choice?.about ? choice : pref);
+            const selected = preferenceIndices(preferences);
+            try {
+                const { data, error } = await supabase.from('settings').update({prefer: selected}).eq('account_id', state.userId).select();
+                if (owner !== state.userUid || generation !== state.accountGeneration) return {status: 2, stale: true};
+                if (error || !data?.length || !Array.isArray(data[0].prefer)) throw new Error();
+                commit('SET_PREFERENCES', data[0].prefer);
+                return {status: 0};
+            } catch { return {status: 1, message: 'Vos préférences n’ont pas été enregistrées. Veuillez réessayer.'}; }
+        },
+        async savePersonalDetails({state, commit}, values){
+            const owner = state.userUid, generation = state.accountGeneration;
+            try {
+                const { data } = await serverRequest('patch', '/account/profile', {mode: state.modeCo, data: {
+                    civilite: values.civilite, tel: values.tel, commune: values.commune,
+                }});
+                if (owner !== state.userUid || generation !== state.accountGeneration) return {status: 2, stale: true};
+                if (data?.status !== 'ok' || data.account?.user_id !== owner) throw new Error();
+                commit('SET_PROFILE_DETAILS', data.account);
+                return {status: 0, message: 'Vos informations ont été enregistrées.'};
+            } catch(error) { return {status: 1, message: error.response?.data?.message || 'Vos informations n’ont pas été enregistrées. Veuillez réessayer.'}; }
         },
         async registerVehicul(){
             
         },
         async getSoldes({state}){
+            const owner = state.userUid, generation = state.accountGeneration;
+            const current = () => state.userUid === owner && state.accountGeneration === generation;
             const sessionChecked = await store.dispatch("auth/checkSessionOnly");
+            if (!current()) return {status: 2, stale: true};
             if( ! sessionChecked ){
                 router.replace("/login");
                 return {status: 1, message: "Votre session a expiré."};
@@ -375,6 +345,7 @@ export default {
                 );
             }
 
+            if (!current()) return {status: 2, stale: true};
             // Webhooks remain the production source of truth, but this
             // authenticated reconciliation also completes synchronous local
             // tests after a lost response or a temporarily closed app.
@@ -389,12 +360,14 @@ export default {
                 );
             }
 
+            if (!current()) return {status: 2, stale: true};
             let { data: account, error: errorAccount } = await supabase
                 .from('account')
                 .select("id, credit, gain")
-                .eq('user_id', state.userUid)
+                .eq('user_id', owner)
                 .single();
 
+            if (!current()) return {status: 2, stale: true};
             // Compatibilité temporaire avec une base antérieure à la migration
             // 015. La réservation atomique exige toujours les migrations serveur,
             // mais l'affichage du solde historique ne doit pas échouer pour autant.
@@ -405,8 +378,9 @@ export default {
                 const legacyAccount = await supabase
                     .from('account')
                     .select("id, credit")
-                    .eq('user_id', state.userUid)
+                    .eq('user_id', owner)
                     .single();
+                if (!current()) return {status: 2, stale: true};
                 account = legacyAccount.data ? { ...legacyAccount.data, gain: 0 } : null;
                 errorAccount = legacyAccount.error;
                 reconciliationWarnings.push(
@@ -426,12 +400,14 @@ export default {
                 const { data: connectBalance } = await serverRequest('get', '/connect/balance', {
                     mode: state.modeCo,
                 });
+                if (!current()) return {status: 2, stale: true};
                 state.gain.transit = connectBalance.total / 100;
                 state.gain.pending = (connectBalance.pendingEarnings / 100).toFixed(2);
                 state.connect_account_available = true;
                 state.payouts_enabled = Boolean(connectBalance.payoutsEnabled);
                 state.connect_activation_required = Boolean(connectBalance.activationRequired);
             } catch (error) {
+                if (!current()) return {status: 2, stale: true};
                 console.error("Unable to retrieve Connect balance:", error);
                 state.gain.transit = 0;
                 state.gain.pending = 0;
@@ -448,6 +424,7 @@ export default {
                 .eq('passenger_account_id', account.id)
                 .eq('status', 'requires_capture');
 
+            if (!current()) return {status: 2, stale: true};
             if(pendingError){
                 console.error("pending debit error:", pendingError);
             }
@@ -467,6 +444,7 @@ export default {
                 .eq('passenger_account_id', account.id)
                 .eq('payment_status', 'wallet_reserved');
 
+            if (!current()) return {status: 2, stale: true};
             if(walletError){
                 console.error("wallet reserved error:", walletError);
             }
@@ -485,7 +463,13 @@ export default {
             };
         },
         async addCredit({state}, infosLoad){
+            const owner=state.userUid, generation=state.accountGeneration;
+            const current=()=>state.userUid===owner && state.accountGeneration===generation;
+            if(!owner)return {status:2,stale:true};
+            const credit=Number(infosLoad.credit), attemptId=infosLoad.attemptId || createRequestId();
+            if(infosLoad.expectedUserId && (infosLoad.expectedUserId!==owner || infosLoad.accountGeneration!==generation))return {status:2,stale:true};
             const sessionChecked = await store.dispatch("auth/checkSessionOnly");
+            if(!current())return {status:2,stale:true};
             if( ! sessionChecked ){
                 router.replace("/login");
                 return {status: 1, message: "Votre session a expiré."};
@@ -499,16 +483,16 @@ export default {
             }
 
             try {
-                const attemptId = infosLoad.attemptId || createRequestId();
                 const { data: paymentIntent } = await serverRequest('post', '/payments/topup-intent', {
-                    mode: state.modeCo,
+                    mode: state.modeCo, expectedUserId: owner,
                     data: {
-                        amount: Math.round(Number(infosLoad.credit) * 100),
+                        amount: Math.round(credit * 100),
                         confirmWithSavedMethod: true,
                         attemptId,
                     },
                 });
 
+                if(!current())return {status:2,stale:true};
                 if (paymentIntent.status === 'requires_action') {
                     return {
                         status: 3,
@@ -530,8 +514,9 @@ export default {
                 const { data: account, error } = await supabase
                     .from('account')
                     .select('credit')
-                    .eq('user_id', state.userUid)
+                    .eq('user_id', owner)
                     .single();
+                if(!current())return {status:2,stale:true};
                 if (error) {
                     throw error;
                 }
@@ -539,6 +524,7 @@ export default {
                 state.soldes = account.credit;
                 return {status: 0, message: "Votre compte a bien été crédité !"};
             } catch (error) {
+                if(!current())return {status:2,stale:true};
                 console.error("addCredit error:", error);
                 const response = error.response;
                 return {
@@ -550,14 +536,19 @@ export default {
             }
         },
         async transfertGain({state}, payload){
+            const owner=state.userUid, generation=state.accountGeneration;
+            const current=()=>state.userUid===owner && state.accountGeneration===generation;
+            if(!owner)return {status:2,stale:true};
+            if(payload.expectedUserId && (payload.expectedUserId!==owner || payload.accountGeneration!==generation))return {status:2,stale:true};
             try {
                 const { data: response } = await serverRequest('post', '/wallet/earnings-to-credit', {
-                    mode: state.modeCo,
+                    mode: state.modeCo, expectedUserId: owner,
                     data: {
                         amount: Number(payload.credit),
                         requestId: payload.requestId,
                     },
                 });
+                if(!current())return {status:2,stale:true};
                 const conversion = response?.data;
                 if(response?.status !== 'ok' || !conversion){
                     throw new Error("Réponse de conversion invalide.");
@@ -566,6 +557,7 @@ export default {
                 state.gain.wallet = Number(conversion.gain) || 0;
                 return {status: 0, message: "Vos gains ont été ajoutés à vos crédits."};
             } catch (error) {
+                if(!current())return {status:2,stale:true};
                 return {
                     status: 2,
                     message: error.response?.data?.message || "Le transfert de vos gains a échoué.",
@@ -573,9 +565,10 @@ export default {
             }
         },
         async getTravels({state, commit}){
+            const owner = state.userUid, generation = state.accountGeneration;
 
-            state.profil.myTravels = [];
-            state.history.datesTripPassenger = [];
+            const request = ++passengerTripsRequest;
+            const current = () => request === passengerTripsRequest && owner === state.userUid && generation === state.accountGeneration;
 
             try{
                 if(!await store.dispatch("search/getVillages")) {
@@ -583,13 +576,14 @@ export default {
                 }
                 const resolveVillage = (id) => store.getters["search/GET_VILLAGE_BY_ID"](id);
                 const bookings = await fetchPassengerTrips({ passengerAccountId: state.userId, includeHistory: false });
+                if (!current()) return {status: 2, stale: true};
                 const normalizedTrips = normalizePassengerTrips(bookings, resolveVillage);
 
                 if( normalizedTrips.length === 0 ){
-                    console.error("Error : Aucun trajets; code 2")
+                    state.profil.myTravels = [];
                     state.history.datesTripPassenger = [];
                     commit('trip/CLEAR_RATINGS_BY_TRIP_IDS', [], { root: true });
-                    return {status: 2, message: "Aucun trajets"};
+                    return {status: 0, data: []};
                 }
 
                 const groupedInfos = normalizedTrips.reduce((acc, info) => {
@@ -620,86 +614,83 @@ export default {
                 commit('trip/CLEAR_RATINGS_BY_TRIP_IDS', normalizedTrips.map((trip) => trip.id), { root: true });
                 console.log("_trips:", normalizedTrips, state.profil.myTravels);
     
-                return {status: 0, message: "success"};
+                return {status: 0, message: "success", data: groupedInfos};
             }
             catch(error){
+                if (!current()) return {status: 2, stale: true};
                 console.error("getTravels error:", error);
-                state.history.datesTripPassenger = [];
-                commit('trip/CLEAR_RATINGS_BY_TRIP_IDS', [], { root: true });
-                return {status: 1, message: "Aucun trajet"};
+                return {status: 1, message: 'Impossible de charger vos réservations. Vérifiez la connexion puis réessayez.'};
             }
         },
         async getPublish({state}){
-            const currentDate = new Date();
-            const minDisplayDate = currentDate.getTime() - (60 * 60 * 1000);
+            const owner = state.userUid, generation = state.accountGeneration;
 
-            state.profil.myPublish = [];
-            state.history.datesTripDriver = [];
+            const request = ++driverTripsRequest;
+            const current = () => request === driverTripsRequest && owner === state.userUid && generation === state.accountGeneration;
 
-            const ownTrips = await store.dispatch("search/getOwnTrip");
-            if(ownTrips?.status !== 0) {
-                state.history.datesTripDriver = [];
-                return ownTrips || {status: 1, message: "Impossible de charger les trajets."};
-            }
+            try{
+                const ownTrips = await store.dispatch("search/getOwnTrip");
+                if (!current()) return {status: 2, stale: true};
+                if(ownTrips?.status !== 0) {
+                    return ownTrips || {status: 1, message: "Impossible de charger les trajets."};
+                }
 
-            if( ! store.state.search.trajets ){
-                console.error("Error getPush 1")
-                state.history.datesTripDriver = [];
-                return {status: 1, message: "Aucun trajet"};
-            }
+                if(!Array.isArray(ownTrips.data)) throw new Error('Réponse de chargement invalide.');
+                const publish = ownTrips.data;
 
-            let publish = store.state.search.trajets;
-
-            let _trips = [];
-            for (let index = 0; index < publish.length; index++) {
-                const trajet = publish[index]
-                if(trajet){
-                    // trajet.name = "Vous";
-                    if( store.state.trip.notMessageVue.includes(trajet.id + "") )
-                        trajet.notifMessage = true;
-                    const tripTime = new Date(trajet.departure_time).getTime();
-                    if( tripTime >= minDisplayDate )
+                let _trips = [];
+                for (let index = 0; index < publish.length; index++) {
+                    const trajet = publish[index]
+                    if(trajet){
+                        // trajet.name = "Vous";
+                        if( store.state.trip.notMessageVue.includes(trajet.id + "") )
+                            trajet.notifMessage = true;
                         _trips.push(trajet);
+                    }
                 }
-            }
 
-            if( _trips.length == 0 ){
-                console.error("Error getPush 2, Aucune publication")
-                state.history.datesTripDriver = [];
-                return {status: 2, message: "Aucun trajets"};
-            }
+                if( _trips.length == 0 ){
+                    state.profil.myPublish = [];
+                    state.history.datesTripDriver = [];
+                    return {status: 0, data: []};
+                }
 
-            const groupedInfos = _trips.reduce((acc, info) => {
-                const departureDate = new Date(info.departure_time);
-                const formattedDate = dateConverter(departureDate);
+                const groupedInfos = _trips.reduce((acc, info) => {
+                    const departureDate = new Date(info.departure_time);
+                    const formattedDate = dateConverter(departureDate);
                 
-                const existingGroup = acc.find(group => group.date === formattedDate);
-                if ( existingGroup ) {
-                    existingGroup.infos.push(info);
-                    existingGroup.infos = existingGroup.infos.sort((a, b) => {
-                        let dateA = new Date(a.departure_time);
-                        let dateB = new Date(b.departure_time);
+                    const existingGroup = acc.find(group => group.date === formattedDate);
+                    if ( existingGroup ) {
+                        existingGroup.infos.push(info);
+                        existingGroup.infos = existingGroup.infos.sort((a, b) => {
+                            let dateA = new Date(a.departure_time);
+                            let dateB = new Date(b.departure_time);
                       
-                        return dateA.getTime() - dateB.getTime();
-                    })
-                }
-                else {
-                    acc.push({
-                        date: formattedDate,
-                        infos: [info],
-                    });
-                }
+                            return dateA.getTime() - dateB.getTime();
+                        })
+                    }
+                    else {
+                        acc.push({
+                            date: formattedDate,
+                            infos: [info],
+                        });
+                    }
                 
-                return acc;
-            }, []);
+                    return acc;
+                }, []);
             
-            console.log("groupedInfos:", groupedInfos);
+                console.log("groupedInfos:", groupedInfos);
     
-            state.profil.myPublish = groupedInfos;
-            state.history.datesTripDriver = _trips.map((trip) => trip.departure_time);
-            console.log("_trips:", _trips, state.profil.myPublish);
+                state.profil.myPublish = groupedInfos;
+                state.history.datesTripDriver = _trips.map((trip) => trip.departure_time);
+                console.log("_trips:", _trips, state.profil.myPublish);
 
-            return {status: 0, message: "success"};
+                return {status: 0, message: "success", data: groupedInfos};
+            }catch(error){
+                if(!current()) return {status: 2, stale: true};
+                console.error('getPublish error:', error);
+                return {status: 1, message: 'Impossible de charger vos publications. Vérifiez la connexion puis réessayez.'};
+            }
         },
         async removeBooking({state, commit}, infos){
             const tripId = Number(infos?.trip_id);
@@ -803,6 +794,8 @@ export default {
         },
         // stripe
         async getProvider({state}){
+            const owner = state.userUid, generation = state.accountGeneration;
+            const current = () => state.userUid === owner && state.accountGeneration === generation;
             try {
                 let providerPayload;
                 try {
@@ -811,6 +804,7 @@ export default {
                     });
                     providerPayload = data;
                 } catch (error) {
+                    if (!current()) return {status: 2, stale: true};
                     if (error.response?.status !== 404) throw error;
 
                     // Legacy users may not have a Connect account yet. This
@@ -821,6 +815,7 @@ export default {
                     providerPayload = data?.provider;
                 }
 
+                if (!current()) return {status: 2, stale: true};
                 const provider = normalizeConnectProvider(providerPayload);
                 if (!provider.id) throw new Error("Compte Stripe Connect introuvable.");
 
@@ -832,6 +827,7 @@ export default {
                 state.connect_activation_required = provider.activation_required;
                 return { status: 0, provider };
             } catch (error) {
+                if (!current()) return {status: 2, stale: true};
                 console.error("getProvider error:", error);
                 store.state.auth.provider_id = "";
                 store.state.auth.stripe_provider = null;
@@ -870,3 +866,6 @@ export default {
         },
     },
 }
+
+const initialProfileState = JSON.parse(JSON.stringify(profilModule.state));
+export default profilModule;

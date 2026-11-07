@@ -59,7 +59,8 @@ describe('normalizePassengerTrips', () => {
     const [trip] = normalizePassengerTrips([record]);
 
     expect(trip.route).toBeNull();
-    expect(trip.price).toBeGreaterThan(0); // fallback random price
+    expect(trip.price).toBeNull();
+    expect(trip.canReserve).toBe(false);
   });
 });
 

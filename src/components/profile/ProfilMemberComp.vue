@@ -130,6 +130,7 @@
                 nbTrip: state => state.member.notation.nbTrip,
                 avis: state => state.member.notation.avis,
                 satisfaction: state => state.member.notation.satisfaction,
+                ratingStatus: state => state.member.ratingStatus,
                 
             }),
             ...mapState("trip", {
@@ -229,6 +230,11 @@
         methods: {
             ...mapActions("rating", ["getRating"]),
             updateNotationLabels(){
+                if(this.ratingStatus !== 'ready') {
+                    this.infos_panneau[1].label = '—';
+                    this.infos_panneau[2].label = '—';
+                    return;
+                }
                 const average = Math.max(0, Math.min(5, Number(this.avis) || 0));
                 const satisfaction = Math.max(0, Math.min(100, Number(this.satisfaction) || 0));
                 this.infos_panneau[1].label = `${average.toLocaleString('fr-FR', {
@@ -283,6 +289,7 @@
                 console.log("nbTrip-modified");
                 this.infos_panneau[0].label = formatNumber(this.nbTrip);
             },
+            ratingStatus(){ this.updateNotationLabels(); },
             avis(){
                 this.updateNotationLabels();
             },

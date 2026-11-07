@@ -63,16 +63,12 @@
                     }
                 }
 
-                .number-list {
-                    position: absolute;
+                .number-value {
                     width: 100%;
                     height: 100%;
-                    div {
-                        text-align: center;
-                        height: 100%;
-                        display: grid;
-                        align-content: center;
-                    }
+                    display: grid;
+                    align-content: center;
+                    text-align: center;
                 }
             }
         }
@@ -89,12 +85,15 @@
     >
         <div class="card-contain">
             <!-- (+) -->
-            <div class="minus" @click="moin()">
+            <div class="minus">
                 <v-btn
                     elevation="0"
                     :active="false" 
                     :ripple="false"
-                    class=""
+                    :class="{active: numbers.length && number > numbers[0]}"
+                    :disabled="!numbers.length || number <= numbers[0]"
+                    aria-label="Diminuer la valeur"
+                    @click="moin()"
                 ><v-icon>mdi-minus-circle</v-icon>
                 </v-btn>
             </div>
@@ -104,22 +103,18 @@
             >
                 <v-icon class="icon-coin">{{ icon }}</v-icon>
 
-                <div class="number-list mx-auto">
-                    <div 
-                        v-for="num in numbers" 
-                        :key="num"
-                        :id="'n-'+num"
-                        :class="'num n-'+num"
-                    >{{ num }}</div>
-                </div>
+                <div class="number-value mx-auto" aria-live="polite" aria-atomic="true">{{ number }}</div>
             </div>
             <!-- (-) -->
-            <div class="plus" @click="plus()">
+            <div class="plus">
                     <v-btn 
                         elevation="0"
                         :active="false" 
                         :ripple="false"
-                        class="active"
+                        :class="{active: numbers.length && number < numbers[numbers.length - 1]}"
+                        :disabled="!numbers.length || number >= numbers[numbers.length - 1]"
+                        aria-label="Augmenter la valeur"
+                        @click="plus()"
                     >
                     <v-icon>mdi-plus-circle</v-icon>
                 </v-btn>
@@ -133,7 +128,6 @@
 <!--  -->
 <script>
     import { defineComponent } from 'vue';
-    import $ from 'jquery';
     import { arrondirSpecial } from '@/utils/utils.js';
 
     // Components
@@ -194,7 +188,7 @@
                     return;
                 }
 
-                let target = typeof value === 'number' ? value : this.numbers[0];
+                let target = typeof value === 'number' && Number.isFinite(value) ? value : this.numbers[0];
                 target = arrondirSpecial(target);
                 const minVal = this.numbers[0];
                 const maxVal = this.numbers[this.numbers.length - 1];
@@ -205,67 +199,12 @@
                     target = maxVal;
                 }
                 this.number = target;
-                this.$nextTick(() => this.initPos());
-            },
-            initPos(){
-                const height = parseInt($(".v-card.select-number").css("height").replace("px", ""));
-                const goalTop = (this.number-1)*height;
-                // console.log("goalTop:", goalTop);
-                $(".number-list").animate({
-                    top: `-${goalTop}px`,
-                }, 'fast', function() {
-                    // console.log("=");
-                });
-
-                if( this.number >= this.numbers[this.numbers.length-1] ){
-                    $(".plus .v-btn").removeClass("active");
-                }
-
-                if( this.number > this.numbers[0] && ! $(".minus .v-btn").hasClass("active")){
-                    $(".minus .v-btn").addClass("active")
-                }
             },
             plus(){
-                if( this.number < this.numbers[this.numbers.length-1] ){
-                    this.number += 1;
-                    const height = parseInt($(".v-card.select-number").css("height").replace("px", ""));
-                    // console.log("heigth:", height, $(".select-number").css("height"));
-                    $(".number-list").animate({
-                        top: `-=${height}`,
-                    }, 'fast', function() {
-                        console.log("+", this.number);
-                    });
-                }
-
-                if( this.number >= this.numbers[this.numbers.length-1] ){
-                    $(".plus .v-btn").removeClass("active");
-                }
-
-                // console.log($(".minus .v-btn").hasClass("active"))
-                if( this.number > this.numbers[0] && ! $(".minus .v-btn").hasClass("active")){
-                    $(".minus .v-btn").addClass("active")
-                }
+                if(this.number < this.numbers[this.numbers.length - 1]) this.number += 1;
             },
             moin(){
-                // console.log(this.numbers[0], this.number)
-                if( this.number > this.numbers[0] ){
-                    this.number -= 1;
-                    const height = parseInt($(".v-card.select-number").css("height").replace("px", ""));
-                    $(".number-list").animate({
-                        top: `+=${height}`,
-                    }, 'fast', function() {
-                        console.log("-", this.number);
-                    });
-                }
-
-                if( this.number <= this.numbers[0] ){
-                    $(".minus .v-btn").removeClass("active");
-                }
-                
-                if( this.number < this.numbers[this.numbers.length-1] && ! $(".plus .v-btn").hasClass("active")){
-                    $(".plus .v-btn").addClass("active")
-                }
-
+                if(this.number > this.numbers[0]) this.number -= 1;
             },
         },
         watch: {

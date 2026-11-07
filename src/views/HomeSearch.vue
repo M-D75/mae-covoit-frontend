@@ -312,16 +312,13 @@
                 console.log("No Trip Date\n");
             },
             async openProfilMember(){
-                this.SET_TRIP_SELECTED(this.travel);
-                this.$refs.BottomMenuRefResults.loading = true;
-                const result = await this.getProfilMember({userUid: this.travel.driver_id});
-                
-                const data = await this.getRating({userId: this.member.userId})
-                
-                if( result && data.status == 0 ){
+                const selected=this.travel;
+                this.SET_TRIP_SELECTED(selected);this.$refs.BottomMenuRefResults.loading=true;
+                try {
+                    const result=await this.getProfilMember({userUid:selected.driver_id});
+                    if(!result||this.travel!==selected)return;
                     this.$refs.PaneApearProfilMemberRef.open();
-                }
-                this.$refs.BottomMenuRefResults.loading = false;
+                }finally{if(this.$refs.BottomMenuRefResults)this.$refs.BottomMenuRefResults.loading=false;}
             },
             openCalendar(){
                 console.log("open-pan-calendar-search")

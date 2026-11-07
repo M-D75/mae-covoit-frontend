@@ -1,3 +1,4 @@
+import * as authSessionGuard from '@/services/authSessionGuard.js';
 import { readFileSync } from 'node:fs';
 import { transformSync } from '@babel/core';
 import { parse } from '@vue/compiler-sfc';
@@ -25,6 +26,7 @@ const auth = loadOptions(readFileSync('src/store/auth.js', 'utf8'), {
     '@/utils/supabaseClient.js': { auth: { getUser } },
     '@/utils/serverApi.js': { serverRequest },
     '@/services/authEntry.js': { rememberAuthEntry: vi.fn() },
+    '@/services/authSessionGuard.js':authSessionGuard,
 });
 const { descriptor } = parse(readFileSync('src/views/CreateAccount.vue', 'utf8'));
 const view = loadOptions(descriptor.script.content, {
@@ -40,7 +42,7 @@ beforeEach(() => {
 
 function context() {
     const state = { ...auth.state };
-    const rootState = { profil: { modeCo: 'local' } };
+    const rootState = { profil: { modeCo: 'local',userUid:'user-1',accountGeneration:1 } };
     const commit = vi.fn((name, value) => auth.mutations[name](state, value));
     return { state, rootState, commit };
 }
@@ -76,14 +78,14 @@ describe('profile creation action', () => {
         expect(ctx.state.account_created).toBe(true);
         expect(ctx.rootState.profil.userId).toBe(42);
         expect(serverRequest).toHaveBeenNthCalledWith(1, 'post', '/account/profile', {
-            mode: 'local', data: { lastname: info.name, firstname: info.firstname, village: '' },
+            mode: 'local', expectedUserId:'user-1', data: { lastname: info.name, firstname: info.firstname, village: '' },
         });
     });
 });
 
 function viewContext() {
     return {
-        ...view.data(), name: " D'Angelo ", firstname: ' Anne-Marie ',
+        ...view.data(), $store:{state:{profil:{userUid:'user-1',accountGeneration:1}}}, name: " D'Angelo ", firstname: ' Anne-Marie ',
         createAccount: vi.fn().mockResolvedValue({ status: 0 }), account_created: true,
         $router: { replace: vi.fn().mockResolvedValue(undefined) },
         $route: { query: { redirect: '/publish' } },
@@ -108,7 +110,7 @@ describe('profile completion form', () => {
         await view.methods.tryCreateAccount.call(ctx);
         expect(ctx.submitting).toBe(true);
         expect(ctx.createAccount).toHaveBeenCalledTimes(1);
-        expect(ctx.createAccount).toHaveBeenCalledWith({ name: "D'Angelo", firstname: 'Anne-Marie', village: '' });
+        expect(ctx.createAccount).toHaveBeenCalledWith({ name: "D'Angelo", firstname: 'Anne-Marie', village: '',expectedUserId:'user-1',accountGeneration:1 });
         finish({ status: 0 });
         await pending;
         expect(ctx.submitting).toBe(false);
@@ -154,6 +156,6 @@ describe('profile completion form', () => {
     it('submits an empty optional village after clearing the selection', async () => {
         const ctx = { ...viewContext(), village: null };
         await view.methods.tryCreateAccount.call(ctx);
-        expect(ctx.createAccount).toHaveBeenCalledWith({ name: "D'Angelo", firstname: 'Anne-Marie', village: '' });
+        expect(ctx.createAccount).toHaveBeenCalledWith({ name: "D'Angelo", firstname: 'Anne-Marie', village: '',expectedUserId:'user-1',accountGeneration:1 });
     });
 });

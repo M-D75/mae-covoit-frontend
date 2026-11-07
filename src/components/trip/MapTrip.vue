@@ -436,6 +436,16 @@
     import { passengerBoardingAccess, isOwnPassengerBooking } from '@/components/trip/boardingUtils.js';
     import PassengerBoardingAccess from '@/components/trip/PassengerBoardingAccess.vue';
 
+    function mapOperation(vm){
+        const profile=vm.$store.state.profil, owner=profile.userUid, generation=profile.accountGeneration;
+        const trip=vm.tripSelected, epoch=vm.tripOperationEpoch;
+        const accountCurrent=()=>vm.$store.state.profil.userUid===owner && vm.$store.state.profil.accountGeneration===generation;
+        return {trip,owner,accountCurrent,options:{mode:vm.modeCo,expectedUserId:owner},
+            current:()=>!vm.tripOperationsDisposed && vm.tripOperationEpoch===epoch
+                && vm.$store.state.profil.userUid===owner && vm.$store.state.profil.accountGeneration===generation
+                && String(vm.tripSelected?.id || '')===String(trip?.id || '')};
+    }
+
     export default defineComponent({
         name: 'results-view',
         emits: ["trajet-selected"],
@@ -554,7 +564,7 @@
                 return `${minutes} min`;
             },
             canCreateAlert(){
-                return this.shareLocalisation && Array.isArray(this.currentLocation.current) && this.currentLocation.current.length >= 2;
+                return !this.alertCreateLoading && this.shareLocalisation && Array.isArray(this.currentLocation.current) && this.currentLocation.current.length >= 2;
             },
         },
         components: {
@@ -611,6 +621,7 @@
         data() {
             return {
                 routeDetails:null,routeDetailsHeight:0,
+                tripOperationsDisposed:false,tripOperationEpoch:0,passengerRequest:0,cancelBookingBusy:false,
                 nativeTrackingActive: false, nativeTrackingReason: 'stopped', nativeTrackingUnsubscribe: null, backgroundTrackingRequested: false,
                 boardingDialog: false, passengerCodeOpen: false, passengerCodeNotice: false, currentVillage: null, routeProgressTrackers: new Map(),
                 liveTripState: null, liveNow: Date.now(), liveTimer: null, liveConnected: false,
@@ -722,6 +733,8 @@
                 selectedAlertId: null,
                 selectedAlertContext: null,
                 alertVoteLoading: false,
+                alertCreateLoading: false,
+                alertsDisposed: false,
                 alertVoteAction: "",
             snackbarError: false,
                 snackbarMessage: "",
@@ -731,6 +744,7 @@
         }
     },
         async mounted(){
+            const operation=mapOperation(this);
             SafeAreaController.injectCSSVariables();
 
             // The public map deliberately skips every trip prerequisite. It
@@ -747,15 +761,16 @@
                         if (state.position && this.locationForeground && !document.hidden) this.applyNativePosition(state.position);
                     });
                     await nativeTripTracking.restore(this.userUid, this.tripSelected.id);
+                    if(!operation.current())return;
                 }
                 const { App } = await import('@capacitor/app');
-                if(!this.locationSessionActive) return;
+                if(!this.locationSessionActive || !operation.current()) return;
                 this.locationStateListener = await App.addListener('appStateChange', ({ isActive }) => {
                     this.locationForeground = isActive;
                     if (!isActive && !this.nativeTrackingActive) this.stopOwnLocation();
                     if (isActive && !this.isPublicMap) nativeTripTracking.restore(this.userUid, this.tripSelected.id).catch(() => {});
                 });
-                if(!this.locationSessionActive){
+                if(!this.locationSessionActive || !operation.current()){
                     await this.locationStateListener.remove();
                     return;
                 }
@@ -775,12 +790,14 @@
                 });
                 this.bindAlertSocket();
                 await this.initializeAlertSync();
+                if(!operation.current())return;
                 this.shareLoc();
                 this.overlayLoad = false;
                 return;
             }
 
             const villagesReady = await this.getVillages();
+            if(!operation.current())return;
             const originVillage = this.getVillagesByName(this.tripSelected?.depart);
             const destinationVillage = this.getVillagesByName(this.tripSelected?.destination);
             if(!villagesReady || !originVillage || !destinationVillage) {
@@ -796,7 +813,9 @@
             this.mode_driver = !isPassenger;
 
             await this.getContacts();
+            if(!operation.current())return;
             await this.ensurePassengerBookings();
+            if(!operation.current())return;
 
             if( isPassenger && !this.getPassengerBooking() ){
                 this.showError("Ce trajet n'est plus disponible.");
@@ -811,7 +830,7 @@
             
             console.log("itineraire", this.itineraire);
             this.$nextTick(function(){
-                if(this.$refs.BottomMenuRef)
+                if(operation.current() && this.$refs.BottomMenuRef)
                     this.$refs.BottomMenuRef.open();
             })
             
@@ -916,6 +935,8 @@
             
         },
         beforeUnmount() {
+            this.tripOperationsDisposed=true;this.tripOperationEpoch++;
+            this.alertsDisposed = true;
             this.nativeTrackingUnsubscribe?.();
             clearInterval(this.messageBadgeTimer);
             clearInterval(this.liveTimer); clearInterval(this.simulationTimer); this.simulationEngine?.pause();
@@ -1061,69 +1082,37 @@
                 if (!this.mode_driver) this.$store.dispatch('profil/getSoldes');
             },
             async ensurePassengerBookings(){
-                if(this.mode_driver || !this.tripSelected){
-                    return;
-                }
-
-                if(Array.isArray(this.tripSelected.bookings) && this.tripSelected.bookings.length > 0){
-                    return;
-                }
-
+                const request=++this.passengerRequest;
+                if(this.mode_driver || !this.tripSelected?.id || this.tripOperationsDisposed)return;
+                const op=mapOperation(this);
+                if(Array.isArray(op.trip.bookings) && op.trip.bookings.length)return;
                 try{
-                    const { data, error } = await supabase
-                        .from('trip')
-                        .select(`
-                            id,
-                            booking (
-                                *,
-                                account (*)
-                            )
-                        `)
-                        .eq('id', this.tripSelected.id)
-                        .single();
-
-                    if(error){
-                        this.handleServerError(error, "Impossible de récupérer les passagers du trajet.");
-                        return;
-                    }
-
-                    const bookings = data?.booking || [];
-                    const sanitizedBookings = bookings.filter((booking) => !booking.passenger_no_show);
-                    const updatedTrip = {
-                        ...this.tripSelected,
-                        passenger_number: sanitizedBookings.filter((booking) => booking.is_accepted).length,
-                        bookings: sanitizedBookings,
-                        booking: sanitizedBookings,
-                    };
-
-                    this.SET_TRIP_SELECTED(updatedTrip);
-                }
-                catch(error){
-                    this.handleServerError(error, "Impossible de récupérer les passagers du trajet.");
-                }
+                    const {data,error}=await supabase.from('trip').select(`id, booking (*, account:public_profile (*))`).eq('id',op.trip.id).single();
+                    if(!op.current() || request!==this.passengerRequest)return;
+                    if(error)throw error;
+                    if(Number(data?.id)!==Number(op.trip.id))throw new Error('Trajet introuvable.');
+                    const bookings=(data.booking || []).filter(booking=>!booking.passenger_no_show);
+                    this.SET_TRIP_SELECTED({...this.tripSelected,passenger_number:bookings.filter(booking=>booking.is_accepted).length,bookings,booking:bookings});
+                }catch(error){if(op.current() && request===this.passengerRequest)this.handleServerError(error,"Impossible de récupérer les passagers du trajet.");}
             },
             async annulerTrajet(){
-                console.log("annuler", this.tripSelected, this.userId);
+                if(this.cancelBookingBusy || this.tripOperationsDisposed)return;
+                const op=mapOperation(this);
+                if(!op.owner || !op.trip?.id)return;
+                this.cancelBookingBusy=true;
                 try{
-                    await serverRequest('delete', `/bookings/trip/${this.tripSelected.id}`, {
-                        mode: this.modeCo,
-                    });
-                    await this.$store.dispatch("profil/getSoldes");
-
-                    if(this.tripSelected?.departure_time){
-                        this.$store.commit('profil/REMOVE_HISTORY_DATE_BY_VALUE', {
-                            type: 'passenger',
-                            departure_time: this.tripSelected.departure_time,
-                        });
-                    }
-                    this.showSuccess("Réservation annulée.");
-                    if(this.$router){
-                        this.$router.replace('/profil');
-                    }
-                }
-                catch(error){
-                    this.handleServerError(error, "Impossible d'annuler votre réservation.");
-                }
+                    const response=await serverRequest('delete',`/bookings/trip/${op.trip.id}`,op.options);
+                    if(!op.accountCurrent())return;
+                    const cancellation=response.data?.data;
+                    if(response.data?.status!=='ok' || Number(cancellation?.tripId || cancellation?.trip?.id)!==Number(op.trip.id))throw new Error("Confirmation d'annulation invalide.");
+                    const departure=cancellation.trip?.departure_time || op.trip.departure_time;
+                    if(departure)this.$store.commit('profil/REMOVE_HISTORY_DATE_BY_VALUE',{type:'passenger',departure_time:departure});
+                    if(!op.current())return;
+                    await this.$store.dispatch('profil/getSoldes');
+                    if(!op.current())return;
+                    this.showSuccess('Réservation annulée.');this.$router?.replace('/profil');
+                }catch(error){if(op.current())this.handleServerError(error,"Impossible d'annuler votre réservation.");}
+                finally{if(op.current())this.cancelBookingBusy=false;}
             },
             askNewMessage(){ return this.$store.dispatch('trip/refreshUnread'); },
             getPassengerBooking(){
@@ -1136,6 +1125,8 @@
                 return this.tripSelected.bookings.find((booking) => isOwnPassengerBooking(booking, this.userId, this.userUid) && !booking.passenger_no_show) || null;
             },
             async markPassengerNoShow(booking){
+                const op=mapOperation(this);
+                if(!op.owner || !op.current())return;
                 if(
                     !this.mode_driver ||
                     !booking ||
@@ -1158,8 +1149,9 @@
 
                 try{
                     const response = await serverRequest('post', `/bookings/${booking.id}/no-show`, {
-                        mode: this.modeCo,
+                        ...op.options,
                     });
+                    if(!op.current())return;
                     const removedIds = new Set(response.data?.data?.bookingIds || [booking.id]);
                     const remainingBookings = (this.tripSelected.bookings || [])
                         .filter((item) => !removedIds.has(item.id));
@@ -1174,10 +1166,10 @@
                     this.showSuccess("Passager marqué absent. Les montants ont été libérés.");
                 }
                 catch(error){
-                    this.handleServerError(error, "Impossible de signaler l'absence du passager.");
+                    if(op.current())this.handleServerError(error, "Impossible de signaler l'absence du passager.");
                 }
                 finally{
-                    this.noShowProcessingId = null;
+                    if(op.current())this.noShowProcessingId = null;
                 }
             },
             showError(message){
@@ -1346,6 +1338,11 @@
                 
                 // await this.getRouteInfos();
                 console.log("this.tripSelected:", this.tripSelected);
+                if (!this.tripSelected?.route || !Array.isArray(this.tripSelected.route.polylineDecoded) || this.tripSelected.route.polylineDecoded.length < 2) {
+                    this.routes = []; this.routeAvail = false;
+                    this.showError('L’itinéraire de ce trajet est incomplet. Le suivi ne peut pas être affiché.');
+                    return;
+                }
                 this.routes = [this.tripSelected.route].map((route, index) => {
                     const polylineDecoded = Array.isArray(route.polylineDecoded) ? route.polylineDecoded : [];
                     return {
@@ -1501,6 +1498,7 @@
                 return `Un signalement similaire existe déjà à proximité. Confirmez-le si le problème est toujours présent.`;
             },
             async createLocalAlert(){
+                if(this.alertCreateLoading)return;
                 if( !this.canCreateAlert ){
                     if( !this.shareLocalisation ){
                         this.showError("Activez le partage de localisation pour créer un signalement.");
@@ -1526,6 +1524,9 @@
                     return;
                 }
 
+                const owner = this.userUid;
+                const generation = this.$store.state.profil.accountGeneration;
+                this.alertCreateLoading = true;
                 try{
                     const response = await serverRequest('post', '/road-alerts', {
                         mode: this.modeCo,
@@ -1536,16 +1537,20 @@
                             tripId: this.isPublicMap ? null : this.tripSelected?.id || null,
                         },
                     });
+                    if(!this.isAlertRequestCurrent(owner,generation))return;
                     const alert = this.mapAlertRow(response.data?.data?.alert);
+                    if(response.data?.status !== 'ok' || !alert)throw new Error('Confirmation de signalement invalide.');
                     this.addOrReplaceAlert(alert);
                     this.openAlertDetails(alert, `Signalement "${typeDef.label}" ajouté. Les autres usagers peuvent maintenant le confirmer ou l'infirmer.`);
                     this.showSuccess(`Signalement "${typeDef.label}" ajouté sur la carte.`);
                 }
                 catch(error){
-                    this.handleServerError(error, "Impossible d'enregistrer le signalement.");
+                    if(this.isAlertRequestCurrent(owner,generation))this.handleServerError(error, "Impossible d'enregistrer le signalement.");
                 }
+                finally{this.alertCreateLoading = false;}
             },
             async voteSelectedAlert(vote){
+                if(this.alertVoteLoading || !['confirm','invalidate'].includes(vote))return;
                 const alert = this.selectedAlert;
                 if( !alert ){
                     this.showError("Ce signalement n'est plus disponible.");
@@ -1563,6 +1568,8 @@
                     return;
                 }
 
+                const owner = this.userUid;
+                const generation = this.$store.state.profil.accountGeneration;
                 this.alertVoteLoading = true;
                 this.alertVoteAction = vote;
 
@@ -1571,15 +1578,18 @@
                         mode: this.modeCo,
                         data: { vote },
                     });
-                    const updatedAlert = this.mapAlertRow(response.data?.data?.alert) || alert;
+                    if(!this.isAlertRequestCurrent(owner,generation))return;
+                    const updatedAlert = this.mapAlertRow(response.data?.data?.alert);
+                    if(response.data?.status !== 'ok' || !updatedAlert || String(updatedAlert.id)!==String(alert.id)
+                        || updatedAlert.currentUserVote!==vote)throw new Error('Confirmation de vote invalide.');
                     this.addOrReplaceAlert(updatedAlert);
                     this.openAlertDetails(updatedAlert);
                     this.showSuccess(vote === 'confirm'
-                        ? "Signalement validé. Sa durée a été prolongée."
+                        ? "Signalement validé."
                         : "Signalement infirmé.");
                 }
                 catch(error){
-                    this.handleServerError(error, "Impossible d'enregistrer votre vote.");
+                    if(this.isAlertRequestCurrent(owner,generation))this.handleServerError(error, "Impossible d'enregistrer votre vote.");
                 }
                 finally{
                     this.alertVoteLoading = false;
@@ -1653,10 +1663,16 @@
             async initializeAlertSync(){
                 await this.fetchRemoteAlerts();
             },
+            isAlertRequestCurrent(owner,generation){
+                return !this.alertsDisposed && this.userUid===owner && this.$store.state.profil.accountGeneration===generation;
+            },
             async fetchRemoteAlerts(){
+                const owner=this.userUid, generation=this.$store.state.profil.accountGeneration;
                 try{
                     const response = await serverRequest('get', '/road-alerts', { mode: this.modeCo });
-                    const rows = response.data?.data?.alerts || [];
+                    if(!this.isAlertRequestCurrent(owner,generation))return;
+                    const rows = response.data?.data?.alerts;
+                    if(response.data?.status !== 'ok' || !Array.isArray(rows))throw new Error('Liste de signalements invalide.');
                     const alerts = rows.map((row) => this.mapAlertRow(row)).filter(Boolean);
                     this.activeAlerts = alerts;
                     if( this.selectedAlertId && !alerts.some((alert) => String(alert.id) === String(this.selectedAlertId)) ){
@@ -1669,13 +1685,21 @@
                 }
                 catch(error){
                     console.error("fetchRemoteAlerts error", error);
-                    this.showError("Impossible de charger les signalements.");
+                    if(this.isAlertRequestCurrent(owner,generation))this.showError("Impossible de charger les signalements.");
                 }
             },
             mapAlertRow(row){
                 if( !row ){
                     return null;
                 }
+                const coordinates=Array.isArray(row.coordinates)?row.coordinates:[row.lat,row.lng];
+                const type=row.type||row.alert_type;
+                const createdAt=new Date(row.createdAt||row.created_at).getTime();
+                const expiresAt=new Date(row.expiresAt||row.expires_at).getTime();
+                if(!row.id || !['traffic','danger','works','weather','obstacle'].includes(type)
+                    || coordinates.length!==2 || !coordinates.every(Number.isFinite)
+                    || Math.abs(coordinates[0])>90 || Math.abs(coordinates[1])>180
+                    || !Number.isFinite(createdAt) || !Number.isFinite(expiresAt) || expiresAt<=createdAt)return null;
                 const votes = Array.isArray(row.road_alert_vote) ? row.road_alert_vote : [];
                 const actorKey = this.getAlertActorKey(this.userId);
                 const legacyCurrentVote = actorKey
@@ -1689,10 +1713,10 @@
                     : votes.filter((vote) => vote.vote_type === 'invalidate').length;
                 return {
                     id: row.id,
-                    type: row.type || row.alert_type,
-                    coordinates: Array.isArray(row.coordinates) ? row.coordinates : [row.lat, row.lng],
-                    createdAt: new Date(row.createdAt || row.created_at || Date.now()).getTime(),
-                    expiresAt: new Date(row.expiresAt || row.expires_at || Date.now() + this.alertDurationMs).getTime(),
+                    type,
+                    coordinates,
+                    createdAt,
+                    expiresAt,
                     isOwner: Boolean(row.isOwner),
                     accountId: row.account_id || null,
                     currentUserVote: row.currentUserVote || legacyCurrentVote,
@@ -1752,14 +1776,17 @@
             },
             async refreshLiveTripState() {
                 if (this.isPublicMap || !this.tripSelected?.id || this.simulationNetworkPaused) return;
+                const op=mapOperation(this);
+                if(!op.current())return;
                 this.lastLiveRefresh = Date.now();
                 try {
-                    const response = await serverRequest('get', `/trips/${this.tripSelected.id}/live-state`, { mode: this.modeCo });
+                    const response = await serverRequest('get', `/trips/${op.trip.id}/live-state`, op.options);
+                    if(!op.current())return;
                     if (Number(response.data.data?.tripId) !== Number(this.tripSelected.id)) return;
                     this.liveTripState = response.data.data;
                     const confirmed = this.liveTripState.bookings.filter(b => b.in_car).map(b => b.id);
                     if (confirmed.length) this.applyBoardingConfirmation({ bookingIds: confirmed });
-                } catch { this.simulationMessage = 'État du trajet indisponible. Vérifiez la connexion et le backend.'; }
+                } catch { if(op.current())this.simulationMessage = 'État du trajet indisponible. Vérifiez la connexion et le backend.'; }
             },
             enterVehicleFollow() {
                 if (this.nativeTrackingActive || (this.locationBusy && this.backgroundTrackingRequested)) nativeTripTracking.stop().catch(() => {});
@@ -2069,30 +2096,31 @@
                 return true;
             },
             async updateName(userUid){
+                const owner=this.userUid,contact=this.currentContact;
                 //Check if account are created
                 let { data: account, error: error_account } = await supabase
-                    .from('account')
+                    .from('public_profile')
                     .select('*')
                     .eq('user_id', userUid);
                 
-                if(error_account){
-                    this.handleServerError(error_account, "Impossible de récupérer le profil du conducteur.");
+                if(this.userUid!==owner||this.currentContact!==contact)return;
+                if(error_account||!account?.length){
+                    this.handleServerError(error_account, "Impossible de récupérer le profil du conducteur.");return;
                 }
-
                 this.currentContact.username = account[0].username;
             }
         },
         watch: {
             routeProgressKey() { this.resetRouteProgress(); if (this.passengerIsBoarded) this.syncPassengerToVehicle(); },
             passengerCodeAccess(access) { if (!access.canOpen && this.passengerCodeOpen) this.hidePassengerCode(); if (access.canOpen) this.passengerCodeNotice = false; },
-            userUid() { if (this.nativeTrackingActive || (this.locationBusy && this.backgroundTrackingRequested)) nativeTripTracking.stop().catch(() => {}); this.boardingDialog = false; this.passengerCodeNotice = false; this.hidePassengerCode(); this.resetRouteProgress(); this.currentVillage = null; },
+            userUid() { this.tripOperationEpoch++;this.cancelBookingBusy=false;this.noShowProcessingId=null; if (this.nativeTrackingActive || (this.locationBusy && this.backgroundTrackingRequested)) nativeTripTracking.stop().catch(() => {}); this.boardingDialog = false; this.passengerCodeNotice = false; this.hidePassengerCode(); this.resetRouteProgress(); this.currentVillage = null; },
             passengerIsBoarded: { immediate: true, handler(boarded) { if (boarded) this.enterVehicleFollow(); } },
             tripSelected: {
                 handler(newTrip, oldTrip){
                     if(this.isPublicMap){
                         return;
                     }
-                    this.ensurePassengerBookings();
+                    if(newTrip?.id!==oldTrip?.id){this.tripOperationEpoch++;this.cancelBookingBusy=false;this.noShowProcessingId=null;}
                     if( newTrip?.id && (!oldTrip || newTrip.id !== oldTrip.id) ){
                         this.boardingDialog = false; this.passengerCodeNotice = false; this.hidePassengerCode(); this.currentVillage = null; this.resetRouteProgress();
                         if (oldTrip?.id && this.socket?.connected) this.socket.emit('stop-shared-localisation', { idTrip: oldTrip.id });
@@ -2104,6 +2132,7 @@
                         this.refreshLiveTripState();
                         this.initializeAlertSync();
                     }
+                    this.ensurePassengerBookings();
                 },
                 deep: false,
             },

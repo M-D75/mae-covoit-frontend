@@ -170,7 +170,7 @@
             </div>
             <div class="wallet-line">
                 <span>Coût total ({{ $store.state.search.nbPassenger || 1 }} place<span v-if="($store.state.search.nbPassenger || 1)>1">s</span>)</span>
-                <strong>{{ formatCurrency(totalPrice) }}</strong>
+                <strong>{{ reservationAvailable ? formatCurrency(totalPrice) : "Tarif indisponible" }}</strong>
             </div>
             <p class="wallet-hint">
                 {{ paymentHint }}
@@ -178,16 +178,21 @@
         </div>
         <v-btn
             class="text-none"
-            prepend-icon="mdi-export-variant" 
+            prepend-icon="mdi-export-variant"
+            :loading="sharing"
+            :disabled="sharing || !trajetSelected?.id"
+            @click="shareSelectedTrip"
             variant="text"
             block
         >
-            Partager ce traget
+            Partager ce trajet
         </v-btn>
         <v-btn
             class="text-none"
-            prepend-icon="mdi-alert-octagram" 
+            prepend-icon="mdi-alert-octagram"
             variant="text"
+            :disabled="!trajetSelected?.id || trajetSelected.driver_id === userUid"
+            @click="reportDialog = true"
             block
         >
             Signaler ce trajet
@@ -195,7 +200,7 @@
 
         <v-btn
             v-on:click="tryReserve"
-            :disabled="overlayLoad"
+            :disabled="overlayLoad || !reservationAvailable"
             :loading="overlayLoad"
             class="mr-4 text-none"
             prepend-icon="mdi-credit-card"
@@ -309,6 +314,9 @@
         </v-card>
     </v-dialog>
 
+    <v-snackbar v-model="shareCopied" color="primary" :timeout="3000" role="status">Le lien du trajet a été copié.</v-snackbar>
+    <TripReportDialog v-model="reportDialog" :trip-id="trajetSelected?.id" />
+
     <!-- message error -->
     <v-snackbar
         v-model="showSnackbarError"
@@ -351,6 +359,8 @@
 
 
 <script>
+    import {shareTrip} from '@/services/tripSharing.js';
+    import TripReportDialog from '@/components/trip/TripReportDialog.vue';
     import {requestContextHelp} from '@/services/contextualHelp.js';
     import { serverRequest } from '@/utils/serverApi.js';
     
@@ -388,17 +398,24 @@
     // Components
     export default {
         name: 'reserve-place-menu-comp',
+        components: {TripReportDialog},
         emits: ["test-notif-success", "no-source-founded", "notif-failed"],
         computed: {
             ...mapState("profil", ["userUid", "notification", "soldes", "customer_id", "darkMode", "modeCo"]),
             ...mapState("auth", ["customer_id"]),
             ...mapState("search", ["trajetSelected"]),
+            reservationAvailable(){
+                const trip=this.trajetSelected, seats=Number(this.$store.state.search.nbPassenger);
+                return trip?.canReserve!==false && Number(trip?.price)>0 && Number.isInteger(seats) && seats>0
+                    && Number(trip.max_seats)-Number(trip.reserved_seats??trip.passenger_number??0)>=seats && new Date(trip.departure_time).getTime()>Date.now();
+            },
             totalPrice(){
                 const nbPassengers = this.$store.state.search.nbPassenger || 1;
                 const price = this.trajetSelected && this.trajetSelected.price ? this.trajetSelected.price : 0;
                 return price * nbPassengers;
             },
             paymentHint(){
+                if (!this.reservationAvailable) return 'La réservation reste indisponible tant que les informations du trajet sont incomplètes.';
                 if( this.soldes >= this.totalPrice ){
                     return "Vos crédits seront réservés puis débités une fois votre présence confirmée au départ.";
                 }
@@ -407,7 +424,11 @@
         },
         data() {
             return {
+                reservationDisposed: false,
                 carInfoIsOpen: false,
+                reportDialog: false,
+                sharing: false,
+                shareCopied: false,
                 showSnackbarError: false,
                 messageSnackbarError: "",
                 overlayLoad: false,
@@ -416,6 +437,7 @@
                 showRetrySnackbar: false,
                 reservationRequestId: null,
                 reservationTripId: null,
+                reservationSeats: null, reservationOwner: null, reservationGeneration: null,
                 car: {
                     model: "AUCUN VEHICULE",
                     color: 'var(--bg-app-color)',
@@ -438,6 +460,7 @@
             // const vue = this;
             this.updateCar();
         },
+        beforeUnmount(){this.reservationDisposed=true;},
         methods: {
             ...mapActions("profil", ["getSoldes"]),
             ...mapMutations("trip", ["SET_RATINGS_INFO"]),
@@ -448,30 +471,51 @@
                     this.car.brand = this.trajetSelected.car.brand;
                     this.car.license_plate = this.trajetSelected.car.license_plate;
                     this.car.color = this.trajetSelected.car.color;
-                    this.car.icon = this.infosModelVehicul.find((car) => car.model == this.trajetSelected.car.model).icon;
+                    this.car.icon = this.infosModelVehicul.find((car) => car.model == this.trajetSelected.car.model)?.icon || 'mdi-car';
                 }
             },
+            async shareSelectedTrip(){
+                if(this.sharing)return;
+                const owner=this.userUid,trip=this.trajetSelected;this.sharing=true;
+                try{
+                    const outcome=await shareTrip(trip);
+                    if(this.userUid!==owner||this.trajetSelected!==trip)return;
+                    if(outcome==='copied'){this.shareCopied=true;}
+                }catch{
+                    if(this.userUid===owner){this.messageSnackbarError='Impossible de partager ce trajet. Réessayez.';this.showSnackbarError=true;}
+                }finally{this.sharing=false;}
+            },
             async sendNotification() {
-                if(!this.notification)return;
                 try { await serverRequest('post','/reservation',{mode:this.modeCo,data:{tripId:this.trajetSelected.id}}); }
                 catch { /* The reservation remains valid if its reminder is unavailable. */ }
             },
             async tryReserve(){
-                const helpOwner=this.userUid;
+                if (!this.reservationAvailable) {
+                    this.messageSnackbarError = 'Les informations du trajet sont incomplètes. La réservation est indisponible.';
+                    this.showSnackbarError = true;
+                    return;
+                }
+                const helpOwner=this.userUid,generation=this.$store.state.profil.accountGeneration;
+                const tripId=this.trajetSelected?.id,seats=Number(this.$store.state.search.nbPassenger);
+                const current=()=>!this.reservationDisposed&&this.userUid===helpOwner
+                    &&this.$store.state.profil.accountGeneration===generation
+                    &&this.trajetSelected?.id===tripId&&Number(this.$store.state.search.nbPassenger)===seats;
                 if( this.overlayLoad ){
                     return;
                 }
 
                 console.log("tryReserve...");
                 this.overlayLoad = true;
-                const tripId = this.trajetSelected?.id;
-                if( !this.reservationRequestId || this.reservationTripId !== tripId ){
+                if( !this.reservationRequestId || this.reservationTripId !== tripId || this.reservationSeats!==seats
+                    ||this.reservationOwner!==helpOwner||this.reservationGeneration!==generation ){
                     this.reservationRequestId = createReservationRequestId();
                     this.reservationTripId = tripId;
+                    this.reservationSeats=seats;this.reservationOwner=helpOwner;this.reservationGeneration=generation;
                 }
 
                 try {
                     const res = await this.getSoldes();
+                    if(!current())return;
                     console.log(res);
                     if( !res || res.status !== 0 ){
                         throw new Error(
@@ -480,12 +524,14 @@
                     }
                     this.updateCar();
                     let reserved = await this.$store.dispatch("search/reserveTrajet", {
-                        requestId: this.reservationRequestId,
+                        requestId: this.reservationRequestId,expectedOwner:helpOwner,expectedGeneration:generation,
                     });
 
+                    if(!current()||reserved?.stale)return;
                     if( reserved?.status === 'PAYMENT_ACTION_REQUIRED' ){
-                        reserved = await this.completePaymentAuthentication(reserved);
+                        reserved = await this.completePaymentAuthentication(reserved,{current,owner:helpOwner,requestId:this.reservationRequestId,generation});
                     }
+                    if(!current()||reserved?.stale)return;
 
                     if( !reserved?.valided ){
                         const message = reserved?.message || "La réservation n'a pas pu être effectuée.";
@@ -533,6 +579,7 @@
                     this.$emit('test-notif-success');
                 }
                 catch(error){
+                    if(!current())return;
                     console.error("tryReserve error:", error);
                     this.messageSnackbarError = error?.message || "Nos serveurs sont indisponibles. Vous pouvez réessayer sans risque de réserver deux fois.";
                     this.showSnackbarError = true;
@@ -546,7 +593,8 @@
                 this.showRetrySnackbar = false;
                 this.tryReserve();
             },
-            async completePaymentAuthentication(action){
+            async completePaymentAuthentication(action,context){
+                if(!context?.current())return {valided:false,stale:true};
                 if( !action?.clientSecret || !action?.paymentIntentId ){
                     throw new Error("L'authentification bancaire ne peut pas être démarrée.");
                 }
@@ -555,7 +603,9 @@
                     stripePromise = loadStripe(process.env.VUE_APP_API_STRIPE_PK);
                 }
                 const stripe = await stripePromise;
+                if(!context.current())return {valided:false,stale:true};
                 const result = await stripe.confirmCardPayment(action.clientSecret);
+                if(!context.current())return {valided:false,stale:true};
                 if( result.error ){
                     throw new Error(result.error.message || "L'authentification bancaire a été annulée.");
                 }
@@ -564,15 +614,18 @@
                 }
 
                 await serverRequest('post', '/bookings/authorization-finalize', {
+                    expectedUserId:context.owner,
                     mode: this.modeCo,
                     data: {
                         paymentIntentId: action.paymentIntentId,
-                        requestId: this.reservationRequestId,
+                        requestId: context.requestId,
                     },
                 });
+                if(!context.current())return {valided:false,stale:true};
                 await this.getSoldes();
+                if(!context.current())return {valided:false,stale:true};
                 return this.$store.dispatch("search/reserveTrajet", {
-                    requestId: this.reservationRequestId,
+                    requestId: context.requestId,expectedOwner:context.owner,expectedGeneration:context.generation,
                 });
             },
             formatCurrency(amount){

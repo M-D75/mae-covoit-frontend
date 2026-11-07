@@ -7,7 +7,6 @@ import Setting from '@/views/profil/Setting.vue'
 import HomeSearch from '@/views/HomeSearch.vue'
 import Results from '@/views/Results.vue'
 import Publish from '@/views/Publish.vue'
-import SelectCar from '@/views/publish/SelectCar.vue'
 import HourDepOther from '@/components/publish/HourDepOther.vue'
 import HourProgram from '@/components/publish/HourProgram.vue'
 import Itineraire from '@/components/publish/Itineraire.vue'
@@ -146,7 +145,7 @@ const routes = [
     },
     {
         path: '/publish/select-car',
-        component: SelectCar,
+        redirect: '/publish',
         meta: { requiresAuth: true },
     },
     {
@@ -216,6 +215,15 @@ router.beforeEach(async (to, from, next) => {
 
     if (to.meta.requiresAuth) {
         const authProfile = await fetchAuthProfileState(supabase);
+        if(authProfile.profileError){
+            if(authProfile.user?.id && authProfile.user.id!==store.state.profil.userUid){
+                store.commit('profil/SET_USER_UID',authProfile.user.id);
+                store.state.profil.userId=null;
+            }
+            store.commit('auth/SET_PROFILE_LOOKUP_ERROR',{path:to.fullPath});
+            return next(false);
+        }
+        store.commit('auth/SET_PROFILE_LOOKUP_ERROR',null);
         const hasAccount = Boolean(authProfile.account);
         if (authProfile.authenticated) rememberAuthEntry();
 
@@ -248,17 +256,17 @@ router.beforeEach(async (to, from, next) => {
         // pending booking must never hijack navigation after launch or back.
         // ----------------------------- ------------------------------
         if(isIOS||isAndroid){
-            const permission=await FirebaseMessaging.requestPermissions();
-            if(permission.receive==='granted')installTripNotifications(store,router).catch(()=>{});
+            // Push registration must never hold up navigation.
+            Promise.resolve().then(()=>FirebaseMessaging.requestPermissions())
+                .then(permission=>permission.receive==='granted'?installTripNotifications(store,router):undefined).catch(()=>{});
         }
     }
     if(to.meta.requiresAuth && (isIOS||isAndroid))installTripNotifications(store,router).catch(()=>{});
-    if(to.path==='/trip' && to.query.tripId && Number(store.state.trip.tripSelected?.id)!==Number(to.query.tripId)){
-        await Promise.all([store.dispatch('profil/getTravels'),store.dispatch('profil/getPublish')]);
-        const profile=store.state.profil.profil;
-        const selected=[...(profile.myTravels||[]),...(profile.myPublish||[])].flatMap(day=>day.infos||[]).find(t=>Number(t.id)===Number(to.query.tripId));
-        if(!selected)return next('/profil');
-        store.commit('trip/SET_TRIP_SELECTED',selected);
+    if (to.path === '/trip') {
+        const tripId = Number(to.query.tripId || store.state.trip.tripSelected?.id);
+        if (!Number.isSafeInteger(tripId) || tripId <= 0) return next('/profil');
+        const result = await store.dispatch('trip/loadSelectedTrip', tripId);
+        if (result?.status !== 0) return next('/profil');
     }
 
     return next();

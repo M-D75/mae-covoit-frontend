@@ -105,11 +105,19 @@
             <div 
                 class="card-contain"
             >
+                <p v-if="loading" role="status" class="text-center">Chargement de vos véhicules…</p>
+                <div v-else-if="error" role="alert" class="text-center">
+                    <p>{{ error }}</p>
+                    <v-btn @click="loadCars">Réessayer</v-btn>
+                </div>
+                <p v-else-if="infos.length === 0" class="text-center">
+                    Aucun véhicule disponible. Ajoutez un véhicule depuis votre profil pour publier.
+                </p>
                 <v-card
-                    v-for="(info, index) in infos.slice(0, 6)"
-                    :key="index"
+                    v-for="info in infos"
+                    :key="info.id"
                     class="car mx-auto"
-                    @click="selectCar(index, info)"
+                    @click="selectCar(info)"
                 >
                     <v-list>
                         <div class="icon-container"><v-icon >{{ info.icon }}</v-icon></div>
@@ -126,116 +134,67 @@
 
 <!--  -->
 <script>
-    import $ from 'jquery'
     import { defineComponent } from 'vue';
     import { mapState, mapActions } from 'vuex';
 
-    // Components
+    const vehicleIcons = {
+        Moto: 'mdi-motorbike',
+        Compact: 'mdi-car-hatchback',
+        Berline: 'mdi-car-sports',
+        SUV: 'mdi-car-estate',
+        Monospace: 'mdi-car-estate',
+    };
 
     export default defineComponent({
         name: 'select-car-view',
         computed: {
             ...mapState("profil", ["cars"]),
-        },
-        components: {
+            infos() {
+                if (this.loading || this.error) return [];
+                return (this.cars || []).map(car => ({
+                    model: car.license_plate,
+                    color: car.color,
+                    icon: vehicleIcons[car.model] || 'mdi-car',
+                    id: car.id,
+                    seats: car.seats,
+                }));
+            },
         },
         data() {
             return {
-                color: "red",
-                infos: [
-                    {model: "Ferrari - F8 Tributo", color: "silver", icon:"mdi-car-sports"},
-                    {model: "Tesla - Model 3", color: "white", icon:"mdi-car"},
-                    {model: "Lamborghini - Aventador", color: "red", icon:"mdi-car-sports"},
-                    {model: "Ford - Mustang GT", color: "navy", icon:"mdi-car-sports"},
-                    {model: "Mercedes-Benz - Classe A", color: "gray", icon:"mdi-car-sports"},
-                    {model: "Toyota - Camry", color: "cornflowerblue", icon:"mdi-car"},
-                    {model: "Porsche - 911 Carrera", color: "lime", icon:"mdi-car-sports"},
-                    {model: "Audi - Q5", color: "teal", icon:"mdi-car-estate"},
-                    {model: "Renault - Clio", color: "fuchsia", icon:"mdi-car-estate"},
-                    {model: "Nissan - Juke", color: "maroon", icon:"mdi-car-estate"},
-                ],
-                car: 0,
-                seats: 7,
-                infosModelVehicul: [
-                    {model: "Moto", color: "silver", icon:"mdi-motorbike", maxSeats:1},
-                    {model: "Compact", color: "white", icon:"mdi-car-hatchback", maxSeats:4},
-                    {model: "Berline", color: "red", icon:"mdi-car-sports", maxSeats:4},
-                    {model: "SUV", color: "navy", icon:"mdi-car-estate", maxSeats:8},
-                    {model: "Monospace", color: "gray", icon:"mdi-car-estate", maxSeats:8},
-                ],
+                car: null,
+                seats: 0,
+                loading: true,
+                error: '',
             };
         },
-        async mounted() {
-            this.infos = [];
-
-            // const result = await this.getCars();
-            // if(result.status == 0 && this.cars.length > 0){
-            //     for (let index = 0; index < this.cars.length; index++) {
-            //         const car = this.cars[index];
-            //         this.infos.push({
-            //             model: car.license_plate, 
-            //             color: car.color, 
-            //             icon: this.infosModelVehicul.find((vehicul) => vehicul.model == car.model).icon,
-            //             id: car.id,
-            //             seats: car.seats,
-            //         });
-            //     }
-            // }
-
-            this.infos = [
-                {
-                    "model": "AA-898-AA",
-                    "color": "#AB47BC",
-                    "icon": "mdi-car-estate",
-                    "id": 3,
-                    "seats": 8
-                },
-                {
-                    "model": "XXXXXXX-XXXXXXXXXXXXXAA",
-                    "color": "blue",
-                    "icon": "mdi-car-estate",
-                    "id": 1,
-                    "seats": 5
-                }
-            ];
-            
-            this.$nextTick(function(){
-                // Animation pour text trop long
-                $(".model").each(function(){
-                    const _this = $(this);
-                    const debordement = 10;
-                    const scrollWidth = _this.find(".text").width()-_this.width()+debordement;
-                    if(_this.width() < _this.find(".text").width()){
-                        // console.log("defilement-debordement", _this.scrollLeft(), scrollWidth)
-                        _this.find(".text").animate({left: -scrollWidth}, 3000, 'linear', function(){
-                            setTimeout(function(){//pause
-                                _this.find(".text").animate({left: 0}, 500); 
-                            }, 500)                  
-                        });
-
-                        // after first
-                        setInterval(function(){
-                            _this.find(".text").animate({left: -scrollWidth}, 3000, 'linear', function(){
-                                setTimeout(function(){//pause
-                                    _this.find(".text").animate({left: 0}, 500); 
-                                }, 500)
-                            });
-                        }, 5000);
-                    }
-                });
-            })
-            
+        mounted() {
+            this.loadCars();
         },
         methods: {
-            ...mapActions("profil", ["updateAutoValidation", "getCars"]),
-            selectCar(index, info){
-                // console.log("selected", index, info);
-                this.car = info.id != undefined ? info.id : index;
+            ...mapActions("profil", ["getCars"]),
+            async loadCars() {
+                this.loading = true;
+                this.error = '';
+                this.car = null;
+                this.seats = 0;
+                try {
+                    const result = await this.getCars();
+                    if (result?.status !== 0) {
+                        this.error = result?.message || 'Impossible de charger vos véhicules.';
+                    }
+                } catch {
+                    this.error = 'Impossible de charger vos véhicules. Veuillez réessayer.';
+                } finally {
+                    this.loading = false;
+                }
+            },
+            selectCar(info) {
+                if (this.loading || this.error || info.id == null || !this.infos.includes(info)) return;
+                this.car = info.id;
                 this.seats = info.seats;
                 this.$emit("car-selected");
             },
-        },
-        watch: {
         },
     });
 </script>

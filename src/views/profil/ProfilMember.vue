@@ -8,11 +8,11 @@
         margin-bottom: 13px;
     }
 </style>
-   
+
 <!--  -->
 <template>
-    <v-overlay 
-        v-model="overlay" 
+    <v-overlay
+        v-model="overlay"
         contained
         persistent
         style="z-index: 10;"
@@ -51,6 +51,14 @@
     export default defineComponent({
         name: 'profil-member-view',
         computed: {
+            infos_panneau(){
+                const ready = this.ratingStatus === 'ready';
+                return [
+                    {btn:false, label:formatNumber(this.nbTrip), text:'trajets'},
+                    {btn:false, label:ready ? `${Number(this.avis || 0).toLocaleString('fr-FR', {maximumFractionDigits:2})}/5` : '—', text:'avis'},
+                    {btn:false, label:ready ? `${Math.round(Number(this.satisfaction || 0))}%` : '—', text:'satisfaction'},
+                ];
+            },
             ...mapState("trip", {
                 avatar: state => state.member.avatar,
                 userName: state => state.member.userName,
@@ -59,6 +67,7 @@
                 nbTrip: state => state.member.notation.nbTrip,
                 avis: state => state.member.notation.avis,
                 satisfaction: state => state.member.notation.satisfaction,
+                ratingStatus: state => state.member.ratingStatus,
             }),
             ...mapState("trip", {
                 preferences: state => state.member.preferences,
@@ -75,23 +84,6 @@
                 overlay: false,
                 about: "discution",
                 modeBottomMenu: "select-model-car",
-                infos_panneau: [
-                    {
-                        btn:false,
-                        label: "expert",
-                        text:"niveau",
-                    },
-                    {
-                        btn:false,
-                        label:"4/5",
-                        text:"avis",
-                    },
-                    {
-                        btn:false,
-                        label:"bonne",
-                        text:"conduite",
-                    },
-                ],
                 groupeParameters: [
                     {
                         label: "profil vérifié",
@@ -173,7 +165,7 @@
             updateGrouparameterPreference(){
                 if(this.preferences[0] != undefined){
                     this.groupeParameters[1].parameters = this.groupeParameters[1].parameters.map(
-                        (pref) => { 
+                        (pref) => {
                             if('about' in pref){
                                 // Assigne methode select
                                 let current_pref = this.preferences.find((prefs) => prefs && prefs["about"] != undefined && prefs.about == pref.about);
@@ -208,7 +200,7 @@
                 this.updateGrouparameterPreference();
             },
             nbTrip(){
-                this.infos_panneau[0].label = formatNumber(this.nbTrip);
+
             }
         }
     });

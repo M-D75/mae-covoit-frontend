@@ -9,8 +9,11 @@ import publish from './publish';
 import search from './search';
 import general from './general';
 import trip from './trip';
+import notifications from './notifications';
 
-const PERSISTENCE_KEY = 'mae-covoit-v2';
+const PERSISTENCE_KEY = 'mae-covoit-v3';
+const initialSearch = JSON.parse(JSON.stringify(search.state));
+const initialTrip = JSON.parse(JSON.stringify(trip.state));
 
 /**
  * Persist only small preferences and identifiers. Map routes, trips, contacts
@@ -44,6 +47,7 @@ const resilientStorage = {
 // Remove it once when upgrading to the bounded v2 persistence format.
 if (typeof window !== 'undefined') {
     window.localStorage.removeItem('vuex');
+    window.localStorage.removeItem('mae-covoit-v2');
 }
 
 const appStore = createStore({
@@ -55,39 +59,34 @@ const appStore = createStore({
         search,
         general,
         trip,
+        notifications,
     },
     plugins: [
         createPersistedState({
             key: PERSISTENCE_KEY,
             storage: resilientStorage,
             paths: [
-                'auth.provider',
-                'auth.registerDeviceToken',
-                'auth.customer_id',
                 'general.isNative',
-                'profil.cguAccepted',
-                'profil.payouts_enabled',
-                'profil.auto_accept_trip',
-                'profil.identity',
-                'profil.profil.infos_perso',
-                'profil.notification',
                 'profil.modeDriver',
                 'profil.darkMode',
-                'profil.userId',
-                'profil.userUid',
-                'profil.userName',
-                'profil.autoValidation',
-                'profil.cars',
                 'profil.preferenceVirementMode',
-                'profil.history.datesTripPassenger',
-                'profil.history.datesTripDriver',
                 'search.communesFrequency',
             ]
         })
     ],
 });
 
+let previousUserUid = appStore.state.profil.userUid;
 appStore.commit('trip/CLEAR_MESSAGING');
-appStore.commit('trip/RESET_RATING_PROMPT');
-appStore.watch(state=>state.profil.userUid,()=>{appStore.commit('trip/CLEAR_MESSAGING');appStore.commit('trip/RESET_RATING_PROMPT');appStore.commit('profil/SET_AVATAR_DRAFT',null);appStore.commit('profil/CLEAR_HISTORY');});
+appStore.commit('trip/RESET_RATING_PROMPT');appStore.commit('rating/RESET_RATING_SELECTION');
+appStore.subscribe((mutation, state) => {
+    if (mutation.type !== 'profil/SET_USER_UID') return;
+    if (state.profil.userUid === previousUserUid) return;
+    previousUserUid = state.profil.userUid;
+    appStore.commit('auth/CLEAR_PAYMENT_PROFILE');
+    appStore.commit('notifications/RESET');
+    Object.assign(state.search, JSON.parse(JSON.stringify(initialSearch)));
+    Object.assign(state.trip, JSON.parse(JSON.stringify(initialTrip)));
+});
+appStore.watch(state=>state.profil.userUid,()=>{appStore.commit('trip/CLEAR_MESSAGING');appStore.commit('trip/RESET_RATING_PROMPT');appStore.commit('rating/RESET_RATING_SELECTION');appStore.commit('profil/SET_AVATAR_DRAFT',null);appStore.commit('profil/CLEAR_HISTORY');});
 export default appStore;

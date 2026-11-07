@@ -65,10 +65,26 @@ describe('contextual help and session slogan',()=>{
 it('binds Android back to the optional exit and removes only its own listener',async()=>{
  let callback;const remove=vi.fn();
  const component=load('src/views/Rating.vue',id=>id==='vue'?{defineComponent:x=>x}:id==='vuex'?{mapState:()=>({}),mapActions:()=>({}),mapMutations:()=>({})}:id==='@capacitor/core'?{Capacitor:{getPlatform:()=> 'android'}}:id==='@capacitor/app'?{App:{addListener:vi.fn((name,fn)=>{expect(name).toBe('backButton');callback=fn;return Promise.resolve({remove});})}}:{});
- const vm={disposed:false,ratingDriver:{},skip:vi.fn()};component.mounted.call(vm);await vi.waitFor(()=>expect(vm.backListener).toBeDefined());callback();expect(vm.skip).toHaveBeenCalledTimes(1);component.beforeUnmount.call(vm);expect(remove).toHaveBeenCalledTimes(1);
+ const vm={$store:{commit:vi.fn()},disposed:false,ratingDriver:{},skip:vi.fn()};component.mounted.call(vm);await vi.waitFor(()=>expect(vm.backListener).toBeDefined());callback();expect(vm.skip).toHaveBeenCalledTimes(1);component.beforeUnmount.call(vm);expect(remove).toHaveBeenCalledTimes(1);
 });
 
 it('retains history trip identity and rating eligibility when grouping by month',async()=>{
  const {groupByDate,mapToObject}=await import('@/utils/utils.js');const row={tripId:91,role:'passenger',ratingEligible:true,departure_time:'2026-10-28T12:00:00Z'};
  const groups=mapToObject(groupByDate([row]));expect(Object.values(Object.values(groups)[0])[0][0]).toEqual(row);
+});
+
+
+describe('trip card navigation',()=>{
+ const component=()=>load('src/components/profile/CardTrajetHistory.vue',id=>id==='vue'?{defineComponent:x=>x}:id==='vuex'?{mapState:()=>({}),mapActions:()=>({}),mapMutations:()=>({})}:{});
+ it.each([[],[{id:1}]])('opens the driver map regardless of reservations (%j)',async bookings=>{
+  const vm={mode:'planning',infos:{id:82,bookings},SET_TRIP_SELECTED:vi.fn(),getContacts:vi.fn().mockRejectedValue(Error('unavailable')),$router:{push:vi.fn()}};
+  await component().methods.selectTrip.call(vm);
+  expect(vm.SET_TRIP_SELECTED).toHaveBeenCalledWith(vm.infos);expect(vm.$router.push).toHaveBeenCalledWith('/trip');expect(vm.getContacts).not.toHaveBeenCalled();
+ });
+ it.each([true,false])('preserves passenger acceptance gating (%s)',async accepted=>{
+  const vm={mode:'trajets',infos:{id:82,is_accepted:accepted,is_refused:false},SET_TRIP_SELECTED:vi.fn(),$router:{push:vi.fn()}};
+  await component().methods.selectTrip.call(vm);
+  if(accepted)expect(vm.$router.push).toHaveBeenCalledWith('/trip');
+  else {expect(vm.$router.push).not.toHaveBeenCalled();expect(vm.showSnackbarError).toBe(true);}
+ });
 });

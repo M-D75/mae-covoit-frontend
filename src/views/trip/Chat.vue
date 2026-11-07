@@ -10,6 +10,7 @@
             <select v-model="peerId" aria-label="Choisir un passager"><option v-for="contact in contacts" :key="contact.userId" :value="contact.userId">{{ contact.username }}{{ contact.unread ? ` · ${contact.unread} non lu(s)` : '' }}</option></select>
         </label>
         <p class="privacy-note">Messages texte conservés 15 jours après chaque envoi. Évitez les informations sensibles.</p>
+        <p v-if="roleError" role="alert" class="chat-error">{{ roleError }} <button type="button" @click="reload">Réessayer le chargement</button></p>
         <p v-if="error" role="alert" class="chat-error">{{ error }} <button type="button" @click="reload">Réessayer le chargement</button></p>
         <p v-if="notice" role="status">{{ notice }}</p>
         <p v-if="loading" role="status">Chargement…</p>
@@ -44,6 +45,7 @@
 </template>
 <script>
 import supabase from '@/utils/supabaseClient.js';
+import {recordMessageExposure} from '@/services/messageReadExposure.js';
 import {observeSheetViewport} from '@/utils/sheetViewport.js';
 import { mapState } from 'vuex';
 import io from 'socket.io-client';
@@ -54,15 +56,15 @@ import { createRequestId } from '@/utils/requestId.js';
 import { chatRequest,conversationPath,mergeChatMessages,chatViewActive,chatMessageStatus } from '@/services/tripMessaging.js';
 export default {
     name:'chat-view',
-    data:()=>({ visibleHeight:0,stopViewport:null,roleDriverId:null,contactsLoaded:false,contacts:[],peerId:'',messages:[],draft:'',canSend:false,nextCursor:null,historyInitialized:false,loading:false,olderLoading:false,error:'',notice:'',
+    data:()=>({ visibleHeight:0,stopViewport:null,roleDriverId:null,roleError:'',roleLookupPromise:null,roleLookupTrip:null,reloadRequest:0,contactsLoaded:false,contacts:[],peerId:'',messages:[],draft:'',canSend:false,nextCursor:null,historyInitialized:false,loading:false,olderLoading:false,error:'',notice:'',
         socket:null,timer:null,foreground:true,appListener:null,epoch:0,disposed:false,reading:false,refreshing:false,
-        reportOpen:false,reportReason:'harassment',reportDetails:'',reportRequestId:'',reportIds:[],reportBusy:false,reportError:'',
+        readExposure:{},reportOpen:false,reportReason:'harassment',reportDetails:'',reportRequestId:'',reportIds:[],reportBusy:false,reportError:'',
         reportReasons:[{title:'Harcèlement ou insultes',value:'harassment'},{title:'Comportement inquiétant',value:'unsafe'},{title:'Spam',value:'spam'},{title:'Autre',value:'other'}] }),
     computed:{
         ...mapState('profil',['userUid','modeCo']),...mapState('trip',['tripSelected']),
         activeContact(){return this.contacts.find(contact=>contact.userId===this.peerId)||null;},
         isTripDriver(){const driver=Number(this.tripSelected?.id)===this.tripId&&this.tripSelected?.driver_id?this.tripSelected.driver_id:this.roleDriverId;return Boolean(driver&&driver===this.userUid);},
-        showEmpty(){return !this.loading&&!this.error&&!this.messages.length&&(this.peerId?this.historyInitialized&&!this.refreshing:this.contactsLoaded);},
+        showEmpty(){return !this.loading&&!this.roleError&&!this.error&&!this.messages.length&&(this.peerId?this.historyInitialized&&!this.refreshing:this.contactsLoaded);},
         tripId(){return Number(this.$route.query.tripId || this.tripSelected?.id)||null;},
         tripLabel(){return Number(this.tripSelected?.id)===this.tripId && this.tripSelected.depart && this.tripSelected.destination ? `${this.tripSelected.depart} → ${this.tripSelected.destination}` : 'Échange conducteur / passager';},
         serverMessages(){return this.messages.filter(m=>m.id && !m.pending);},
@@ -77,38 +79,60 @@ export default {
         this.socket.on('connect',()=>{this.notice='';this.restartHistory();this.reload();});
         this.socket.on('disconnect',()=>{this.notice='Connexion interrompue. Les envois non confirmés peuvent être réessayés sans doublon.';});
         this.socket.on('chat:changed',data=>{this.$store.dispatch('trip/refreshUnread');if(Number(data.tripId)===this.tripId)this.reload();});
-        this.timer=setInterval(()=>{this.messages=mergeChatMessages(this.messages,[]);if(this.activeView()){this.presence();this.refreshHistory();this.$store.dispatch('trip/refreshUnread');}},5000);
-        this.resolveChatRole();
+        this.timer=setInterval(()=>{this.messages=mergeChatMessages(this.messages,[]);if(this.activeView()){this.presence();this.resolveChatRole();this.refreshHistory();this.$store.dispatch('trip/refreshUnread');}},5000);
         await this.reload();
     },
     beforeUnmount(){this.stopViewport?.();this.disposed=true;this.epoch++;this.$store.commit('trip/SET_ACTIVE_CHAT',null);this.socket?.emit('chat:presence',{active:false});this.socket?.disconnect();clearInterval(this.timer);this.appListener?.remove();
         document.removeEventListener('visibilitychange',this.viewChanged);window.removeEventListener('focus',this.viewChanged);window.removeEventListener('blur',this.viewChanged);},
     watch:{
         '$route.query.peerId'(value){if(this.contacts.some(c=>c.userId===value))this.peerId=value;},
-        peerId(){this.epoch++;this.messages=[];this.nextCursor=null;this.historyInitialized=false;this.canSend=false;this.draft='';this.reportOpen=false;this.refreshHistory();},
-        tripId(){this.reset();this.resolveChatRole();this.reload();},userUid(){this.reset();this.socket?.disconnect();this.$router.replace('/profil');},
+        peerId(){this.readExposure={};this.epoch++;this.messages=[];this.nextCursor=null;this.historyInitialized=false;this.canSend=false;this.draft='';this.reportOpen=false;this.refreshHistory();},
+        tripId(){this.reset();this.reload();},userUid(){this.reset();this.socket?.disconnect();this.$router.replace('/profil');},
     },
     methods:{
         messageStatus:chatMessageStatus,
         async resolveChatRole(){
-            if(Number(this.tripSelected?.id)===this.tripId&&this.tripSelected?.driver_id)return;
-            const owner=this.userUid,trip=this.tripId;if(!owner||!trip)return;
-            try{const {data,error}=await supabase.from('trip').select('id,driver_id').eq('id',trip).maybeSingle();if(!error&&!this.disposed&&this.userUid===owner&&this.tripId===trip&&Number(data?.id)===trip)this.roleDriverId=data.driver_id;}catch{/* Unknown role keeps the participant selector hidden. */}
+            if(Number(this.tripSelected?.id)===this.tripId&&this.tripSelected?.driver_id){this.roleError='';return true;}
+            if(this.roleDriverId){this.roleError='';return true;}
+            const owner=this.userUid,trip=this.tripId;if(!owner||!trip||this.disposed)return false;
+            if(this.roleLookupPromise&&this.roleLookupTrip===trip)return this.roleLookupPromise;
+            const current=()=>!this.disposed&&this.userUid===owner&&this.tripId===trip;
+            const pending=(async()=>{
+                try{
+                    const {data,error}=await supabase.from('trip').select('id,driver_id').eq('id',trip).maybeSingle();
+                    if(!current())return false;
+                    if(error||Number(data?.id)!==trip||!data?.driver_id)throw new Error('Rôle indisponible.');
+                    this.roleDriverId=data.driver_id;this.roleError='';return true;
+                }catch{
+                    if(current())this.roleError='Impossible de vérifier votre rôle sur ce trajet. La sélection des passagers est indisponible. Réessayez.';
+                    return false;
+                }
+            })();
+            this.roleLookupPromise=pending;this.roleLookupTrip=trip;
+            try{return await pending;}finally{if(this.roleLookupPromise===pending)this.roleLookupPromise=null;}
         },
         activeView(){return !this.disposed && chatViewActive({foreground:this.foreground,hidden:document.hidden,focused:document.hasFocus(),path:this.$route.path});},
-        reset(){this.roleDriverId=null;this.contactsLoaded=false;this.$store.commit('trip/SET_ACTIVE_CHAT',null);this.epoch++;this.messages=[];this.contacts=[];this.peerId='';this.draft='';this.reportOpen=false;this.socket?.emit('chat:presence',{active:false});},
+        reset(){this.readExposure={};this.roleDriverId=null;this.roleError='';this.roleLookupPromise=null;this.roleLookupTrip=null;this.contactsLoaded=false;this.$store.commit('trip/SET_ACTIVE_CHAT',null);this.epoch++;this.messages=[];this.contacts=[];this.peerId='';this.draft='';this.reportOpen=false;this.socket?.emit('chat:presence',{active:false});},
         presence(){const value={active:this.activeView() && Boolean(this.peerId),tripId:this.tripId,peerId:this.peerId};this.socket?.emit('chat:presence',value);this.$store.commit('trip/SET_ACTIVE_CHAT',value);},
         restartHistory(){this.messages=this.messages.filter(m=>!m.id);this.historyInitialized=false;this.nextCursor=null;},
-        viewChanged(){this.presence();if(this.activeView()){this.restartHistory();this.refreshHistory();this.$store.dispatch('trip/refreshUnread');}},
+        viewChanged(){this.presence();if(this.activeView()){this.restartHistory();this.resolveChatRole();this.refreshHistory();this.$store.dispatch('trip/refreshUnread');}},
         async reload(){
             if(!this.tripId||this.disposed)return;
-            const epoch=this.epoch,trip=this.tripId;this.loading=true;
-            try{const data=await chatRequest('get',`/trips/${trip}/conversations`,this.modeCo);if(epoch!==this.epoch||this.disposed)return;
-                this.contacts=data.contacts;this.contactsLoaded=true;const preferred=this.$route.query.peerId;
+            const epoch=this.epoch,trip=this.tripId,request=++this.reloadRequest;
+            const current=()=>!this.disposed&&this.tripId===trip&&request===this.reloadRequest;
+            this.loading=true;
+            try{
+                const [,data]=await Promise.all([this.resolveChatRole(),chatRequest('get',`/trips/${trip}/conversations`,this.modeCo)]);
+                if(!current()||epoch!==this.epoch)return;
+                if(!Array.isArray(data?.contacts))throw new Error('Contacts indisponibles.');
+                // Clear the contact error before history starts, never after it fails.
+                this.error='';this.contacts=data.contacts;this.contactsLoaded=true;
+                const preferred=this.$route.query.peerId;
                 if(!this.contacts.some(c=>c.userId===this.peerId))this.peerId=this.contacts.find(c=>c.userId===preferred)?.userId||this.contacts[0]?.userId||'';
-                else await this.refreshHistory();this.error='';
-            }catch(error){if(epoch===this.epoch)this.error=error.response?.data?.code==='CHAT_MIGRATION_OR_SERVICE_UNAVAILABLE'?'La messagerie n’est pas encore disponible sur ce serveur. Réessayez après sa mise à jour.':'Impossible de charger cet échange. Vérifiez la connexion ou réessayez.';}
-            finally{this.loading=false;}
+                else await this.refreshHistory();
+            }catch(error){
+                if(current()&&epoch===this.epoch)this.error=error.response?.data?.code==='CHAT_MIGRATION_OR_SERVICE_UNAVAILABLE'?'La messagerie n’est pas encore disponible sur ce serveur. Réessayez après sa mise à jour.':'Impossible de charger cet échange. Vérifiez la connexion ou réessayez.';
+            }finally{if(current())this.loading=false;}
         },
         async refreshHistory(){
             if(!this.peerId||this.refreshing||this.disposed)return;
@@ -134,10 +158,18 @@ export default {
             }catch{if(epoch===this.epoch){message.pending=false;message.error=true;}}finally{message.sending=false;}
         },
         async markVisibleRead(){
-            if(!this.activeView()||this.reading||!this.peerId||!this.socket?.connected)return;
+            if(!this.activeView()||!this.peerId||!this.socket?.connected)return;
             const box=this.$refs.history;if(!box)return;const bounds=box.getBoundingClientRect();
-            const visible=new Set([...box.querySelectorAll('[data-message-id]')].filter(el=>{const r=el.getBoundingClientRect();return r.top>=bounds.top&&r.bottom<=Math.min(bounds.bottom,window.innerHeight);}).map(el=>el.dataset.messageId));
-            const ids=this.serverMessages.filter(m=>m.to===this.userUid&&!m.readAt&&visible.has(m.id)).map(m=>m.id).slice(0,100);
+            const viewport={top:Math.max(0,bounds.top),bottom:Math.min(bounds.bottom,window.innerHeight)};
+            const unread=new Set(this.serverMessages.filter(m=>m.to===this.userUid&&!m.readAt).map(m=>String(m.id)));
+            for(const id of Object.keys(this.readExposure)) if(!unread.has(id)) delete this.readExposure[id];
+            for(const el of box.querySelectorAll('[data-message-id]')){
+                const id=el.dataset.messageId;if(!unread.has(id))continue;
+                const exposure=recordMessageExposure(this.readExposure[id],el.getBoundingClientRect(),viewport);
+                if(exposure)this.readExposure[id]=exposure;
+            }
+            if(this.reading)return;
+            const ids=[...unread].filter(id=>this.readExposure[id]?.complete).slice(0,100);
             if(!ids.length)return;this.reading=true;this.presence();const epoch=this.epoch;
             try{await chatRequest('post',`${conversationPath(this.tripId,this.peerId)}/read`,this.modeCo,{messageIds:ids});if(epoch===this.epoch)this.$store.dispatch('trip/refreshUnread');}
             catch{/* A failed receipt is retried only while this view stays active. */}finally{this.reading=false;}

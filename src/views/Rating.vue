@@ -238,6 +238,7 @@
             }
         },
         mounted() {
+            this.$store.commit('rating/RESET_RATING_SELECTION');
             if(Capacitor.getPlatform()==='android')App.addListener('backButton',()=>this.skip()).then(listener=>{if(this.disposed)listener.remove();else this.backListener=listener;}).catch(()=>{});
             if( !this.ratingDriver ){
                 this.$router.replace("/");
@@ -268,6 +269,8 @@
                 }
 
                 const owner=this.userUid;
+                const submittedScore=Number(this.avis);
+                const generation=this.$store.state.profil.accountGeneration;
                 this.ratingError = "";
                 this.isSubmitting = true;
                 try {
@@ -277,12 +280,16 @@
                     const badIndices = this.btnIco.bad
                         .map((item, index) => item.select ? index : null)
                         .filter((index) => index !== null);
-                    await serverRequest('post', '/ratings', {
+                    const response = await serverRequest('post', '/ratings', {
                         mode: this.$store.state.profil.modeCo,
-                        data: { tripId, score: Number(this.avis), goodIndices, badIndices },
+                        data: { tripId, score: submittedScore, goodIndices, badIndices },
                     });
         
-                    if(this.disposed||this.userUid!==owner)return;
+                    if(this.disposed||this.userUid!==owner||this.$store.state.profil.accountGeneration!==generation)return;
+                    if(response.data?.status !== 'ok' || Number(response.data?.data?.tripId) !== Number(tripId)
+                        || Number(response.data?.data?.score) !== submittedScore) {
+                        throw new Error("La confirmation de votre avis n’a pas été reçue. Réessayez.");
+                    }
                     this.SET_RATINGS_REMOVE({
                         id: tripId,
                         markRated: true,
@@ -290,7 +297,7 @@
                     this.$router.push("/");
                 }
                 catch(error){
-                    if(this.disposed||this.userUid!==owner)return;
+                    if(this.disposed||this.userUid!==owner||this.$store.state.profil.accountGeneration!==generation)return;
                     if( error.response?.data?.code === 'RATING_ALREADY_SUBMITTED' ){
                         this.SET_RATINGS_REMOVE({ id: tripId, markRated: true });
                         this.$router.push("/");

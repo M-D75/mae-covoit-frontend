@@ -15,18 +15,12 @@ export async function fetchAuthProfileState(supabaseClient) {
         };
     }
 
-    const { data: account, error: profileError } = await supabaseClient
-        .from('account')
-        .select('id, user_id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-    return {
-        authenticated: true,
-        user,
-        account: account || null,
-        profileError: profileError || null,
-    };
+    try {
+        const {data:account,error:profileError}=await supabaseClient.from('account').select('id, user_id').eq('user_id',user.id).maybeSingle();
+        return {authenticated:true,user,account:account||null,profileError:profileError||null};
+    }catch(profileError){
+        return {authenticated:true,user,account:null,profileError};
+    }
 }
 
 /** Only accept an internal application path as a post-authentication target. */
@@ -41,8 +35,9 @@ export function normalizeInternalRedirect(value, fallback = '/search') {
 }
 
 /** Decide where an authentication callback must finish. */
-export function resolvePostAuthPath({ authenticated, hasAccount, requestedPath }) {
+export function resolvePostAuthPath({ authenticated, hasAccount, requestedPath, profileError }) {
     if(!authenticated) return '/login';
+    if(profileError)return normalizeInternalRedirect(requestedPath);
     if(!hasAccount) return '/account-info';
     return normalizeInternalRedirect(requestedPath);
 }

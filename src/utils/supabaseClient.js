@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import {createAuthSessionGuard,browserSessionStorage} from '@/services/authSessionGuard.js';
 import {getClientHeaders,notifyUpdateRequired} from '@/utils/clientIdentity.js';
 export async function versionedFetch(input,init={}){
  let url;try{url=new URL(typeof input==='string'?input:input.url||String(input));}catch{return fetch(input,init);}
@@ -13,10 +14,12 @@ export async function versionedFetch(input,init={}){
  return response;
 }
 
+const sessionGuard=createAuthSessionGuard({storage:browserSessionStorage(),fetch:versionedFetch});
 const supabase = createClient(
     process.env.VUE_APP_API_SUPABASE_URL,
     process.env.VUE_APP_API_SUPABASE_KEY,
-    {global:{fetch:versionedFetch}}
+    {global:{fetch:sessionGuard.fetch},auth:{storage:sessionGuard.storage}}
 );
 
+sessionGuard.attach(supabase);
 export default supabase;

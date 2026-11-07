@@ -250,7 +250,11 @@
 
     <v-main v-else>
         <div class="nothing label-filter text-caption mx-auto">
-            <div v-if="nothing" class="contenu">
+            <div v-if="initializationError" class="contenu" role="alert">
+                <p>{{ initializationError }}</p>
+                <v-btn :loading="overlayLoad" :disabled="overlayLoad" @click="initializePublication">Réessayer</v-btn>
+            </div>
+            <div v-else-if="nothing" class="contenu">
                 <v-icon :icon="cars.length == 0 ? 'mdi-car-off' : 'mdi-bank-clock-outline' "></v-icon>
                 <span v-if="cars.length == 0 ">Oups ! Il semble que votre garage soit vide. Que diriez-vous de lui donner vie en ajoutant un véhicule pour votre annonce ? 🚗✨</span>
                 <span v-else-if="!connect_account_available">
@@ -319,6 +323,8 @@
 
 <!--  -->
 <script>
+import {isPublishableRoute, PUBLICATION_ROUTE_ERROR} from '@/services/publicationRoute.js';
+
     import $ from 'jquery'
     import { defineComponent } from 'vue';
     import { mapState, mapGetters, mapActions } from 'vuex';
@@ -411,6 +417,7 @@
             const defaultDeparture = getDefaultDepartureTime(new Date(), 15, 5);
             return {
                 isDriver: false,
+                publicationDisposed:false,publicationBusy:false,publicationEpoch:0,
                 nothing: false,
                 overlayLoad: true,
                 saisi: "",
@@ -515,6 +522,7 @@
                 },
                 seatPreferences: {},
                 seatPreferenceStorageKey: 'mae-seat-preferences',
+                initializationError: '',
                 showSnackbar: {
                     showError: false,
                     messageError: "",
@@ -524,50 +532,60 @@
         created() {
             this.chargerHistorique();
         },
+        beforeUnmount(){this.publicationDisposed=true;this.publicationEpoch++;},
         async mounted() {
             $(".mode-publish").css("display", "flex");
 
-            try {
-                if(!await this.getVillages()) {
-                    this.showError("Impossible de charger la liste des villages.");
-                    return;
-                }
-
-                const carsResult = await this.getCars();
-                if(carsResult?.status !== 0) {
-                    this.showError(carsResult?.message || "Impossible de charger vos véhicules.");
-                    return;
-                }
-
-                if(this.cars.length === 0) {
-                    this.nothing = true;
-                    return;
-                }
-
-                // A Connect account is mandatory. Its onboarding can remain
-                // incomplete: the driver is warned, then may publish anyway.
-                const providerResult = await this.getProvider();
-                if(providerResult?.status !== 0) {
-                    this.nothing = true;
-                    this.showError(providerResult?.message || "Impossible d'initialiser votre compte de versement.");
-                    return;
-                }
-
-                if(this.connect_activation_required) {
-                    this.nothing = true;
-                } else {
-                    this.isDriver = true;
-                }
-            } finally {
-                this.overlayLoad = false;
-                this.loadSeatPreferences();
-            }
-
+            await this.initializePublication();
             console.log(this.$store.state.profil.userUid, this.timeInit);
             console.log("getFirstDayOfWeek:", getFirstDayOfWeek("S50").getUTCDate());
 
         },
         methods: {
+            async initializePublication() {
+                this.overlayLoad = true;
+                this.initializationError = '';
+                this.nothing = false;
+                this.isDriver = false;
+                try {
+                    if(!await this.getVillages()) {
+                        this.initializationError = "Impossible de charger la liste des villages.";
+                        return;
+                    }
+
+                    const carsResult = await this.getCars();
+                    if(carsResult?.status !== 0) {
+                        this.initializationError = carsResult?.message || "Impossible de charger vos véhicules.";
+                        return;
+                    }
+
+                    if(this.cars.length === 0) {
+                        this.nothing = true;
+                        return;
+                    }
+
+                    // A Connect account is mandatory. Its onboarding can remain
+                    // incomplete: the driver is warned, then may publish anyway.
+                    const providerResult = await this.getProvider();
+                    if(providerResult?.status !== 0) {
+                        this.nothing = true;
+                        this.initializationError = providerResult?.message || "Impossible d'initialiser votre compte de versement.";
+                        return;
+                    }
+
+                    if(this.connect_activation_required) {
+                        this.nothing = true;
+                    } else {
+                        this.isDriver = true;
+                    }
+                } catch {
+                    this.initializationError = "Impossible de préparer la publication. Veuillez réessayer.";
+                } finally {
+                    this.overlayLoad = false;
+                    this.loadSeatPreferences();
+                }
+
+            },
             ...mapActions("search", ['ajouterAuHistorique', 'sauvegarderHistorique', 'chargerHistorique']),
             ...mapActions("search", ['getVillages']),
             ...mapActions("publish", ["newTrip", "getPriceRecommended"]),
@@ -614,6 +632,11 @@
                     this.saisi = this.$refs[`SearchRef${this.mode}`].saisi;
             },
             async getSelected(){
+                if(this.publicationBusy || this.publicationDisposed)return;
+                const owner=this.$store.state.profil.userUid,generation=this.$store.state.profil.accountGeneration;
+                const epoch=this.publicationEpoch;
+                const current=()=>!this.publicationDisposed && this.publicationEpoch===epoch
+                    && this.$store.state.profil.userUid===owner && this.$store.state.profil.accountGeneration===generation;
                 const typePath = this.modeWork ? "work" : "default";
 
                 console.log("child-selected", this.infosPublish[typePath].depart, this.infosPublish[typePath].destination, this.mode)
@@ -670,7 +693,6 @@
                             result = await this.getPriceRecommended({orig_id: _tmp_village_orig.id, dest_id: _tmp_village.id});
                             if( result.status != 0 ){
                                 this.showError(result.message);
-                                setTimeout(this.$router.go(), 4000);
                                 // this.mode = "depart";
                                 return;
                             }
@@ -680,6 +702,10 @@
                         break;
                     
                     case "select-car":
+                        if (!this.$refs.SelectCarRef?.car) {
+                            this.showError("Veuillez sélectionner un véhicule disponible.");
+                            return;
+                        }
                         if (this.$refs.SelectCarRef) {
                             console.log("car--", this.$refs.SelectCarRef.car);
                             this.infosPublish[typePath].car = this.$refs.SelectCarRef.car;
@@ -705,15 +731,16 @@
                         this.nextStepMode();
                         break;
 
-                    case "itineraire":
-                        //
-                        if( this.$refs.ItineraireRef ){
-                            this.infosPublish[typePath].route = this.$refs.ItineraireRef.routes[0];
-                        }
+                    case "itineraire": {
+                        const route=this.$refs.ItineraireRef?.routes?.[0];
+                        if(!isPublishableRoute(route)){this.showError(PUBLICATION_ROUTE_ERROR);return;}
+                        this.infosPublish[typePath].route=route;
                         this.nextStepMode();
                         break;
+                    }
 
                     case "select-price":
+                        if(!isPublishableRoute(this.infosPublish[typePath].route)){this.showError(PUBLICATION_ROUTE_ERROR);return;}
                         if (this.$refs[`BottomMenuRef${this.mode}`]) {
                             this.infosPublish[typePath].price = this.$refs[`BottomMenuRef${this.mode}`].numberSelected;
                         }
@@ -739,7 +766,14 @@
                                 console.log("infos-work:", infos);
 
                                 this.overlayLoad = true;
-                                const response = await this.$store.dispatch('publish/newTrip', infos);
+                                this.publicationBusy=true;
+                                let response;
+                                try {response=await this.$store.dispatch('publish/newTrip',infos);}
+                                catch(error){
+                                    if(current())this.showError(error.message || "La publication n'a pas pu être confirmée.");
+                                    return;
+                                }finally{if(current()){this.publicationBusy=false;this.overlayLoad=false;}}
+                                if(!current() || response?.stale)return;
 
                                 if( response.status == 0 ){
                                     this.notification = {
@@ -777,6 +811,7 @@
                         this.nextStepMode();
                         break;
                     case "select-week":
+                        if(!isPublishableRoute(this.infosPublish.work.route)){this.showError(PUBLICATION_ROUTE_ERROR);return;}
                         
                         if (this.$refs[`BottomMenuRef${this.mode}`]) {
                             this.infosPublish[typePath].weeksSelected = this.$refs[`BottomMenuRef${this.mode}`].weeksSelected;
@@ -788,22 +823,12 @@
                         if( this.modeWork ){
 
                             if( this.infosPublish.work.sameHour ){
-                                //Build days Hour
-                                for (let index = 0; index < this.infosPublish[typePath].daysSelected.length; index++) {
-                                    const dayHour = {
-                                            day: this.infosPublish[typePath].daysSelected[index].dayName, 
-                                            hour: {
-                                                home: this.infosPublish.work.hour.home,
-                                                work: this.infosPublish.work.hour.work,
-                                            },
-                                            values: {
-                                                home: this.infosPublish[typePath].daysSelected[index].selected,
-                                                work: this.infosPublish[typePath].daysSelected[index].selected,
-                                            },
-                                        }
-                                    this.infosPublish.work.daysHour.push(dayHour);
-                                }
-                                console.log("sameHour", this.infosPublish.work.daysHour);
+                                // Rebuild the week on each attempt; never append an old draft.
+                                this.infosPublish.work.daysHour = this.infosPublish[typePath].daysSelected.map(day => ({
+                                    day: day.dayName,
+                                    hour: {...this.infosPublish.work.hour},
+                                    values: {home: day.selected, work: day.selected},
+                                }));
                             }
                             
                             
@@ -825,7 +850,14 @@
                                 console.log("infos-work:", infos);
 
                                 this.overlayLoad = true;
-                                const response = await this.$store.dispatch('publish/newTripMultple', infos);
+                                this.publicationBusy=true;
+                                let response;
+                                try {response=await this.$store.dispatch('publish/newTripMultple',infos);}
+                                catch(error){
+                                    if(current())this.showError(error.message || "La publication n'a pas pu être confirmée.");
+                                    return;
+                                }finally{if(current()){this.publicationBusy=false;this.overlayLoad=false;}}
+                                if(!current() || response?.stale)return;
 
                                 if( response.status == 0 ){
                                     this.notification = {
@@ -1059,6 +1091,9 @@
             },
         },
         watch: {
+            '$store.state.profil.accountGeneration'(){this.publicationEpoch++;this.publicationBusy=false;this.overlayLoad=false;},
+            '$store.state.profil.userUid'(){this.publicationEpoch++;this.publicationBusy=false;this.overlayLoad=false;},
+
         }
     });
     </script>

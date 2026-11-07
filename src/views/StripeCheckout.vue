@@ -63,6 +63,7 @@
         id="payment-form"
         ref="checkoutForm"
     >
+        <p v-if="paymentSessionExpired" role="alert">Votre session a changé. Fermez puis rouvrez ce formulaire.</p>
         <div id="payment-element">
             <!--Stripe.js injects the Payment Element-->
         </div>
@@ -82,6 +83,7 @@
 
         <v-checkbox
             v-if="allowSaveInfo"
+            :disabled="loading || paymentSessionExpired"
             v-model="saveInfo"
             label="Enregistrer les informations de carte pour les futurs paiements"
             @change="updatePaymentIntent()"
@@ -92,6 +94,7 @@
             block
             type="submit"
             :loading="loading"
+            :disabled="loading || paymentSessionExpired"
         >
             Payer {{ price }}€
             <template v-slot:loader>
@@ -108,6 +111,7 @@
         id="card-form"
         ref="checkoutForm"
     >
+        <p v-if="paymentSessionExpired" role="alert">Votre session a changé. Fermez puis rouvrez ce formulaire.</p>
         <div id="card-element">
             <!--Stripe.js injects the Payment Element-->
         </div>
@@ -130,6 +134,7 @@
             block
             type="submit"
             :loading="loading"
+            :disabled="loading || paymentSessionExpired"
         >
             Enregistrer la carte
             <template v-slot:loader>
@@ -144,6 +149,7 @@
 <script>
     import { defineComponent } from 'vue';
     import { mapState } from 'vuex';
+    import { paymentSession } from '@/services/paymentSession.js';
     import { serverRequest } from '@/utils/serverApi.js';
     import { Capacitor } from '@capacitor/core';
     import { Keyboard } from '@capacitor/keyboard';
@@ -167,6 +173,10 @@
         computed: {
             ...mapState("profil", ["darkMode"]),
             ...mapState("auth", ["customer_id"]),
+            paymentSessionExpired(){
+                const profile = this.$store.state.profil;
+                return this.paymentDisposed || Boolean(this.paymentOwner && (this.paymentOwner.uid !== profile.userUid || this.paymentOwner.generation !== profile.accountGeneration || this.paymentOwner.intent !== this.activePaymentIntentId || this.paymentOwner.mode !== this.mode));
+            },
             activePaymentIntentId(){
                 return this.paymentIntentId || this.$route?.query?.payment_intent || null;
             },
@@ -189,6 +199,8 @@
         data() {
             return {
                 loading: false,
+                paymentOwner: null,
+                paymentDisposed: false,
                 paymentElement: null,
                 clientSecret: null,
                 paymentId: null,
@@ -205,6 +217,7 @@
             };
         },
         beforeUnmount(){
+            this.paymentDisposed = true;
             document.removeEventListener('pointerdown', this.handleOutsidePointerDown, true);
             if(this.hasStripeFocus()){
                 this.dismissStripeKeyboard();
@@ -226,6 +239,7 @@
             this.$emit("unmount");
         },
         async mounted() {
+            const session = paymentSession(this);
             // Capture the tap before an overlay or parent closes the sheet.
             document.addEventListener('pointerdown', this.handleOutsidePointerDown, true);
             this.$emit("mount");
@@ -257,27 +271,31 @@
 
             try {
                 if (!stripePromise) {
-                    const { loadStripe } = await import('@stripe/stripe-js');
+                    const { loadStripe } = await session.wait(import('@stripe/stripe-js'));
+
                     stripePromise = loadStripe(process.env.VUE_APP_API_STRIPE_PK);
                 }
-                if (!await stripePromise) {
+                const sdk = await session.wait(stripePromise);
+
+                if (!sdk) {
                     throw new Error("Stripe.js n'a pas pu être chargé.");
                 }
 
                 switch (this.mode) {
                     case 'payment-card':
                         if(this.activePaymentIntentId)
-                            await this.mountPay();
+                            await session.wait(this.mountPay());
                         else if(this.$route?.name === 'checkout')
                             this.$router.replace('/profil');
                         break;
                     case 'register-card':
-                        await this.mountCardRegister();
+                        await session.wait(this.mountCardRegister());
                         break;
                     default:
                         break;
                 }
             } catch (error) {
+                if(!session.current()) return;
                 stripePromise = null;
                 const message = error?.message || "Le formulaire de paiement est indisponible.";
                 console.error("Unable to initialize Stripe.js:", error);
@@ -352,8 +370,11 @@
             // ******
             // card
             async mountCardRegister(){
+                const session = paymentSession(this);
+                if(!session.current()) return;
                 try {
-                    const stripe = await stripePromise;
+                    const stripe = await session.wait(stripePromise);
+
                     if (!stripe) {
                         throw new Error("Stripe.js n'a pas pu être chargé.");
                     }
@@ -395,6 +416,7 @@
                     }
                     cardForm.addEventListener("submit", this.submitCard);
                 } catch (error) {
+                    if(!session.current()) return;
                     console.error("Unable to mount card form:", error);
                     this.$emit(
                         "card-register-failed",
@@ -428,23 +450,28 @@
                             color: '#fa755a'
                         }
                     };
-                this.card.update({style: style})
+                this.card?.update({style: style})
             },
             async submitCard(e) {
-                e.preventDefault();
+                const session = paymentSession(this);
+                e?.preventDefault();
+                if(!session.current()) return;
+                if(this.loading || !this.card) return;
                 this.loading = true;
 
                 try {
-                    const stripePublic = await stripePromise;
-                    const result = await stripePublic.createToken(this.card);
+                    const stripePublic = await session.wait(stripePromise);
+
+                    const result = await session.wait(stripePublic.createToken(this.card));
+
                     if (result.error) {
                         throw result.error;
                     }
 
-                    const response = await serverRequest('post', '/payments/card-source', {
-                        mode: this.$store.state.profil.modeCo,
+                    const response = await session.wait(serverRequest('post', '/payments/card-source', {
+                        ...session.options,
                         data: { token: result.token.id },
-                    });
+                    }));
                     if (!response.data?.card) {
                         throw new Error("La carte n'a pas été enregistrée.");
                     }
@@ -452,6 +479,7 @@
                     this.$emit("card-registered");
                 }
                 catch (error) {
+                    if(!session.current()) return;
                     console.error("Card registration failed:", error);
                     this.$emit(
                         "card-register-failed",
@@ -459,12 +487,14 @@
                     );
                 }
                 finally {
-                    this.loading = false;
+                    if(session.current()) this.loading = false;
                 }
             },
             // ******
             // payment-intent
             async mountPay(){
+                const session = paymentSession(this);
+                if(!session.current()) return;
                 if( this.activePaymentIntentId == null ){
                     console.log("no paymentItenet Id");
                     return;
@@ -474,17 +504,19 @@
                 }
 
                 try {
-                    const { data: paymentIntent } = await serverRequest(
+                    const { data: paymentIntent } = await session.wait(serverRequest(
                         'get',
                         `/payments/topup-intent/${this.activePaymentIntentId}`,
-                        { mode: this.$store.state.profil.modeCo }
-                    );
+                        { ...session.options }
+                    ));
+
                     if(paymentIntent.status === 'succeeded'){
-                        await serverRequest('post', '/payments/topup-finalize', {
-                            mode: this.$store.state.profil.modeCo,
+                        await session.wait(serverRequest('post', '/payments/topup-finalize', {
+                            ...session.options,
                             data: { paymentIntentId: paymentIntent.id },
-                        });
-                        await this.$store.dispatch('profil/getSoldes');
+                        }));
+                        await session.wait(this.$store.dispatch('profil/getSoldes'));
+
                         this.$emit("payment-valided");
                         if(this.$route?.name === 'checkout'){
                             this.$router.replace('/profil');
@@ -509,7 +541,8 @@
                     this.clientSecret = paymentIntent.client_secret;
                     this.paymentId = paymentIntent.id;
 
-                    const stripe = await stripePromise;
+                    const stripe = await session.wait(stripePromise);
+
                     const elements = stripe.elements({ appearance: this.appearancePaymentIntent, clientSecret: this.clientSecret });
                     this.elements = elements;
 
@@ -526,69 +559,43 @@
                         .addEventListener("submit", this.submitPayment);
 
                     setTimeout(function () {
-                        this.$emit("element-mounted");
+                        if(session.current()) this.$emit("element-mounted");
                     }.bind(this), 1000)
                     console.log("mounted....");
                 } catch (error) {
+                    if(!session.current()) return;
                     console.error("Unable to mount payment form:", error);
                     this.$emit(
                         "checkout-error",
                         error.response?.data?.message || error.message || "Le paiement est indisponible."
                     );
+
                     if(this.$route?.name === 'checkout'){
                         this.$router.replace('/profil');
                     }
                 }
             },
-            async mountPayWithoutIntent(){
-                stripePromise.then(stripe => {
-                    const appearance = {
-                        theme: this.darkMode ? 'night' : 'minimal',
-                    };
-
-                    const elements = stripe.elements({ 
-                        appearance,
-                        mode: 'payment',
-                        currency: 'eur',
-                        amount: 4000,
-                    });
-
-                    this.elements = elements;
-                    console.log("elements", elements);
-                    const paymentElementOptions = {
-                        layout: "tabs",
-                    };
-                    const paymentElement = elements.create("payment", paymentElementOptions);
-                    paymentElement.mount("#payment-element");
-                    this.paymentElement = paymentElement;
-                    this.bindStripeFocusEvents(paymentElement);
-                    document
-                        .querySelector("#payment-form")
-                        .addEventListener("submit", this.submitPayment);
-                    
-                    setTimeout(function () {
-                        this.$emit("element-mounted");
-                    }.bind(this), 1000)
-                    console.log("mounted....");
-                    
-                });
-            },
             async updatePaymentIntent(){
+                const session = paymentSession(this);
+                if(!session.current()) return;
+                if(this.loading) return;
+                this.loading = true;
                 try {
                     if(!this.activePaymentIntentId){
                         this.elements.update({setupFutureUsage: this.saveInfo ? 'off_session' : null});
                     }
                     else{
-                        const { data: paymentIntent } = await serverRequest(
+                        const { data: paymentIntent } = await session.wait(serverRequest(
                             'patch',
                             `/payments/topup-intent/${this.activePaymentIntentId}`,
                             {
-                                mode: this.$store.state.profil.modeCo,
+                                ...session.options,
                                 data: {
                                     setupFutureUsage: this.saveInfo ? 'off_session' : null,
                                 },
                             }
-                        );
+                        ));
+
 
                         this.clientSecret = paymentIntent.client_secret;
                         this.paymentIntent = paymentIntent;
@@ -596,7 +603,8 @@
                         this.elements.update({ clientSecret: paymentIntent.client_secret});
                         this.unbindStripeFocusEvents(this.paymentElement);
                         this.paymentElement.unmount();
-                        const stripePK = await stripePromise;
+                        const stripePK = await session.wait(stripePromise);
+
                         const paymentElementOptions = {
                             layout: "tabs",
                         };
@@ -606,6 +614,8 @@
                         this.bindStripeFocusEvents(this.paymentElement);
                     }
                 } catch (error) {
+                    if(!session.current()) return;
+                    this.loading = false;
                     this.saveInfo = !this.saveInfo;
                     console.error("Unable to update payment preference:", error);
                     this.$emit(
@@ -615,29 +625,33 @@
                     return;
                 }
 
-                
+                if(session.current()) this.loading = false;
                 setTimeout(function(){
-                    this.$emit("checkbox-update")
+                    if(session.current()) this.$emit("checkbox-update")
                 }.bind(this), 1000)
             },
             async submitPayment(e){
-                e.preventDefault();
+                const session = paymentSession(this);
+                e?.preventDefault();
+                if(!session.current()) return;
+                if(this.loading) return;
                 this.loading = true; 
                 if(!this.activePaymentIntentId){
                     this.$emit("payment-failed");
-                    this.loading = false;
+                    if(session.current()) this.loading = false;
                     return;
                 }
 
                 try {
-                    const stripePublic = await stripePromise;
-                    const result = await stripePublic.confirmPayment({
+                    const stripePublic = await session.wait(stripePromise);
+
+                    const result = await session.wait(stripePublic.confirmPayment({
                         elements: this.elements,
                         redirect: 'if_required',
                         confirmParams: {
                             return_url: `${window.location.origin}/checkout`,
                         },
-                    });
+                    }));
 
                     if (result.error) {
                         console.error("Payment confirmation failed:", result.error);
@@ -654,20 +668,22 @@
                         return;
                     }
 
-                    await serverRequest('post', '/payments/topup-finalize', {
-                        mode: this.$store.state.profil.modeCo,
+                    await session.wait(serverRequest('post', '/payments/topup-finalize', {
+                        ...session.options,
                         data: { paymentIntentId: result.paymentIntent.id },
-                    });
-                    await this.$store.dispatch('profil/getSoldes');
+                    }));
+                    await session.wait(this.$store.dispatch('profil/getSoldes'));
+
                     this.$emit("payment-valided");
                 } catch (error) {
+                    if(!session.current()) return;
                     console.error("Payment finalization failed:", error);
                     this.$emit(
                         "checkout-error",
                         error.response?.data?.message || "Le paiement a été confirmé, mais sa synchronisation a échoué. Actualisez votre solde."
                     );
                 } finally {
-                    this.loading = false;
+                    if(session.current()) this.loading = false;
                 }
             },
         },

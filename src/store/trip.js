@@ -1,9 +1,13 @@
 // import { createStore } from 'vuex'
 // import axios from 'axios'
 
+import {preferencesFromIndices} from '@/services/travelPreferences.js';
 import supabase from '@/utils/supabaseClient.js';
+import { fetchAccessibleTrip } from '@/services/tripPresentation.js';
 import {loadRatingContext} from '@/services/ratingPreferences.js';
 import { serverRequest } from '@/utils/serverApi.js';
+
+let memberRequest = 0, contactsRequest = 0, selectedTripRequest = 0;
 
 export default {
     namespaced: true,
@@ -185,6 +189,7 @@ export default {
             state.notMessageVue = idTrips;
         },
         SET_TRIP_SELECTED(state, trip) {
+            if(!trip?.id || Number(state.tripSelected?.id)!==Number(trip.id))selectedTripRequest++;
             if( trip ){
                 const originalBookings = Array.isArray(trip.bookings)
                     ? trip.bookings
@@ -279,7 +284,30 @@ export default {
         },
     },
     actions: {
-        async openRatingForTrip({state,rootState},tripId){const owner=rootState.profil.userUid;const data=await loadRatingContext(supabase,{tripId,accountId:rootState.profil.userId});if(rootState.profil.userUid!==owner)return false;state.ratings.data=data;state.ratings.rating=true;return true;},
+        async loadSelectedTrip({rootState, commit, dispatch}, tripId) {
+            const owner = rootState.profil.userUid, generation = rootState.profil.accountGeneration, accountId=rootState.profil.userId, request=++selectedTripRequest;
+            const current = () => rootState.profil.userUid === owner && rootState.profil.accountGeneration === generation && request===selectedTripRequest;
+            try {
+                if (!await dispatch('search/getVillages', null, {root: true})) throw new Error('Villages indisponibles.');
+                if(!current())return {status:2,stale:true};
+                const trip = await fetchAccessibleTrip(supabase, {tripId: Number(tripId), userUid: owner,
+                    accountId, resolveVillage: id => rootState.search.villages.find(v => v.id == id)?.village || ''});
+                if (!current()) return {status: 2, stale: true};
+                commit('SET_TRIP_SELECTED', trip);
+                return {status: 0};
+            } catch(error) {
+                if(!current())return {status:2,stale:true};
+                if (current()) commit('SET_TRIP_SELECTED', {});
+                return {status: 1, message: error.message || 'Trajet indisponible.'};
+            }
+        },
+        async openRatingForTrip({state,rootState,commit},tripId){
+            const owner=rootState.profil.userUid, generation=rootState.profil.accountGeneration;
+            const data=await loadRatingContext(supabase,{tripId,accountId:rootState.profil.userId});
+            if(rootState.profil.userUid!==owner||rootState.profil.accountGeneration!==generation)return false;
+            commit('rating/RESET_RATING_SELECTION',null,{root:true});
+            state.ratings.data=data;state.ratings.rating=true;return true;
+        },
         async refreshUnread({commit,rootState}) {
             const owner=rootState.profil.userUid;
             if(!owner){commit('CLEAR_MESSAGING');return;}
@@ -287,7 +315,10 @@ export default {
                 if(rootState.profil.userUid===owner)commit('SET_CHAT_UNREAD',{owner,conversations:response.data.data.conversations});
             } catch { if(rootState.profil.userUid===owner)commit('SET_CHAT_UNREAD',{owner,conversations:[]}); }
         },
-        async getContacts({ state, commit }){
+        async getContacts({ state, commit, rootState }){
+            const owner=rootState.profil.userUid,generation=rootState.profil.accountGeneration,request=++contactsRequest;
+            const current=()=>rootState.profil.userUid===owner&&rootState.profil.accountGeneration===generation
+                &&request===contactsRequest&&state.tripSelected?.id===tripId;
             const bookings = state.tripSelected?.bookings;
             const tripId = state.tripSelected?.id;
             if(!Array.isArray(bookings) || !tripId) {
@@ -303,32 +334,9 @@ export default {
                 return;
             }
 
-            const { data: accounts, error } = await supabase
-                .from('account')
-                .select(`
-                    id,
-                    user_id,
-                    username,
-                    avatar,
-                    booking (
-                        id,
-                        trip_id,
-                        passenger_account_id,
-                        is_accepted,
-                        is_refused,
-                        in_car,
-                        passenger_no_show,
-                        payment_status,
-                        trip (
-                            max_seats,
-                            village_departure_id,
-                            village_arrival_id,
-                            departure_time
-                        )
-                    )
-                `)
-                .in('id', accountIds)
-                .eq('booking.trip_id', tripId);
+            const { data: accounts, error } = await supabase.from('public_profile')
+                .select('id,user_id,username,firstname,lastname,avatar').in('id',accountIds);
+            if(!current())return;
 
             if(error) {
                 console.error("getContacts error:", error);
@@ -338,83 +346,42 @@ export default {
 
             const contacts = (accounts || []).map((account) => ({
                 ...account,
-                booking: (account.booking || []).filter(
-                    (booking) => String(booking.trip_id) === String(tripId)
-                ),
+                booking: bookings.filter(booking=>Number(booking.passenger_account_id)===Number(account.id)).map(booking=>({...booking,
+                    trip:{id:tripId,max_seats:state.tripSelected.max_seats,village_departure_id:state.tripSelected.village_departure_id,
+                        village_arrival_id:state.tripSelected.village_arrival_id,departure_time:state.tripSelected.departure_time}})),
                 messageNumber: 0,
             }));
             commit('SET_CONTACTS', contacts);
         },
-        async getProfilMember({state, rootState}, member){
-            
-            let { data: account, error: error_account } = await supabase
-                .from('account')
-                .select(`*, settings(*)`)
-                .eq('user_id', member.userUid)
-            
-            if(error_account){
-                console.error(error_account)
-                return false;
-            }
-            if(!account?.length){
-                return false;
-            }
-
-            console.log("account=", account);
-
-            // Notation... TODO : add others informations
-            const { count, error: error_count } = await supabase
-                .from('trip')
-                .select('id', { count: 'exact' })
-                .eq("driver_id", member.userUid);
-
-            if(error_count){
-                console.log("Error count: ", error_count);
-            }
-            else {
-                state.member.notation.nbTrip = count;
-            }
-
-            const settings = account[0].settings;
-            
-            if(settings && settings.length > 0){
-                state.member.avatar = account[0].avatar;
-                state.member.userName = `${account[0].firstname} ${account[0].lastname}`;
-                state.member.location = account[0].village != null && account[0].village != "" ? account[0].village : "";
-                state.member.identity = account[0].identity;
-                state.member.userId = account[0].id;
-
-                state.member.payouts_enabled = false;
-                if(account[0].provider_id){
+        async getProfilMember({state, rootState, dispatch}, member){
+            const owner=rootState.profil.userUid, generation=rootState.profil.accountGeneration, request=++memberRequest;
+            const current=()=>rootState.profil.userUid===owner&&rootState.profil.accountGeneration===generation&&request===memberRequest;
+            const empty={ratingStatus:'loading',userId:null,identity:false,payouts_enabled:false,avatar:'',userName:'',location:'',preferences:[],notation:{avis:0,nbTrip:0,satisfaction:0}};
+            state.member=empty;
+            try {
+                const {data,error}=await supabase.from('public_profile').select('*').eq('user_id',member.userUid);
+                if(!current())return false;
+                if(error||!data?.length)return false;
+                const account=data[0], settings=Array.isArray(account.settings)?account.settings[0]:account.settings;
+                const profile={...empty,avatar:account.avatar||'',userName:[account.firstname,account.lastname].filter(Boolean).join(' ')||account.username||'Membre',
+                    userId:account.id,identity:Boolean(account.identity),location:account.village||'',preferences:preferencesFromIndices(settings?.prefer),notation:{...empty.notation}};
+                const {count,error:countError}=await supabase.from('trip').select('id',{count:'exact'}).eq('driver_id',member.userUid);
+                if(!current())return false;
+                if(!countError)profile.notation.nbTrip=Number(count)||0;
+                if(account.id){
                     try {
-                        const { data: provider } = await serverRequest(
-                            'get',
-                            `/connect/accounts/${account[0].provider_id}/status`,
-                            { mode: rootState.profil.modeCo }
-                        );
-                        state.member.payouts_enabled = Boolean(provider?.payouts_enabled);
-                    } catch (error) {
-                        console.warn("Unable to retrieve Connect status:", error);
-                    }
+                        const {data:provider}=await serverRequest('get',`/profiles/${account.id}/payment-status`,{mode:rootState.profil.modeCo});
+                        if(!current())return false;
+                        profile.payouts_enabled=Boolean(provider?.data?.payoutsEnabled);
+                    }catch{/* The public profile remains available without Stripe. */}
                 }
-
-                let outPreferences = [];
-                
-                const preferences = settings[0].prefer;
-                for (let index = 0; index < preferences.length; index++) {
-                    const ind_prefer = preferences[index];
-                    outPreferences.push(state.aboutPreference[state.indexPreference[index]][ind_prefer]);
-                }
-                state.member.preferences = outPreferences;
-            }
-            else{
-                return false;
-            }
-
-            console.log("state.member", state.member);
-
-            return true;
-
+                if(!current())return false;
+                state.member=profile;
+                const summary = await dispatch('rating/getRating', {userId:account.id}, {root:true});
+                if(!current()) return false;
+                state.member.ratingStatus = summary?.status === 0 ? 'ready' : 'error';
+                return true;
+            }catch{return false;}
         },
         async updateAccepteBooking({state, rootState}, index){
             const contact = state.chat.contacts[index];

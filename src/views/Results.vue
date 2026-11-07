@@ -120,7 +120,7 @@
         :mode="mode"
         :trajet="{ depart: depart, destination: destination } "
         :nombre_trajet="trajets.filter(trajet => trajet.depart == depart && trajet.destination == destination).length"
-        :nbPassenger="nbPassenger" 
+        :nbPassenger="String(seatsRequested)"
         :date="date.replaceAll('-', '/')"
         :filterOpen="filterOpen"
         v-on:open-filter="filterOpen=true" 
@@ -137,15 +137,20 @@
     <!--  -->
     <v-main class="container-trajet-member">
         <div class="label-filter text-caption text-uppercase mx-auto">{{ date.replaceAll("-", "/") }}</div>
-        <TrajetMember 
-            v-for="(infos, index) in mode=='date-dep-dest' ? trajetFiltered : trajets" 
+        <p v-if="loading" role="status" class="text-center">Chargement des trajets…</p>
+        <div v-else-if="routeError || error" role="alert" class="text-center pa-6">
+            <p>{{ routeError || error }}</p><v-btn @click="reloadResults">Réessayer</v-btn>
+        </div>
+        <p v-if="warning && !loading && !error && !routeError" role="status" class="text-center">{{ warning }}</p>
+        <TrajetMember
+            v-for="(infos, index) in visibleTrips"
             :key="index" 
             :infos="infos"
             :data-index="index"
             @click="reserve($event, index)" 
         />
 
-        <div v-if="nothing" class="nothing label-filter text-caption mx-auto">
+        <div v-if="nothing && !loading && !error && !routeError" class="nothing label-filter text-caption mx-auto">
             <div class="contenu">
                 <v-icon icon="mdi-alert-circle-outline"></v-icon>
                 <span>Désolé, nous n'avons trouvé aucun trajet correspondant à vos critères.</span>
@@ -262,17 +267,24 @@
     import PaneApear from '@/components/PaneApear.vue'; 
     import BottomMenu from '@/components/menus/BottomMenu.vue';
 
+    import {bookingSeats,occupiedSeats} from '@/services/bookingSeats.js';
     export default defineComponent({
         name: 'results-view',
         computed: {
-            ...mapState("search", ["trajets", "trajetSelected"]),
+            ...mapState("search", ["trajets", "trajetSelected", "loading", "error", "warning"]),
             ...mapState("profil", ["darkMode"]),
+            seatsRequested(){return bookingSeats(this.$store.state.search.nbPassenger);},
+            visibleTrips(){
+                if(this.routeError)return [];
+                return this.mode==='shared-ids'?this.trajets.filter(trip=>new Date(trip.departure_time).getTime()>Date.now()
+                    && occupiedSeats(trip)+this.seatsRequested<=trip.max_seats):this.trajetFiltered;
+            },
             trajetFiltered() {
                 let trips = this.trajets.filter(
                     (trajet) => {
                         return trajet.depart == this.depart
                             && trajet.destination == this.destination
-                            //&& trajet.passenger_number + parseInt(this.nbPassenger) <= trajet.max_seats
+                            && occupiedSeats(trajet) + this.seatsRequested <= trajet.max_seats
                             && this.getDate().getTime() < new Date(trajet.departure_time).getTime()
                             && this.isSameDay(this.getDate(), new Date(trajet.departure_time))
                     }
@@ -285,11 +297,11 @@
                         });
                         break;
                     case 1: //prix
-                        trips = trips.sort((a, b) => a.price - b.price);
+                        trips = trips.sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
 
                         break;
                     case 2: //nb-place
-                        trips = trips.sort((a, b) => (b.max_seats - b.passenger_number) - (a.max_seats - a.passenger_number));
+                        trips = trips.sort((a, b) => (b.max_seats - occupiedSeats(b)) - (a.max_seats - occupiedSeats(a)));
                         break;
                     default:
                         break;
@@ -324,6 +336,7 @@
         },
         data() {
             return {
+                routeError: '', resultsRequest: 0,
                 mode: 'date-dep-dest', //date-dep-dest; shared-ids
                 filterOpen: false,
                 user_shared_data: null,
@@ -365,56 +378,37 @@
             }
         },
         async mounted() {
-            
-            // console.log("params", this.$route.params);
-            this.overlayLoad = true;
-
-            console.log("this.$route", this.$route, this.$route.path.includes("shared"));
-            // if( this.$route.params.action == 'open-trip-passenger' ){
-            //     this.onglet = "trajets";
-            // }
-            // else if( this.$route.params.action == 'open-trip-driver' ){
-            //     this.SET_MODE_DRIVER(true);
-            //     this.onglet = "planning";
-            // }
-
-            if(this.$route.path.includes("shared")){
-                this.mode = 'shared-ids'
-                const ids = this.$route.params.ids;
-                console.log("ids", ids);
-                const res = await this.getTrajetsId({user_uid: this.$route.params.user_uid, ids:ids});
-                if(res.status == 0){
-                    this.user_shared_data = res.data[0]
-                }
-
-                console.log("rees:::::", res);
-                
-
-                if (this.trajetFiltered.length == 0)
-                    this.nothing = true;
-            }
-            else{
-                this.nothing = false;
-                try {
-                    //await this.getTrajets();
-                    await this.getTrajetsDate({date: this.getDate()})
-                    if (this.trajetFiltered.length == 0)
-                        this.nothing = true;
-                }
-                catch (error) {
-                    console.error("Error:", error)
-                    this.nothing = true;
-                }
-            }
-            this.overlayLoad = false;
+            await this.reloadResults();
         },
         methods: {
-            ...mapMutations("search", ["SET_DEPART", "SET_DESTINATION", "SET_NB_PASSENGER", "SET_TRAJET_SELECTED"]),
+            async reloadResults() {
+                const request=++this.resultsRequest;
+                const shared=this.$route.path.includes('/results/shared/');
+                this.mode=shared?'shared-ids':'date-dep-dest';this.user_shared_data=null;
+                this.routeError='';this.nothing=false;this.overlayLoad=true;
+                this.SET_TRAJET_SELECTED({});
+                const seats=bookingSeats(shared?(this.$route.query?.seats??1):this.nbPassenger);
+                this.SET_NB_PASSAGER(seats??0);
+                if(seats===null){this.routeError='Le nombre de passagers doit être compris entre 1 et 8.';this.overlayLoad=false;return;}
+                try {
+                    if(shared){
+                        const result=await this.getTrajetsId({user_uid:this.$route.params.user_uid,ids:this.$route.params.ids});
+                        if(request!==this.resultsRequest)return;
+                        if(result?.status===0){this.user_shared_data=result.data?.[0]||null;this.nothing=this.visibleTrips.length===0;}
+                    }else{
+                        const result=await this.getTrajetsDate({date:this.getDate()});
+                        if(request!==this.resultsRequest)return;
+                        if(result?.status===0)this.nothing=this.visibleTrips.length===0;
+                    }
+                }finally{if(request===this.resultsRequest)this.overlayLoad=false;}
+            },
+            ...mapMutations("search", ["SET_DEPART", "SET_DESTINATION", "SET_NB_PASSAGER", "SET_TRAJET_SELECTED"]),
             ...mapMutations("trip", ["SET_TRIP_SELECTED"]),
             ...mapActions("trip", ["getProfilMember"]),
             ...mapActions("search", ["getTrajets", "getTrajetsDate", "getTrajetsId"]),
             reserve(event, index) {
-                this.infos = this.trajetFiltered[index];
+                this.infos = this.visibleTrips[index];
+                if(!this.infos)return;
                 // TODO: propre
                 this.SET_TRAJET_SELECTED(this.infos);
                 this.$store.commit("search/SET_DEPART", "");
@@ -423,13 +417,15 @@
                 this.callChildMethod();
             },
             async openProfilMember(){
-                this.SET_TRIP_SELECTED(this.infos);
-                this.$refs.BottomMenuRefResults.loading = true;
-                const result = await this.getProfilMember({userUid: this.infos.driver_id});
-                if(result){
-                    this.$refs.PaneApearProfilMemberRef.open();
-                }
-                this.$refs.BottomMenuRefResults.loading = false;
+                const selected=this.infos;
+                this.SET_TRIP_SELECTED(selected);
+                this.$refs.BottomMenuRefResults.loading=true;
+                try {
+                    const result=await this.getProfilMember({userUid:selected.driver_id});
+                    if(this.infos!==selected)return;
+                    if(result)this.$refs.PaneApearProfilMemberRef.open();
+                    else{this.messageSnackbarError='Impossible de charger ce profil. Veuillez réessayer.';this.showSnackbarError=true;}
+                } finally {if(this.$refs.BottomMenuRefResults)this.$refs.BottomMenuRefResults.loading=false;}
             },
             buildPaymentIntentReserve(){
                 this.buildPaymentIntent = true;
@@ -507,6 +503,7 @@
             },
         },
         watch: {
+            '$route.fullPath'() { this.reloadResults(); },
             overlay() {
                 if ( ! this.overlay ) {
                     if ( this.$refs.BottomMenuRefResults && this.$refs.BottomMenuRefResults.notif ) {
@@ -514,9 +511,7 @@
                     }
                 }
             },
-            trajets() {
-                this.overlayLoad = this.trajets.length == 0 ? true : false;
-            },
+            loading(value) { this.overlayLoad = value; },
         },
     });
 </script>

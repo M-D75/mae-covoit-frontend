@@ -1,3 +1,4 @@
+import * as authSessionGuard from '@/services/authSessionGuard.js';
 import {readFileSync} from 'node:fs';
 import {transformSync} from '@babel/core';
 import {parse} from '@vue/compiler-sfc';
@@ -82,7 +83,7 @@ describe('update dialogue policy',()=>{
 
 it('adds version headers only to trip publication, leaving Auth refresh and ordinary reads unchanged',async()=>{
  const headers=vi.fn().mockResolvedValue({'x-covia-build':'4'}),network=vi.fn().mockResolvedValue({ok:true});
- const wrapper=load('src/utils/supabaseClient.js',id=>id==='@supabase/supabase-js'?{createClient:()=>({})}:{getClientHeaders:headers,notifyUpdateRequired:vi.fn()});
+ const wrapper=load('src/utils/supabaseClient.js',id=>id==='@supabase/supabase-js'?{createClient:()=>({auth:{}})}:id.endsWith('authSessionGuard.js')?authSessionGuard:{getClientHeaders:headers,notifyUpdateRequired:vi.fn()});
  vi.stubGlobal('fetch',network);
  try{
   await wrapper.versionedFetch('https://fixture.supabase.co/auth/v1/token',{method:'POST'});expect(headers).not.toHaveBeenCalled();

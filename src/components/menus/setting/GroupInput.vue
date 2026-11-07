@@ -84,6 +84,7 @@
             size="x-large"
             variant="outlined"
             block
+            :loading="saving" :disabled="saving"
             @click="valid()"
         >
             Valider
@@ -109,7 +110,7 @@
 
 <script>
     //import $ from 'jquery'
-    import { mapMutations } from 'vuex';
+    import { mapActions } from 'vuex';
 
     // Components
 
@@ -171,24 +172,25 @@
         },
         data() {
             return {
-                showSnackbar: false,
+                saving: false, showSnackbar: false,
                 messageSnackbar: "",
                 groupInputWritable: [],
             };
         },
         methods: {
-            ...mapMutations("profil", ["SET_INFOS"]),
-            valid(){
-                console.log("goupInput", this.groupInput);
-                let data = {};
-                for (let index = 0; index < this.groupInput.length; index++) {
-                    const element = this.groupInput[index];
-                    data[element.id] = element.value;
-                }
-                console.log("data", data);
-                this.SET_INFOS(data);
-                this.messageSnackbar = "Mise à jour effectuée !";
-                this.showSnackbar = true;
+            ...mapActions('profil', ['savePersonalDetails']),
+            async valid(){
+                if (this.saving) return;
+                this.saving = true;
+                try {
+                    const fields = Object.fromEntries(this.groupInputWritable.map(field => [field.id, field.value]));
+                    const result = await this.savePersonalDetails(fields);
+                    this.messageSnackbar = result?.message || 'Vos informations n’ont pas été enregistrées.';
+                    this.showSnackbar = true;
+                } catch {
+                    this.messageSnackbar = 'Vos informations n’ont pas été enregistrées. Veuillez réessayer.';
+                    this.showSnackbar = true;
+                } finally { this.saving = false; }
             },
             checkNumericalValue(event){
                 event.target.value = event.target.value.replace(/\D/g, '')
@@ -199,8 +201,9 @@
                 }
             }
         },
+        watch: { groupInput(value) { this.groupInputWritable = value.map(field => ({...field})); } },
         mounted() {
-            this.groupInputWritable = this.groupInput;
+            this.groupInputWritable = this.groupInput.map(field => ({...field}));
         },
     };
 </script>

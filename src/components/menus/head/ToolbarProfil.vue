@@ -66,24 +66,10 @@
             permanent
         >
             <!-- <v-app-bar-nav-icon></v-app-bar-nav-icon> -->
-            <v-btn 
-                icon
-                v-if="!needToComeBack"
-                :disabled="!isNative"
-            >
-                <!-- without notif -->
-                <v-icon
-                    v-if="notification && isNative"
-                    class="mr-0"
-                    @click="SET_NOTIFICATION(false)"
-                >mdi-bell</v-icon>
-
-                <v-icon
-                    v-else
-                    class="mr-0"
-                    @click="SET_NOTIFICATION(true)"
-                    
-                >mdi-bell-off</v-icon>
+            <v-btn icon v-if="!needToComeBack" :aria-label="unreadCount ? `Notifications, ${unreadCount} non lues` : 'Notifications'" @click="$store.dispatch('notifications/open')">
+                <v-badge :content="unreadCount > 99 ? '99+' : unreadCount" :model-value="unreadCount > 0" color="primary" floating>
+                    <v-icon icon="mdi-bell-outline" />
+                </v-badge>
             </v-btn>
 
             <v-btn
@@ -123,13 +109,13 @@
     import { defineComponent } from 'vue';
     import { SafeAreaController, SafeArea } from '@aashu-dubey/capacitor-statusbar-safe-area';
 
-    import { mapState, mapMutations } from 'vuex';
+    import { mapState } from 'vuex';
 
 
     export default defineComponent({
         name: 'toolbar-comp',
         computed: {
-            ...mapState("profil", [ "notification"]),
+            ...mapState("notifications", ["unreadCount"]),
             ...mapState("general", [ "isNative"]),
         },
         components: {
@@ -156,7 +142,6 @@
             }
         },
         methods: {
-            ...mapMutations("profil", ["SET_NOTIFICATION"]),
             accessSetting() {
                 this.$router.currentRoute._rawValue.path == "/setting" ? this.$router.back() : this.$router.push("/setting");
             },

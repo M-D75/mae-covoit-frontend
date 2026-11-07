@@ -4,7 +4,8 @@ import store from '../store';
 import { serverRequest } from '@/utils/serverApi.js';
 import supabase from '@/utils/supabaseClient.js';
 import router from '@/router';
-import { formaterDateUTC, getRandomInt, getRandomString, getFutureTime, tomorowDate } from '@/utils/utils.js'
+import { normalizeTrip, isUpcomingOrActive, validTripPrice, MAX_TRACKING_LOOKBACK_MS } from '@/services/tripPresentation.js';
+import { formaterDateUTC, tomorowDate } from '@/utils/utils.js'
 
 const TRIP_SEARCH_SELECT = `
     id,
@@ -16,32 +17,47 @@ const TRIP_SEARCH_SELECT = `
     price,
     route,
     car_id,
+    cancellation_pending_at,
     car (*),
-    account (*),
+    account:public_profile (*),
     booking (
         *,
-        account (*)
+        account:public_profile (*)
     )`;
 
-function isMissingCancellationColumn(error) {
-    return error?.code === '42703'
-        && String(error?.message || '').includes('cancellation_pending_at');
-}
-
-/**
- * La colonne d'annulation arrive avec les migrations de durcissement. Pendant
- * la transition, une base plus ancienne doit encore pouvoir rechercher ses
- * trajets ; Supabase renvoie sinon 42703 et l'interface affiche une liste vide.
- */
-async function executeTripSearch(buildQuery) {
-    let result = await buildQuery(true);
-    if (isMissingCancellationColumn(result.error)) {
-        console.warn(
-            'La migration cancellation_pending_at manque ; recherche en mode compatible.',
-        );
-        result = await buildQuery(false);
+let searchGeneration = 0;
+async function runSearch({ commit, getters, dispatch }, buildQuery, own = false) {
+    const owner = store.state.profil.userUid;
+    const generation = store.state.profil.accountGeneration;
+    const request = ++searchGeneration;
+    const current = () => request === searchGeneration && owner === store.state.profil.userUid && generation === store.state.profil.accountGeneration;
+    commit('SET_SEARCH_STATE', { loading: true, error: '', warning: '' });
+    commit('SET_TRAJETS', []);
+    try {
+        if (!await store.dispatch('auth/checkSessionOnly')) {
+            if (current()) router.replace('/login');
+            throw new Error('Votre session a expiré.');
+        }
+        if (!await dispatch('getVillages')) throw new Error('Impossible de charger les villages.');
+        const { data, error } = await buildQuery(owner);
+        if (!current()) return { status: 2, stale: true };
+        if (error) throw error;
+        const eligible = (data || []).filter(trip => !own || isUpcomingOrActive(trip));
+        const rows = eligible
+            .map(trip => normalizeTrip(trip, getters.GET_VILLAGE_BY_ID)).filter(Boolean);
+        const incomplete = eligible.length !== rows.length || rows.some(trip => !trip.canReserve);
+        commit('SET_TRAJETS', rows);
+        commit('SET_SEARCH_STATE', { warning: incomplete ? 'Certains trajets ont des informations incomplètes et ne peuvent pas être réservés.' : '' });
+        return { status: 0, data: rows, request };
+    } catch {
+        if (!current()) return { status: 2, stale: true };
+        const message = 'Impossible de charger les trajets. Vérifiez la connexion puis réessayez.';
+        commit('SET_TRAJETS', []);
+        commit('SET_SEARCH_STATE', { error: message });
+        return { status: 1, message };
+    } finally {
+        if (current()) commit('SET_SEARCH_STATE', { loading: false });
     }
-    return result;
 }
 
 
@@ -61,6 +77,7 @@ export default {
         trajets: [
         ],
         accounts: [],
+        loading: false, error: '', warning: '',
     },
     getters: {
         getVillagesByName: (state) => (name) => {
@@ -90,6 +107,7 @@ export default {
         },
     },
     mutations: {
+        SET_SEARCH_STATE(state, values) { Object.assign(state, values); },
         SET_VILLAGES(state, villages) {
             state.villages = villages;
         },
@@ -155,393 +173,47 @@ export default {
             }
             return true;
         },
-        async getTrajetsFake({ state }){
-
-            const travelList = [];
-
-            for (let i = 0; i < Math.ceil(Math.random() * 5)+1; i++) {
-                travelList.push({
-                    avatar: "https://avataaars.io/?avatarStyle=Circle&topType=ShortHairDreads01&accessoriesType=Blank&hairColor=PastelPink&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Wink&eyebrowType=DefaultNatural&mouthType=Serious&skinColor=Tanned",
-                    depart: "Combani",
-                    departure_time: getFutureTime(2),
-                    destination: "Mamoudzou",
-                    driver_id: getRandomString(36),
-                    hour_end: `${getRandomInt(2).toString().padStart(2, '0')}:${getRandomInt(60).toString().padStart(2, '0')}`,
-                    hour_start: `${getRandomInt(2).toString().padStart(2, '0')}:${getRandomInt(60).toString().padStart(2, '0')}`,
-                    id: getRandomInt(10),
-                    max_seats: getRandomInt(10),
-                    name: getRandomString(2),
-                    passenger_number: getRandomInt(10),
-                    price: getRandomInt(10)
-                });
-            }
-
-            state.trajets = travelList;
-            console.log("travelList Fake", travelList);
-
+        async getTrajets(context) {
+            return runSearch(context, owner => supabase.from('trip').select(TRIP_SEARCH_SELECT)
+                .neq('driver_id', owner).is('cancellation_pending_at', null));
         },
-        async getTrajets({ commit, getters, dispatch }) {
-            const sessionChecked = await store.dispatch("auth/checkSessionOnly");
-            if(!sessionChecked){
-                router.replace("/login");
-                return;
-            }
-            if(!await dispatch('getVillages')) return false;
-
-            const { data: trips, error } = await executeTripSearch((withCancellationFilter) => {
-                let query = supabase
-                    .from('trip')
-                    .select(TRIP_SEARCH_SELECT)
-                    .neq('driver_id', store.state.profil.userUid);
-
-                if (withCancellationFilter) {
-                    query = query.is('cancellation_pending_at', null);
+        async getTrajetsDate(context, infos) {
+            return runSearch(context, owner => supabase.from('trip').select(TRIP_SEARCH_SELECT)
+                .neq('driver_id', owner).gte('departure_time', formaterDateUTC(infos.date))
+                .lt('departure_time', formaterDateUTC(tomorowDate(infos.date))).is('cancellation_pending_at', null));
+        },
+        async getTrajetsId(context, infos) {
+            const owner = store.state.profil.userUid;
+            const result = await runSearch(context, user => supabase.from('trip').select(TRIP_SEARCH_SELECT)
+                .eq('id', Number(infos.ids)).gt('departure_time', new Date().toISOString())
+                .neq('driver_id', user).is('cancellation_pending_at', null));
+            if (result.status !== 0) return result;
+            try {
+                const { data, error } = await supabase.from('public_profile').select('user_id, firstname, lastname, avatar').eq('user_id', infos.user_uid);
+                if (owner !== store.state.profil.userUid || result.request !== searchGeneration) return { status: 2, stale: true };
+                if (error) throw error;
+                return { status: 0, data: data || [] };
+            } catch {
+                if (owner === store.state.profil.userUid && result.request === searchGeneration) {
+                    context.commit('SET_SEARCH_STATE', { error: 'Impossible de charger le trajet partagé.' });
+                    context.commit('SET_TRAJETS', []);
                 }
-                return query;
-            });
-
-            if ( error ) {
-                console.error(error);
-                return;
+                return { status: 1, message: 'Impossible de charger le trajet partagé.' };
             }
-
-            console.log("Joneess", trips);
-            
-            let _trips = [];
-            for (let index = 0; index < trips.length; index++) {
-                const trip = trips[index];
-                const tripAccount = trip.account || {};
-
-                let isoDate = trip.departure_time;
-                let date = new Date(isoDate);
-
-                let offset = date.getTimezoneOffset();
-                date = new Date(date.getTime() - (offset * 60000));
-
-                let hours = date.getUTCHours().toString().padStart(2, '0');
-                let minutes = date.getUTCMinutes().toString().padStart(2, '0');
-                let departure_time = `${hours}:${minutes}`;
-
-                date = new Date((date.getTime() + (parseInt(trip.route.infosGoogle.duration.replace("s", "")) * 1000) ) - (offset * 60000));
-
-                hours = date.getUTCHours().toString().padStart(2, '0');
-                minutes = date.getUTCMinutes().toString().padStart(2, '0');
-
-                const arrival_time = `${hours}:${minutes}`;
-                // jointure : account,trip,booking
-                const sanitizedBookings = (trip.booking || []).filter((booking) => !booking.passenger_no_show);
-                const driverFirstname = tripAccount.firstname || "Chauffeur";
-                const driverLastname = tripAccount.lastname || "";
-                const driverAvatar = tripAccount.avatar || null;
-
-                const _trip  = {
-                    id: trip.id,
-                    driver_id: trip.driver_id,
-                    driver_account_id: tripAccount.id || null,
-                    name: `${driverFirstname} ${driverLastname}`.trim(),
-                    avatar: driverAvatar,
-                    village_departure_id: trip.village_departure_id,
-                    village_arrival_id: trip.village_arrival_id,
-                    depart: getters.GET_VILLAGE_BY_ID(trip.village_departure_id),
-                    destination: getters.GET_VILLAGE_BY_ID(trip.village_arrival_id),
-                    departure_time: trip.departure_time,
-                    hour_start: departure_time,
-                    hour_end: arrival_time,
-                    price: trip.price ? trip.price : (Math.ceil(Math.random()*4)+1),
-                    passenger_number: sanitizedBookings.filter((booking) => booking.is_accepted).length,
-                    bookings: sanitizedBookings,
-                    max_seats: trip.max_seats,
-                    route: trip.route,
-                    car: trip.car,
-                };
-                _trips.push(_trip);
-            }
-
-            console.log("trips-search:", _trips);
-            
-            commit('SET_TRAJETS', _trips);
-
-            return true
         },
-        async getTrajetsDate({ commit, getters, dispatch }, infos) {
-            const sessionChecked = await store.dispatch("auth/checkSessionOnly");
-            if(!sessionChecked){
-                router.replace("/login");
-                return;
-            }
-            if(!await dispatch('getVillages')) return false;
-
-            const tomorow = tomorowDate(infos.date);
-
-            console.log("date:", infos, infos.date, tomorow)
-
-            const { data: trips, error } = await executeTripSearch((withCancellationFilter) => {
-                let query = supabase
-                    .from('trip')
-                    .select(TRIP_SEARCH_SELECT)
-                    .neq('driver_id', store.state.profil.userUid)
-                    .gte("departure_time", formaterDateUTC(infos.date))
-                    .lt("departure_time", formaterDateUTC(tomorow));
-
-                if (withCancellationFilter) {
-                    query = query.is('cancellation_pending_at', null);
-                }
-                return query;
-            });
-
-            if ( error ) {
-                console.error(error);
-                return;
-            }
-
-            console.log("Joneess", trips);
-            
-            let _trips = [];
-            for (let index = 0; index < trips.length; index++) {
-                const trip = trips[index];
-                const tripAccount = trip.account || {};
-
-                let isoDate = trip.departure_time;
-                let date = new Date(isoDate);
-
-                let offset = date.getTimezoneOffset();
-                date = new Date(date.getTime() - (offset * 60000));
-
-                let hours = date.getUTCHours().toString().padStart(2, '0');
-                let minutes = date.getUTCMinutes().toString().padStart(2, '0');
-                let departure_time = `${hours}:${minutes}`;
-
-                date = new Date((date.getTime() + (parseInt(trip.route.infosGoogle.duration.replace("s", "")) * 1000) ) - (offset * 60000));
-
-                hours = date.getUTCHours().toString().padStart(2, '0');
-                minutes = date.getUTCMinutes().toString().padStart(2, '0');
-
-                const arrival_time = `${hours}:${minutes}`;
-                // jointure : account,trip,booking
-                const sanitizedBookings = (trip.booking || []).filter((booking) => !booking.passenger_no_show);
-                const _trip  = {
-                    id: trip.id,
-                    driver_id: trip.driver_id,
-                    driver_account_id: tripAccount.id || null,
-                    name: `${tripAccount.firstname || ''} ${tripAccount.lastname || ''}`.trim() || "Chauffeur",
-                    avatar: tripAccount.avatar || null,
-                    village_departure_id: trip.village_departure_id,
-                    village_arrival_id: trip.village_arrival_id,
-                    depart: getters.GET_VILLAGE_BY_ID(trip.village_departure_id),
-                    destination: getters.GET_VILLAGE_BY_ID(trip.village_arrival_id),
-                    departure_time: trip.departure_time,
-                    hour_start: departure_time,
-                    hour_end: arrival_time,
-                    price: trip.price ? trip.price : (Math.ceil(Math.random()*4)+1),
-                    passenger_number: sanitizedBookings.filter((booking) => booking.is_accepted).length,
-                    bookings: sanitizedBookings,
-                    max_seats: trip.max_seats,
-                    route: trip.route,
-                    car: trip.car,
-                };
-                _trips.push(_trip);
-            }
-
-            console.log("trips-search:", _trips);
-            
-            commit('SET_TRAJETS', _trips);
-
-            return true
-        },
-        async getTrajetsId({ commit, getters, dispatch }, infos) {
-            const sessionChecked = await store.dispatch("auth/checkSessionOnly");
-            if(!sessionChecked){
-                router.replace("/login");
-                return;
-            }
-            if(!await dispatch('getVillages')) {
-                return {status: 1, data: null};
-            }
-
-            console.log("infos", infos, infos.user_uid, formaterDateUTC(new Date()), parseInt(infos.ids));
-
-            const { data: trips, error } = await executeTripSearch((withCancellationFilter) => {
-                let query = supabase
-                    .from('trip')
-                    .select(TRIP_SEARCH_SELECT)
-                    .eq('id', parseInt(infos.ids))
-                    .gt("departure_time", formaterDateUTC(new Date()))
-                    .neq('driver_id', store.state.profil.userUid);
-
-                if (withCancellationFilter) {
-                    query = query.is('cancellation_pending_at', null);
-                }
-                return query;
-            });
-
-            console.log("-----------------------------------");
-
-            if ( error ) {
-                console.error("Error 1:", error);
-                return {status: 1, data: null}
-            }
-
-            console.log("Joneess", trips);
-            
-            let _trips = [];
-            for (let index = 0; index < trips.length; index++) {
-                const trip = trips[index];
-                const tripAccount = trip.account || {};
-
-                let isoDate = trip.departure_time;
-                let date = new Date(isoDate);
-
-                let offset = date.getTimezoneOffset();
-                date = new Date(date.getTime() - (offset * 60000));
-
-                let hours = date.getUTCHours().toString().padStart(2, '0');
-                let minutes = date.getUTCMinutes().toString().padStart(2, '0');
-                let departure_time = `${hours}:${minutes}`;
-
-                date = new Date((date.getTime() + (parseInt(trip.route.infosGoogle.duration.replace("s", "")) * 1000) ) - (offset * 60000));
-
-                hours = date.getUTCHours().toString().padStart(2, '0');
-                minutes = date.getUTCMinutes().toString().padStart(2, '0');
-
-                const arrival_time = `${hours}:${minutes}`;
-                // jointure : account,trip,booking
-                const sanitizedBookings = (trip.booking || []).filter((booking) => !booking.passenger_no_show);
-                const _trip  = {
-                    id: trip.id,
-                    driver_id: trip.driver_id,
-                    driver_account_id: tripAccount.id || null,
-                    name: `${tripAccount.firstname || ''} ${tripAccount.lastname || ''}`.trim() || "Chauffeur",
-                    avatar: tripAccount.avatar || null,
-                    village_departure_id: trip.village_departure_id,
-                    village_arrival_id: trip.village_arrival_id,
-                    depart: getters.GET_VILLAGE_BY_ID(trip.village_departure_id),
-                    destination: getters.GET_VILLAGE_BY_ID(trip.village_arrival_id),
-                    departure_time: trip.departure_time,
-                    hour_start: departure_time,
-                    hour_end: arrival_time,
-                    price: trip.price ? trip.price : (Math.ceil(Math.random()*4)+1),
-                    passenger_number: sanitizedBookings.filter((booking) => booking.is_accepted).length,
-                    bookings: sanitizedBookings,
-                    max_seats: trip.max_seats,
-                    route: trip.route,
-                    car: trip.car,
-                };
-                _trips.push(_trip);
-            }
-
-            console.log("trips-search:", _trips);
-            
-            commit('SET_TRAJETS', _trips);
-
-
-            let { data: account, error: error_account } = await supabase
-                .from('account')
-                .select(`
-                    user_id,
-                    firstname,
-                    lastname,
-                    avatar
-                `)
-                .eq('user_id', infos.user_uid)
-            
-            if(error_account){
-                console.error("Error:", error_account);
-                return {status: 2, data: null}
-            }
-        
-            console.log("account shared", account);
-
-            return {status: 0, data: account}
-        },
-        async getOwnTrip({ getters, commit, dispatch }) {
-            const sessionChecked = await store.dispatch("auth/checkSessionOnly");
-            if(!sessionChecked){
-                router.replace("/login");
-                return;
-            }
-            if(!await dispatch('getVillages')) {
-                commit('SET_TRAJETS', []);
-                return {status: 1, message: "Impossible de charger les villages."};
-            }
-
-            const currentDate = new Date();
-            const oneHourAgo = new Date(currentDate.getTime() - (60 * 60 * 1000));
-
-            const { data: trips, error } = await supabase
-                .from('trip')
-                .select(`
-                    id, 
-                    driver_id,
-                    village_departure_id,
-                    village_arrival_id,
-                    departure_time,
-                    max_seats,
-                    price,
-                    route,
-                    booking (
-                        *,
-                        account (*)
-                    )`)
-                .eq('driver_id', store.state.profil.userUid)
-                .gt("departure_time", formaterDateUTC(oneHourAgo))
-
-            if ( error ) {
-                console.error(error);
-                return;
-            }
-
-            console.log("Jon", trips);
-            let _trips = [];
-            for (let index = 0; index < trips.length; index++) {
-                const trip = trips[index];
-
-                let isoDate = trip.departure_time;
-                let date = new Date(isoDate);
-
-                let offset = date.getTimezoneOffset();
-                date = new Date(date.getTime() - (offset * 60000));
-
-                let hours = date.getUTCHours().toString().padStart(2, '0');
-                let minutes = date.getUTCMinutes().toString().padStart(2, '0');
-                let departure_time = `${hours}:${minutes}`;
-
-                date = new Date((date.getTime() + (parseInt(trip.route.infosGoogle.duration.replace("s", "")) * 1000) ) - (offset * 60000));
-
-                hours = date.getUTCHours().toString().padStart(2, '0');
-                minutes = date.getUTCMinutes().toString().padStart(2, '0');
-
-                const arrival_time = `${hours}:${minutes}`;
-
-                // jointure : account,trip,booking
-                const sanitizedBookings = (trip.booking || []).filter((booking) => !booking.passenger_no_show);
-                const _trip  = {
-                    id: trip.id,
-                    driver_id: trip.driver_id,
-                    village_departure_id: trip.village_departure_id,
-                    village_arrival_id: trip.village_arrival_id,
-                    depart: getters.GET_VILLAGE_BY_ID(trip.village_departure_id),
-                    destination: getters.GET_VILLAGE_BY_ID(trip.village_arrival_id),
-                    departure_time: trip.departure_time,
-                    hour_start: departure_time,
-                    hour_end: arrival_time,
-                    price: trip.price ? trip.price : (Math.ceil(Math.random()*4)+1),
-                    passenger_number: sanitizedBookings.length,
-                    bookings: sanitizedBookings,
-                    max_seats: trip.max_seats,
-                    route: trip.route,
-                };
-
-                _trips.push(_trip);
-            }
-
-            console.log("Get OWN SET_TRAJETS EKKO", _trips); 
-            commit('SET_TRAJETS', _trips);   
-            
-            return {status: 0, message: "publish ok"}
-
+        async getOwnTrip(context) {
+            return runSearch(context, owner => supabase.from('trip').select(TRIP_SEARCH_SELECT)
+                .eq('driver_id', owner).gte('departure_time', new Date(Date.now() - MAX_TRACKING_LOOKBACK_MS).toISOString()), true);
         },
         async reserveTrajet({state}, payload = {}){
+            const owner=store.state.profil.userUid,generation=store.state.profil.accountGeneration;
+            const selectedTrip={...state.trajetSelected},seatsRequested=Number(state.nbPassenger);
+            const current=()=>store.state.profil.userUid===owner&&store.state.profil.accountGeneration===generation;
+            const stale=()=>({valided:false,stale:true,status:'SESSION_CHANGED',retriable:false,message:'Votre session ou votre sélection a changé.'});
+            if(!owner || (payload.expectedOwner!==undefined&&payload.expectedOwner!==owner)
+                || (payload.expectedGeneration!==undefined&&payload.expectedGeneration!==generation))return stale();
             const sessionChecked = await store.dispatch("auth/checkSessionOnly");
+            if(!current())return stale();
             if( ! sessionChecked ){
                 router.replace("/login");
                 return {
@@ -551,12 +223,14 @@ export default {
                 };
             }
 
-            const selectedTrip = state.trajetSelected;
-            const seatsRequested = Number(state.nbPassenger);
+            if(state.trajetSelected?.id!==selectedTrip.id||Number(state.nbPassenger)!==seatsRequested)return stale();
+            if (selectedTrip?.canReserve === false || validTripPrice(selectedTrip?.price) === null) {
+                return { valided: false, message: 'Les informations de ce trajet sont incomplètes. La réservation est indisponible.', retriable: false };
+            }
             if( !selectedTrip || !selectedTrip.id ){
                 return { valided: false, message: "Erreur lors de la sélection du trajet.", retriable: false };
             }
-            if( !Number.isInteger(seatsRequested) || seatsRequested <= 0 ){
+            if( !Number.isInteger(seatsRequested) || seatsRequested <= 0 || seatsRequested > 8 ){
                 return { valided: false, message: "Le nombre de places demandé est invalide.", retriable: false };
             }
             if( !payload.requestId ){
@@ -566,6 +240,7 @@ export default {
             const typeUrl = store.state.profil.modeCo;
             try {
                 const response = await serverRequest('post', '/bookings/reserve', {
+                    expectedUserId:owner,
                     mode: typeUrl,
                     data: {
                         tripId: selectedTrip.id,
@@ -573,6 +248,7 @@ export default {
                         requestId: payload.requestId,
                     },
                 });
+                if(!current())return stale();
                 const reservation = response.data?.data;
                 if( response.data?.status !== 'ok' || !reservation ){
                     throw new Error("Réponse de réservation invalide.");
@@ -631,6 +307,7 @@ export default {
                 };
             }
             catch(error){
+                if(!current()||error.code==='SESSION_CHANGED')return stale();
                 console.error("reserveTrajet error:", error);
                 const apiError = error.response?.data;
                 return {

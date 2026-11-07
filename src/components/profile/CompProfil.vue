@@ -190,6 +190,9 @@
                 v-if="onglet=='trajets' || onglet=='planning'" 
                 :infos="infosTravels" 
                 :mode="onglet"
+                :loading="tripsLoading"
+                :error="tripLoadError"
+                v-on:retry="updateTripInfos()"
                 v-on:open-contacts="$emit('open-contacts')"
                 v-on:open-member="$emit('open-member')"
                 v-on:booking-removed="updateTripInfos()"
@@ -340,6 +343,10 @@
                         ],
                 },
                 infosTravels: [],
+                tripsLoading: false,
+                tripLoadError: '',
+                tripsRequest: 0,
+                tripsDisposed: false,
                 loadCreaditCard: false,
                 showSnackbarError: false,
                 messageSnackbarError: "",
@@ -370,6 +377,11 @@
 
             // this.$refs.PaneApearProfilMemberRef.open()
             // this.$refs.PaneApearRef.open()
+        },
+        beforeUnmount(){
+            this.tripsDisposed = true;
+            this.tripsRequest++;
+            this.SET_LOAD_GET_TRIP_PUBLISH(false);
         },
         methods: {
             ...mapActions("profil", ["getTravels", "getPublish", "buildHistoriqueBooking"]),
@@ -491,36 +503,51 @@
                 console.log("No Trip Date\n");
             },
             async updateTripInfos(){
-                // TODO : infosTravels need to reloaded every time
+                const request = ++this.tripsRequest;
+                const tab = this.onglet;
+                const current = () => !this.tripsDisposed && this.tripsRequest === request && this.onglet === tab;
+                this.tripLoadError = '';
+                this.tripsLoading = false;
+                if(tab !== 'trajets' && tab !== 'planning'){
+                    this.SET_LOAD_GET_TRIP_PUBLISH(false);
+                    return;
+                }
+                const key = tab === 'trajets' ? 'myTravels' : 'myPublish';
+                this.infosTravels = this.profil[key] || [];
+                this.tripsLoading = true;
                 this.SET_LOAD_GET_TRIP_PUBLISH(true);
-                this.infosTravels = [];
-                if( this.onglet == "trajets" ){
-                    await this.getTravels();
-                    this.infosTravels = this.profil.myTravels;
-                    this.askNewMessage();
+                const failure = tab === 'trajets'
+                    ? 'Impossible de charger vos réservations. Vérifiez la connexion puis réessayez.'
+                    : 'Impossible de charger vos publications. Vérifiez la connexion puis réessayez.';
+                try{
+                    const result = await (tab === 'trajets' ? this.getTravels() : this.getPublish());
+                    if(!current()) return;
+                    if(result?.status !== 0){
+                        this.tripLoadError = result?.message || failure;
+                        return;
+                    }
+                    this.infosTravels = result.data || this.profil[key] || [];
+                    // Unread counts must not hide successfully loaded journeys.
+                    Promise.resolve(this.askNewMessage()).catch(() => {});
+                }catch{
+                    if(current()) this.tripLoadError = failure;
+                }finally{
+                    if(current()){
+                        this.tripsLoading = false;
+                        this.SET_LOAD_GET_TRIP_PUBLISH(false);
+                    }
                 }
-                else if( this.onglet == "planning" ){
-                    await this.getPublish();
-                    this.infosTravels = this.profil.myPublish;
-                    this.askNewMessage();
-                }
-                // else{
-                //     this.askNewMessage();
-                //     if( this.onglet == "trajets" ){
-                //         this.infosTravels = this.profil.myTravels;
-                //     }
-                //     else if( this.onglet == "planning" ){
-                //         this.infosTravels = this.profil.myPublish;
-                //     }
-                // }
-                this.SET_LOAD_GET_TRIP_PUBLISH(false);
-                console.log("infos-travels:", this.infosTravels);
             },
         },
         watch: {
             '$route.params.action'(action) {
-                if(action==='open-trip-driver'){this.SET_MODE_DRIVER(true);this.onglet='planning';this.updateTripInfos();}
-                if(action==='open-trip-passenger'){this.onglet='trajets';this.updateTripInfos();}
+                let tab;
+                if(action === 'open-trip-driver'){this.SET_MODE_DRIVER(true);tab = 'planning';}
+                if(action === 'open-trip-passenger') tab = 'trajets';
+                if(tab){
+                    if(this.onglet === tab) this.updateTripInfos();
+                    else this.onglet = tab;
+                }
             },
             notMessageVue() { this.updateNotifMessage(); },
             darkMode(){

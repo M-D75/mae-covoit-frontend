@@ -102,7 +102,7 @@ describe('actual map adapter templates', () => {
             await Vue.nextTick();
             expect(vm.actorAssets).toHaveLength(2);
             expect(decodeURIComponent(vm.actorAssets[0].asset.url)).toContain('rotate(90 24 24)');
-            expect(decodeURIComponent(vm.actorAssets[0].asset.url)).toContain('fill="#737373"');
+            expect(decodeURIComponent(vm.actorAssets[0].asset.url)).toContain('fill="#171717"');
             expect(host.querySelectorAll(`[data-layer="${marker}"]`).length).toBe(engine === 'LeafletMapSurface' ? 3 : 5);
             expect(vm.zonePolygons).toHaveLength(1);
         });

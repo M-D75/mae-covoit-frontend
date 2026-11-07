@@ -51,7 +51,7 @@
 
         <div style="height: 100vh; width: 100%">
 
-            <MapTrip />
+            <MapTrip :key="mapTripKey" />
         </div>
 
         <!-- reserve fast -->
@@ -86,6 +86,10 @@
     export default defineComponent({
         name: 'trip-view',
         computed: {
+            mapTripKey(){
+                const profile=this.$store.state.profil;
+                return `${profile.userUid}:${profile.accountGeneration}:${this.$store.state.trip.tripSelected?.id || ''}`;
+            },
             ...mapState("search", ['depart', "destination", "nbPassenger"]),
         },
         components: {
