@@ -321,7 +321,6 @@ const profilModule = {
             const sessionChecked = await store.dispatch("auth/checkSessionOnly");
             if (!current()) return {status: 2, stale: true};
             if( ! sessionChecked ){
-                router.replace("/login");
                 return {status: 1, message: "Votre session a expiré."};
             }
 

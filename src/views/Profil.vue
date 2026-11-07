@@ -376,7 +376,6 @@
             }
         },
         beforeMount(){
-            this.checkSessionIn();
             window.removeEventListener('resize', this.adjustClipPath);
         },
         mounted(){
@@ -418,17 +417,8 @@
         },
         methods: {
             ...mapActions("profil", ["getTravels", "getPublish", "buildHistoriqueBooking"]),
-            ...mapActions("auth", ["checkSession"]),
             ...mapMutations("profil", ["SET_LOAD_GET_TRIP_PUBLISH", "SET_MODE_DRIVER", "SET_REMOVE_HISTORY_DATES", "SET_NB_PASSAGER"]),
             ...mapMutations("trip", ["SET_NOT_MESSAGE_VUE"]),
-            async checkSessionIn(){
-                this.loadCreaditCard = true
-                const sessionValided = await this.$store.dispatch("auth/checkSession");
-                if( ! sessionValided )
-                    this.$router.replace("/");
-                else
-                    this.loadCreaditCard = false;
-            },
             goToInfoPerso(){
                 this.$router.push("/profil/perso")
             },

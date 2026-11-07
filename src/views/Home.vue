@@ -132,7 +132,7 @@
 
 <!--  -->
 <script>
-    import { mapActions, mapState } from 'vuex'
+    import { mapState } from 'vuex'
     import { getDefaultAuthPath } from '@/services/authEntry.js';
 
     export default {
@@ -146,21 +146,18 @@
             }
         },
         methods: {
-            ...mapActions("auth", ["checkSession"]),
             goToLoginSign(){
                 this.$router.push({ path: getDefaultAuthPath() });
             },
             async checkSessionIn(){
-                await this.checkSession();
-                this.overlayLoad = false;
-                if(this.logged_in){
-                    this.$router.replace(this.account_created ? "/search" : "/account-info");
-                }
-                else{
-                    // Do not leave a delayed redirect alive: on a cold native
-                    // OAuth return it could overwrite App.vue's callback route.
-                    this.$router.replace(getDefaultAuthPath());
-                }
+                this.overlayLoad=true;
+                try{
+                    const result=await this.$store.dispatch('auth/loadSession',{path:'/search'});
+                    if(this.$route.path!=='/')return;
+                    if(result.status==='ready')this.$router.replace(result.hasAccount?'/search':'/account-info');
+                    else if(result.status==='unauthenticated')this.$router.replace(getDefaultAuthPath());
+                }catch{this.$store.commit('auth/SET_PROFILE_LOOKUP_ERROR',{path:'/search'});}
+                finally{this.overlayLoad=false;}
             },
         },
         created() {

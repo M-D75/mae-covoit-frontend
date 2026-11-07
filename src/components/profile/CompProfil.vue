@@ -385,19 +385,22 @@
         },
         methods: {
             ...mapActions("profil", ["getTravels", "getPublish", "buildHistoriqueBooking"]),
-            ...mapActions("auth", ["checkSession"]),
             ...mapMutations("profil", ["SET_LOAD_GET_TRIP_PUBLISH", "SET_MODE_DRIVER", "SET_REMOVE_HISTORY_DATES", "SET_NB_PASSAGER"]),
             ...mapMutations("trip", ["SET_NOT_MESSAGE_VUE"]),
             forwardCoordinates(coordinates){
                 this.$emit('icon-coordinates', coordinates);
             },
             async checkSessionIn(){
-                this.loadCreaditCard = true
-                const sessionValided = await this.$store.dispatch("auth/checkSession");
-                if( ! sessionValided )
-                    this.$router.replace("/");
-                else
-                    this.loadCreaditCard = false;
+                const target=this.$route.fullPath||'/profil';
+                this.loadCreaditCard=true;
+                try{
+                    const result=await this.$store.dispatch('auth/loadSession',{path:target});
+                    if(this.tripsDisposed || !this.$route.path.startsWith('/profil'))return;
+                    if(result.status==='unauthenticated')this.$router.replace({path:'/login',query:{redirect:target}});
+                    else if(result.status==='ready'&&!result.hasAccount)this.$router.replace({path:'/account-info',query:{redirect:target}});
+                }catch{
+                    if(!this.tripsDisposed)this.$store.commit('auth/SET_PROFILE_LOOKUP_ERROR',{path:target});
+                }finally{this.loadCreaditCard=false;}
             },
             goToInfoPerso(){
                 this.$router.push("/profil/perso")

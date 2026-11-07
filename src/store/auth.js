@@ -7,10 +7,98 @@ import supabase from '@/utils/supabaseClient.js';
 import { serverRequest } from '@/utils/serverApi.js';
 import { runAuthSession } from '@/services/authSessionGuard.js';
 import { rememberAuthEntry } from '@/services/authEntry.js';
+import store from '../store';
+import {isAuthLookupUnavailable} from '@/services/authProfile.js';
 
-import store from '../store'; 
 
-let sessionCheckGeneration = 0;
+let activeSessionLoad = null;
+async function hydrateSession({state,commit,rootState},entry){
+    const profile=rootState.profil,initialGeneration=entry.generation;
+    try{
+        const {data,error}=await supabase.auth.getSession();
+        if(activeSessionLoad!==entry || initialGeneration!==profile.accountGeneration)return {status:'stale'};
+        if(error)throw error;
+        if(!data?.session){
+            commit('CLEAR_TOKEN');profile.userId=null;
+            commit('profil/SET_USER_UID','',{root:true});
+            return {status:'unauthenticated',hasAccount:false};
+        }
+        const {session}=data,user=session.user;
+        rememberAuthEntry();
+        commit('SET_LOGGED_IN',true);
+        commit('SET_TOKEN',{token:session.access_token,expiry:session.expires_at*1000});
+        commit('profil/SET_USER_UID',user.id,{root:true});
+        entry.owner=user.id;entry.generation=profile.accountGeneration;
+        const current=()=>activeSessionLoad===entry && profile.userUid===user.id && profile.accountGeneration===entry.generation;
+        commit('SET_PROVIDER',user.app_metadata?.provider);
+        const {data:rows,error:accountError}=await supabase.from('account')
+            .select('*, settings (auto_accept_trip, prefer)').eq('user_id',user.id);
+        if(!current())return {status:'stale'};
+        if(accountError)throw accountError;
+        const account=(rows||[])[0]||null;
+        commit('SET_ACCOUNT_CREATED',Boolean(account));
+        profile.userId=account?.id||null;
+        if(account){
+            const settings=Array.isArray(account.settings)?account.settings[0]:account.settings;
+            if(settings){
+                profile.auto_accept_trip=typeof settings.auto_accept_trip==='boolean'?settings.auto_accept_trip:true;
+                commit('profil/SET_PREFERENCES',settings.prefer,{root:true});
+            }
+            commit('profil/SET_PROFILE_DETAILS',account,{root:true});
+            profile.identity=account.identity;
+            try{
+                const {data:payment}=await serverRequest('post','/account/payment-profile',{mode:profile.modeCo,expectedUserId:user.id});
+                if(!current())return {status:'stale'};
+                state.customer_id=payment.customer?.id||'';state.customer=payment.customer||null;
+                state.provider_id=payment.provider?.id||'';state.stripe_provider=payment.provider||null;
+                profile.payouts_enabled=Boolean(payment.provider?.payoutsEnabled);
+                profile.connect_account_available=Boolean(payment.provider?.id);
+                profile.connect_activation_required=Boolean(payment.provider?.activationRequired??!payment.provider?.onboardingComplete);
+                profile.credit_card={available:false,brand:'',last4:'0000'};
+                if(payment.customer?.card)profile.credit_card={available:true,brand:payment.customer.card.brand,last4:payment.customer.card.last4};
+            }catch{
+                if(!current())return {status:'stale'};
+                // A payment-service outage does not invalidate an existing profile.
+            }
+        }
+        if(!account?.avatar && user.user_metadata?.avatar_url && profile.avatarUrl==='https://avataaars.io/?avatarStyle=Circle&topType=ShortHairDreads01&accessoriesType=Blank&hairColor=PastelPink&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Wink&eyebrowType=DefaultNatural&mouthType=Serious&skinColor=Tanned')profile.avatarUrl=user.user_metadata.avatar_url;
+        if(account?.avatar!=null)profile.avatarUrl=account.avatar;
+        if(account && account.avatar==null){
+            try{await supabase.from('account').update({avatar:profile.avatarUrl}).eq('user_id',user.id).select();}
+            catch{/* An optional avatar sync must not block the profile. */}
+        }
+        if(!current())return {status:'stale'};
+        profile.soldes=account?account.credit:0;
+        profile.userName=account?[account.lastname,account.firstname].filter(Boolean).join(' ')||user.user_metadata?.full_name||account.username:`Anonyme-${user.id.substring(0,3)}`;
+        if(account){
+            profile.profil.infos_perso.nom=account.lastname;
+            profile.profil.infos_perso.prenom=account.firstname;
+            profile.profil.infos_perso.email=account.email;
+        }
+        return {status:'ready',hasAccount:Boolean(account)};
+    }catch{
+        if(activeSessionLoad!==entry || profile.accountGeneration!==entry.generation || profile.userUid!==entry.owner)return {status:'stale'};
+        return {status:'profile-error',hasAccount:Boolean(state.account_created)};
+    }
+}
+async function loadSessionState(context,options={}){
+    const {state,rootState,commit}=context,profile=rootState.profil;
+    let entry=activeSessionLoad;
+    if(!entry || entry.state!==state || entry.profile!==profile || entry.owner!==profile.userUid || entry.generation!==profile.accountGeneration){
+        entry={state,profile,owner:profile.userUid,generation:profile.accountGeneration,promise:null};
+        activeSessionLoad=entry;
+        entry.promise=hydrateSession(context,entry).finally(()=>{if(activeSessionLoad===entry)activeSessionLoad=null;});
+    }
+    const result=await entry.promise;
+    if(result.status==='profile-error'){
+        const route=router.currentRoute?.value;
+        const requested=options.path || state.profileLookupError?.path || (route?.meta?.requiresAuth?route.fullPath:'/search');
+        const path=typeof requested==='string'&&requested.startsWith('/')&&!requested.startsWith('//')?requested:'/search';
+        commit('SET_PROFILE_LOOKUP_ERROR',{path});
+    }else if(result.status==='ready')commit('SET_PROFILE_LOOKUP_ERROR',null);
+    return result;
+}
+
 export default {
     namespaced: true,
     state: {
@@ -165,166 +253,20 @@ export default {
             console.log("refreshToken", error, user)
             return true;
         },
-        async checkSession({ state, commit, rootState }){
-            const request = ++sessionCheckGeneration, initialGeneration = rootState.profil.accountGeneration;
-            let { data, error } = await supabase.auth.getSession();
-            if (request !== sessionCheckGeneration || initialGeneration !== rootState.profil.accountGeneration) return false;
-
-            commit('SET_LOGGED_IN', false);
-            commit('SET_ACCOUNT_CREATED', false);
-            if(data.session){
-                rememberAuthEntry();
-                commit('SET_LOGGED_IN', true);
-                commit('SET_TOKEN', {
-                    token: data.session.access_token,
-                    expiry: data.session.expires_at * 1000,
-                });
-                const user = data.session.user;
-                commit('profil/SET_USER_UID', user.id, { root: true });
-                const generation = rootState.profil.accountGeneration;
-                const current = () => request === sessionCheckGeneration && rootState.profil.userUid === user.id && rootState.profil.accountGeneration === generation;
-                commit('SET_PROVIDER', user.app_metadata.provider);
-                console.log('User is already connected:', user);
-
-                //Check if account are created
-                let { data: account, error: error_account } = await supabase
-                    .from('account')
-                    .select(`
-                        *,
-                        settings (auto_accept_trip, prefer)
-                    `)
-                    .eq('user_id', user.id)
-
-                if (!current()) return false;
-                if(error_account){
-                    commit('SET_PROFILE_LOOKUP_ERROR',{path:state.profileLookupError?.path||'/search'});
-                    return false;
-                }
-                commit('SET_PROFILE_LOOKUP_ERROR',null);
-                account = account || [];
-
-                if(account.length > 0){
-                    const settings = Array.isArray(account[0].settings) ? account[0].settings[0] : account[0].settings;
-                    if (settings) {
-                        store.state.profil.auto_accept_trip = typeof settings.auto_accept_trip === 'boolean' ? settings.auto_accept_trip : true;
-                        commit('profil/SET_PREFERENCES', settings.prefer, {root: true});
-                    }
-                    commit('profil/SET_PROFILE_DETAILS', account[0], {root: true});
-                    store.state.profil.identity = account[0].identity;
-                }
-
-                console.log("Account", account);
-
-                if( error_account ){
-                    console.error("Erreur", error_account)
-                    commit('SET_ACCOUNT_CREATED', false);
-                    rootState.profil.userId = null;
-                    return false;
-                }
-                else{
-                    if(account.length > 0){
-                        console.log("Welcome ! ", account[0].firstname);
-                        store.state.profil.userId = account[0].id;
-                        commit('SET_ACCOUNT_CREATED', true);
-
-                        try {
-                            const paymentProfileResponse = await serverRequest(
-                                'post',
-                                '/account/payment-profile',
-                                { mode: store.state.profil.modeCo, expectedUserId:user.id }
-                            );
-                            if (!current()) return false;
-                            const paymentProfile = paymentProfileResponse.data;
-
-                            state.customer_id = paymentProfile.customer?.id || "";
-                            state.customer = paymentProfile.customer || null;
-                            state.provider_id = paymentProfile.provider?.id || "";
-                            state.stripe_provider = paymentProfile.provider || null;
-                            store.state.profil.payouts_enabled = Boolean(paymentProfile.provider?.payoutsEnabled);
-                            store.state.profil.connect_account_available = Boolean(paymentProfile.provider?.id);
-                            store.state.profil.connect_activation_required = Boolean(
-                                paymentProfile.provider?.activationRequired
-                                ?? !paymentProfile.provider?.onboardingComplete
-                            );
-
-                            store.state.profil.credit_card = { available: false, brand: '', last4: '0000' };
-                            if (paymentProfile.customer?.card) {
-                                store.state.profil.credit_card.brand = paymentProfile.customer.card.brand;
-                                store.state.profil.credit_card.last4 = paymentProfile.customer.card.last4;
-                                store.state.profil.credit_card.available = true;
-                            }
-                        } catch (paymentProfileError) {
-                            if (!current()) return false;
-                            console.error("Payment profile initialization failed:", paymentProfileError);
-                        }
-                    }
-                    else{
-                        console.log("No account")
-                        commit('SET_ACCOUNT_CREATED', false);
-                        rootState.profil.userId = null;
-                    }
-                }
-                
-                const current_account = account.length > 0 ? account[0] : null
-
-                if( ( current_account == null || current_account.avatar == null ) && user.user_metadata.avatar_url && store.state.profil.avatarUrl == "https://avataaars.io/?avatarStyle=Circle&topType=ShortHairDreads01&accessoriesType=Blank&hairColor=PastelPink&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Wink&eyebrowType=DefaultNatural&mouthType=Serious&skinColor=Tanned" )
-                    store.state.profil.avatarUrl = user.user_metadata.avatar_url;
-                
-                if( current_account && current_account.avatar != null)
-                    store.state.profil.avatarUrl = current_account.avatar;
-
-                console.log("curreent-acout", current_account);
-                if( current_account && current_account.avatar == null ){
-                    await supabase
-                        .from('account')
-                        .update({ avatar: store.state.profil.avatarUrl })
-                        .eq('user_id', user.id)
-                        .select();
-                }
-
-                if(!current())return false;
-                if( account.length > 0 ){
-                    const current_account = account[0];
-                    if(current_account){
-                        store.state.profil.soldes = current_account.credit;
-
-                        //store.state.profil.userName = ! user.user_metadata.full_name ? current_account.username : user.user_metadata.full_name;
-                        store.state.profil.userName = `${current_account.lastname} ${current_account.firstname}`;
-                        if(current_account.lastname == "" && current_account.firstname == "")
-                            store.state.profil.userName = ! user.user_metadata.full_name ? current_account.username : user.user_metadata.full_name;
-                        
-                        store.state.profil.profil.infos_perso.nom = current_account.lastname;
-                        store.state.profil.profil.infos_perso.prenom = current_account.firstname;
-                        store.state.profil.profil.infos_perso.email = current_account.email;
-                        //console.log("store", store.state.profil, store.state.search.accounts, current_account)
-                    }
-                    else {
-                        store.state.profil.soldes = 0;
-                        store.state.profil.userName = `Anonyme-${user.id.substring(0, 3)}`;
-                    }
-                }
-                else{
-                    store.state.profil.soldes = 0;
-                    store.state.profil.userName = `Anonyme-${user.id.substring(0, 3)}`;
-                }
-
-                state.logged_in = true;
-                return true;
-            }
-            else{
-                console.log("Error cheking session:", error)
-                rootState.profil.userId = null;
-                commit('profil/SET_USER_UID', '', { root: true });
-                return false;
-            }
-        },
+        // Compatibility for existing callers that need only a Boolean.
+        async checkSession(context,options){return (await loadSessionState(context,options)).status==='ready';},
+        async loadSession(context,options){return loadSessionState(context,options);},
         async checkSessionOnly(){
-            let { data, error } = await supabase.auth.getUser();
-
-            if(error || !data?.user)
-                return false;
-
-            return true;
+            let result;
+            try{result=await supabase.auth.getUser();}catch(error){result={error};}
+            if(result?.data?.user&&!result.error)return true;
+            if(!isAuthLookupUnavailable(result?.error))return false;
+            // Availability check only: the API and RLS still validate the JWT.
+            // A temporary Auth outage must not eject a cached, unexpired session.
+            try{
+                const {data,error}=await supabase.auth.getSession(),session=data?.session;
+                return !error&&Boolean(session?.access_token&&session?.user?.id&&session.expires_at*1000>Date.now());
+            }catch{return false;}
         },
         async logout({ commit, rootState }, intent = {}) {
             const profile=rootState.profil, owner=profile.userUid, generation=profile.accountGeneration;

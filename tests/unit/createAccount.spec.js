@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { transformSync } from '@babel/core';
 import { parse } from '@vue/compiler-sfc';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { resolvePostAuthPath } from '@/services/authProfile.js';
+import { resolvePostAuthPath,isAuthLookupUnavailable } from '@/services/authProfile.js';
 
 function loadOptions(source, dependencies) {
     const { code } = transformSync(source, {
@@ -27,6 +27,7 @@ const auth = loadOptions(readFileSync('src/store/auth.js', 'utf8'), {
     '@/utils/serverApi.js': { serverRequest },
     '@/services/authEntry.js': { rememberAuthEntry: vi.fn() },
     '@/services/authSessionGuard.js':authSessionGuard,
+    '@/services/authProfile.js':{isAuthLookupUnavailable},
 });
 const { descriptor } = parse(readFileSync('src/views/CreateAccount.vue', 'utf8'));
 const view = loadOptions(descriptor.script.content, {

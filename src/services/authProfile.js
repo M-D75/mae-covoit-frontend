@@ -2,8 +2,21 @@
  * Read the two independent parts of an application identity:
  * Supabase Auth (`auth.users`) and the business profile (`public.account`).
  */
+export function isAuthLookupUnavailable(error){
+    return Boolean(error && (error.name==='AuthRetryableFetchError' || error.name==='TypeError'
+        || Number(error.status)>=500 || error.status===0));
+}
 export async function fetchAuthProfileState(supabaseClient) {
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser();
+    let userData,userError;
+    try{
+        const result=await supabaseClient.auth.getUser();
+        userData=result.data;userError=result.error;
+    }catch(profileError){
+        return {authenticated:false,user:null,account:null,profileError};
+    }
+    if(isAuthLookupUnavailable(userError)){
+        return {authenticated:false,user:null,account:null,profileError:userError};
+    }
     const user = userData?.user || null;
 
     if(userError || !user){

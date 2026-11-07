@@ -17,9 +17,12 @@ export default {
         if(this.retrying)return;
         const target=this.profileLookupError?.path||'/search';this.retrying=true;
         try{
-            await this.$store.dispatch('auth/checkSession');
-            if(this.$store.state.auth.profileLookupError)return;
-            await this.$router.replace(target);
+            const result=await this.$store.dispatch('auth/loadSession',{path:target});
+            if(result.status==='ready'){
+                await this.$router.replace(result.hasAccount?target:{path:'/account-info',query:{redirect:target}});
+            }else if(result.status==='unauthenticated'){
+                await this.$router.replace({path:'/login',query:{redirect:target}});
+            }
         }catch{this.$store.commit('auth/SET_PROFILE_LOOKUP_ERROR',{path:target});}
         finally{this.retrying=false;}
     }},

@@ -126,6 +126,10 @@
     <v-card
       class="credit-card-profil mx-auto"
     >
+        <v-alert v-if="balanceError" type="error" variant="tonal" role="alert">
+            {{ balanceError }}
+            <v-btn variant="text" :loading="loadIn" @click="refreshBalance">Réessayer</v-btn>
+        </v-alert>
         <div class="row-item infos">
 
             <div class="label"> 
@@ -313,17 +317,22 @@
                 soldeWritable: 0,
                 interUidSolde: null,
                 loadIn: false,
+                balanceError: '',
             }
         },
-        async mounted(){
-            this.loadIn = true;
-            await this.getSoldes();
-            this.loadIn = false;
-            console.log("BEGIN", this.modeDriver, this.gain, this.soldes);
-
-            this.updateSolde();
-        },
+        async mounted(){await this.refreshBalance();},
         methods: {
+            async refreshBalance(){
+                if(this.loadIn)return;
+                this.loadIn=true;this.balanceError='';
+                try{
+                    const result=await this.getSoldes();
+                    if(result?.stale)return;
+                    if(result?.status!==0){this.balanceError=result?.message||'Le solde n’a pas pu être actualisé. Réessayez.';return;}
+                    this.updateSolde();
+                }catch{this.balanceError='Le solde n’a pas pu être actualisé. Réessayez.';}
+                finally{this.loadIn=false;}
+            },
             ...mapActions("profil", ["getSoldes"]),
             portefeuille(){
                 // console.log("portefeuille");
